@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcador de Ponto Digital com Exportação Admin (Seguro)</title>
+    <!-- Carrega o Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .clock-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            user-select: none;
+        }
+        .clock-circle:hover {
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        .entry-color { background-color: #10B981; color: white; } /* Verde para Entrada */
+        .exit-color { background-color: #EF4444; color: white; } /* Vermelho para Saída */
+        .loading-color { background-color: #E5E7EB; color: #6B7280; } /* Cinza para Carregando */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex justify-center items-start">
+
+    <!-- Container Principal do Aplicativo -->
+    <div class="w-full max-w-6xl bg-white rounded-xl shadow-2xl p-6 md:p-10 space-y-8">
+        
+        <!-- Título e Infos do Usuário -->
+        <header class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Sistema de Ponto Digital</h1>
+            <p class="text-gray-500 mt-1">
+                <span id="user-info-display" class="text-sm font-semibold ml-2 p-1 px-2 bg-indigo-100 text-indigo-700 rounded-full">ID do Usuário: Carregando...</span>
+            </p>
+            <button id="toggle-view-button" class="mt-4 p-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition duration-150 shadow-md text-sm">
+                Ir para Visualização Administrativa
+            </button>
+        </header>
+
+        <!-- Seção de Identificação (Inicial) -->
+        <section id="identification-section" class="space-y-6">
+            <h2 class="text-xl font-semibold text-center text-indigo-600">Identificação do Funcionário</h2>
+            <form id="identification-form" class="max-w-md mx-auto space-y-4">
+                <input type="text" id="employee-name-input" placeholder="Nome do Funcionário ou Registro" required 
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                <button type="submit"
+                        class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
+                    Confirmar Identificação
+                </button>
+            </form>
+            <p id="identification-message" class="text-center text-sm text-gray-500"></p>
+        </section>
+
+        <!-- Interface Principal (Relógio e Extrato) -->
+        <div id="employee-interface" class="space-y-8 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Relógio de Ponto -->
+                <section class="bg-gray-50 p-6 rounded-lg shadow-inner flex flex-col items-center justify-center space-y-4">
+                    <h2 class="text-xl font-semibold text-indigo-600">Relógio de Ponto</h2>
+                    <p id="current-status" class="text-lg font-medium text-gray-700">Status Atual: Carregando...</p>
+                    
+                    <!-- Círculo de Marcação (Botão) -->
+                    <div id="clock-in-out-button" class="clock-circle loading-color" role="button" aria-live="polite">
+                        Carregando...
+                    </div>
+                    
+                    <p id="clock-message" class="text-sm text-gray-500 mt-2"></p>
+                    <p id="error-message" class="text-sm text-red-600 mt-2 hidden">Ocorreu um erro ao registrar o ponto.</p>
+                </section>
+
+                <!-- Extrato Quinzena -->
+                <section class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                    <h2 class="text-xl font-semibold text-indigo-600 flex justify-between items-center">
+                        <span>Extrato Quinzena</span>
+                        <span id="date-range-display" class="text-sm font-normal text-gray-500"></span>
+                    </h2>
+                    
+                    <div class="mt-4 overflow-x-auto h-64">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DATA</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REGISTROS DO DIA</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TOTAL (HH:MM)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entries-table-body" class="bg-white divide-y divide-gray-200 text-sm text-gray-700">
+                                <tr><td colspan="3" class="p-3 text-center">Carregando registros...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p id="extract-message" class="mt-4 p-3 bg-yellow-50 text-yellow-700 rounded-lg text-sm">
+                        O cálculo é feito apenas para pares de entrada/saída no mesmo dia.
+                    </p>
+                </section>
+            </div>
+        </div>
+        
+        <!-- Interface Administrativa (Dashboard + Exportação) -->
+        <div id="admin-interface" class="space-y-6 hidden">
+            <h2 class="text-2xl font-bold text-center text-pink-600">Dashboard Administrativo e Exportação</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Seção de Exportação (Nova Funcionalidade) -->
+                <section class="md:col-span-1 bg-pink-50 p-6 rounded-xl shadow-lg border border-pink-200 h-fit space-y-4">
+                    <h3 class="text-xl font-semibold text-pink-700">Extrair Extrato por Período</h3>
+                    
+                    <form id="export-form" class="space-y-3">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Data Inicial:</label>
+                            <input type="date" id="start-date" required class="w-full p-2 border border-pink-300 rounded-lg focus:ring-pink-500 focus:border-pink-500">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">Data Final:</label>
+                            <input type="date" id="end-date" required class="w-full p-2 border border-pink-300 rounded-lg focus:ring-pink-500 focus:border-pink-500">
+                        </div>
+                        <button type="submit" id="export-button"
+                                class="w-full p-3 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 transition duration-150 shadow-md disabled:bg-pink-300">
+                            Exportar para CSV
+                        </button>
+                    </form>
+
+                    <p id="export-message" class="text-sm text-center text-gray-600"></p>
+                </section>
+
+                <!-- Tabela de Últimos Registros (Dashboard) -->
+                <section class="md:col-span-2 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-xl font-semibold text-pink-700 mb-4">Últimas Marcações (Todos)</h3>
+                    
+                    <div class="overflow-x-auto h-96">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FUNCIONÁRIO (ID)</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DATA E HORA</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TIPO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body" class="bg-white divide-y divide-gray-200 text-sm text-gray-700">
+                                <tr><td colspan="3" class="p-3 text-center">Carregando dados do ponto global...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Mensagem de Conexão -->
+        <p id="connection-status" class="text-center text-sm text-gray-400 mt-4">
+            Conexão com banco de dados estabelecida. Aguardando identificação...
+        </p>
+
+    </div>
+
+    <!-- Modal de Senha Administrativa (Simulado) -->
+    <div id="admin-modal" class="modal fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Acesso Administrativo</h3>
+            <p id="admin-login-message" class="text-sm text-red-500 mb-4 text-center hidden">Senha incorreta. Tente novamente.</p>
+            <form id="admin-login-form" class="space-y-4">
+                <input type="password" id="admin-password-input" placeholder="Digite o PIN de Administrador" required 
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500 shadow-sm text-center" maxlength="6">
+                <button type="submit" id="admin-login-button"
+                        class="w-full p-3 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 transition duration-150 shadow-md">
+                    Acessar Dashboard
+                </button>
+            </form>
+            <button id="admin-modal-close" class="mt-4 w-full text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+        </div>
+    </div>
+
+
+    <!-- Scripts do Firebase e Lógica do App -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, 
+            setPersistence, browserSessionPersistence 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, setDoc, onSnapshot, collection, query, where, addDoc, 
+            serverTimestamp, getDoc, getDocs, orderBy, limit, Timestamp
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configurações e Variáveis Globais (Fornecidas pelo ambiente)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const ADMIN_PIN = '60010774'; // PIN de Administrador FIXO para o acesso ao dashboard.
+        
+        const defaultFirebaseConfig = {
+             apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
+             authDomain: "marcador-ponto-digital.firebaseapp.com",
+             projectId: "marcador-ponto-digital", 
+             storageBucket: "marcador-ponto-digital.appspot.com",
+             messagingSenderId: "774324665760",
+             appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
+             measurementId: "G-W1QEJTECS1B"
+        };
+        
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' && JSON.parse(__firebase_config).projectId 
+                ? JSON.parse(__firebase_config) 
+                : defaultFirebaseConfig;
+        } catch (e) {
+            console.warn("Aviso: Variável __firebase_config não definida ou inválida. Usando configuração de fallback completa.", e);
+            firebaseConfig = defaultFirebaseConfig;
+        }
+
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let auth;
+        let userId = null;
+        let employeeName = null;
+        let currentStatus = 'loading'; // 'loading', 'entry', 'exit'
+        let unsubscribeEntries = null;
+        let unsubscribeAdmin = null;
+        let currentView = 'employee'; // 'employee' ou 'admin'
+        let isAdminAuthenticated = false; // Novo estado para o acesso Admin
+
+        // Elementos do DOM
+        const identificationSection = document.getElementById('identification-section');
+        const identificationForm = document.getElementById('identification-form');
+        const employeeNameInput = document.getElementById('employee-name-input');
+        const identificationMessage = document.getElementById('identification-message');
+        const employeeInterface = document.getElementById('employee-interface');
+        const adminInterface = document.getElementById('admin-interface');
+        const userInfoDisplay = document.getElementById('user-info-display');
+        const connectionStatus = document.getElementById('connection-status');
+        const clockInOutButton = document.getElementById('clock-in-out-button');
+        const currentStatusDisplay = document.getElementById('current-status');
+        const clockMessage = document.getElementById('clock-message');
+        const errorMessage = document.getElementById('error-message');
+        const entriesTableBody = document.getElementById('entries-table-body');
+        const dateRangeDisplay = document.getElementById('date-range-display');
+        const adminTableBody = document.getElementById('admin-table-body');
+        const toggleViewButton = document.getElementById('toggle-view-button');
+        
+        // Elementos de Exportação
+        const exportForm = document.getElementById('export-form');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const exportButton = document.getElementById('export-button');
+        const exportMessage = document.getElementById('export-message');
+
+        // Elementos do Modal Admin
+        const adminModal = document.getElementById('admin-modal');
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const adminPasswordInput = document.getElementById('admin-password-input');
+        const adminLoginMessage = document.getElementById('admin-login-message');
+        const adminModalClose = document.getElementById('admin-modal-close');
+
+
+        // --- Funções Auxiliares de UI ---
+        function showClockInterface(name) {
+            employeeName = name;
+            identificationSection.classList.add('hidden');
+            toggleView('employee'); 
+            userInfoDisplay.textContent = `Funcionário: ${employeeName}`;
+            connectionStatus.textContent = "Conexão com banco de dados estabelecida. Pronto para marcar ponto.";
+            setupAdminListener();
+        }
+
+        function toggleView(view) {
+            currentView = view;
+            if (view === 'employee') {
+                employeeInterface.classList.remove('hidden');
+                adminInterface.classList.add('hidden');
+                toggleViewButton.textContent = 'Ir para Visualização Administrativa';
+                if (!unsubscribeEntries) { setupEntryListener(); }
+            } else if (view === 'admin') {
+                // Se for para a view admin, verifica se está autenticado
+                if (!isAdminAuthenticated) {
+                    showAdminLoginModal();
+                    return;
+                }
+                employeeInterface.classList.add('hidden');
+                adminInterface.classList.remove('hidden');
+                toggleViewButton.textContent = 'Voltar ao Meu Ponto';
+            }
+        }
+        
+        function showAdminLoginModal() {
+            adminModal.classList.remove('hidden');
+            adminPasswordInput.focus();
+            adminPasswordInput.value = '';
+            adminLoginMessage.classList.add('hidden');
+        }
+        
+        function hideAdminLoginModal() {
+            adminModal.classList.add('hidden');
+            adminPasswordInput.value = '';
+            adminLoginMessage.classList.add('hidden');
+        }
+
+        function updateClockUI(status) {
+            currentStatus = status;
+            clockInOutButton.className = 'clock-circle transition duration-150';
+            
+            if (status === 'entry') {
+                currentStatusDisplay.textContent = 'Status Atual: Você Marcou SAÍDA';
+                clockInOutButton.classList.add('entry-color');
+                clockInOutButton.textContent = 'Marcar Entrada';
+            } else if (status === 'exit') {
+                currentStatusDisplay.textContent = 'Status Atual: Você Marcou ENTRADA';
+                clockInOutButton.classList.add('exit-color');
+                clockInOutButton.textContent = 'Marcar Saída';
+            } else {
+                currentStatusDisplay.textContent = 'Status Atual: Carregando...';
+                clockInOutButton.classList.add('loading-color');
+                clockInOutButton.textContent = 'Carregando...';
+            }
+        }
+        
+        function showMessage(text, isError = false) {
+            if (isError) {
+                errorMessage.textContent = `Erro: ${text}`;
+                errorMessage.classList.remove('hidden');
+                clockMessage.classList.add('hidden');
+            } else {
+                clockMessage.textContent = text;
+                clockMessage.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+            }
+        }
+
+        // --- Funções de Cálculo e Formatação (Inalteradas) ---
+
+        function formatDate(timestamp) {
+            const date = timestamp.toDate();
+            const dateStr = date.toLocaleDateString('pt-BR');
+            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            return { dateStr, timeStr, fullTime: date };
+        }
+
+        function calculateDurationInMinutes(start, end) {
+            return (end.getTime() - start.getTime()) / (1000 * 60);
+        }
+
+        function formatMinutesToHHMM(totalMinutes) {
+            if (totalMinutes < 0) return '00:00';
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = Math.floor(totalMinutes % 60);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        function calculateSummary(entries) {
+            const days = {};
+            const today = new Date().toLocaleDateString('pt-BR');
+            
+            entries.forEach(entry => {
+                const { dateStr, timeStr, fullTime } = formatDate(entry.timestamp);
+                
+                if (!days[dateStr]) {
+                    days[dateStr] = {
+                        date: dateStr,
+                        records: [],
+                        fullTimes: [],
+                        totalMinutes: 0,
+                        isComplete: true,
+                    };
+                }
+                
+                days[dateStr].records.push(timeStr);
+                days[dateStr].fullTimes.push(fullTime);
+            });
+
+            let latestStatus = 'entry'; 
+
+            Object.keys(days).forEach(dateStr => {
+                const day = days[dateStr];
+                const times = day.fullTimes.sort((a, b) => a - b); 
+                
+                let totalMinutes = 0;
+                let isComplete = true;
+
+                for (let i = 0; i < times.length; i += 2) {
+                    const entryTime = times[i];
+                    const exitTime = times[i + 1];
+
+                    if (exitTime) {
+                        totalMinutes += calculateDurationInMinutes(entryTime, exitTime);
+                    } else {
+                        isComplete = false;
+                    }
+                }
+                
+                day.totalMinutes = totalMinutes;
+                day.isComplete = isComplete;
+                
+                if (dateStr === today) {
+                    if (times.length % 2 === 0) {
+                        latestStatus = 'entry';
+                    } else {
+                        latestStatus = 'exit';
+                    }
+                }
+            });
+
+            const summaryList = Object.values(days).sort((a, b) => {
+                return new Date(b.date.split('/').reverse().join('-')) - new Date(a.date.split('/').reverse().join('-'));
+            });
+
+            return { summaryList, latestStatus };
+        }
+        
+        // --- Funções de Persistência (Firestore) ---
+        function getUserEntriesCollectionRef() {
+             return collection(db, `artifacts/${appId}/users/${userId}/time_records`);
+        }
+        
+        function getSharedEntriesCollectionRef() {
+            return collection(db, `artifacts/${appId}/public/data/all_time_records`);
+        }
+
+        function getUserProfileDocRef() {
+            return doc(db, `artifacts/${appId}/users/${userId}/profile/user_data`);
+        }
+        
+        // 1. Salvar perfil do funcionário
+        async function saveEmployeeProfile(e) {
+            e.preventDefault();
+            errorMessage.classList.add('hidden'); 
+            const name = employeeNameInput.value.trim();
+            if (!name) return;
+
+            identificationMessage.textContent = 'Salvando perfil...';
+
+            try {
+                if (!userId) {
+                    identificationMessage.textContent = 'Erro: Usuário não autenticado. Tente recarregar.';
+                    return;
+                }
+
+                await setDoc(getUserProfileDocRef(), {
+                    name: name,
+                    lastUpdate: serverTimestamp()
+                });
+
+                showClockInterface(name);
+                setupEntryListener(); 
+
+            } catch (error) {
+                console.error("Erro ao salvar perfil do funcionário:", error);
+                identificationMessage.textContent = `Erro ao salvar: ${error.message}. Tente novamente.`;
+            }
+        }
+
+        // 2. Registrar o ponto
+        async function recordPoint() {
+            if (!userId || currentStatus === 'loading') {
+                showMessage("Aguarde o carregamento do status...", true);
+                return;
+            }
+
+            const type = (currentStatus === 'entry' ? 'ENTRADA' : 'SAÍDA');
+            
+            updateClockUI('loading');
+            showMessage(`Registrando ${type}...`, false);
+
+            try {
+                const entryData = {
+                    type: type,
+                    timestamp: serverTimestamp(),
+                    employee: employeeName,
+                    userId: userId 
+                };
+                
+                // 1. Salva na coleção PRIVADA do usuário
+                await addDoc(getUserEntriesCollectionRef(), entryData);
+                
+                // 2. Salva na coleção COMPARTILHADA (Admin)
+                await addDoc(getSharedEntriesCollectionRef(), entryData);
+                
+                showMessage(`${type} registrada com sucesso!`, false);
+
+            } catch (error) {
+                console.error("Erro ao registrar ponto:", error);
+                const previousStatus = currentStatus === 'entry' ? 'exit' : 'entry';
+                updateClockUI(previousStatus);
+                showMessage(`Falha ao registrar o ponto: ${error.message}`, true);
+            }
+        }
+
+        // 3. Listener para o extrato INDIVIDUAL (Funcionário)
+        function setupEntryListener() {
+            if (unsubscribeEntries) { unsubscribeEntries(); }
+            if (!userId) { return; }
+
+            const entriesQuery = query(getUserEntriesCollectionRef(), orderBy("timestamp", "desc"));
+            
+            unsubscribeEntries = onSnapshot(entriesQuery, (snapshot) => {
+                const entries = snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data() 
+                })).reverse(); // Inverte para ter ordem cronológica para o cálculo
+                
+                const { summaryList, latestStatus } = calculateSummary(entries);
+                
+                updateClockUI(latestStatus);
+                renderExtractTable(summaryList);
+                
+            }, (error) => {
+                console.error("Erro no listener de registros (Privado):", error);
+                if (error.code === "permission-denied") {
+                    showMessage("ERRO CRÍTICO: Permissão negada. Verifique as Regras de Segurança!", true);
+                } else {
+                    showMessage(`Erro ao carregar registros: ${error.message}`, true);
+                }
+                updateClockUI('loading');
+            });
+            
+            clockInOutButton.onclick = recordPoint;
+        }
+
+        // 4. Listener para o dashboard ADMINISTRATIVO (Compartilhado/Global)
+        function setupAdminListener() {
+            if (unsubscribeAdmin) { unsubscribeAdmin(); }
+
+            // Não aplica filtro de autenticação aqui, pois a própria regra de segurança já garante que apenas
+            // usuários autenticados (qualquer um) possam ler os dados globais.
+            const adminQuery = query(
+                getSharedEntriesCollectionRef(),
+                orderBy("timestamp", "desc"),
+                limit(10) 
+            );
+
+            unsubscribeAdmin = onSnapshot(adminQuery, (snapshot) => {
+                const records = snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data() 
+                }));
+                
+                renderAdminTable(records);
+                
+            }, (error) => {
+                console.error("Erro no listener de registros (Admin):", error);
+                if (error.code === "permission-denied") {
+                    adminTableBody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-red-600">ERRO: Permissão negada aos dados globais. Publique as Novas Regras de Segurança!</td></tr>`;
+                } else {
+                    adminTableBody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-red-600">Erro ao carregar dashboard: ${error.message}</td></tr>`;
+                }
+            });
+        }
+        
+        // --- Funções de Renderização e Exportação (Inalteradas) ---
+
+        function renderExtractTable(summaryList) {
+            if (summaryList.length === 0) {
+                entriesTableBody.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-gray-500">Nenhum ponto registrado no período.</td></tr>';
+                dateRangeDisplay.textContent = '';
+                return;
+            }
+
+            const firstDate = summaryList[summaryList.length - 1].date; 
+            const lastDate = summaryList[0].date;                       
+            dateRangeDisplay.textContent = `${firstDate} - ${lastDate}`;
+
+
+            entriesTableBody.innerHTML = summaryList.map(day => {
+                const isComplete = day.records.length % 2 === 0 && day.isComplete;
+                const statusIndicator = isComplete
+                    ? '<span class="text-green-500 ml-1">&#x2714;</span>' 
+                    : '<span class="text-red-500 ml-1">&#x2716;</span>';
+
+                return `
+                    <tr>
+                        <td class="px-3 py-2 whitespace-nowrap">${day.date}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-xs text-gray-600">${day.records.join(' | ')}</td>
+                        <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-900">
+                            ${formatMinutesToHHMM(day.totalMinutes)} ${statusIndicator}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function renderAdminTable(records) {
+            if (records.length === 0) {
+                adminTableBody.innerHTML = '<tr><td colspan="3" class="p-3 text-center text-gray-500">Nenhum registro de ponto encontrado.</td></tr>';
+                return;
+            }
+
+            adminTableBody.innerHTML = records.map(record => {
+                const { dateStr, timeStr } = formatDate(record.timestamp);
+                const statusClass = record.type === 'ENTRADA' ? 'text-green-600' : 'text-red-600';
+                const employeeDisplay = record.employee || 'N/D';
+                const userIdShort = record.userId ? record.userId.substring(0, 8) : 'N/D';
+
+                return `
+                    <tr>
+                        <td class="px-3 py-2 whitespace-nowrap font-semibold">${employeeDisplay} 
+                            <span class="text-xs text-gray-400">(${userIdShort}...)</span>
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap">${dateStr} ${timeStr}</td>
+                        <td class="px-3 py-2 whitespace-nowrap ${statusClass} font-bold">${record.type}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // --- Lógica de Exportação CSV (Inalteradas) ---
+
+        function convertToCSV(data) {
+            if (!data || data.length === 0) return '';
+            
+            const headers = ["ID_FUNCIONARIO", "NOME_FUNCIONARIO", "DATA_COMPLETA", "DATA", "HORA", "TIPO_MARCACAO"];
+            const csvRows = [];
+            csvRows.push(headers.join(';')); // Adiciona cabeçalho
+            
+            data.forEach(item => {
+                const dateObj = item.timestamp.toDate();
+                const date = dateObj.toLocaleDateString('pt-BR');
+                const time = dateObj.toLocaleTimeString('pt-BR');
+                const fullDateTime = dateObj.toISOString();
+                
+                const row = [
+                    item.userId,
+                    item.employee,
+                    fullDateTime,
+                    date,
+                    time,
+                    item.type
+                ];
+                csvRows.push(row.join(';'));
+            });
+            
+            return csvRows.join('\n');
+        }
+
+        async function handleExport(e) {
+            e.preventDefault();
+            
+            const startDateStr = startDateInput.value;
+            const endDateStr = endDateInput.value;
+
+            if (!startDateStr || !endDateStr) {
+                exportMessage.textContent = "Selecione a Data Inicial e Final.";
+                return;
+            }
+            
+            exportButton.disabled = true;
+            exportMessage.textContent = "Buscando dados no Firestore...";
+
+            try {
+                // Configura o início (00:00:00) e o fim (23:59:59) do período
+                const start = new Date(startDateStr);
+                const end = new Date(endDateStr);
+                end.setHours(23, 59, 59, 999);
+
+                if (start > end) {
+                    exportMessage.textContent = "Data inicial não pode ser maior que a data final.";
+                    exportButton.disabled = false;
+                    return;
+                }
+
+                const startTimestamp = Timestamp.fromDate(start);
+                const endTimestamp = Timestamp.fromDate(end);
+
+                // Consulta no Firestore (Coleção compartilhada)
+                const q = query(
+                    getSharedEntriesCollectionRef(),
+                    where('timestamp', '>=', startTimestamp),
+                    where('timestamp', '<=', endTimestamp)
+                );
+
+                const snapshot = await getDocs(q);
+                const dataToExport = snapshot.docs.map(doc => doc.data());
+
+                if (dataToExport.length === 0) {
+                    exportMessage.textContent = 'Nenhum registro encontrado no período selecionado.';
+                    exportButton.disabled = false;
+                    return;
+                }
+                
+                // Converte e dispara o download
+                const csvString = convertToCSV(dataToExport);
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                
+                const fileName = `Extrato_Ponto_${startDateStr}_a_${endDateStr}.csv`;
+                link.setAttribute('download', fileName);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                exportMessage.textContent = `Exportação de ${dataToExport.length} registros concluída.`;
+
+            } catch (error) {
+                console.error("Erro ao exportar dados:", error);
+                if (error.code === "permission-denied") {
+                     exportMessage.textContent = "ERRO: Permissão negada ao ler dados globais. Publique as Novas Regras de Segurança!";
+                } else {
+                     exportMessage.textContent = `Erro ao exportar: ${error.message}`;
+                }
+            } finally {
+                exportButton.disabled = false;
+                setTimeout(() => exportMessage.textContent = '', 8000);
+            }
+        }
+        
+        // --- Lógica de Autenticação Administrativa ---
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const enteredPin = adminPasswordInput.value.trim();
+            
+            if (enteredPin === ADMIN_PIN) {
+                isAdminAuthenticated = true;
+                hideAdminLoginModal();
+                toggleView('admin'); // Volta para a função que agora vai mostrar o dashboard
+            } else {
+                adminLoginMessage.textContent = "Senha incorreta. Tente novamente.";
+                adminLoginMessage.classList.remove('hidden');
+            }
+        }
+
+
+        // --- Inicialização do Firebase e Autenticação ---
+
+        async function loadUserProfile() {
+            try {
+                const profileSnap = await getDoc(getUserProfileDocRef());
+                if (profileSnap.exists()) {
+                    const profileData = profileSnap.data();
+                    showClockInterface(profileData.name);
+                    setupEntryListener();
+                } else {
+                    identificationSection.classList.remove('hidden');
+                    identificationMessage.textContent = 'Digite seu nome/registro para começar.';
+                }
+            } catch (error) {
+                console.error("Erro ao carregar perfil:", error);
+                identificationSection.classList.remove('hidden');
+            }
+        }
+
+        async function initializeAppAndListeners() {
+            setLogLevel('debug'); 
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                connectionStatus.textContent = "Conectando ao banco de dados...";
+
+                await setPersistence(auth, browserSessionPersistence);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userInfoDisplay.textContent = `ID: ${userId.substring(0, 8)}...`;
+                        await loadUserProfile();
+                        setupAdminListener(); 
+                    } else {
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Erro durante o login inicial:", error);
+                            connectionStatus.textContent = `Erro de login. Funcionalidade de ponto desativada.`;
+                            identificationSection.classList.add('hidden');
+                            employeeInterface.classList.add('hidden');
+                        }
+                    }
+                });
+                
+                // --- Associa listeners aos eventos ---
+                
+                // Interface do Funcionário
+                identificationForm.addEventListener('submit', saveEmployeeProfile);
+                
+                // Interface do Administrador
+                exportForm.addEventListener('submit', handleExport); 
+                
+                // Botão de Troca de Visualização (que chama o modal de login se necessário)
+                toggleViewButton.addEventListener('click', () => {
+                    if (currentView === 'employee') {
+                        toggleView('admin');
+                    } else {
+                        isAdminAuthenticated = false; // Desloga ao voltar
+                        toggleView('employee');
+                    }
+                });
+                
+                // Modal de Senha
+                adminLoginForm.addEventListener('submit', handleAdminLogin);
+                adminModalClose.addEventListener('click', hideAdminLoginModal);
+                
+
+                // Configura as datas padrão para o último mês
+                const today = new Date();
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(today.getMonth() - 1);
+
+                const formatDateInput = (date) => date.toISOString().substring(0, 10);
+
+                startDateInput.value = formatDateInput(lastMonth);
+                endDateInput.value = formatDateInput(today);
+
+
+            } catch (error) {
+                console.error("Erro crítico na inicialização do app:", error);
+                connectionStatus.textContent = `Erro Crítico: Falha na inicialização (${error.message}). Recarregue a página.`;
+            }
+        }
+
+        initializeAppAndListeners();
+        
+    </script>
+</body>
+</html>s
