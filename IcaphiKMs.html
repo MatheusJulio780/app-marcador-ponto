@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICAPHI - KMS</title>
+    <title>Gerenciamento de Frotas - Rastreamento de Rotas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -89,7 +89,7 @@
         
 
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-8">
-            Gerênciamento de KMs - ICAPHI Transportes
+            Gerênciamento de KMs - Sistema de Frotas
         </h1>
 
         <div class="flex justify-center space-x-4 mb-8">
@@ -418,12 +418,14 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
                     if (!result && city) { result = city;
                     }
 
+                    // Se falhar em tudo, retorna as coordenadas como fallback
                     return result ||
                     `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
                 }
             } catch (error) {
                 console.error("Erro no Reverse Geocoding:", error);
             }
+            // Retorna as coordenadas em caso de falha de conexão/API
             return `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
         }
 
@@ -591,7 +593,7 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
               
                 const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A';
                 
-                // Trata caso a localização não exista
+                // Trata caso a localização não exista - O campo 'address' já contém a rua/bairro ou o fallback de Lat/Lon
                 const startAddress = route.startLocation?.address || `Lat: ${route.startLocation?.lat?.toFixed(4) || 'N/A'}`;
                 const endAddress = route.endLocation?.address || `Lat: ${route.endLocation?.lat?.toFixed(4) || 'N/A'}`;
      
@@ -960,11 +962,11 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
                 const startAddress = route.startLocation?.address || 'N/A';
                 const endAddress = route.endLocation?.address || 'N/A';
                 
-                const startLat = route.startLocation ? route.startLocation.lat : 'N/A';
-       
-                const startLon = route.startLocation ? route.startLocation.lon : 'N/A';
-                const endLat = route.endLocation ? route.endLocation.lat : 'N/A';
-                const endLon = route.endLocation ? route.endLocation.lon : 'N/A';
+                // AS COORDENADAS LAT/LON FORAM REMOVIDAS DA EXPORTAÇÃO AQUI:
+                // const startLat = route.startLocation ? route.startLocation.lat : 'N/A';
+                // const startLon = route.startLocation ? route.startLocation.lon : 'N/A';
+                // const endLat = route.endLocation ? route.endLocation.lat : 'N/A';
+                // const endLon = route.endLocation ? route.endLocation.lon : 'N/A';
                 
                 // NOTA: Base64 é muito grande 
                 const startPhotoRef = route.startPhoto ?
@@ -985,11 +987,6 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
                     elapsedTimeStr,
                     route.kmStart, 
                     route.kmEnd,
-                    startLat,
-                    startLon,
-           
-                    endLat,
-                    endLon,
                 ].map(item => `"${item}"`).join(';');
                 // Usa ponto e vírgula como separador
             });
@@ -999,11 +996,10 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
             }
 
             // Atualiza o cabeçalho do CSV
+            // AS COLUNAS DE LAT/LON FORAM REMOVIDAS DO CABEÇALHO AQUI:
             const header = [
                 "Motorista", "Placa", "Data_Hora_Saida", "Local_Saida", "Foto_Saida", "Data_Hora_Chegada", "Local_Chegada", "Foto_Chegada",
-                "KM_Total_Rodado", "Tempo_Decorrido", "KM_Inicial", "KM_Final", 
-                "Local_Saida_Lat", "Local_Saida_Lon", "Local_Chegada_Lat", "Local_Chegada_Lon"
-     
+                "KM_Total_Rodado", "Tempo_Decorrido", "KM_Inicial", "KM_Final"
             ];
             
             const csvContent = [header.join(';'), ...routesToExport].join('\n');
@@ -1104,4 +1100,3 @@ text-blue-600 border-2 border-blue-600 hover:bg-blue-50 transition-colors">
     </script>
 </body>
 </html>
-
