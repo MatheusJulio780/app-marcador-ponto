@@ -352,7 +352,7 @@
               
    </button>
                
-  <p class="text-xs text-red-500 mt-2 hidden" id="login-error-message">Senha incorreta. (Senha padrão: admin123)</p>
+  <p class="text-xs text-red-500 mt-2 hidden" id="login-error-message">Senha incorreta. (Acesso somento do administrativo)</p>
             </div>
 
             <div id="admin-dashboard" class="hidden">
@@ -454,14 +454,14 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
- import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // Importando deleteDoc
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
- import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Ativar logs para debug
         setLogLevel('Debug');
- // --- CONFIGURAÇÃO FIREBASE ---
+        // --- CONFIGURAÇÃO FIREBASE ---
         const providedConfig = {
              apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
              authDomain: "marcador-ponto-digital.firebaseapp.com",
@@ -473,28 +473,28 @@
  
              measurementId: "G-W1QEJTCS1B"
         };
- // Usa a configuração injetada pelo ambiente (se disponível e for um objeto válido), caso contrário, usa a configuração fornecida pelo usuário.
- let firebaseConfig;
+        // Usa a configuração injetada pelo ambiente (se disponível e for um objeto válido), caso contrário, usa a configuração fornecida pelo usuário.
+        let firebaseConfig;
         if (typeof __firebase_config !== 'undefined' && __firebase_config.trim() !== '' && __firebase_config.trim() !== '{}') {
             try {
                 firebaseConfig = JSON.parse(__firebase_config);
- } catch (e) {
+            } catch (e) {
                 console.error("Erro ao fazer parse da configuração injetada, usando a configuração do usuário.", e);
- firebaseConfig = providedConfig;
+                firebaseConfig = providedConfig;
             }
         } else {
             firebaseConfig = providedConfig;
- }
+        }
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
- let app, db, auth;
+        let app, db, auth;
         let userId = null;
         let currentTripDocId = localStorage.getItem('currentTripDocId'); 
         let timerInterval = null;
         const ADMIN_PASSWORD = "60010774";
- // Variáveis para armazenar as fotos em Base64 temporariamente
+        // Variáveis para armazenar as fotos em Base64 temporariamente
         let startPhotoBase64 = null;
- let endPhotoBase64 = null;
+        let endPhotoBase64 = null;
 
         const ROUTES_COLLECTION_PATH = `/artifacts/${appId}/public/data/driver_routes`;
 
@@ -829,7 +829,7 @@
  
                 const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A';
                 
-                // CORRIGIDO: Usar o campo 'address' que agora é mais completo
+                // USA o campo 'address' que agora é gerado e salvo na saída e chegada
                 const startAddress = route.startLocation?.address || 'Endereço Indisponível';
                 const endAddress = route.endLocation?.address || 'Endereço Indisponível';
      
@@ -1029,7 +1029,7 @@
             displayMessage('Buscando localização, endereço e salvando foto de saída...', 'info');
             try {
                 const location = await getGeolocation();
-                // Usa a função corrigida para um endereço mais exato
+                // 🚀 CORREÇÃO PARA SAÍDA: Usa a função corrigida para um endereço mais exato
                 const address = await getStreetAndNeighborhood(location.lat, location.lon);
                 const now = Timestamp.now();
                 // Cria uma nova referência de documento
@@ -1039,7 +1039,8 @@
                     licensePlate: licensePlate,
                     kmStart: kmStart,
                     startTime: now,
-                    startLocation: { ...location, address: address }, // Salva o endereço completo
+                    // 🚀 CORREÇÃO PARA SAÍDA: Salva o endereço completo no objeto startLocation
+                    startLocation: { ...location, address: address }, 
                     startPhoto: startPhotoBase64,
                     userId: userId,
                     status: 'In Progress',
@@ -1096,7 +1097,7 @@
                     return;
                 }
                 const endLocation = await getGeolocation();
-                // Usa a função corrigida para um endereço mais exato
+                // 🚀 CORREÇÃO PARA CHEGADA: Usa a função corrigida para um endereço mais exato
                 const endAddress = await getStreetAndNeighborhood(endLocation.lat, endLocation.lon);
                 const endTime = Timestamp.now();
                 const startTimeMs = currentTripData.startTime.toDate().getTime();
@@ -1104,7 +1105,8 @@
                 const updateData = {
                     kmEnd: kmEnd,
                     endTime: endTime,
-                    endLocation: { ...endLocation, address: endAddress }, // Salva o endereço completo
+                    // 🚀 CORREÇÃO PARA CHEGADA: Salva o endereço completo no objeto endLocation
+                    endLocation: { ...endLocation, address: endAddress }, 
                     elapsedTimeSeconds: elapsedTimeSeconds,
                     endPhoto: endPhotoBase64,
                     status: 'Completed',
