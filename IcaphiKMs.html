@@ -49,9 +49,9 @@
         body {
             font-family: 'Poppins', sans-serif;
             /* Fundo Gradiente Azul Suave e ANIMADO */
-            background: linear-gradient(135deg, #E0F7FA 0%, #ffffff 50%, #E0F7FA 100%);
+            background: linear-gradient(135deg, #8fffff83 0%, #9cdce78a 50%, #ffffff 100%);
             background-size: 200% 200%;
-            animation: moving-gradient 15s ease infinite; /* Animação do fundo */
+            animation: moving-gradient 2s ease infinite; /* Animação do fundo */
             min-height: 100vh;
             color: var(--text-dark); 
             overflow-x: hidden; 
@@ -215,8 +215,17 @@
         .hover\:bg-cianoblue-50\/50:hover {
             background-color: rgba(0, 191, 255, 0.1) !important; /* Efeito hover azul */
         }
+        
+        /* Linha de Rota em Andamento (Amarelo Suave) */
+        .bg-yellow-50\/70 {
+            background-color: rgba(255, 250, 205, 0.7) !important; /* Amarelo pálido */
+            border-left: 5px solid orange; /* Indicador lateral */
+        }
+        .hover\:bg-yellow-100\/70:hover {
+            background-color: rgba(255, 248, 179, 0.9) !important; /* Amarelo mais intenso no hover */
+        }
 
-        /* --- ESTILOS DO MODAL DE FOTO E MAPA --- */
+        /* --- ESTILOS DO MODAL DE FOTO --- */
         .photo-modal-overlay {
             position: fixed;
             top: 0;
@@ -242,7 +251,7 @@
             border-radius: 20px;
             padding: 30px;
             max-width: 90%; 
-            width: 1200px; /* Largura maior para comportar as duas colunas */
+            width: 600px; /* Largura ajustada para apenas foto */
             max-height: 90vh;
             overflow-y: auto;
             display: flex;
@@ -255,9 +264,9 @@
         }
 
         /* Estilização para as imagens dentro do modal */
-        #modal-image, #modal-map {
+        #modal-image {
             width: 100%; /* Ocupa 100% da coluna */
-            max-height: 400px; /* Limita a altura para visualização */
+            max-height: 60vh; /* Limita a altura para visualização */
             object-fit: contain; /* Garante que a imagem inteira seja vista */
             margin: 0 auto; /* Centraliza horizontalmente */
         }
@@ -361,7 +370,7 @@
             </div>
 
             <div id="admin-dashboard" class="hidden">
-                <h3 class="text-xl font-bold mb-4 text-gray-700" style="color: var(--text-dark);">Rotas Concluídas</h3>
+                <h3 class="text-xl font-bold mb-4 text-gray-700" style="color: var(--text-dark);">Rotas Concluídas e em Andamento</h3>
 
                 <div class="flex flex-col md:flex-row gap-4 mb-6 p-4 rounded-xl" style="background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px); border: 1px solid rgba(0, 191, 255, 0.2);">
                     <div class="flex-grow">
@@ -422,18 +431,12 @@
                     &times;
                 </button>
                 
-                <div class="flex flex-col md:flex-row gap-6">
-                    <div class="flex-1 flex flex-col items-center">
-                        <h3 class="text-xl font-bold text-white mb-2 text-shadow-lg">Foto do Painel</h3>
-                        <img id="modal-image" src="" alt="Foto do Painel" class="max-w-full h-auto rounded-lg shadow-xl border-2 border-white/50">
-                    </div>
-                    <div class="flex-1 flex flex-col items-center">
-                        <h3 class="text-xl font-bold text-white mb-2 text-shadow-lg">Localização no Mapa</h3>
-                        <img id="modal-map" src="" alt="Mapa de Localização" class="max-w-full h-auto rounded-lg shadow-xl border-2 border-liquid-blue-400">
-                        <p class="text-sm text-gray-400 mt-2 text-center">Ponto de registro (Zoom 18)</p>
-                    </div>
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-bold text-white mb-4 text-shadow-lg">Foto do Painel</h3>
+                    <img id="modal-image" src="" alt="Foto do Painel" class="max-w-full h-auto rounded-lg shadow-xl border-2 border-white/50">
                 </div>
                 <p id="modal-caption" class="mt-4 text-center text-gray-300 text-lg font-semibold"></p>
+                <p id="modal-coords" class="mt-1 text-center text-gray-400 text-sm italic">Localização: </p>
             </div>
         </div>
 
@@ -441,7 +444,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
@@ -457,28 +460,20 @@
              appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
              measurementId: "G-W1QEJTCS1B"
         };
-        // Usa a configuração injetada pelo ambiente (se disponível e for um objeto válido), caso contrário, usa a configuração fornecida pelo usuário.
-        let firebaseConfig;
-        if (typeof __firebase_config !== 'undefined' && __firebase_config.trim() !== '' && __firebase_config.trim() !== '{}') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } catch (e) {
-                console.error("Erro ao fazer parse da configuração injetada, usando a configuração do usuário.", e);
-                firebaseConfig = providedConfig;
-            }
-        } else {
-            firebaseConfig = providedConfig;
-        }
+        
+        // Usa a configuração fornecida.
+        let firebaseConfig = providedConfig;
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+        const appId = firebaseConfig.projectId;
         let app, db, auth;
         let userId = null;
         let currentTripDocId = localStorage.getItem('currentTripDocId'); 
-        let timerInterval = null;
+        let timerInterval = null; // Timer para a view do motorista
+        let liveTimerInterval = null; // NOVO: Timer para a view administrativa (tempo real)
         const ADMIN_PASSWORD = "60010774";
         let startPhotoBase64 = null;
         let endPhotoBase64 = null;
-
+        
         const ROUTES_COLLECTION_PATH = `/artifacts/${appId}/public/data/driver_routes`;
 
         // Elementos DOM
@@ -495,7 +490,8 @@
         const photoModal = document.getElementById('photo-modal');
         const modalImage = document.getElementById('modal-image');
         const modalCaption = document.getElementById('modal-caption');
-        const modalMap = document.getElementById('modal-map'); 
+        const modalCoords = document.getElementById('modal-coords'); 
+        
 
         // --- Funções Auxiliares ---
 
@@ -722,65 +718,15 @@
             }
         }
         
-        /**
-         * NOVO: Gera a URL do mapa estático com o ponto exato.
-         * VERIFICAÇÃO ROBUSTA para garantir que não use (0, 0) ou NaN.
-         */
-        function getStaticMapUrl(lat, lon, size = '400x400', zoom = 18) {
-            // Verifica se a latitude e longitude são válidas antes de construir o URL
-            if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) {
-                return null; // Retorna nulo se inválido
-            }
-            // Zoom 18 é um bom nível de detalhe de rua
-            // Marcador azul (blue-pin) para melhor contraste.
-            const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=${size}&maptype=mapnik&markers=${lat},${lon},blue-pin`;
-            return mapUrl;
-        }
-
-
-        /**
-         * FUNÇÃO ATUALIZADA: Implementa a lógica de exibição do mapa e tratamento de erros
-         */
         window.viewPhoto = function(base64Data, caption, lat, lon) {
             if (base64Data) {
                 modalImage.src = base64Data;
                 modalCaption.textContent = caption;
                 
-                // --- LÓGICA DO MAPA (Aprimorada) ---
-                
-                if (!modalMap) {
-                    console.error("Elemento DOM para o mapa (modal-map) não encontrado.");
-                    return; 
-                }
+                const coordsText = (lat && lon) ? `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}` : 'Coordenadas não registradas.';
+                modalCoords.textContent = `Localização: ${coordsText}`;
 
-                // 1. Gera a URL do mapa
-                const mapUrl = getStaticMapUrl(lat, lon);
-                
-                // 2. Verifica a validade e exibe o mapa ou esconde o elemento
-                if (mapUrl) {
-                    modalMap.src = mapUrl;
-                    modalMap.classList.remove('hidden'); // Garante que o elemento esteja visível
-                    
-                    console.log("MAPA: Coordenadas válidas. URL gerado:", mapUrl);
-                    
-                    // Adiciona um listener para DEBUG caso a imagem não carregue
-                    modalMap.onerror = () => {
-                        // Se falhar, substitui por um placeholder para visualização no modal
-                        modalMap.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#2D3748"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#81D4FA">Erro ao carregar mapa estático. URL falhou.</text></svg>';
-                        console.error("ERRO GRAVE: Falha no carregamento da imagem do Mapa Estático. O URL pode estar bloqueado ou o serviço inativo. URL tentado:", mapUrl);
-                    };
-                    
-                } else {
-                    // Coordenadas inválidas ou nulas
-                    modalMap.src = ''; 
-                    modalMap.classList.add('hidden'); // Esconde o mapa
-                    console.warn(`MAPA: Coordenadas de localização não disponíveis (lat: ${lat}, lon: ${lon}) ou inválidas. Mapa não será exibido.`);
-                }
-                // --- FIM LÓGICA DO MAPA ---
-
-                // Adiciona a classe 'visible' para iniciar as animações CSS
                 photoModal.classList.remove('hidden');
-                // Pequeno delay para garantir que o CSS 'hidden' seja removido antes de aplicar a animação
                 setTimeout(() => {
                     photoModal.classList.add('visible');
                 }, 10);
@@ -789,70 +735,120 @@
             }
         }
 
-        /**
-         * FUNÇÃO ATUALIZADA para fechar o modal.
-         */
         window.closePhotoModal = function() {
             photoModal.classList.remove('visible');
             setTimeout(() => {
                 photoModal.classList.add('hidden');
-                modalImage.src = ''; // Limpa a imagem
-                if(modalMap) modalMap.src = ''; // Limpa o mapa
-            }, 300); // 300ms é a duração da transição CSS
+                modalImage.src = ''; 
+                modalCoords.textContent = 'Localização:';
+            }, 300); 
+        }
+
+        // NOVO: Função para atualizar o tempo decorrido em tempo real na tabela administrativa.
+        function updateLiveTime() {
+            // Filtra apenas as rotas que estão em andamento
+            const liveTrips = allRoutesData.filter(route => route.status === 'In Progress');
+            const now = Date.now();
+            
+            liveTrips.forEach(route => {
+                if (route.startTime) {
+                    const startTimeMs = route.startTime.toDate().getTime();
+                    const elapsedSeconds = Math.floor((now - startTimeMs) / 1000);
+                    const formattedTime = formatTime(elapsedSeconds);
+                    
+                    // Busca o elemento na tabela pelo atributo data-live-time (que é o ID da rota)
+                    const element = document.querySelector(`[data-live-time="${route.id}"]`);
+                    if (element) {
+                        element.textContent = formattedTime;
+                    }
+                }
+            });
+        }
+        
+        function startLiveTimer() {
+             // Para qualquer timer existente
+            if (liveTimerInterval) {
+                clearInterval(liveTimerInterval);
+            }
+            
+            // Inicia o novo timer para atualização de 1 em 1 segundo
+            liveTimerInterval = setInterval(() => {
+                updateLiveTime();
+            }, 1000);
+            console.log("Live Timer iniciado para o painel administrativo.");
+        }
+
+        function stopLiveTimer() {
+            if (liveTimerInterval) {
+                clearInterval(liveTimerInterval);
+                liveTimerInterval = null;
+                console.log("Live Timer parado.");
+            }
         }
 
 
         function renderAdminTable(routes) {
-            adminTableBody.innerHTML = ''; // Limpa a tabela
+            adminTableBody.innerHTML = ''; 
             if (routes.length === 0) {
-                adminTableBody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-gray-500">Nenhuma rota concluída encontrada para o filtro atual.</td></tr>';
+                adminTableBody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-gray-500">Nenhuma rota encontrada para o filtro atual.</td></tr>';
                 return;
             }
 
             routes.forEach(route => {
-                const totalKm = route.kmEnd ? (route.kmEnd - route.kmStart).toFixed(1) : 'N/A';
-                const startTimeStr = route.startTime ? route.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
-                const endTimeStr = route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A';
-                const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A';
+                const isInProgress = route.status === 'In Progress';
                 
-                const startAddress = route.startLocation?.address || 'Endereço Indisponível';
-                const endAddress = route.endLocation?.address || 'Endereço Indisponível';
-                
-                // Extrai coordenadas. Usa 0 como fallback, mas a função viewPhoto faz a validação correta.
+                // Variáveis para rotas em andamento
+                const totalKm = isInProgress ? 'EM ROTA' : (route.kmEnd - route.kmStart).toFixed(1) + ' km';
+                const kmFinalStr = isInProgress ? 'N/A' : (route.kmEnd ? route.kmEnd.toFixed(1) : 'N/A');
+                const endTimeStr = isInProgress ? 'EM ABERTO' : (route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A');
+                const endAddress = isInProgress ? 'N/A' : (route.endLocation?.address || 'Endereço Indisponível');
                 const startLat = route.startLocation?.lat || 0; 
                 const startLon = route.startLocation?.lon || 0; 
                 const endLat = route.endLocation?.lat || 0;
                 const endLon = route.endLocation?.lon || 0;
-
-                // Botões de Visualização de Foto e Mapa
+                
+                // Campo Tempo (com atributo para atualização em tempo real)
+                const elapsedTimeStr = isInProgress ? 
+                    `<span class="font-bold text-red-600" data-live-time="${route.id}">CALCULANDO...</span>` : 
+                    (route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A');
+                
+                // Horário de Saída (sempre existe)
+                const startTimeStr = route.startTime ? route.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
+                
+                // Botões de Visualização de Foto
                 const startPhotoBtn = route.startPhoto ? 
-                    `<button onclick="viewPhoto('${route.startPhoto}', 'Foto KM Inicial - ${route.driverName} (Local: ${startAddress})', ${startLat}, ${startLon})" 
-                        class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Mapa de Saída">
-                        <i class="fas fa-image"></i> + <i class="fas fa-map-marker-alt"></i>
+                    `<button onclick="viewPhoto('${route.startPhoto}', 'Foto KM Inicial - ${route.driverName}', ${startLat}, ${startLon})" 
+                        class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Localização de Saída">
+                        <i class="fas fa-image"></i>
                     </button>` : `<span class="text-gray-400"><i class="fas fa-times-circle"></i></span>`;
 
-                const endPhotoBtn = route.endPhoto ? 
-                    `<button onclick="viewPhoto('${route.endPhoto}', 'Foto KM Final - ${route.driverName} (Local: ${endAddress})', ${endLat}, ${endLon})" 
-                        class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Mapa de Chegada">
-                        <i class="fas fa-image"></i> + <i class="fas fa-map-marker-alt"></i>
-                    </button>` : `<span class="text-gray-400"><i class="fas fa-times-circle"></i></span>`;
+                const endPhotoBtn = isInProgress ? 
+                    `<span class="text-gray-400"><i class="fas fa-minus-circle"></i></span>` : // Desabilitado se em andamento
+                    (route.endPhoto ? 
+                        `<button onclick="viewPhoto('${route.endPhoto}', 'Foto KM Final - ${route.driverName}', ${endLat}, ${endLon})" 
+                            class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Localização de Chegada">
+                            <i class="fas fa-image"></i>
+                        </button>` : `<span class="text-gray-400"><i class="fas fa-times-circle"></i></span>`);
                 
                 // Botão de Excluir
                 const deleteBtn = `<button onclick="deleteRoute('${route.id}')" class="bg-red-500 text-white hover:bg-red-700 p-2 rounded-md text-sm" title="Excluir Rota">
                                         <i class="fas fa-trash"></i> Excluir
                                     </button>`;
 
+                // Estilo da linha para rotas em andamento
+                const rowClass = isInProgress ? 'bg-yellow-50/70 hover:bg-yellow-100/70' : 'bg-white/70 hover:bg-liquid-blue-50/50';
+
                 const newRow = `
-                    <tr class="hover:bg-liquid-blue-50/50">
+                    <tr class="${rowClass}">
                         <td class="px-2 py-4 whitespace-nowrap text-sm font-medium" style="color: var(--text-dark);">${route.driverName}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${route.licensePlate}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm font-bold text-liquid-blue-700">${totalKm} km</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-sm font-bold text-liquid-blue-700">${totalKm}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-sm text-liquid-blue-600">${elapsedTimeStr}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">${startTimeStr}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">${endTimeStr}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${route.kmStart ? route.kmStart.toFixed(1) : 'N/A'}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${route.kmEnd ? route.kmEnd.toFixed(1) : 'N/A'}</td>
-                        <td class="px-2 py-4 text-sm max-w-xs truncate" style="color: var(--text-dark);" title="${startAddress}">${startAddress}</td>
+                        <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${kmFinalStr}</td>
+                        <td class="px-2 py-4 text-sm max-w-xs truncate" style="color: var(--text-dark);" title="${route.startLocation?.address || 'Endereço Indisponível'}">${route.startLocation?.address || 'Endereço Indisponível'}</td>
                         <td class="px-2 py-4 text-sm max-w-xs truncate" style="color: var(--text-dark);" title="${endAddress}">${endAddress}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-center">${startPhotoBtn}</td>
                         <td class="px-2 py-4 whitespace-nowrap text-center">${endPhotoBtn}</td>
@@ -861,9 +857,16 @@
                 `;
                 adminTableBody.insertAdjacentHTML('beforeend', newRow);
             });
+            
+            // Se houver rotas em andamento, garante que o timer de atualização de tempo esteja ligado.
+            if (routes.some(r => r.status === 'In Progress')) {
+                 startLiveTimer();
+            } else {
+                 stopLiveTimer();
+            }
         }
 
-        // --- Lógica Principal (Mantida) ---
+        // --- Lógica Principal ---
         let allRoutesData = [];
 
         window.showDriverView = function() {
@@ -872,6 +875,7 @@
             document.getElementById('show-driver-btn').classList.add('active');
             document.getElementById('show-admin-btn').classList.remove('active');
             listenForCurrentTrip();
+            stopLiveTimer(); // NOVO: Para o timer de tempo real quando sai do admin
         }
 
         window.showAdminView = function() {
@@ -943,9 +947,10 @@
 
         async function listenForAdminRoutes() {
             if (!db) return; 
+            // MODIFICADO: Busca rotas em andamento E concluídas
             const q = query(
                 collection(db, ROUTES_COLLECTION_PATH),
-                where('status', '==', 'Completed')
+                where('status', 'in', ['Completed', 'In Progress']) 
             );
             
             onSnapshot(q, (snapshot) => {
@@ -953,7 +958,7 @@
                 snapshot.forEach((doc) => {
                     allRoutesData.push({ id: doc.id, ...doc.data() });
                 });
-                applyAdminFilters();
+                applyAdminFilters(); // Aplica filtros e renderiza
             }, (error) => {
                 console.error("Erro ao monitorar rotas administrativas:", error);
                 adminTableBody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
@@ -976,7 +981,7 @@
             }
         }
 
-        // --- Lógica do Motorista ---
+        // --- Lógica do Motorista (Inalterada) ---
         window.startTrip = async function() {
             if (!db || !userId) {
                 displayMessage('Sistema não inicializado. Verifique a conexão com o Firebase.', 'error');
@@ -1110,6 +1115,7 @@
                 adminLoginArea.classList.add('hidden');
                 adminDashboard.classList.remove('hidden');
                 listenForAdminRoutes();
+                startLiveTimer(); // NOVO: Inicia o timer de tempo real
                 displayMessage('Acesso Administrativo concedido.', 'success');
             } else {
                 loginErrorMessage.classList.remove('hidden');
@@ -1148,7 +1154,18 @@
                 );
             }
 
-            filteredData.sort((a, b) => b.startTime.toDate().getTime() - a.startTime.toDate().getTime());
+            // MODIFICADO: Classifica: Em andamento primeiro, depois por data de início (mais recente primeiro)
+            filteredData.sort((a, b) => {
+                const statusA = a.status === 'In Progress' ? 0 : 1;
+                const statusB = b.status === 'In Progress' ? 0 : 1;
+                
+                if (statusA !== statusB) {
+                    return statusA - statusB; 
+                }
+                
+                // Se os status forem iguais, ordena por hora de início (mais recente primeiro)
+                return b.startTime.toDate().getTime() - a.startTime.toDate().getTime();
+            });
 
             renderAdminTable(filteredData);
         }
@@ -1162,27 +1179,24 @@
                 return;
             }
             
-            const rowsArray = Array.from(rows);
-            const routesToExportData = rowsArray.map(row => {
-                const driverName = row.cells[0].textContent;
-                const licensePlate = row.cells[1].textContent;
-                return allRoutesData.find(r => r.driverName === driverName && r.licensePlate === licensePlate);
-            }).filter(r => r && r.status === 'Completed');
+            // Assume que allRoutesData já está filtrado e ordenado pela última chamada a applyAdminFilters
+            const dataToExport = allRoutesData;
 
-            routesToExportData.forEach(route => {
-                const totalKm = route.kmEnd ? (route.kmEnd - route.kmStart).toFixed(1) : 'N/A';
-                const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A';
+
+            dataToExport.forEach(route => {
+                const totalKm = route.kmEnd ? (route.kmEnd - route.kmStart).toFixed(1) : 'N/A (EM ROTA)';
+                const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A (EM ROTA)';
                 const startTimeStr = route.startTime ? route.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
-                const endTimeStr = route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A';
+                const endTimeStr = route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A (EM ROTA)';
                 const startAddress = route.startLocation?.address || 'Endereço Indisponível';
-                const endAddress = route.endLocation?.address || 'Endereço Indisponível';
+                const endAddress = route.endLocation?.address || 'Endereço Indisponível (EM ROTA)';
                 const startLat = route.startLocation ? route.startLocation.lat : 'N/A';
                 const startLon = route.startLocation ? route.startLocation.lon : 'N/A';
                 const endLat = route.endLocation ? route.endLocation.lat : 'N/A';
                 const endLon = route.endLocation ? route.endLocation.lon : 'N/A';
                 
                 const startPhotoRef = route.startPhoto ? 'Anexado (Base64)' : 'N/A';
-                const endPhotoRef = route.endPhoto ? 'Anexado (Base64)' : 'N/A';
+                const endPhotoRef = route.endPhoto ? 'Anexado (Base64)' : 'N/A (EM ROTA)';
 
                 routesToExport.push([
                     route.driverName,
