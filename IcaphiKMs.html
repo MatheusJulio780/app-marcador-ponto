@@ -18,8 +18,8 @@
         .truck-container { animation: truckDrive 2s infinite ease-in-out; }
         @keyframes truckDrive { 0% { transform: translateX(-50px); opacity: 0; } 50% { transform: translateX(0px); opacity: 1; } 100% { transform: translateX(50px); opacity: 0; } }
         .filter-btn.active { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        th, td { padding: 8px; border-bottom: 1px solid #1e293b; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { padding: 12px 8px; border-bottom: 1px solid #1e293b; text-align: left; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -27,7 +27,7 @@
 
     <div id="loading-screen" class="hidden fixed inset-0 z-[300] bg-[#020617] flex flex-col items-center justify-center">
         <div class="truck-container text-blue-500"><i data-lucide="truck" class="w-16 h-16"></i></div>
-        <p class="text-blue-500 font-bold tracking-widest text-[10px] uppercase mt-6">Processando...</p>
+        <p class="text-blue-500 font-bold tracking-widest text-[10px] uppercase mt-6">Processando Dados...</p>
     </div>
 
     <header class="flex justify-between items-center py-6">
@@ -44,7 +44,7 @@
         <div class="card p-6 border-t-4 border-t-blue-600 shadow-xl">
             <div class="flex justify-between items-center mb-5">
                 <h2 class="text-lg font-semibold flex items-center gap-2"><i data-lucide="play" class="text-emerald-400 w-4 h-4"></i> Iniciar Viagem</h2>
-                <button onclick="abrirModalExtrato()" class="text-[10px] font-bold text-blue-400 border border-blue-400/30 px-3 py-1 rounded-full uppercase">Extrato</button>
+                <button onclick="abrirModalExtrato()" class="text-[10px] font-bold text-blue-400 border border-blue-400/30 px-3 py-1 rounded-full uppercase">Meu Extrato</button>
             </div>
             <div class="space-y-4">
                 <select id="tipo-viagem" class="input-style">
@@ -54,26 +54,24 @@
                 </select>
                 <input type="text" id="motorista" placeholder="Nome do Motorista" class="input-style">
                 <input type="text" id="placa" placeholder="Placa do Veículo" class="input-style uppercase">
-                <input type="number" id="km-inicio" placeholder="KM Inicial do Painel" class="input-style">
-                
+                <input type="number" id="km-inicio" placeholder="KM Inicial" class="input-style">
                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/20 cursor-pointer">
                     <span class="text-sm text-slate-400" id="label-foto-inicio">Foto Painel Início</span>
                     <input type="file" id="foto-inicio" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-inicio')">
                 </label>
-                
-                <button onclick="iniciarViagem()" class="w-full btn-primary py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-blue-900/20">Iniciar Agora</button>
+                <button onclick="iniciarViagem()" class="w-full btn-primary py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg">Iniciar Agora</button>
             </div>
         </div>
 
         <div class="card p-5 border-l-4 border-l-blue-500 bg-blue-500/5">
             <h3 class="text-xs font-bold text-blue-400 uppercase mb-3 flex items-center gap-2">
-                <i data-lucide="help-circle" class="w-4 h-4"></i> Passo a Passo
+                <i data-lucide="help-circle" class="w-4 h-4"></i> Tutorial de Uso
             </h3>
             <ul class="text-[11px] space-y-2 text-slate-400">
-                <li class="flex gap-2"><b>1.</b> Informe os dados e tire a foto do painel.</li>
-                <li class="flex gap-2"><b>2.</b> O sistema registrará sua localização automaticamente.</li>
-                <li class="flex gap-2"><b>3.</b> No final da viagem, informe o KM final e a nova foto.</li>
-                <li class="flex gap-2 text-blue-300"><b>4.</b> No botão "Extrato", você pode consultar seu histórico.</li>
+                <li class="flex gap-2"><b>1.</b> Informe Placa, KM e tire a foto do painel.</li>
+                <li class="flex gap-2"><b>2.</b> Clique em "Iniciar". O GPS será capturado.</li>
+                <li class="flex gap-2"><b>3.</b> Durante a viagem, use o botão azul para anotar gastos ou ocorrências.</li>
+                <li class="flex gap-2"><b>4.</b> Ao chegar, informe o KM final e a foto final para encerrar.</li>
             </ul>
         </div>
     </main>
@@ -83,17 +81,14 @@
             <div class="w-64 h-64 rounded-full border-4 border-blue-600/10 border-t-blue-500 animate-spin absolute"></div>
             <div class="w-56 h-56 rounded-full flex flex-col items-center justify-center bg-slate-900 z-10">
                 <h3 id="cronometro-motorista" class="text-5xl font-mono font-bold">00:00:00</h3>
-                <p class="text-[10px] text-blue-500 font-bold uppercase mt-2">Tempo de Viagem</p>
+                <p class="text-[10px] text-blue-500 font-bold uppercase mt-2">Em Trânsito</p>
             </div>
         </div>
-
         <button onclick="abrirModalObs()" class="w-full bg-slate-800 border border-slate-700 py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-blue-400">
             <i data-lucide="plus-circle" class="w-5 h-5"></i> ADICIONAR NOTA / VALOR
         </button>
-
         <div class="card p-6 border-t-4 border-t-red-600 text-left space-y-4">
-            <h4 class="font-bold text-xs uppercase text-slate-500">Encerrar Viagem</h4>
-            <input type="number" id="km-fim" placeholder="KM Final do Painel" class="input-style">
+            <input type="number" id="km-fim" placeholder="KM Final" class="input-style">
             <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/20 cursor-pointer">
                 <span class="text-sm text-slate-400" id="label-foto-fim">Foto Painel Fim</span>
                 <input type="file" id="foto-fim" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-fim')">
@@ -106,10 +101,10 @@
         <div class="sticky top-0 bg-[#020617] pt-4 pb-2 z-20 space-y-4">
             <div class="flex items-center justify-between">
                 <button onclick="mudarTela('inicio')" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-                <h2 class="text-xl font-bold text-blue-500">Histórico</h2>
+                <h2 class="text-xl font-bold text-blue-500">Histórico Geral</h2>
                 <div class="flex gap-2">
-                    <button onclick="abrirModalGerarSenha()" class="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-900/40"><i data-lucide="key" class="w-5 h-5"></i></button>
-                    <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/40"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
+                    <button onclick="abrirModalGerarSenha()" class="p-3 bg-blue-600 rounded-xl"><i data-lucide="key" class="w-5 h-5"></i></button>
+                    <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
                 </div>
             </div>
             <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -117,79 +112,54 @@
                 <button onclick="setFiltroStatus('em_curso')" id="btn-filtro-em_curso" class="filter-btn px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold">EM CURSO</button>
                 <button onclick="setFiltroStatus('finalizada')" id="btn-filtro-finalizada" class="filter-btn px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold">FINALIZADOS</button>
             </div>
-            <input type="text" id="busca-admin" oninput="renderizarAdmin()" placeholder="Filtrar por nome ou placa..." class="input-style text-xs">
+            <input type="text" id="busca-admin" oninput="renderizarAdmin()" placeholder="Buscar motorista ou placa..." class="input-style text-xs">
         </div>
         <div id="lista-viagens" class="space-y-4"></div>
     </main>
 
     <div id="modal-extrato-login" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
-        <div class="card p-6 w-full max-w-sm space-y-4 overflow-y-auto max-h-[90vh]">
-            <h3 class="font-bold text-center text-blue-400 uppercase">Acesso ao Extrato</h3>
-            
-            <div class="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-                <p class="text-[10px] font-bold text-blue-400 uppercase mb-2">Tutorial de Acesso:</p>
-                <ul class="text-[10px] text-slate-400 space-y-1">
-                    <li>• Digite sua placa e selecione as datas.</li>
-                    <li>• O <b>Código de Acesso</b> deve ser solicitado ao seu supervisor.</li>
-                    <li>• Cada placa tem um código único de 6 dígitos.</li>
-                </ul>
+        <div class="card p-6 w-full max-w-sm space-y-4">
+            <h3 class="font-bold text-center text-blue-400 uppercase">Consulta de Extrato</h3>
+            <div class="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
+                <p class="text-[10px] font-bold text-blue-400 uppercase mb-1">Como consultar:</p>
+                <p class="text-[10px] text-slate-400 leading-tight">Informe sua placa, o período desejado e use o <b>Código de Acesso</b> que o seu supervisor gerou para você.</p>
             </div>
-
-            <input type="text" id="extrato-placa" placeholder="Placa do Veículo" class="input-style uppercase text-center">
+            <input type="text" id="extrato-placa" placeholder="Sua Placa" class="input-style uppercase">
             <div class="grid grid-cols-2 gap-2">
                 <input type="date" id="extrato-inicio" class="input-style text-xs">
                 <input type="date" id="extrato-fim" class="input-style text-xs">
             </div>
-            <input type="number" id="extrato-codigo" placeholder="Código de 6 dígitos" class="input-style text-center font-bold tracking-widest">
-            
+            <input type="number" id="extrato-codigo" placeholder="Código de Acesso" class="input-style text-center font-bold tracking-widest">
             <button onclick="validarAcessoExtrato()" class="w-full bg-blue-600 py-4 rounded-xl font-bold uppercase">Ver Meus Registros</button>
-            <button onclick="document.getElementById('modal-extrato-login').classList.add('hidden')" class="w-full text-slate-500 text-sm">VOLTAR</button>
+            <button onclick="document.getElementById('modal-extrato-login').classList.add('hidden')" class="w-full text-slate-500 text-sm">CANCELAR</button>
         </div>
     </div>
 
-    <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
-        <div class="card p-6 w-full max-w-sm space-y-4 overflow-y-auto max-h-[90vh]">
-            <h3 class="font-bold text-center text-emerald-500 uppercase tracking-widest">Gerenciamento</h3>
-            
-            <div class="space-y-2 border-b border-slate-800 pb-4">
-                <p class="text-[10px] text-slate-500 font-bold uppercase">Gerar Relatório Excel</p>
-                <select id="select-placa-export" class="input-style"></select>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="date" id="data-exp-inicio" class="input-style text-xs">
-                    <input type="date" id="data-exp-fim" class="input-style text-xs">
-                </div>
-                <button onclick="gerarExcel()" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs uppercase">Baixar Planilha</button>
+    <div id="modal-tabela-extrato" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-2">
+        <div class="card p-4 w-full max-w-sm h-[85vh] flex flex-col">
+            <h3 class="font-bold text-center mb-4 text-blue-500 uppercase">Registros Localizados</h3>
+            <div class="flex-1 overflow-auto bg-slate-950/50 rounded-xl border border-slate-800">
+                <table>
+                    <thead class="bg-slate-900 sticky top-0">
+                        <tr>
+                            <th class="text-blue-400">Data</th>
+                            <th class="text-blue-400">Percorrido</th>
+                            <th class="text-blue-400">Obs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-extrato" class="text-slate-300"></tbody>
+                </table>
             </div>
-
-            <div class="space-y-2 pt-2">
-                <p class="text-[10px] text-red-500 font-bold uppercase italic">Zona de Perigo: Excluir Período</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="date" id="excluir-data-inicio" class="input-style text-xs">
-                    <input type="date" id="excluir-data-fim" class="input-style text-xs">
-                </div>
-                <button onclick="excluirPorPeriodo()" class="w-full bg-red-900/30 border border-red-600 text-red-500 py-3 rounded-xl font-bold text-xs uppercase">Apagar tudo nas datas acima</button>
-            </div>
-            
-            <button onclick="document.getElementById('modal-export').classList.add('hidden')" class="w-full text-slate-500 text-sm mt-4">FECHAR</button>
+            <button onclick="document.getElementById('modal-tabela-extrato').classList.add('hidden')" class="w-full bg-slate-800 py-4 rounded-xl mt-4 font-bold uppercase">Fechar</button>
         </div>
     </div>
 
-    <div id="modal-gerar-senha" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
-        <div class="card p-6 w-full max-w-sm space-y-4">
-            <h3 class="font-bold text-center text-blue-400 uppercase">Gerar Código Motorista</h3>
-            <select id="senha-placa-select" class="input-style"></select>
-            <button onclick="gerarSenhaAcesso()" class="w-full bg-blue-600 py-4 rounded-xl font-bold uppercase">Criar Novo Código</button>
-            <div id="resultado-senha" class="hidden p-4 bg-slate-900 rounded-xl text-center border border-blue-500/30">
-                <p id="codigo-gerado" class="text-3xl font-black text-blue-400 tracking-widest"></p>
-                <p class="text-[9px] text-slate-500 uppercase mt-2">Passe este código ao motorista</p>
-            </div>
-            <button onclick="document.getElementById('modal-gerar-senha').classList.add('hidden')" class="w-full text-slate-500 text-sm">FECHAR</button>
-        </div>
-    </div>
+    <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm space-y-4"><h3 class="font-bold text-center text-emerald-500 uppercase">Exportar / Limpar</h3><div class="space-y-2 border-b border-slate-800 pb-4"><p class="text-[10px] text-slate-500 font-bold uppercase">Excel por Placa e Data</p><select id="select-placa-export" class="input-style"></select><div class="grid grid-cols-2 gap-2"><input type="date" id="data-exp-inicio" class="input-style text-xs"><input type="date" id="data-exp-fim" class="input-style text-xs"></div><button onclick="gerarExcel()" class="w-full bg-emerald-600 py-3 rounded-xl font-bold text-xs uppercase">Baixar Excel</button></div><div class="space-y-2 pt-2"><p class="text-[10px] text-red-500 font-bold uppercase italic">Apagar Registros</p><div class="grid grid-cols-2 gap-2"><input type="date" id="excluir-data-inicio" class="input-style text-xs"><input type="date" id="excluir-data-fim" class="input-style text-xs"></div><button onclick="excluirPorPeriodo()" class="w-full bg-red-900/30 border border-red-600 text-red-500 py-3 rounded-xl font-bold text-xs uppercase">Confirmar Exclusão</button></div><button onclick="document.getElementById('modal-export').classList.add('hidden')" class="w-full text-slate-500 text-sm mt-4 uppercase">Voltar</button></div></div>
+    
+    <div id="modal-gerar-senha" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm space-y-4"><h3 class="font-bold text-center text-blue-400 uppercase">Código para o Motorista</h3><select id="senha-placa-select" class="input-style"></select><button onclick="gerarSenhaAcesso()" class="w-full bg-blue-600 py-4 rounded-xl font-bold uppercase">Gerar Novo Código</button><div id="resultado-senha" class="hidden p-4 bg-slate-900 rounded-xl text-center border border-blue-500/30"><p id="codigo-gerado" class="text-3xl font-black text-blue-400 tracking-widest"></p><p class="text-[9px] text-slate-500 uppercase mt-2">Passe este código para o motorista</p></div><button onclick="document.getElementById('modal-gerar-senha').classList.add('hidden')" class="w-full text-slate-500 text-sm uppercase">Fechar</button></div></div>
 
-    <div id="modal-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm space-y-4"><h3 class="font-bold text-center text-blue-400 uppercase">Adicionar Nota</h3><select id="obs-assunto" class="input-style"><option value="Descarga">Descarga</option><option value="Ajudante">Ajudante</option><option value="Pedágio">Pedágio</option><option value="Combustível">Combustível</option><option value="Outros">Outros</option></select><textarea id="obs-texto" placeholder="Descrição dos fatos..." class="input-style h-24"></textarea><input type="number" id="obs-valor" placeholder="Valor R$ (Se houver)" class="input-style"><div class="flex gap-2"><button onclick="document.getElementById('modal-obs').classList.add('hidden')" class="flex-1 text-slate-500 font-bold uppercase">Cancelar</button><button onclick="salvarObservacao()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold uppercase">Salvar</button></div></div></div>
-    <div id="modal-ver-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm max-h-[80vh] flex flex-col"><h3 class="font-bold text-center text-blue-400 mb-4 uppercase">Notas Registradas</h3><div id="lista-obs-render" class="flex-1 overflow-y-auto space-y-3"></div><button onclick="document.getElementById('modal-ver-obs').classList.add('hidden')" class="w-full bg-slate-800 py-3 rounded-xl mt-4 font-bold uppercase">Voltar</button></div></div>
-    <div id="modal-tabela-extrato" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-2"><div class="card p-4 w-full max-w-sm h-[80vh] flex flex-col"><h3 class="font-bold text-center mb-4 text-blue-500 uppercase">Seu Histórico de Viagens</h3><div class="flex-1 overflow-auto bg-slate-950/50 rounded-xl"><table><thead class="bg-slate-900"><tr><th>Data</th><th>KM Percorrido</th><th>Notas</th></tr></thead><tbody id="corpo-tabela-extrato"></tbody></table></div><button onclick="document.getElementById('modal-tabela-extrato').classList.add('hidden')" class="w-full bg-slate-800 py-4 rounded-xl mt-4 font-bold uppercase">Fechar</button></div></div>
+    <div id="modal-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm space-y-4"><h3 class="font-bold text-center text-blue-400 uppercase">Nova Observação</h3><select id="obs-assunto" class="input-style"><option value="Descarga">Descarga</option><option value="Ajudante">Ajudante</option><option value="Pedágio">Pedágio</option><option value="Combustível">Combustível</option><option value="Outros">Outros</option></select><textarea id="obs-texto" placeholder="Descreva aqui..." class="input-style h-24"></textarea><input type="number" id="obs-valor" placeholder="Valor R$ (Opcional)" class="input-style"><div class="flex gap-2"><button onclick="document.getElementById('modal-obs').classList.add('hidden')" class="flex-1 text-slate-500 font-bold uppercase">Sair</button><button onclick="salvarObservacao()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold uppercase">Salvar</button></div></div></div>
+    <div id="modal-ver-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6"><div class="card p-6 w-full max-w-sm max-h-[80vh] flex flex-col"><h3 class="font-bold text-center text-blue-400 mb-4 uppercase">Notas da Viagem</h3><div id="lista-obs-render" class="flex-1 overflow-y-auto space-y-3"></div><button onclick="document.getElementById('modal-ver-obs').classList.add('hidden')" class="w-full bg-slate-800 py-3 rounded-xl mt-4 font-bold uppercase">Fechar</button></div></div>
     <div id="modal-img" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-4" onclick="this.classList.add('hidden')"><img id="img-full" class="rounded-2xl max-h-[80vh] border-2 border-slate-700 mx-auto"></div>
 
     <script type="module">
@@ -204,20 +174,20 @@
         let listaGlobalViagens = [];
         let statusSelecionado = 'TUDO';
 
-        // UTILITÁRIOS
+        // AUXILIARES
         const toggleLoading = (s) => document.getElementById('loading-screen').classList.toggle('hidden', !s);
         const formatarTempo = (s) => { const h=Math.floor(s/3600).toString().padStart(2,'0'), m=Math.floor((s%3600)/60).toString().padStart(2,'0'), sec=(s%60).toString().padStart(2,'0'); return `${h}:${m}:${sec}`; };
         const getLoc = () => new Promise(r => navigator.geolocation.getCurrentPosition(p => r(`${p.coords.latitude},${p.coords.longitude}`), () => r("0,0")));
         const compressImage = (f) => new Promise(r => { const fr=new FileReader(); fr.readAsDataURL(f); fr.onload=(e)=>{ const img=new Image(); img.src=e.target.result; img.onload=()=>{ const c=document.createElement('canvas'); const w=800; c.width=w; c.height=img.height*(w/img.width); c.getContext('2d').drawImage(img,0,0,c.width,c.height); r(c.toDataURL('image/jpeg',0.6)); }; }; });
 
-        // NAVEGAÇÃO E GLOBAL
+        // NAVEGAÇÃO
         window.mudarTela = (t) => { ['tela-inicio', 'tela-viagem', 'tela-admin'].forEach(x => document.getElementById(x).classList.add('hidden')); document.getElementById('tela-' + t).classList.remove('hidden'); lucide.createIcons(); };
-        window.acessoAdmin = () => { if(prompt("Senha:") === "60010774") mudarTela('admin'); };
-        window.verFoto = (s) => { document.getElementById('img-full').src = s; document.getElementById('modal-img').classList.remove('hidden'); };
-        window.previewFoto = (i, l) => { if(i.files[0]) document.getElementById(l).innerText = "Foto Selecionada ✅"; };
+        window.acessoAdmin = () => { if(prompt("Senha Master:") === "60010774") mudarTela('admin'); };
+        window.verFoto = (s) => { if(!s) return alert("Foto não disponível"); document.getElementById('img-full').src = s; document.getElementById('modal-img').classList.remove('hidden'); };
+        window.previewFoto = (i, l) => { if(i.files[0]) document.getElementById(l).innerText = "Foto Pronta ✅"; };
         window.setFiltroStatus = (s) => { statusSelecionado = s; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); document.getElementById(`btn-filtro-${s.toLowerCase()}`).classList.add('active'); renderizarAdmin(); };
 
-        // ADMIN RENDER (COM MAPAS E KM PERCORRIDO)
+        // RENDER ADMIN - DATA ADICIONADA
         window.renderizarAdmin = () => {
             const container = document.getElementById('lista-viagens');
             const busca = document.getElementById('busca-admin').value.toLowerCase();
@@ -225,54 +195,62 @@
             listaGlobalViagens.filter(v => (statusSelecionado === 'TUDO' || v.status === statusSelecionado) && (v.nome.toLowerCase().includes(busca) || v.placa.toLowerCase().includes(busca))).forEach(v => {
                 const isEmCurso = v.status === 'em_curso';
                 const kmPercorrido = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : "0.0";
+                const dataInicioFormatada = v.dataInicio?.toDate().toLocaleString('pt-BR') || '--';
+                const dataFimFormatada = v.dataFim?.toDate().toLocaleString('pt-BR') || 'Em Aberto';
                 
                 container.innerHTML += `
                 <div class="card p-5 space-y-4">
-                    <div class="flex justify-between">
-                        <span class="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-extrabold uppercase">${v.tipoViagem}</span>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-extrabold uppercase">${v.tipoViagem}</span>
+                            <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase"><i data-lucide="calendar" class="inline w-3 h-3"></i> ${dataInicioFormatada}</p>
+                        </div>
                         <div class="flex gap-2">
                             <span class="text-[9px] px-2 py-1 rounded font-bold uppercase ${isEmCurso ? 'text-orange-500' : 'text-emerald-500'}">${v.status}</span>
                             <button onclick="excluirViagem('${v.id}')"><i data-lucide="trash-2" class="w-4 h-4 text-slate-700"></i></button>
                         </div>
                     </div>
-                    <div><h3 class="font-bold text-xl uppercase">${v.nome}</h3><p class="text-blue-400 font-mono text-[10px] uppercase">${v.placa}</p></div>
+                    <div>
+                        <h3 class="font-bold text-xl uppercase leading-tight">${v.nome}</h3>
+                        <p class="text-blue-400 font-mono text-xs uppercase">${v.placa}</p>
+                    </div>
                     <div class="bg-slate-950/40 p-4 rounded-xl text-center border border-slate-800">
-                        <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Duração</p>
+                        <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Duração Total</p>
                         <span class="font-mono text-2xl font-bold ${isEmCurso ? 'text-blue-400 cronometro-admin-live' : 'text-slate-200'}" data-inicio="${v.dataInicio.toDate().getTime()}">${isEmCurso ? '...' : v.duracao}</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 text-center bg-slate-800/30 p-3 rounded-xl border border-slate-700/50">
-                        <div><p class="text-slate-500 text-[8px] uppercase font-bold">Início</p><p class="font-bold text-xs">${v.kmInicio}k</p></div>
-                        <div><p class="text-slate-500 text-[8px] uppercase font-bold">Fim</p><p class="font-bold text-xs">${v.kmFim || '--'}</p></div>
-                        <div class="border-l border-slate-700"><p class="text-emerald-500 text-[8px] uppercase font-bold">Total</p><p class="font-bold text-xs text-emerald-400">${kmPercorrido}k</p></div>
+                        <div><p class="text-slate-500 text-[8px] uppercase font-bold">KM Início</p><p class="font-bold text-xs">${v.kmInicio}k</p></div>
+                        <div><p class="text-slate-500 text-[8px] uppercase font-bold">KM Fim</p><p class="font-bold text-xs">${v.kmFim || '--'}</p></div>
+                        <div class="border-l border-slate-700"><p class="text-emerald-500 text-[8px] uppercase font-bold italic">Percorrido</p><p class="font-bold text-xs text-emerald-400">${kmPercorrido}k</p></div>
                     </div>
-                    <button onclick="verObservacoesAdmin('${v.id}')" class="w-full bg-slate-800 py-3 rounded-xl text-xs font-bold uppercase">Ver Notas (${v.observacoes?.length || 0})</button>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 py-3 rounded-xl text-[10px] font-bold uppercase tracking-tighter">Ver Foto Início</button>
-                        ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 py-3 rounded-xl text-[10px] font-bold uppercase tracking-tighter">Ver Foto Fim</button>` : ''}
+                        <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 py-3 rounded-xl text-[10px] font-bold uppercase">Foto Início</button>
+                        ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 py-3 rounded-xl text-[10px] font-bold uppercase">Foto Fim</button>` : ''}
                     </div>
+                    <button onclick="verObservacoesAdmin('${v.id}')" class="w-full bg-slate-800 py-3 rounded-xl text-xs font-bold uppercase border border-slate-700">Notas e Valores (${v.observacoes?.length || 0})</button>
                     <div class="flex justify-between pt-2 border-t border-slate-800/50">
-                        <span onclick="window.open('https://www.google.com/maps/search/?api=1&query=${v.locInicio}')" class="text-blue-400 font-bold text-[9px] cursor-pointer flex items-center gap-1 uppercase"><i data-lucide="map-pin" class="w-3 h-3"></i> Local Inicial</span>
-                        ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps/search/?api=1&query=${v.locFim}')" class="text-emerald-400 font-bold text-[9px] cursor-pointer flex items-center gap-1 uppercase"><i data-lucide="map-pin" class="w-3 h-3"></i> Local Final</span>` : ''}
+                        <span onclick="window.open('https://www.google.com/maps/search/?api=1&query=${v.locInicio}')" class="text-blue-400 font-bold text-[9px] cursor-pointer flex items-center gap-1 uppercase underline"><i data-lucide="map-pin" class="w-3 h-3"></i> GPS Inicial</span>
+                        ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps/search/?api=1&query=${v.locFim}')" class="text-emerald-400 font-bold text-[9px] cursor-pointer flex items-center gap-1 uppercase underline"><i data-lucide="map-pin" class="w-3 h-3"></i> GPS Final</span>` : ''}
                     </div>
                 </div>`;
             });
             lucide.createIcons();
         };
 
-        // OPERAÇÕES VIAGEM
+        // FUNÇÕES DE VIAGEM
         window.iniciarViagem = async () => {
             const t=document.getElementById('tipo-viagem').value, n=document.getElementById('motorista').value, p=document.getElementById('placa').value.toUpperCase(), k=document.getElementById('km-inicio').value, f=document.getElementById('foto-inicio').files[0];
-            if(!t || !n || !p || !k || !f) return alert("Por favor, preencha todos os campos e tire a foto!");
+            if(!t || !n || !p || !k || !f) return alert("Preencha todos os campos obrigatórios!");
             toggleLoading(true); const loc = await getLoc();
             try {
                 const docRef = await addDoc(collection(db, "viagens"), { tipoViagem: t, nome: n, placa: p, kmInicio: parseFloat(k), fotoInicio: await compressImage(f), locInicio: loc, status: 'em_curso', dataInicio: new Date(), observacoes: [] });
                 localStorage.setItem('icaphidrive_viagem_id', docRef.id); location.reload();
-            } catch(e) { alert("Erro ao salvar. Verifique a internet."); toggleLoading(false); }
+            } catch(e) { alert("Erro de Conexão."); toggleLoading(false); }
         };
 
         window.finalizarViagem = async () => {
             const kF=document.getElementById('km-fim').value, f=document.getElementById('foto-fim').files[0];
-            if(!kF || !f) return alert("Informe o KM Final e tire a foto para encerrar!");
+            if(!kF || !f) return alert("KM Final e Foto são necessários!");
             toggleLoading(true); const loc = await getLoc();
             try {
                 await updateDoc(doc(db, "viagens", idAtual), { kmFim: parseFloat(kF), fotoFim: await compressImage(f), locFim: loc, status: 'finalizada', dataFim: new Date(), duracao: document.getElementById('cronometro-motorista').innerText });
@@ -280,7 +258,7 @@
             } catch(e) { alert("Erro ao finalizar."); toggleLoading(false); }
         };
 
-        // EXPORT E CONFIG
+        // EXCEL E LIMPEZA
         window.abrirModalExport = () => {
             const sel = document.getElementById('select-placa-export');
             sel.innerHTML = '<option value="TODAS">Todas as Placas</option>';
@@ -292,27 +270,27 @@
             const p=document.getElementById('select-placa-export').value, dI=document.getElementById('data-exp-inicio').value, dF=document.getElementById('data-exp-fim').value;
             let dados = listaGlobalViagens.filter(v => (p==='TODAS' || v.placa===p));
             if(dI && dF) { const s=new Date(dI+"T00:00:00"), e=new Date(dF+"T23:59:59"); dados = dados.filter(v => v.dataInicio.toDate() >= s && v.dataInicio.toDate() <= e); }
-            const ws_data = [["Motorista", "Placa", "Tipo", "Data", "KM Início", "KM Fim", "KM Percorrido", "Duração", "Notas"]];
+            const ws_data = [["Motorista", "Placa", "Tipo", "Data", "KM Início", "KM Fim", "KM Total", "Tempo", "Notas"]];
             dados.forEach(v => {
-                const obsStr = v.observacoes?.map(o => `${o.assunto}: ${o.texto} (R$${o.valor})`).join(" | ") || "";
+                const obsStr = v.observacoes?.map(o => `${o.assunto}: ${o.texto}`).join(" | ") || "";
                 ws_data.push([v.nome, v.placa, v.tipoViagem, v.dataInicio.toDate().toLocaleString(), v.kmInicio, v.kmFim || "--", (v.kmFim ? v.kmFim-v.kmInicio : 0).toFixed(1), v.duracao || "--", obsStr]);
             });
-            XLSX.writeFile(XLSX.utils.book_new(), `IcaphiDrive_Relatorio.xlsx`);
+            XLSX.writeFile(XLSX.utils.book_new(), `Relatorio_Icaphi.xlsx`);
         };
 
         window.excluirPorPeriodo = async () => {
             const dI=document.getElementById('excluir-data-inicio').value, dF=document.getElementById('excluir-data-fim').value;
-            if(!dI || !dF || !confirm("CUIDADO: Isso apagará permanentemente todos os registros selecionados. Confirmar?")) return;
+            if(!dI || !dF || !confirm("CUIDADO: Apagar permanentemente os registros?")) return;
             toggleLoading(true); const s=new Date(dI+"T00:00:00"), e=new Date(dF+"T23:59:59");
-            const q=query(collection(db, "viagens"), where("dataInicio", ">=", s), where("dataInicio", "<=", e));
+            const q = query(collection(db, "viagens"), where("dataInicio", ">=", s), where("dataInicio", "<=", e));
             const snap = await getDocs(q); const batch = writeBatch(db);
             snap.forEach(d => batch.delete(d.ref)); await batch.commit();
-            toggleLoading(false); alert("Limpeza concluída!");
+            toggleLoading(false); alert("Limpeza concluída.");
         };
 
-        // SENHAS E EXTRATO
+        // EXTRATO E SENHAS
         window.abrirModalGerarSenha = () => {
-            const sel = document.getElementById('senha-placa-select'); sel.innerHTML = '<option value="" disabled selected>Placa</option>';
+            const sel = document.getElementById('senha-placa-select'); sel.innerHTML = '<option value="" disabled selected>Escolha Placa</option>';
             [...new Set(listaGlobalViagens.map(v => v.placa))].forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
             document.getElementById('modal-gerar-senha').classList.remove('hidden');
         };
@@ -325,21 +303,30 @@
         };
 
         window.abrirModalExtrato = () => document.getElementById('modal-extrato-login').classList.remove('hidden');
+        
         window.validarAcessoExtrato = async () => {
             const p=document.getElementById('extrato-placa').value.toUpperCase(), cod=document.getElementById('extrato-codigo').value, dI=document.getElementById('extrato-inicio').value, dF=document.getElementById('extrato-fim').value;
-            if(!p || !cod || !dI || !dF) return alert("Preencha todos os campos do extrato!");
-            toggleLoading(true); const dS = await getDoc(doc(db, "codigos_acesso", p));
-            if(dS.exists() && dS.data().codigo === cod) {
-                const s=new Date(dI+"T00:00:00"), e=new Date(dF+"T23:59:59");
-                const q=query(collection(db, "viagens"), where("placa", "==", p), where("dataInicio", ">=", s), where("dataInicio", "<=", e));
-                const snapV = await getDocs(q);
-                const corpo = document.getElementById('corpo-tabela-extrato'); corpo.innerHTML = "";
-                snapV.forEach(d => {
-                    const v = d.data();
-                    corpo.innerHTML += `<tr><td>${v.dataInicio.toDate().toLocaleDateString()}</td><td>${v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : "---"}</td><td>${v.observacoes?.length || 0}</td></tr>`;
-                });
-                document.getElementById('modal-extrato-login').classList.add('hidden'); document.getElementById('modal-tabela-extrato').classList.remove('hidden');
-            } else { alert("Acesso Negado! Código ou Placa inválidos."); }
+            if(!p || !cod || !dI || !dF) return alert("Faltam informações para a busca!");
+            toggleLoading(true);
+            try {
+                const dS = await getDoc(doc(db, "codigos_acesso", p));
+                if(dS.exists() && dS.data().codigo === cod) {
+                    const s=new Date(dI+"T00:00:00"), e=new Date(dF+"T23:59:59");
+                    const q=query(collection(db, "viagens"), where("placa", "==", p), where("dataInicio", ">=", s), where("dataInicio", "<=", e));
+                    const snapV = await getDocs(q);
+                    const corpo = document.getElementById('corpo-tabela-extrato'); corpo.innerHTML = "";
+                    if(snapV.empty) { corpo.innerHTML = "<tr><td colspan='3' class='text-center py-10'>Nada encontrado.</td></tr>"; }
+                    snapV.forEach(d => {
+                        const v = d.data();
+                        corpo.innerHTML += `<tr><td>${v.dataInicio.toDate().toLocaleDateString('pt-BR')}</td><td class="font-bold text-emerald-400">${v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : "---"}k</td><td>${v.observacoes?.length || 0}</td></tr>`;
+                    });
+                    document.getElementById('modal-extrato-login').classList.add('hidden'); 
+                    document.getElementById('modal-tabela-extrato').classList.remove('hidden');
+                } else { alert("Código ou Placa incorretos."); }
+            } catch(err) {
+                console.error(err);
+                alert("Erro ao buscar extrato. Se for a primeira vez, clique no link do Firebase no console do navegador para criar o índice.");
+            }
             toggleLoading(false);
         };
 
@@ -347,8 +334,8 @@
         window.abrirModalObs = () => document.getElementById('modal-obs').classList.remove('hidden');
         window.salvarObservacao = async () => {
             const ass=document.getElementById('obs-assunto').value, txt=document.getElementById('obs-texto').value, val=document.getElementById('obs-valor').value;
-            if(!txt) return alert("Escreva a descrição."); toggleLoading(true);
-            await updateDoc(doc(db, "viagens", idAtual), { observacoes: arrayUnion({ assunto: ass, texto: txt, valor: val || "0.00", data: new Date().toLocaleString() }) });
+            if(!txt) return alert("Descreva o ocorrido!"); toggleLoading(true);
+            await updateDoc(doc(db, "viagens", idAtual), { observacoes: arrayUnion({ assunto: ass, texto: txt, valor: val || "0.00", data: new Date() }) });
             document.getElementById('modal-obs').classList.add('hidden'); toggleLoading(false);
         };
 
@@ -358,9 +345,9 @@
             document.getElementById('modal-ver-obs').classList.remove('hidden');
         };
 
-        window.excluirViagem = async (id) => { if(confirm("Apagar permanentemente este registro?")) await deleteDoc(doc(db, "viagens", id)); };
+        window.excluirViagem = async (id) => { if(confirm("Apagar este registro?")) await deleteDoc(doc(db, "viagens", id)); };
 
-        // MONITORAMENTO REAL-TIME
+        // MONITORAMENTO
         onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
             listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderizarAdmin();
