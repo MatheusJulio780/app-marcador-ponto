@@ -13,8 +13,9 @@
         .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 1.5rem; }
         .input-style { background: #1e293b !important; border: 1px solid #334155 !important; color: white !important; width: 100%; padding: 0.75rem; border-radius: 0.75rem; outline: none; font-size: 14px; }
         .btn-primary { background: #2563eb; transition: all 0.2s; }
-        .glass-modal { background: rgba(2, 6, 23, 0.96); backdrop-filter: blur(12px); z-index: 100; }
+        .glass-modal { background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(12px); z-index: 100; }
         .badge-em-viagem { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .step-number { background: #2563eb; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -24,10 +25,31 @@
             <h1 class="text-xl font-extrabold tracking-tight text-blue-500 italic">ICAPHI<span class="text-white">DRIVE</span></h1>
             <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Controle de Frota</p>
         </div>
-        <button onclick="acessoAdmin()" class="p-3 card border-slate-700 active:bg-slate-800 transition">
-            <i data-lucide="shield-lock" class="text-blue-400 w-5 h-5"></i>
-        </button>
+        <div class="flex gap-2">
+            <button onclick="abrirTutorial()" class="flex items-center gap-1 px-3 py-2 card border-slate-700 text-[10px] font-bold uppercase text-slate-400">
+                <i data-lucide="help-circle" class="w-3 h-3 text-blue-400"></i> Tutorial
+            </button>
+            <button onclick="acessoAdmin()" class="p-3 card border-slate-700 active:bg-slate-800 transition">
+                <i data-lucide="shield-lock" class="text-blue-400 w-5 h-5"></i>
+            </button>
+        </div>
     </header>
+
+    <div id="modal-tutorial" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6 overflow-y-auto">
+        <div class="card p-6 w-full max-w-sm space-y-6">
+            <div class="text-center">
+                <i data-lucide="book-open" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
+                <h3 class="font-bold text-lg">Como usar o IcaphiDrive</h3>
+            </div>
+            <div class="space-y-4">
+                <div class="flex gap-3"><span class="step-number">1</span><p class="text-sm text-slate-300">Preencha nome, placa e o KM inicial do painel.</p></div>
+                <div class="flex gap-3"><span class="step-number">2</span><p class="text-sm text-slate-300">Tire uma foto nítida do odômetro no início.</p></div>
+                <div class="flex gap-3"><span class="step-number">3</span><p class="text-sm text-slate-300">No destino, insira o KM Final e tire a foto de encerramento.</p></div>
+                <div class="flex gap-3"><span class="step-number">4</span><p class="text-sm text-slate-300">Compartilhe o resumo detalhado com seu gestor.</p></div>
+            </div>
+            <button onclick="fecharTutorial()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">ENTENDI!</button>
+        </div>
+    </div>
 
     <main id="tela-inicio" class="space-y-6">
         <div class="card p-6 shadow-2xl border-t-4 border-t-blue-600">
@@ -76,8 +98,7 @@
     </main>
 
     <main id="tela-resumo" class="hidden space-y-6 py-10">
-        <div id="dados-resumo-render" class="space-y-6">
-            </div>
+        <div id="dados-resumo-render" class="space-y-6"></div>
     </main>
 
     <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
@@ -141,6 +162,9 @@
             lucide.createIcons();
         };
 
+        window.abrirTutorial = () => document.getElementById('modal-tutorial').classList.remove('hidden');
+        window.fecharTutorial = () => document.getElementById('modal-tutorial').classList.add('hidden');
+
         window.previewFoto = (input, labelId) => {
             if (input.files?.[0]) document.getElementById(labelId).innerText = "Foto Selecionada ✅";
         };
@@ -194,7 +218,7 @@
             });
             
             localStorage.setItem('icaphidrive_viagem_id', docRef.id);
-            localStorage.setItem('icaphidrive_resumo', JSON.stringify({nome: n, placa: p, kmInicio: parseFloat(k)}));
+            localStorage.setItem('icaphidrive_resumo', JSON.stringify({nome: n, placa: p, kmInicio: parseFloat(k), dataInicio: agora.toISOString()}));
             location.reload();
         };
 
@@ -209,23 +233,30 @@
             const loc = await getLoc();
             const dur = document.getElementById('cronometro-motorista').innerText;
             const dist = parseFloat(kF) - resumoObjeto.kmInicio;
+            const agoraFim = new Date();
+            const dataInicio = new Date(resumoObjeto.dataInicio);
 
             await updateDoc(doc(db, "viagens", idAtual), {
-                kmFim: parseFloat(kF), dispersao: dist, fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: new Date(), duracao: dur
+                kmFim: parseFloat(kF), dispersao: dist, fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: agoraFim, duracao: dur
             });
 
-            textoResumoGlobal = `📊 *ICAPHIDRIVE PRO*\n👤 *Motorista:* ${resumoObjeto.nome}\n🚗 *Placa:* ${resumoObjeto.placa.toUpperCase()}\n⏱️ *Tempo:* ${dur}\n🛣️ *KM Total:* ${dist.toFixed(1)} km`;
+            const dataFormat = dataInicio.toLocaleDateString('pt-BR');
+            const horaIniFormat = dataInicio.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            const horaFimFormat = agoraFim.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+            textoResumoGlobal = `📊 *ICAPHIDRIVE PRO*\n📅 *Data:* ${dataFormat}\n👤 *Motorista:* ${resumoObjeto.nome}\n🚗 *Placa:* ${resumoObjeto.placa.toUpperCase()}\n\n🛫 *Início:* ${horaIniFormat} (${resumoObjeto.kmInicio} km)\n🛬 *Fim:* ${horaFimFormat} (${kF} km)\n⏱️ *Tempo:* ${dur}\n🛣️ *KM Total:* ${dist.toFixed(1)} km`;
 
             localStorage.removeItem('icaphidrive_viagem_id');
             localStorage.removeItem('icaphidrive_resumo');
             
             document.getElementById('dados-resumo-render').innerHTML = `
-                <div class="card p-6 bg-slate-900/50 space-y-2">
+                <div class="card p-6 bg-slate-900/50 space-y-3">
                     <h2 class="text-xl font-bold border-b border-slate-800 pb-2">Resumo da Viagem</h2>
-                    <p class="text-slate-400">Motorista: <span class="text-white">${resumoObjeto.nome}</span></p>
-                    <p class="text-slate-400">Placa: <span class="text-white font-mono">${resumoObjeto.placa.toUpperCase()}</span></p>
-                    <p class="text-slate-400">KM Total: <span class="text-emerald-400 font-bold">${dist.toFixed(1)} km</span></p>
-                    <p class="text-slate-400">Tempo: <span class="text-blue-400 font-mono">${dur}</span></p>
+                    <p class="text-slate-400 text-sm">Data: <span class="text-white">${dataFormat}</span></p>
+                    <p class="text-slate-400 text-sm">Motorista: <span class="text-white">${resumoObjeto.nome}</span></p>
+                    <p class="text-slate-400 text-sm">Início: <span class="text-white">${horaIniFormat}</span> • Fim: <span class="text-white">${horaFimFormat}</span></p>
+                    <p class="text-slate-400 text-sm">KM Total: <span class="text-emerald-400 font-bold">${dist.toFixed(1)} km</span></p>
+                    <p class="text-slate-400 text-sm">Duração: <span class="text-blue-400 font-mono">${dur}</span></p>
                 </div>
                 <div class="space-y-3">
                     <button onclick="compartilharResumo()" class="w-full bg-blue-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
@@ -241,7 +272,7 @@
             if (navigator.share) {
                 navigator.share({ text: textoResumoGlobal });
             } else {
-                alert("Resumo copiado:\n\n" + textoResumoGlobal);
+                alert("Copiado:\n\n" + textoResumoGlobal);
             }
         };
 
@@ -343,8 +374,8 @@
 
                         <div class="flex justify-between items-center text-[10px] text-slate-600 border-t border-slate-800/50 pt-3 mt-2">
                              <div class="flex gap-3">
-                                <span onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${v.locInicio}')" class="cursor-pointer hover:text-blue-400 flex items-center gap-1">📍 Início</span>
-                                ${v.locFim ? `<span onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${v.locFim}')" class="cursor-pointer hover:text-emerald-400 flex items-center gap-1">📍 Fim</span>` : ''}
+                                <span onclick="window.open('https://www.google.com/maps?q=${v.locInicio}')" class="cursor-pointer hover:text-blue-400 flex items-center gap-1">📍 Início</span>
+                                ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps?q=${v.locFim}')" class="cursor-pointer hover:text-emerald-400 flex items-center gap-1">📍 Fim</span>` : ''}
                             </div>
                             <span>${dataFormatada}</span>
                         </div>
