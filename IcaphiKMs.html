@@ -1,1251 +1,325 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICAPHI - KMS</title>
+    <title>IcaphiDrive</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        // PALETA MONOCROMÁTICA AZUL CRISTAL
-                        'liquid-blue': {
-                            50: '#F0F8FF', // Quase branco
-                            100: '#E0F7FA', // Azul-Gelo muito claro
-                            400: '#81D4FA', // Azul-Céu Light (Base)
-                            600: '#00BFFF', // DeepSkyBlue (Primário/Destaque)
-                            700: '#00A6D7', // Azul-Céu Hover
-                            800: '#008CBA', // Azul escuro para textos
-                        },
-                        // Verde/Sucesso ajustado para Teal-Aqua (mais próximo do azul)
-                        'teal-success': {
-                            600: '#00B8AA', // Aqua-Ciano
-                            700: '#009688', 
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* DEFINIÇÕES GLOBAIS DE COR/ESTILO */
-        :root {
-            /* Cores de Liquid Glass Sofisticadas (Azul Cristal) */
-            --primary-color: #00BFFF; /* DeepSkyBlue */
-            --primary-hover: #00A6D7;
-            --success-color: #00B8AA; /* Aqua-Ciano */
-            --success-hover: #009688;
-            --text-dark: #008CBA; /* Azul escuro para contraste */
-            /* Efeito de Vidro: Opacidade e brilho */
-            --glass-bg: rgba(255, 255, 255, 0.1); /* MUITO transparente */
-            --glass-border: rgba(255, 255, 255, 0.5); /* Borda branca brilhante */
-            --glass-shadow: rgba(0, 191, 255, 0.3); /* Sombra azul */
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            /* Fundo Gradiente Azul Suave e ANIMADO */
-            background: linear-gradient(135deg, #ffffff 0%, #b0e3ffbb 100%, #ffffff 100%);
-            background-size: 200% 200%;
-            animation: moving-gradient 5s ease infinite; /* Animação do fundo */
-            min-height: 100vh;
-            color: var(--text-dark); 
-            overflow-x: hidden; 
-        }
-
-        /* ANIMAÇÃO DE FUNDO SUAVE */
-        @keyframes moving-gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        /* ESTILO PRINCIPAL: O CARD "LIQUID GLASS" EXTREMO */
-        .container-card {
-            /* Efeito Glassmorphism Potente */
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px) saturate(180%); 
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            padding: 2.5rem; 
-            border-radius: 30px; /* Mais arredondado */
-            /* Borda de reflexo de luz */
-            border: 1px solid var(--glass-border);
-            /* Sombra azul suave e longa */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 
-                        0 20px 40px var(--glass-shadow),
-                        inset 0 0 0 1px rgba(255, 255, 255, 0.4); /* Brilho interno */
-            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
-        }
-        .container-card:hover {
-            transform: translateY(-5px); 
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 
-                        0 30px 60px rgba(0, 191, 255, 0.5); /* Sombra mais intensa */
-        }
-
-        /* Títulos */
-        h1, h2, h3 {
-            color: var(--text-dark);
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8); /* Destaque leve */
-        }
-        
-        /* BOTÕES (Com efeito de vidro) */
-        .btn-base {
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Curva "springy" */
-            border-radius: 18px; /* Mais ovalado */
-            font-weight: 700;
-            cursor: pointer;
-            border: none;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Botão Primário (Azul Claro) */
-        .btn-primary {
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-hover));
-            box-shadow: 0 6px 15px rgba(0, 191, 255, 0.4);
-        }
-        .btn-primary:hover {
-            transform: scale(1.03) translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 191, 255, 0.6);
-        }
-        .btn-primary:active {
-            transform: scale(0.97);
-            box-shadow: 0 2px 5px rgba(0, 191, 255, 0.3);
-        }
-
-        /* Botão de Sucesso (Aqua/Teal) */
-        .btn-success {
-             background: linear-gradient(145deg, var(--success-color), var(--success-hover));
-             box-shadow: 0 6px 15px rgba(0, 184, 170, 0.4);
-        }
-        .btn-success:hover {
-            transform: scale(1.03) translateY(-2px);
-             box-shadow: 0 10px 20px rgba(0, 184, 170, 0.6);
-        }
-        .btn-success:active {
-            transform: scale(0.97);
-            box-shadow: 0 2px 5px rgba(0, 184, 170, 0.3);
-        }
-
-        /* Botões de Navegação (Vidro com Borda Azul) */
-        .nav-btn {
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            color: var(--primary-color);
-            background-color: rgba(255, 255, 255, 0.4); /* Fundo de vidro */
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            padding: 12px 28px;
-        }
-        .nav-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            transform: scale(1.05); 
-            box-shadow: 0 4px 15px var(--glass-shadow);
-            border-color: var(--primary-color);
-        }
-        .nav-btn:not(.active):hover {
-            background-color: rgba(255, 255, 255, 0.7); 
-            color: var(--primary-hover);
-            transform: scale(1.02);
-            border-color: var(--primary-hover);
-        }
-        
-        /* Cronômetro com brilho mais intenso */
-        .text-highlight {
-            color: var(--primary-color);
-            font-variant-numeric: tabular-nums; 
-            animation: pulse-glow 1.5s infinite alternate; 
-        }
-
-        /* Animação do Cronômetro */
-        @keyframes pulse-glow {
-            from { 
-                text-shadow: 0 0 8px rgba(0, 191, 255, 0.7); 
-            }
-            to { 
-                text-shadow: 0 0 20px rgba(0, 191, 255, 1), 0 0 30px rgba(0, 191, 255, 0.5); 
-            }
-        }
-
-        /* --- TRANSIÇÃO DE SEÇÕES INOVADORA (SLIDE-FADE) --- */
-        .view-section {
-            /* Transição de entrada (Slide up + Fade in) */
-            transition: opacity 0.5s ease-out, 
-                        transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Curva Ease-Out-Quad */
-            transform: translateY(0);
-        }
-        .view-section.hidden {
-            opacity: 0;
-            transform: translateY(20px); /* Começa 20px abaixo */
-            pointer-events: none; 
-            /* Transição de saída mais rápida para sensação de resposta */
-            transition: opacity 0.2s ease-in, transform 0.2s ease-in; 
-        }
-
-        /* Campos de Input (Estilo Vidro) */
-        input:not([type="file"]):not([type="checkbox"]):not([type="radio"]) {
-            border: 1px solid rgba(0, 191, 255, 0.2); /* Borda azul clara sutil */
-            background-color: rgba(255, 255, 255, 0.5); /* Fundo de vidro opaco */
-            color: var(--text-dark);
-            border-radius: 12px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(0, 191, 255, 0.3); /* Sombra Ciano no foco */
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-        
-        /* Tabela (Estilo Vidro) */
-        .divide-y.divide-gray-200, .divide-gray-200\/50 {
-            border-color: rgba(0, 191, 255, 0.1) !important;
-        }
-        .bg-gray-100\/70 {
-            background-color: rgba(0, 191, 255, 0.15) !important; /* Cabeçalho de tabela azul claro */
-        }
-        .bg-white\/70 {
-            background-color: rgba(255, 255, 255, 0.4) !important; /* Fundo de linha de tabela de vidro */
-        }
-        .hover\:bg-cianoblue-50\/50:hover {
-            background-color: rgba(0, 191, 255, 0.1) !important; /* Efeito hover azul */
-        }
-        
-        /* Linha de Rota em Andamento (Amarelo Suave) */
-        .bg-yellow-50\/70 {
-            background-color: rgba(255, 250, 205, 0.7) !important; /* Amarelo pálido */
-            border-left: 5px solid orange; /* Indicador lateral */
-        }
-        .hover\:bg-yellow-100\/70:hover {
-            background-color: rgba(255, 248, 179, 0.9) !important; /* Amarelo mais intenso no hover */
-        }
-
-        /* --- ESTILOS DO MODAL DE FOTO --- */
-        .photo-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(15px);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0; /* Começa invisível */
-            transition: opacity 0.3s ease-out;
-        }
-        .photo-modal-overlay.visible {
-            opacity: 1; /* Transição de entrada */
-        }
-
-        .photo-modal-content {
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 90%; 
-            width: 600px; /* Largura ajustada para apenas foto */
-            max-height: 90vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            transform: scale(0.9); /* Começa menor */
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efeito 'Pop' */
-        }
-        .photo-modal-overlay.visible .photo-modal-content {
-             transform: scale(1); /* Transição de entrada 'Pop' */
-        }
-
-        /* Estilização para as imagens dentro do modal */
-        #modal-image {
-            width: 100%; /* Ocupa 100% da coluna */
-            max-height: 60vh; /* Limita a altura para visualização */
-            object-fit: contain; /* Garante que a imagem inteira seja vista */
-            margin: 0 auto; /* Centraliza horizontalmente */
-        }
-
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 1.5rem; }
+        .input-style { background: #1e293b !important; border: 1px solid #334155 !important; color: white !important; width: 100%; padding: 0.75rem; border-radius: 0.75rem; outline: none; font-size: 14px; }
+        .btn-primary { background: #2563eb; transition: all 0.2s; }
+        .glass-modal { background: rgba(2, 6, 23, 0.96); backdrop-filter: blur(12px); z-index: 100; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-start pt-10 pb-10">
+<body class="p-4 max-w-md mx-auto">
 
-    <div id="app-container" class="w-full max-w-full xl:max-w-7xl p-4 md:p-6">
-        
-        <h1 class="text-3xl font-bold text-gray-800 text-center mb-8" style="color: var(--text-dark);">
-            Gerênciamento de KMs - ICAPHI Transportes
-        </h1>
-
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="show-driver-btn" class="font-semibold nav-btn active" onclick="showDriverView()">
-                Motorista
-            </button>
-            <button id="show-admin-btn" class="font-semibold nav-btn" onclick="showAdminView()">
-                Administrativo
-            </button>
+    <header id="header-main" class="flex justify-between items-center py-6">
+        <div>
+            <h1 class="text-xl font-extrabold tracking-tight text-blue-500 italic">ICAPHI<span class="text-white">DRIVE</span></h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Controle de Frota</p>
         </div>
+        <button onclick="acessoAdmin()" class="p-3 card border-slate-700 active:bg-slate-800 transition">
+            <i data-lucide="shield-lock" class="text-blue-400 w-5 h-5"></i>
+        </button>
+    </header>
 
-        <div id="message-area" class="text-center mb-4 p-3 rounded-lg hidden"></div>
-
-        <div id="driver-view" class="container-card view-section">
-           
-            <h2 class="text-2xl font-semibold mb-6 text-gray-700 border-b pb-2" style="border-color: rgba(0, 191, 255, 0.3);">Registro de Viagem</h2>
-            
-            <div id="start-trip-form">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              
-                    <div>
-                        <label for="driver-name" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Nome do Motorista</label>
-                        <input type="text" id="driver-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600" placeholder="Seu Nome Completo">
-                    </div>
-          
-                    <div>
-                        <label for="license-plate" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Placa do Veículo</label>
-                        <input type="text" id="license-plate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600 uppercase" placeholder="ABC1234">
-                    </div>
-    
-                 <div>
-                        <label for="km-start" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">KM Inicial (Odômetro)</label>
-                        <input type="number" id="km-start" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600" placeholder="Ex: 55000">
-                    </div>
-         
-               </div>
-
-                <div class="mb-6 p-4 border border-liquid-blue-400 rounded-xl" style="background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 191, 255, 0.3); backdrop-filter: blur(5px);">
-                    <label for="photo-start" class="block text-base font-semibold text-gray-700 mb-2 flex items-center" style="color: var(--text-dark);">
-                        <i class="fas fa-camera mr-2" style="color: var(--primary-color);"></i> 1. Foto OBRIGATÓRIA do Painel/Odômetro
-                    </label>
-                    <input type="file" id="photo-start" accept="image/*" capture="environment" onchange="handleImageUpload(event, 'start')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-liquid-blue-100/70 file:text-liquid-blue-700 hover:file:bg-liquid-blue-200/70"/>
-                    <p id="photo-start-status" class="mt-2 text-sm text-gray-600 font-medium">Nenhuma foto anexada. (Máx. 800px)</p>
-                </div>
-
-                <button onclick="startTrip()" class="w-full btn-base btn-success py-3 rounded-lg text-lg font-bold shadow-md">
-                    <i class="fas fa-play"></i> Iniciar Saída
-                </button>
-               
-                <p class="text-sm text-gray-600 mt-2 text-center">Será registrada a sua localização, hora e a foto do painel.</p>
-            </div>
-
-            <div id="trip-in-progress" class="hidden text-center p-6 border-2 border-dashed rounded-xl" style="border-color: var(--primary-color); background: rgba(0, 191, 255, 0.1); backdrop-filter: blur(5px);">
-                <h3 class="text-xl font-bold text-liquid-blue-700 mb-4" style="color: var(--primary-color);">Viagem em Andamento!</h3>
-                <p class="mb-2" style="color: var(--text-dark);">Motorista: <span id="current-driver-name" class="font-semibold"></span></p>
-                <p class="mb-4" style="color: var(--text-dark);">Placa: <span id="current-license-plate" class="font-semibold"></span></p>
-
-                <div class="flex justify-center items-baseline mb-6">
-                    <span class="text-6xl font-extrabold text-highlight" id="timer-display">00:00:00</span>
-                </div>
-
-                <label for="km-end" class="block text-sm font-medium text-gray-700 mb-2" style="color: var(--text-dark);">KM Final (Odômetro)</label>
-                <input type="number" id="km-end" class="mb-4 block w-full md:w-1/2 mx-auto rounded-md border-gray-300 shadow-sm p-3 border text-center focus:ring-liquid-blue-600 focus:border-liquid-blue-600" placeholder="KM de Chegada">
-
-                 <div class="mb-6 p-4 rounded-xl" style="border: 1px solid rgba(0, 191, 255, 0.3); background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px);">
-                    <label for="photo-end" class="block text-base font-semibold text-gray-700 mb-2 flex items-center" style="color: var(--text-dark);">
-                        <i class="fas fa-camera mr-2" style="color: var(--text-dark);"></i> 2. Foto OBRIGATÓRIA do Painel/Odômetro de Chegada
-                    </label>
-                    <input type="file" id="photo-end" accept="image/*" capture="environment" onchange="handleImageUpload(event, 'end')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-200/70 file:text-gray-700 hover:file:bg-gray-300/70"/>
-                    <p id="photo-end-status" class="mt-2 text-sm text-gray-600 font-medium">Nenhuma foto anexada. (Máx. 800px)</p>
-                </div>
-
-                <button onclick="endTrip()" class="w-full btn-base btn-primary py-3 rounded-lg text-lg font-bold shadow-md">
-                    <i class="fas fa-stop"></i> Registrar Chegada e Finalizar Rota
-                </button>
+    <main id="tela-inicio" class="space-y-6">
+        <div class="card p-6 shadow-2xl border-t-4 border-t-blue-600">
+            <h2 class="text-lg font-semibold mb-5 flex items-center gap-2">
+                <i data-lucide="play" class="text-emerald-400 fill-emerald-400 w-4 h-4"></i> Iniciar Viagem
+            </h2>
+            <div class="space-y-4">
+                <input type="text" id="motorista" placeholder="Nome do Motorista" class="input-style">
+                <input type="text" id="placa" placeholder="Placa do Carro" class="input-style uppercase font-mono">
+                <input type="number" id="km-inicio" placeholder="KM Inicial do Odômetro" class="input-style">
+                <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/20 cursor-pointer">
+                    <i data-lucide="camera" class="text-slate-500 mb-2"></i>
+                    <span class="text-sm text-slate-400" id="label-foto-inicio">Foto do Painel (Início)</span>
+                    <input type="file" id="foto-inicio" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-inicio')">
+                </label>
+                <button onclick="iniciarViagem()" id="btn-iniciar" class="w-full btn-primary py-4 rounded-xl font-bold">INICIAR AGORA</button>
             </div>
         </div>
+    </main>
 
-        <div id="admin-view" class="container-card view-section hidden">
-            <h2 class="text-2xl font-semibold mb-6 text-gray-700 border-b pb-2" style="border-color: rgba(0, 191, 255, 0.3);">Painel Administrativo</h2>
-            
-            <div id="admin-login-area">
-                <label for="admin-password" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Senha de Acesso</label>
-                <input type="password" id="admin-password" class="mt-1 block w-full md:w-96 rounded-md border-gray-300 shadow-sm p-3 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600" placeholder="Senha">
-                <button onclick="adminLogin()" class="mt-4 btn-base btn-primary py-2 px-6 rounded-lg font-semibold">
-                    Acessar
-                </button>
-                <p class="text-xs text-red-500 mt-2 hidden" id="login-error-message">Senha incorreta. (Acesso somento do administrativo)</p>
-            </div>
-
-            <div id="admin-dashboard" class="hidden">
-                <h3 class="text-xl font-bold mb-4 text-gray-700" style="color: var(--text-dark);">Rotas Concluídas e em Andamento</h3>
-
-                <div class="flex flex-col md:flex-row gap-4 mb-6 p-4 rounded-xl" style="background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px); border: 1px solid rgba(0, 191, 255, 0.2);">
-                    <div class="flex-grow">
-                        <label for="filter-plate" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Filtrar por Placa</label>
-                        <input type="text" id="filter-plate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border uppercase focus:ring-liquid-blue-600 focus:border-liquid-blue-600" placeholder="Placa (ex: ABC1234)">
-                    </div>
-                    <div class="flex-grow">
-                        <label for="filter-start-date" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Data Inicial</label>
-                        <input type="date" id="filter-start-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600">
-                    </div>
-                    <div class="flex-grow">
-                        <label for="filter-end-date" class="block text-sm font-medium text-gray-700" style="color: var(--text-dark);">Data Final</label>
-                        <input type="date" id="filter-end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-liquid-blue-600 focus:border-liquid-blue-600">
-                    </div>
-                    <div class="flex-shrink-0 flex items-end">
-                        <button onclick="applyAdminFilters()" class="btn-base btn-primary py-2 px-4 rounded-lg font-semibold w-full md:w-auto">
-                            Aplicar Filtros
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex justify-end mb-4">
-                    <button onclick="exportToCSV()" class="btn-base btn-success text-white py-2 px-4 rounded-lg font-semibold">
-                        Exportar para Planilha (CSV)
-                    </button>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100/70 backdrop-blur-sm">
-                            <tr>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Motorista</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Placa</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">KM Total</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Tempo</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Saída (Data/Hora)</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Chegada (Data/Hora)</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">KM Inicial</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">KM Final</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Local Saída</th>
-                                <th class="px-2 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Local Chegada</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium tracking-wider" style="color: var(--text-dark);">Ver Saída</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Ver Chegada</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider" style="color: var(--text-dark);">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-table-body" class="bg-white/70 divide-y divide-gray-200/50">
-                            <tr><td colspan="13" class="p-4 text-center text-gray-500">Nenhuma rota encontrada ou carregando...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+    <main id="tela-viagem" class="hidden space-y-8 py-10 text-center">
+        <div class="relative flex flex-col items-center justify-center">
+            <div class="w-64 h-64 rounded-full border-4 border-blue-600/10 border-t-blue-500 animate-spin absolute"></div>
+            <div class="w-56 h-56 rounded-full flex flex-col items-center justify-center bg-slate-900 z-10">
+                <h3 id="cronometro-motorista" class="text-5xl font-mono font-bold">00:00:00</h3>
             </div>
         </div>
-    
-        <div id="photo-modal" class="photo-modal-overlay hidden" onclick="closePhotoModal()">
-            <div class="photo-modal-content" onclick="event.stopPropagation()">
-                <button onclick="closePhotoModal()" class="self-end text-3xl font-bold text-white hover:text-liquid-blue-500 mb-2 transition-colors">
-                    &times;
-                </button>
-                
-                <div class="flex flex-col items-center">
-                    <h3 class="text-xl font-bold text-white mb-4 text-shadow-lg">Foto do Painel</h3>
-                    <img id="modal-image" src="" alt="Foto do Painel" class="max-w-full h-auto rounded-lg shadow-xl border-2 border-white/50">
-                </div>
-                <p id="modal-caption" class="mt-4 text-center text-gray-300 text-lg font-semibold"></p>
-                <p id="modal-coords" class="mt-1 text-center text-gray-400 text-sm italic">Localização: </p>
-            </div>
+        <div class="card p-6 border-t-4 border-t-red-600 text-left">
+            <p id="info-viagem-ativa" class="text-[10px] text-slate-500 mb-4 uppercase font-bold text-center"></p>
+            <input type="number" id="km-fim" placeholder="KM Final" class="input-style mb-4">
+            <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-xl mb-6 bg-slate-800/20 cursor-pointer">
+                <span class="text-sm text-slate-400" id="label-foto-fim">Foto do Painel (Fim)</span>
+                <input type="file" id="foto-fim" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-fim')">
+            </label>
+            <button onclick="finalizarViagem()" id="btn-finalizar" class="w-full bg-red-600 py-4 rounded-xl font-bold">ENCERRAR VIAGEM</button>
         </div>
+    </main>
 
+    <main id="tela-admin" class="hidden space-y-4 pb-10">
+        <div class="flex items-center justify-between sticky top-0 bg-[#020617] py-4 z-20">
+            <button onclick="mudarTela('inicio')" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h2 class="text-xl font-bold">Histórico Admin</h2>
+            <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></button>
+        </div>
+        <div id="lista-viagens" class="space-y-4"></div>
+    </main>
+
+    <main id="tela-resumo" class="hidden space-y-6 py-10">
+        <div class="card p-6 bg-slate-900/50" id="dados-resumo-texto"></div>
+        <button onclick="location.reload()" class="w-full bg-slate-800 py-4 rounded-xl font-bold">VOLTAR AO INÍCIO</button>
+    </main>
+
+    <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
+        <div class="card p-6 w-full max-w-sm space-y-4 shadow-2xl">
+            <h3 class="font-bold text-center text-lg">Exportar Relatório</h3>
+            <div>
+                <label class="text-[10px] text-slate-500 uppercase font-bold">Filtrar Placa</label>
+                <select id="select-placa-export" class="input-style mt-1"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold">Data Início</label>
+                    <input type="date" id="data-exp-inicio" class="input-style mt-1 text-xs">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold">Data Fim</label>
+                    <input type="date" id="data-exp-fim" class="input-style mt-1 text-xs">
+                </div>
+            </div>
+            <button onclick="gerarExcel()" class="w-full bg-emerald-600 py-4 rounded-xl font-bold">BAIXAR EXCEL</button>
+            <button onclick="fecharModalExport()" class="w-full text-slate-500 text-sm">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-img" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-4" onclick="this.classList.add('hidden')">
+        <img id="img-full" class="rounded-2xl max-h-[80vh]">
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Ativar logs para debug
-        setLogLevel('Debug');
-        // --- CONFIGURAÇÃO FIREBASE ---
-        const providedConfig = {
-             apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
-             authDomain: "marcador-ponto-digital.firebaseapp.com",
-             projectId: "marcador-ponto-digital",
-             storageBucket: "marcador-ponto-digital.firebasestorage.app",
-             messagingSenderId: "774324665760",
-             appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
-             measurementId: "G-W1QEJTCS1B"
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
+            authDomain: "marcador-ponto-digital.firebaseapp.com",
+            projectId: "marcador-ponto-digital",
+            storageBucket: "marcador-ponto-digital.firebasestorage.app",
+            messagingSenderId: "774324665760",
+            appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5"
         };
-        
-        // Usa a configuração fornecida.
-        let firebaseConfig = providedConfig;
 
-        const appId = firebaseConfig.projectId;
-        let app, db, auth;
-        let userId = null;
-        let currentTripDocId = localStorage.getItem('currentTripDocId'); 
-        let timerInterval = null; // Timer para a view do motorista
-        let liveTimerInterval = null; // NOVO: Timer para a view administrativa (tempo real)
-        const ADMIN_PASSWORD = "60010774";
-        let startPhotoBase64 = null;
-        let endPhotoBase64 = null;
-        
-        const ROUTES_COLLECTION_PATH = `/artifacts/${appId}/public/data/driver_routes`;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Elementos DOM
-        const driverView = document.getElementById('driver-view');
-        const adminView = document.getElementById('admin-view');
-        const adminDashboard = document.getElementById('admin-dashboard');
-        const adminLoginArea = document.getElementById('admin-login-area');
-        const loginErrorMessage = document.getElementById('login-error-message');
-        const messageArea = document.getElementById('message-area');
-        const startTripForm = document.getElementById('start-trip-form');
-        const tripInProgress = document.getElementById('trip-in-progress');
-        const timerDisplay = document.getElementById('timer-display');
-        const adminTableBody = document.getElementById('admin-table-body');
-        const photoModal = document.getElementById('photo-modal');
-        const modalImage = document.getElementById('modal-image');
-        const modalCaption = document.getElementById('modal-caption');
-        const modalCoords = document.getElementById('modal-coords'); 
-        
+        let idAtual = localStorage.getItem('logdrive_viagem_id');
+        let resumoObjeto = JSON.parse(localStorage.getItem('logdrive_resumo')) || {};
+        const SENHA_ADMIN = "60010774";
 
-        // --- Funções Auxiliares ---
+        const formatarTempo = (s) => {
+            const h = Math.floor(s / 3600).toString().padStart(2, '0');
+            const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${sec}`;
+        };
 
-        function displayMessage(text, type = 'info') {
-            messageArea.textContent = text;
-            messageArea.className = 'text-center mb-4 p-3 rounded-lg block font-semibold';
-            if (type === 'success') {
-                messageArea.classList.add('bg-teal-success-100', 'text-teal-success-800');
-            } else if (type === 'error') {
-                messageArea.classList.add('bg-red-100', 'text-red-800');
-            } else {
-                messageArea.classList.add('bg-liquid-blue-100', 'text-liquid-blue-800');
-            }
-            messageArea.classList.remove('hidden');
-            setTimeout(() => {
-                messageArea.classList.add('hidden');
-                messageArea.classList.remove('block');
-            }, 5000);
-        }
+        window.mudarTela = (tela) => {
+            ['tela-inicio', 'tela-viagem', 'tela-admin', 'tela-resumo'].forEach(t => document.getElementById(t).classList.add('hidden'));
+            document.getElementById('tela-' + tela).classList.remove('hidden');
+            lucide.createIcons();
+        };
 
-        function formatTime(seconds) {
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-        
-        function getGeolocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocalização não é suportada pelo seu navegador.'));
-                    return;
-                }
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude,
-                            accuracy: position.coords.accuracy,
-                        });
-                    },
-                    (error) => {
-                        console.error("Erro na geolocalização:", error);
-                        reject(new Error('Não foi possível obter a localização. Certifique-se de que a localização está ativada e tente novamente.'));
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
-            });
-        }
-        
-        async function getStreetAndNeighborhood(lat, lon) {
-            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-            try {
-                const response = await fetch(url, {
-                    headers: {
-                        'User-Agent': 'ICAPHI-KMS-App/1.0 (CanvasApp; contact: logistics@icaphi.com)'
-                    }, 
-                });
-                const data = await response.json();
-                
-                if (data.address) {
-                    const address = data.address;
-                    let parts = [];
+        window.previewFoto = (input, labelId) => {
+            if (input.files?.[0]) document.getElementById(labelId).innerText = "Foto Selecionada ✅";
+        };
 
-                    const road = address.road || address.pedestrian || address.footway || '';
-                    const houseNumber = address.house_number || address.building || '';
-                    
-                    if (road || houseNumber) {
-                        parts.push(road + (road && houseNumber ? ', ' : '') + houseNumber);
-                    }
-                    
-                    const neighborhood = address.suburb || address.neighbourhood || address.city_district || '';
-                    if (neighborhood && !parts.includes(neighborhood)) {
-                        parts.push(neighborhood);
-                    }
-
-                    const city = address.city || address.town || address.village || address.county || '';
-                    if (city && !parts.includes(city)) {
-                        parts.push(city);
-                    }
-
-                    const state = address.state || '';
-                    if (state && !parts.includes(state)) {
-                        parts.push(state);
-                    }
-
-                    let result = parts.filter(p => p.trim() !== '').join(', ');
-
-                    if (result.length < 10 && data.display_name) {
-                        return data.display_name;
-                    }
-
-                    return result || `Localização (Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)})`;
-                }
-            } catch (error) {
-                console.error("Erro no Reverse Geocoding:", error);
-            }
-            return `Localização (Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)})`;
-        }
-        
-        function resizeImageAndConvertToBase64(file, maxWidth, maxHeight) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height *= maxWidth / width;
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width *= maxHeight / height;
-                                height = maxHeight;
-                            }
-                        }
-
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const base64String = canvas.toDataURL('image/jpeg', 0.9);
-                        resolve(base64String);
-                    };
-                    img.onerror = (e) => reject(new Error('Erro ao carregar a imagem.'));
-                    img.src = event.target.result;
+        const compressImage = (file) => new Promise(res => {
+            const r = new FileReader(); r.readAsDataURL(file);
+            r.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const w = 800; const scale = w / img.width;
+                    canvas.width = w; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    res(canvas.toDataURL('image/jpeg', 0.6));
                 };
-                reader.onerror = (e) => reject(new Error('Erro ao ler o arquivo.'));
-                reader.readAsDataURL(file);
-            });
-        }
+            };
+        });
 
-        window.handleImageUpload = async function(event, type) {
-            const fileInput = event.target;
-            const statusElement = document.getElementById(`photo-${type}-status`);
-            statusElement.textContent = 'Processando e redimensionando foto... Aguarde.';
-            statusElement.classList.remove('text-gray-600', 'text-green-600', 'text-red-600'); 
-            statusElement.classList.add('text-liquid-blue-600');
+        const getLoc = () => new Promise(res => {
+            navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res("Sem GPS"), {enableHighAccuracy: true});
+        });
+
+        // --- FUNÇÕES GLOBAIS (ACESSÍVEIS PELO HTML) ---
+        window.acessoAdmin = () => {
+            if(prompt("Senha:") === SENHA_ADMIN) mudarTela('admin');
+        };
+
+        window.verFoto = (src) => {
+            document.getElementById('img-full').src = src;
+            document.getElementById('modal-img').classList.remove('hidden');
+        };
+
+        window.excluirViagem = async (id) => {
+            if(confirm("Deseja apagar este registro?")) await deleteDoc(doc(db, "viagens", id));
+        };
+
+        window.iniciarViagem = async () => {
+            const n = document.getElementById('motorista').value;
+            const p = document.getElementById('placa').value;
+            const k = document.getElementById('km-inicio').value;
+            const f = document.getElementById('foto-inicio').files[0];
+            if(!n || !p || !k || !f) return alert("Preencha todos os campos e tire a foto!");
             
-            if (fileInput.files.length === 0) {
-                if (type === 'start') startPhotoBase64 = null;
-                if (type === 'end') endPhotoBase64 = null;
-                statusElement.textContent = 'Nenhuma foto anexada. (Máx. 800px)';
-                statusElement.classList.remove('text-liquid-blue-600', 'text-red-600', 'text-green-600');
-                statusElement.classList.add('text-gray-600');
-                return;
-            }
+            const btn = document.getElementById('btn-iniciar');
+            btn.disabled = true; btn.innerText = "Processando...";
+            
+            const fotoC = await compressImage(f);
+            const loc = await getLoc();
+            const agora = new Date();
+            
+            resumoObjeto = { nome: n, placa: p, kmInicio: parseFloat(k) };
+            const docRef = await addDoc(collection(db, "viagens"), {
+                ...resumoObjeto, fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora
+            });
+            
+            localStorage.setItem('logdrive_viagem_id', docRef.id);
+            localStorage.setItem('logdrive_resumo', JSON.stringify(resumoObjeto));
+            location.reload();
+        };
 
-            const file = fileInput.files[0];
-            const MAX_SIZE = 800; // Largura/Altura máxima em pixels
-            try {
-                const base64 = await resizeImageAndConvertToBase64(file, MAX_SIZE, MAX_SIZE);
-                if (type === 'start') {
-                    startPhotoBase64 = base64;
-                } else {
-                    endPhotoBase64 = base64;
+        window.finalizarViagem = async () => {
+            const kF = document.getElementById('km-fim').value;
+            const f = document.getElementById('foto-fim').files[0];
+            if(!kF || !f) return alert("Insira o KM final e a foto!");
+            
+            const btn = document.getElementById('btn-finalizar');
+            btn.disabled = true;
+            const fotoC = await compressImage(f);
+            const loc = await getLoc();
+            const dur = document.getElementById('cronometro-motorista').innerText;
+            const dist = parseFloat(kF) - resumoObjeto.kmInicio;
+
+            await updateDoc(doc(db, "viagens", idAtual), {
+                kmFim: parseFloat(kF), dispersao: dist, fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: new Date(), duracao: dur
+            });
+
+            localStorage.removeItem('logdrive_viagem_id');
+            localStorage.removeItem('logdrive_resumo');
+            mudarTela('resumo');
+            document.getElementById('dados-resumo-texto').innerHTML = `<h2 class='text-xl font-bold'>Resumo</h2><p>KM Total: ${dist.toFixed(1)} km</p><p>Tempo: ${dur}</p>`;
+        };
+
+        // --- EXPORTAÇÃO EXCEL ---
+        window.abrirModalExport = async () => {
+            const select = document.getElementById('select-placa-export');
+            select.innerHTML = '<option value="TODAS">Todas as Placas</option>';
+            
+            const querySnapshot = await getDocs(collection(db, "viagens"));
+            const placas = new Set();
+            querySnapshot.forEach(d => placas.add(d.data().placa.toUpperCase()));
+            placas.forEach(p => select.innerHTML += `<option value="${p}">${p}</option>`);
+
+            document.getElementById('modal-export').classList.remove('hidden');
+        };
+
+        window.fecharModalExport = () => document.getElementById('modal-export').classList.add('hidden');
+
+        window.gerarExcel = async () => {
+            const dIni = document.getElementById('data-exp-inicio').value;
+            const dFim = document.getElementById('data-exp-fim').value;
+            const pSel = document.getElementById('select-placa-export').value;
+
+            const qS = await getDocs(query(collection(db, "viagens"), orderBy("dataInicio", "desc")));
+            let dados = [];
+
+            qS.forEach(docSnap => {
+                const v = docSnap.data();
+                const dataV = v.dataInicio?.toDate();
+                
+                let matchData = true;
+                if(dIni && dFim) {
+                    const s = new Date(dIni + "T00:00:00");
+                    const e = new Date(dFim + "T23:59:59");
+                    matchData = dataV >= s && dataV <= e;
                 }
 
-                const sizeKB = Math.round(base64.length * 0.75 / 1024);
-                statusElement.textContent = `Foto anexada e redimensionada! (~${sizeKB} KB)`;
-                statusElement.classList.remove('text-liquid-blue-600', 'text-red-600', 'text-gray-600');
-                statusElement.classList.add('text-green-600');
-            } catch (error) {
-                console.error("Erro no processamento da imagem:", error);
-                displayMessage('Erro ao processar a foto. Tente novamente ou use uma imagem menor.', 'error');
-                statusElement.textContent = 'Erro ao processar a foto.';
-                statusElement.classList.remove('text-liquid-blue-600', 'text-green-600', 'text-gray-600');
-                statusElement.classList.add('text-red-600');
-                if (type === 'start') startPhotoBase64 = null;
-                if (type === 'end') endPhotoBase64 = null;
-            }
-        }
-        
-        function updateDriverUI(tripData) {
-            if (tripData) {
-                document.getElementById('current-driver-name').textContent = tripData.driverName;
-                document.getElementById('current-license-plate').textContent = tripData.licensePlate;
-                
-                startTripForm.classList.add('hidden');
-                tripInProgress.classList.remove('hidden');
+                let matchPlaca = pSel === "TODAS" || v.placa.toUpperCase() === pSel;
 
-                startTimer(tripData.startTime.toDate().getTime());
-            } else {
-                startTripForm.classList.remove('hidden');
-                tripInProgress.classList.add('hidden');
-
-                stopTimer();
-                document.getElementById('km-end').value = '';
-                document.getElementById('photo-end').value = '';
-                document.getElementById('photo-end-status').textContent = 'Nenhuma foto anexada. (Máx. 800px)';
-                document.getElementById('photo-end-status').classList.remove('text-liquid-blue-600', 'text-green-600', 'text-red-600');
-                document.getElementById('photo-end-status').classList.add('text-gray-600');
-                endPhotoBase64 = null;
-
-                document.getElementById('driver-name').value = '';
-                document.getElementById('license-plate').value = '';
-                document.getElementById('km-start').value = '';
-                document.getElementById('photo-start').value = '';
-                document.getElementById('photo-start-status').textContent = 'Nenhuma foto anexada. (Máx. 800px)';
-                document.getElementById('photo-start-status').classList.remove('text-liquid-blue-600', 'text-green-600', 'text-red-600');
-                document.getElementById('photo-start-status').classList.add('text-gray-600');
-                startPhotoBase64 = null;
-            }
-        }
-
-        function startTimer(startTimeMs) {
-            stopTimer(); 
-            timerInterval = setInterval(() => {
-                const elapsedSeconds = Math.floor((Date.now() - startTimeMs) / 1000);
-                timerDisplay.textContent = formatTime(elapsedSeconds);
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                timerDisplay.textContent = '00:00:00';
-            }
-        }
-        
-        window.viewPhoto = function(base64Data, caption, lat, lon) {
-            if (base64Data) {
-                modalImage.src = base64Data;
-                modalCaption.textContent = caption;
-                
-                const coordsText = (lat && lon) ? `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}` : 'Coordenadas não registradas.';
-                modalCoords.textContent = `Localização: ${coordsText}`;
-
-                photoModal.classList.remove('hidden');
-                setTimeout(() => {
-                    photoModal.classList.add('visible');
-                }, 10);
-            } else {
-                displayMessage('Foto não disponível ou não anexada para esta rota.', 'error');
-            }
-        }
-
-        window.closePhotoModal = function() {
-            photoModal.classList.remove('visible');
-            setTimeout(() => {
-                photoModal.classList.add('hidden');
-                modalImage.src = ''; 
-                modalCoords.textContent = 'Localização:';
-            }, 300); 
-        }
-
-        // NOVO: Função para atualizar o tempo decorrido em tempo real na tabela administrativa.
-        function updateLiveTime() {
-            // Filtra apenas as rotas que estão em andamento
-            const liveTrips = allRoutesData.filter(route => route.status === 'In Progress');
-            const now = Date.now();
-            
-            liveTrips.forEach(route => {
-                if (route.startTime) {
-                    const startTimeMs = route.startTime.toDate().getTime();
-                    const elapsedSeconds = Math.floor((now - startTimeMs) / 1000);
-                    const formattedTime = formatTime(elapsedSeconds);
-                    
-                    // Busca o elemento na tabela pelo atributo data-live-time (que é o ID da rota)
-                    const element = document.querySelector(`[data-live-time="${route.id}"]`);
-                    if (element) {
-                        element.textContent = formattedTime;
-                    }
+                if(matchData && matchPlaca) {
+                    dados.push({
+                        Motorista: v.nome, Placa: v.placa, Data: dataV?.toLocaleDateString(),
+                        Inicio: v.kmInicio, Fim: v.kmFim || "", Total: v.dispersao?.toFixed(1) || 0,
+                        Duracao: v.duracao || "", Local_Inicio: v.locInicio || "", Local_Fim: v.locFim || ""
+                    });
                 }
             });
-        }
-        
-        function startLiveTimer() {
-             // Para qualquer timer existente
-            if (liveTimerInterval) {
-                clearInterval(liveTimerInterval);
-            }
-            
-            // Inicia o novo timer para atualização de 1 em 1 segundo
-            liveTimerInterval = setInterval(() => {
-                updateLiveTime();
-            }, 1000);
-            console.log("Live Timer iniciado para o painel administrativo.");
-        }
 
-        function stopLiveTimer() {
-            if (liveTimerInterval) {
-                clearInterval(liveTimerInterval);
-                liveTimerInterval = null;
-                console.log("Live Timer parado.");
-            }
-        }
+            const ws = XLSX.utils.json_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Viagens");
+            XLSX.writeFile(wb, `Relatorio_${new Date().getTime()}.xlsx`);
+            fecharModalExport();
+        };
 
-
-        function renderAdminTable(routes) {
-            adminTableBody.innerHTML = ''; 
-            if (routes.length === 0) {
-                adminTableBody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-gray-500">Nenhuma rota encontrada para o filtro atual.</td></tr>';
-                return;
-            }
-
-            routes.forEach(route => {
-                const isInProgress = route.status === 'In Progress';
-                
-                // Variáveis para rotas em andamento
-                const totalKm = isInProgress ? 'EM ROTA' : (route.kmEnd - route.kmStart).toFixed(1) + ' km';
-                const kmFinalStr = isInProgress ? 'N/A' : (route.kmEnd ? route.kmEnd.toFixed(1) : 'N/A');
-                const endTimeStr = isInProgress ? 'EM ABERTO' : (route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A');
-                const endAddress = isInProgress ? 'N/A' : (route.endLocation?.address || 'Endereço Indisponível');
-                const startLat = route.startLocation?.lat || 0; 
-                const startLon = route.startLocation?.lon || 0; 
-                const endLat = route.endLocation?.lat || 0;
-                const endLon = route.endLocation?.lon || 0;
-                
-                // Campo Tempo (com atributo para atualização em tempo real)
-                const elapsedTimeStr = isInProgress ? 
-                    `<span class="font-bold text-red-600" data-live-time="${route.id}">CALCULANDO...</span>` : 
-                    (route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A');
-                
-                // Horário de Saída (sempre existe)
-                const startTimeStr = route.startTime ? route.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
-                
-                // Botões de Visualização de Foto
-                const startPhotoBtn = route.startPhoto ? 
-                    `<button onclick="viewPhoto('${route.startPhoto}', 'Foto KM Inicial - ${route.driverName}', ${startLat}, ${startLon})" 
-                        class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Localização de Saída">
-                        <i class="fas fa-image"></i>
-                    </button>` : `<span class="text-gray-400"><i class="fas fa-times-circle"></i></span>`;
-
-                const endPhotoBtn = isInProgress ? 
-                    `<span class="text-gray-400"><i class="fas fa-minus-circle"></i></span>` : // Desabilitado se em andamento
-                    (route.endPhoto ? 
-                        `<button onclick="viewPhoto('${route.endPhoto}', 'Foto KM Final - ${route.driverName}', ${endLat}, ${endLon})" 
-                            class="text-liquid-blue-600 hover:text-liquid-blue-800 transition-colors" title="Ver Foto e Localização de Chegada">
-                            <i class="fas fa-image"></i>
-                        </button>` : `<span class="text-gray-400"><i class="fas fa-times-circle"></i></span>`);
-                
-                // Botão de Excluir
-                const deleteBtn = `<button onclick="deleteRoute('${route.id}')" class="bg-red-500 text-white hover:bg-red-700 p-2 rounded-md text-sm" title="Excluir Rota">
-                                        <i class="fas fa-trash"></i> Excluir
-                                    </button>`;
-
-                // Estilo da linha para rotas em andamento
-                const rowClass = isInProgress ? 'bg-yellow-50/70 hover:bg-yellow-100/70' : 'bg-white/70 hover:bg-liquid-blue-50/50';
-
-                const newRow = `
-                    <tr class="${rowClass}">
-                        <td class="px-2 py-4 whitespace-nowrap text-sm font-medium" style="color: var(--text-dark);">${route.driverName}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${route.licensePlate}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm font-bold text-liquid-blue-700">${totalKm}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm text-liquid-blue-600">${elapsedTimeStr}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">${startTimeStr}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500">${endTimeStr}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${route.kmStart ? route.kmStart.toFixed(1) : 'N/A'}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-sm" style="color: var(--text-dark);">${kmFinalStr}</td>
-                        <td class="px-2 py-4 text-sm max-w-xs truncate" style="color: var(--text-dark);" title="${route.startLocation?.address || 'Endereço Indisponível'}">${route.startLocation?.address || 'Endereço Indisponível'}</td>
-                        <td class="px-2 py-4 text-sm max-w-xs truncate" style="color: var(--text-dark);" title="${endAddress}">${endAddress}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-center">${startPhotoBtn}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-center">${endPhotoBtn}</td>
-                        <td class="px-2 py-4 whitespace-nowrap text-center">${deleteBtn}</td>
-                    </tr>
-                `;
-                adminTableBody.insertAdjacentHTML('beforeend', newRow);
+        // --- LISTAGEM ADMIN ---
+        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
+            const list = document.getElementById('lista-viagens');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const v = d.data();
+                const dataStr = v.dataInicio?.toDate().toLocaleDateString();
+                list.innerHTML += `
+                    <div class="card p-5 border-l-4 ${v.status === 'em_curso' ? 'border-l-amber-500' : 'border-l-emerald-500'}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><h3 class="font-bold text-lg">${v.nome}</h3><p class="text-blue-400 font-mono text-sm">${v.placa}</p></div>
+                            <button onclick="excluirViagem('${d.id}')" class="text-slate-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-xs mb-4">
+                            <div><p class="text-slate-500 uppercase">KM Inicial</p><p class="font-bold text-sm">${v.kmInicio} km</p></div>
+                            <div><p class="text-slate-500 uppercase">KM Final</p><p class="font-bold text-sm">${v.kmFim || '--'} km</p></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 py-2 rounded-lg font-bold text-[10px] uppercase">Foto Início</button>
+                            ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 py-2 rounded-lg font-bold text-[10px] uppercase">Foto Fim</button>` : ''}
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-800 pt-3">
+                            <div class="flex gap-2">
+                                <span onclick="window.open('https://www.google.com/maps?q=${v.locInicio}')" class="cursor-pointer text-blue-400">📍 Início</span>
+                                ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps?q=${v.locFim}')" class="cursor-pointer text-emerald-400">📍 Fim</span>` : ''}
+                            </div>
+                            <span>${dataStr}</span>
+                        </div>
+                    </div>`;
             });
-            
-            // Se houver rotas em andamento, garante que o timer de atualização de tempo esteja ligado.
-            if (routes.some(r => r.status === 'In Progress')) {
-                 startLiveTimer();
-            } else {
-                 stopLiveTimer();
-            }
-        }
+            lucide.createIcons();
+        });
 
-        // --- Lógica Principal ---
-        let allRoutesData = [];
-
-        window.showDriverView = function() {
-            adminView.classList.add('hidden');
-            driverView.classList.remove('hidden');
-            document.getElementById('show-driver-btn').classList.add('active');
-            document.getElementById('show-admin-btn').classList.remove('active');
-            listenForCurrentTrip();
-            stopLiveTimer(); // NOVO: Para o timer de tempo real quando sai do admin
-        }
-
-        window.showAdminView = function() {
-            driverView.classList.add('hidden');
-            adminView.classList.remove('hidden');
-            document.getElementById('show-driver-btn').classList.remove('active');
-            document.getElementById('show-admin-btn').classList.add('active');
-            
-            if (!adminLoginArea.classList.contains('hidden')) {
-                // Não logado, aguarda a senha
-            } else {
-                listenForAdminRoutes();
-            }
-        }
-
-        async function initFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("Usuário autenticado:", userId);
-                        listenForCurrentTrip();
-                    } else {
-                        signInAnonymously(auth).then(credential => {
-                            userId = credential.user.uid;
-                            console.log("Autenticação anônima de novo usuário:", userId);
-                            listenForCurrentTrip();
-                        }).catch(error => {
-                            console.error("Erro na autenticação anônima:", error);
-                            displayMessage("Erro de autenticação. Tente novamente.", 'error');
-                        });
-                    }
-                });
-            } catch (error) {
-                console.error("Erro na inicialização do Firebase:", error);
-                displayMessage(`Falha na inicialização. Verifique o console. ${error.message}`, 'error');
-            }
-        }
-
-        async function listenForCurrentTrip() {
-            if (!db || !userId) return;
-
-            const q = query(
-                collection(db, ROUTES_COLLECTION_PATH),
-                where('userId', '==', userId),
-                where('status', '==', 'In Progress')
-            );
-
-            onSnapshot(q, (snapshot) => {
-                if (!snapshot.empty) {
-                    const tripDoc = snapshot.docs[0];
-                    currentTripDocId = tripDoc.id;
-                    localStorage.setItem('currentTripDocId', currentTripDocId);
-                    updateDriverUI(tripDoc.data());
-                } else {
-                    currentTripDocId = null;
-                    localStorage.removeItem('currentTripDocId');
-                    updateDriverUI(null);
+        // Verificação de viagem ativa no Load
+        window.addEventListener('load', async () => {
+            if (idAtual) {
+                const docSnap = await getDoc(doc(db, "viagens", idAtual));
+                if (docSnap.exists() && docSnap.data().status === 'em_curso') {
+                    const d = docSnap.data();
+                    mudarTela('viagem');
+                    document.getElementById('info-viagem-ativa').innerText = `${d.nome} • ${d.placa}`;
+                    setInterval(() => {
+                        const diff = Math.floor((new Date().getTime() - d.dataInicio.toDate().getTime()) / 1000);
+                        document.getElementById('cronometro-motorista').innerText = formatarTempo(diff);
+                    }, 1000);
                 }
-            }, (error) => {
-                console.error("Erro ao buscar viagem em andamento:", error);
-                updateDriverUI(null);
-            });
-        }
-
-        async function listenForAdminRoutes() {
-            if (!db) return; 
-            // MODIFICADO: Busca rotas em andamento E concluídas
-            const q = query(
-                collection(db, ROUTES_COLLECTION_PATH),
-                where('status', 'in', ['Completed', 'In Progress']) 
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                allRoutesData = [];
-                snapshot.forEach((doc) => {
-                    allRoutesData.push({ id: doc.id, ...doc.data() });
-                });
-                applyAdminFilters(); // Aplica filtros e renderiza
-            }, (error) => {
-                console.error("Erro ao monitorar rotas administrativas:", error);
-                adminTableBody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-red-500">Erro ao carregar dados.</td></tr>';
-            });
-        }
-
-        window.deleteRoute = async function(routeId) {
-            if (!db) {
-                displayMessage('Sistema não inicializado.', 'error');
-                return;
             }
-            displayMessage(`Excluindo rota ID: ${routeId}...`, 'info');
-            try {
-                const routeRef = doc(db, ROUTES_COLLECTION_PATH, routeId);
-                await deleteDoc(routeRef);
-                displayMessage(`Rota ID ${routeId} excluída com sucesso! A tabela será atualizada.`, 'success');
-            } catch (error) {
-                console.error("Erro ao excluir documento:", error);
-                displayMessage(`Falha ao excluir a rota. Erro: ${error.message}`, 'error');
-            }
-        }
-
-        // --- Lógica do Motorista (Inalterada) ---
-        window.startTrip = async function() {
-            if (!db || !userId) {
-                displayMessage('Sistema não inicializado. Verifique a conexão com o Firebase.', 'error');
-                return;
-            }
-
-            const driverName = document.getElementById('driver-name').value.trim();
-            const licensePlate = document.getElementById('license-plate').value.trim().toUpperCase();
-            const kmStart = parseFloat(document.getElementById('km-start').value);
-
-            if (!driverName || !licensePlate || isNaN(kmStart) || kmStart <= 0) {
-                displayMessage('Por favor, preencha todos os campos corretamente: Nome, Placa e KM Inicial válido (> 0).', 'error');
-                return;
-            }
-
-            if (!startPhotoBase64) {
-                displayMessage('A foto do painel/odômetro na SAÍDA é obrigatória. Por favor, anexe a foto.', 'error');
-                return;
-            }
-
-            displayMessage('Buscando localização e endereço de saída, registrando foto e iniciando viagem...', 'info');
-
-            try {
-                const location = await getGeolocation();
-                const address = await getStreetAndNeighborhood(location.lat, location.lon);
-
-                const newRouteRef = doc(collection(db, ROUTES_COLLECTION_PATH));
-                const newTripData = {
-                    driverName: driverName,
-                    licensePlate: licensePlate,
-                    kmStart: kmStart,
-                    startTime: Timestamp.now(),
-                    startLocation: { ...location, address: address }, 
-                    startPhoto: startPhotoBase64,
-                    userId: userId,
-                    status: 'In Progress',
-                    kmEnd: null,
-                    endTime: null,
-                    endLocation: null,
-                    endPhoto: null,
-                    elapsedTimeSeconds: null
-                };
-
-                await setDoc(newRouteRef, newTripData);
-
-                currentTripDocId = newRouteRef.id;
-                localStorage.setItem('currentTripDocId', currentTripDocId);
-                startPhotoBase64 = null;
-                document.getElementById('photo-start').value = '';
-
-                displayMessage(`Viagem iniciada com sucesso em ${address} (com foto)!`, 'success');
-            } catch (error) {
-                console.error("Erro ao iniciar a viagem:", error);
-                displayMessage(`Falha ao registrar saída. ${error.message || 'Verifique o console para detalhes.'}`, 'error');
-            }
-        }
-
-        window.endTrip = async function() {
-            if (!db || !currentTripDocId) {
-                displayMessage('Nenhuma viagem em andamento para finalizar.', 'error');
-                return;
-            }
-
-            const kmEnd = parseFloat(document.getElementById('km-end').value);
-
-            if (isNaN(kmEnd) || kmEnd <= 0) {
-                displayMessage('Por favor, insira um KM Final válido.', 'error');
-                return;
-            }
-
-            if (!endPhotoBase64) {
-                displayMessage('A foto do painel/odômetro na CHEGADA é obrigatória. Por favor, anexe a foto.', 'error');
-                return;
-            }
-
-            displayMessage('Buscando localização final, endereço e salvando foto de chegada...', 'info');
-
-            try {
-                const docRef = doc(db, ROUTES_COLLECTION_PATH, currentTripDocId);
-
-                const currentTripSnapshot = await getDocs(query(collection(db, ROUTES_COLLECTION_PATH), where('__name__', '==', currentTripDocId)));
-                if (currentTripSnapshot.empty) {
-                    displayMessage('Viagem não encontrada no banco de dados. Limpando estado local.', 'error');
-                    localStorage.removeItem('currentTripDocId');
-                    currentTripDocId = null;
-                    return;
-                }
-                const currentTripData = currentTripSnapshot.docs[0].data();
-
-                if (kmEnd < currentTripData.kmStart) {
-                    displayMessage(`O KM Final (${kmEnd}) deve ser maior que o KM Inicial (${currentTripData.kmStart}).`, 'error');
-                    return;
-                }
-
-                const endLocation = await getGeolocation();
-                const endAddress = await getStreetAndNeighborhood(endLocation.lat, endLocation.lon);
-
-                const endTime = Timestamp.now();
-                const startTime = currentTripData.startTime.toDate().getTime();
-                const elapsedTimeSeconds = Math.floor((endTime.toDate().getTime() - startTime) / 1000);
-
-                const updateData = {
-                    kmEnd: kmEnd,
-                    endTime: endTime,
-                    endLocation: { ...endLocation, address: endAddress }, 
-                    endPhoto: endPhotoBase64,
-                    elapsedTimeSeconds: elapsedTimeSeconds,
-                    status: 'Completed'
-                };
-
-                await updateDoc(docRef, updateData);
-
-                localStorage.removeItem('currentTripDocId');
-                currentTripDocId = null;
-                endPhotoBase64 = null; 
-                document.getElementById('photo-end').value = ''; 
-
-                displayMessage(`Viagem finalizada com sucesso em ${endAddress} (com foto)! Tempo: ${formatTime(elapsedTimeSeconds)}`, 'success');
-            } catch (error) {
-                console.error("Erro ao finalizar a viagem:", error);
-                displayMessage(`Falha ao registrar chegada. ${error.message || 'Verifique o console para detalhes.'}`, 'error');
-            }
-        }
-
-        // --- Lógica Administrativa ---
-        window.adminLogin = function() {
-            const password = document.getElementById('admin-password').value;
-            loginErrorMessage.classList.add('hidden');
-
-            if (password === ADMIN_PASSWORD) {
-                adminLoginArea.classList.add('hidden');
-                adminDashboard.classList.remove('hidden');
-                listenForAdminRoutes();
-                startLiveTimer(); // NOVO: Inicia o timer de tempo real
-                displayMessage('Acesso Administrativo concedido.', 'success');
-            } else {
-                loginErrorMessage.classList.remove('hidden');
-                displayMessage('Senha incorreta.', 'error');
-            }
-        }
-
-        window.applyAdminFilters = function() {
-            const plate = document.getElementById('filter-plate').value.trim().toUpperCase();
-            const startDateStr = document.getElementById('filter-start-date').value;
-            const endDateStr = document.getElementById('filter-end-date').value;
-
-            let filteredData = allRoutesData;
-
-            if (plate) {
-                filteredData = filteredData.filter(route => route.licensePlate.includes(plate));
-            }
-
-            if (startDateStr) {
-                const startOfDay = new Date(startDateStr);
-                startOfDay.setHours(0, 0, 0, 0);
-                const startTimestamp = startOfDay.getTime();
-                
-                filteredData = filteredData.filter(route => 
-                    route.startTime && route.startTime.toDate().getTime() >= startTimestamp
-                );
-            }
-
-            if (endDateStr) {
-                const endOfDay = new Date(endDateStr);
-                endOfDay.setHours(23, 59, 59, 999);
-                const endTimestamp = endOfDay.getTime();
-                
-                filteredData = filteredData.filter(route => 
-                    route.startTime && route.startTime.toDate().getTime() <= endTimestamp
-                );
-            }
-
-            // MODIFICADO: Classifica: Em andamento primeiro, depois por data de início (mais recente primeiro)
-            filteredData.sort((a, b) => {
-                const statusA = a.status === 'In Progress' ? 0 : 1;
-                const statusB = b.status === 'In Progress' ? 0 : 1;
-                
-                if (statusA !== statusB) {
-                    return statusA - statusB; 
-                }
-                
-                // Se os status forem iguais, ordena por hora de início (mais recente primeiro)
-                return b.startTime.toDate().getTime() - a.startTime.toDate().getTime();
-            });
-
-            renderAdminTable(filteredData);
-        }
-
-        window.exportToCSV = function() {
-            const routesToExport = [];
-            const rows = adminTableBody.querySelectorAll('tr');
-
-            if (rows.length === 1 && rows[0].cells.length === 1) {
-                displayMessage('Nenhum dado para exportar.', 'error');
-                return;
-            }
-            
-            // Assume que allRoutesData já está filtrado e ordenado pela última chamada a applyAdminFilters
-            const dataToExport = allRoutesData;
-
-
-            dataToExport.forEach(route => {
-                const totalKm = route.kmEnd ? (route.kmEnd - route.kmStart).toFixed(1) : 'N/A (EM ROTA)';
-                const elapsedTimeStr = route.elapsedTimeSeconds ? formatTime(route.elapsedTimeSeconds) : 'N/A (EM ROTA)';
-                const startTimeStr = route.startTime ? route.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
-                const endTimeStr = route.endTime ? route.endTime.toDate().toLocaleString('pt-BR') : 'N/A (EM ROTA)';
-                const startAddress = route.startLocation?.address || 'Endereço Indisponível';
-                const endAddress = route.endLocation?.address || 'Endereço Indisponível (EM ROTA)';
-                const startLat = route.startLocation ? route.startLocation.lat : 'N/A';
-                const startLon = route.startLocation ? route.startLocation.lon : 'N/A';
-                const endLat = route.endLocation ? route.endLocation.lat : 'N/A';
-                const endLon = route.endLocation ? route.endLocation.lon : 'N/A';
-                
-                const startPhotoRef = route.startPhoto ? 'Anexado (Base64)' : 'N/A';
-                const endPhotoRef = route.endPhoto ? 'Anexado (Base64)' : 'N/A (EM ROTA)';
-
-                routesToExport.push([
-                    route.driverName,
-                    route.licensePlate,
-                    startTimeStr,
-                    endTimeStr,
-                    startPhotoRef,
-                    endPhotoRef,
-                    totalKm,
-                    elapsedTimeStr,
-                    route.kmStart,
-                    route.kmEnd,
-                    startAddress.replace(/;/g, ','), 
-                    endAddress.replace(/;/g, ','),   
-                    startLat,
-                    startLon,
-                    endLat,
-                    endLon
-                ].map(item => `"${item}"`)); 
-            });
-
-
-            const header = [
-                "Motorista", "Placa", "Data_Saida", "Data_Chegada", "Foto_Saida", 
-                "Foto_Chegada", "KM_Total_Rodado", "Tempo_Decorrido", "KM_Inicial", 
-                "KM_Final", "Local_Saida_Endereco", "Local_Chegada_Endereco", "Local_Saida_Lat", 
-                "Local_Saida_Lon", "Local_Chegada_Lat", "Local_Chegada_Lon"
-            ];
-
-            const csvContent = [header.join(';'), ...routesToExport.map(r => r.join(';'))].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `rotas_exportadas_${new Date().toISOString().slice(0, 10)}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            displayMessage('Dados exportados com sucesso!', 'success');
-        }
-
-        // Event Listeners para navegação
-        document.getElementById('show-driver-btn').addEventListener('click', window.showDriverView);
-        document.getElementById('show-admin-btn').addEventListener('click', window.showAdminView);
-
-        // Inicia o sistema
-        initFirebase().then(() => {
-            console.log("Sistema inicializado.");
+            lucide.createIcons();
         });
     </script>
 </body>
