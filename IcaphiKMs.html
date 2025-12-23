@@ -50,9 +50,9 @@
         <div class="card p-6 w-full max-w-sm space-y-6">
             <h3 class="font-bold text-center text-lg">Guia do Motorista</h3>
             <div class="space-y-4 text-sm text-slate-300">
-                <p>1. Informe Nome, Placa e KM Inicial.</p>
-                <p>2. Tire foto do painel e inicie a viagem.</p>
-                <p>3. Durante o percurso, use o botão azul para lançar gastos ou avisos.</p>
+                <p>1. Selecione o Tipo de Viagem.</p>
+                <p>2. Informe Nome, Placa e KM Inicial.</p>
+                <p>3. Tire foto do painel e inicie a viagem.</p>
                 <p>4. No destino, informe KM Final e foto final para encerrar.</p>
             </div>
             <button onclick="fecharTutorial()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">ENTENDI!</button>
@@ -63,6 +63,13 @@
         <div class="card p-6 border-t-4 border-t-blue-600 shadow-xl">
             <h2 class="text-lg font-semibold mb-5 flex items-center gap-2"><i data-lucide="play" class="text-emerald-400 w-4 h-4"></i> Iniciar Viagem</h2>
             <div class="space-y-4">
+                <select id="tipo-viagem" class="input-style">
+                    <option value="" disabled selected>Selecione o Tipo de Viagem</option>
+                    <option value="Saida Dia">Saida Dia</option>
+                    <option value="Apoio">Apoio</option>
+                    <option value="Seg. Viagem">Seg. Viagem</option>
+                    <option value="Pernoite/Viagem">Pernoite/Viagem</option>
+                </select>
                 <input type="text" id="motorista" placeholder="Nome do Motorista" class="input-style">
                 <input type="text" id="placa" placeholder="Placa" class="input-style uppercase font-mono">
                 <input type="number" id="km-inicio" placeholder="KM Inicial" class="input-style">
@@ -113,8 +120,24 @@
         <div id="lista-viagens" class="space-y-4"></div>
     </main>
 
+    <div id="modal-fim-viagem" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
+        <div class="card p-8 w-full max-w-sm space-y-6 text-center border-emerald-500/30">
+            <div class="flex justify-center text-emerald-500"><i data-lucide="check-circle" class="w-16 h-16"></i></div>
+            <h3 class="text-xl font-bold uppercase">Viagem Encerrada!</h3>
+            <p class="text-sm text-slate-400" id="resumo-fim"></p>
+            <div class="space-y-3">
+                <button id="btn-share" class="w-full bg-blue-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i data-lucide="share-2" class="w-5 h-5"></i> COMPARTILHAR
+                </button>
+                <button onclick="location.reload()" class="w-full bg-slate-800 py-4 rounded-xl font-bold text-slate-300">
+                    VOLTAR AO INÍCIO
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
-        <div class="card p-6 w-full max-w-sm space-y-4 shadow-2xl">
+        <div class="card p-6 w-full max-w-sm space-y-4">
             <h3 class="font-bold text-center text-blue-400">Nova Observação</h3>
             <select id="obs-assunto" class="input-style">
                 <option value="Descarga">Descarga</option>
@@ -134,14 +157,14 @@
 
     <div id="modal-ver-obs" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
         <div class="card p-6 w-full max-w-sm max-h-[80vh] flex flex-col">
-            <h3 class="font-bold text-center text-blue-400 mb-4 uppercase">Relatório de Observações</h3>
+            <h3 class="font-bold text-center text-blue-400 mb-4 uppercase">Observações</h3>
             <div id="lista-obs-render" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
             <button onclick="document.getElementById('modal-ver-obs').classList.add('hidden')" class="w-full bg-slate-800 py-3 rounded-xl mt-4 font-bold">FECHAR</button>
         </div>
     </div>
 
     <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
-        <div class="card p-6 w-full max-w-sm space-y-4">
+        <div class="card p-6 w-full max-w-sm space-y-4 shadow-2xl">
             <h3 class="font-bold text-center">Exportar Relatório</h3>
             <select id="select-placa-export" class="input-style"></select>
             <div class="grid grid-cols-2 gap-2">
@@ -199,11 +222,9 @@
             }, 600);
         };
 
-        // --- TUTORIAL ---
         window.abrirTutorial = () => document.getElementById('modal-tutorial').classList.remove('hidden');
         window.fecharTutorial = () => document.getElementById('modal-tutorial').classList.add('hidden');
 
-        // --- OBSERVAÇÕES ---
         window.abrirModalObs = () => document.getElementById('modal-obs').classList.remove('hidden');
         window.fecharModalObs = () => { document.getElementById('modal-obs').classList.add('hidden'); document.getElementById('obs-texto').value = ""; document.getElementById('obs-valor').value = ""; };
         window.salvarObservacao = async () => {
@@ -230,7 +251,6 @@
             document.getElementById('modal-ver-obs').classList.remove('hidden');
         };
 
-        // --- ADMIN ---
         window.setFiltroStatus = (s) => {
             statusSelecionado = s;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -255,11 +275,15 @@
                 container.innerHTML += `
                     <div class="card p-5 space-y-4 fade-in">
                         <div class="flex justify-between items-start">
-                            <div><h3 class="font-bold text-lg uppercase">${v.nome}</h3><p class="text-blue-400 font-mono text-[10px] uppercase">${v.placa}</p></div>
+                            <span class="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md font-extrabold uppercase">${v.tipoViagem || 'Viagem'}</span>
                             <div class="flex gap-2">
                                 <span class="text-[9px] px-2 py-1 rounded-full font-bold uppercase ${isEmCurso ? 'badge-em-viagem' : 'bg-emerald-500/10 text-emerald-500'}">${v.status}</span>
                                 <button onclick="excluirViagem('${v.id}')" class="text-slate-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <h3 class="font-bold text-lg uppercase leading-none">${v.nome}</h3>
+                            <p class="text-blue-400 font-mono text-[10px] uppercase mt-1">${v.placa}</p>
                         </div>
                         <div class="bg-slate-950/40 p-3 rounded-xl text-center border border-slate-800/50">
                             <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Duração da Viagem</p>
@@ -288,7 +312,6 @@
             lucide.createIcons();
         };
 
-        // --- SISTEMA ---
         onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
             listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderizarAdmin();
@@ -302,12 +325,12 @@
         }, 1000);
 
         window.iniciarViagem = async () => {
-            const n = document.getElementById('motorista').value, p = document.getElementById('placa').value.toUpperCase(), k = document.getElementById('km-inicio').value, f = document.getElementById('foto-inicio').files[0];
-            if(!n || !p || !k || !f) return alert("Preencha tudo!");
+            const t = document.getElementById('tipo-viagem').value, n = document.getElementById('motorista').value, p = document.getElementById('placa').value.toUpperCase(), k = document.getElementById('km-inicio').value, f = document.getElementById('foto-inicio').files[0];
+            if(!t || !n || !p || !k || !f) return alert("Preencha todos os campos e selecione o tipo!");
             toggleLoading(true);
             const fotoC = await compressImage(f), loc = await getLoc(), agora = new Date();
             const docRef = await addDoc(collection(db, "viagens"), { 
-                nome: n, placa: p, kmInicio: parseFloat(k), fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora, observacoes: [] 
+                tipoViagem: t, nome: n, placa: p, kmInicio: parseFloat(k), fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora, observacoes: [] 
             });
             localStorage.setItem('icaphidrive_viagem_id', docRef.id);
             location.reload();
@@ -318,9 +341,27 @@
             if(!kF || !f) return alert("Complete os dados!");
             toggleLoading(true);
             const fotoC = await compressImage(f), loc = await getLoc(), dur = document.getElementById('cronometro-motorista').innerText;
+            const snap = await getDoc(doc(db, "viagens", idAtual));
+            const vData = snap.data();
+            
             await updateDoc(doc(db, "viagens", idAtual), { kmFim: parseFloat(kF), fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: new Date(), duracao: dur });
+            
             localStorage.removeItem('icaphidrive_viagem_id');
-            location.reload();
+            toggleLoading(false);
+
+            // Montar resumo para compartilhar
+            const resumo = `🚛 *RELATÓRIO ICAPHIDRIVE*\n\n*Motorista:* ${vData.nome}\n*Placa:* ${vData.placa}\n*Tipo:* ${vData.tipoViagem}\n*KM Inicial:* ${vData.kmInicio}\n*KM Final:* ${kF}\n*Duração:* ${dur}`;
+            document.getElementById('resumo-fim').innerText = `Motorista: ${vData.nome} | Placa: ${vData.placa}`;
+            document.getElementById('modal-fim-viagem').classList.remove('hidden');
+            
+            document.getElementById('btn-share').onclick = () => {
+                if(navigator.share) {
+                    navigator.share({ title: 'Relatório de Viagem', text: resumo });
+                } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(resumo)}`);
+                }
+            };
+            lucide.createIcons();
         };
 
         window.abrirModalExport = () => {
@@ -344,7 +385,7 @@
                     match = match && (dataV >= s && dataV <= e);
                 }
                 return match;
-            }).map(v => ({ Motorista: v.nome, Placa: v.placa, KM_I: v.kmInicio, KM_F: v.kmFim || "", Tempo: v.duracao || "" }));
+            }).map(v => ({ Tipo: v.tipoViagem, Motorista: v.nome, Placa: v.placa, KM_I: v.kmInicio, KM_F: v.kmFim || "", Tempo: v.duracao || "" }));
             const ws = XLSX.utils.json_to_sheet(dados); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
             XLSX.writeFile(wb, "Relatorio_Icaphi.xlsx");
         };
