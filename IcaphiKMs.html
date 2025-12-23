@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IcaphiDrive</title>
+    <title>LogDrive Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -14,13 +14,14 @@
         .input-style { background: #1e293b !important; border: 1px solid #334155 !important; color: white !important; width: 100%; padding: 0.75rem; border-radius: 0.75rem; outline: none; font-size: 14px; }
         .btn-primary { background: #2563eb; transition: all 0.2s; }
         .glass-modal { background: rgba(2, 6, 23, 0.96); backdrop-filter: blur(12px); z-index: 100; }
+        .badge-em-viagem { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
 
     <header id="header-main" class="flex justify-between items-center py-6">
         <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-blue-500 italic">ICAPHI<span class="text-white">DRIVE</span></h1>
+            <h1 class="text-xl font-extrabold tracking-tight text-blue-500 italic">LOG<span class="text-white">DRIVE</span></h1>
             <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Controle de Frota</p>
         </div>
         <button onclick="acessoAdmin()" class="p-3 card border-slate-700 active:bg-slate-800 transition">
@@ -68,15 +69,15 @@
     <main id="tela-admin" class="hidden space-y-4 pb-10">
         <div class="flex items-center justify-between sticky top-0 bg-[#020617] py-4 z-20">
             <button onclick="mudarTela('inicio')" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <h2 class="text-xl font-bold">Histórico Admin</h2>
+            <h2 class="text-xl font-bold text-blue-500">Histórico Admin</h2>
             <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></button>
         </div>
         <div id="lista-viagens" class="space-y-4"></div>
     </main>
 
     <main id="tela-resumo" class="hidden space-y-6 py-10">
-        <div class="card p-6 bg-slate-900/50" id="dados-resumo-texto"></div>
-        <button onclick="location.reload()" class="w-full bg-slate-800 py-4 rounded-xl font-bold">VOLTAR AO INÍCIO</button>
+        <div id="dados-resumo-render" class="space-y-6">
+            </div>
     </main>
 
     <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
@@ -123,6 +124,8 @@
 
         let idAtual = localStorage.getItem('logdrive_viagem_id');
         let resumoObjeto = JSON.parse(localStorage.getItem('logdrive_resumo')) || {};
+        let textoResumoGlobal = ""; 
+
         const SENHA_ADMIN = "60010774";
 
         const formatarTempo = (s) => {
@@ -160,7 +163,6 @@
             navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res("Sem GPS"), {enableHighAccuracy: true});
         });
 
-        // --- FUNÇÕES GLOBAIS (ACESSÍVEIS PELO HTML) ---
         window.acessoAdmin = () => {
             if(prompt("Senha:") === SENHA_ADMIN) mudarTela('admin');
         };
@@ -179,22 +181,20 @@
             const p = document.getElementById('placa').value;
             const k = document.getElementById('km-inicio').value;
             const f = document.getElementById('foto-inicio').files[0];
-            if(!n || !p || !k || !f) return alert("Preencha todos os campos e tire a foto!");
+            if(!n || !p || !k || !f) return alert("Preencha todos os campos!");
             
             const btn = document.getElementById('btn-iniciar');
-            btn.disabled = true; btn.innerText = "Processando...";
-            
+            btn.disabled = true;
             const fotoC = await compressImage(f);
             const loc = await getLoc();
             const agora = new Date();
             
-            resumoObjeto = { nome: n, placa: p, kmInicio: parseFloat(k) };
             const docRef = await addDoc(collection(db, "viagens"), {
-                ...resumoObjeto, fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora
+                nome: n, placa: p, kmInicio: parseFloat(k), fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora
             });
             
             localStorage.setItem('logdrive_viagem_id', docRef.id);
-            localStorage.setItem('logdrive_resumo', JSON.stringify(resumoObjeto));
+            localStorage.setItem('logdrive_resumo', JSON.stringify({nome: n, placa: p, kmInicio: parseFloat(k)}));
             location.reload();
         };
 
@@ -214,22 +214,44 @@
                 kmFim: parseFloat(kF), dispersao: dist, fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: new Date(), duracao: dur
             });
 
+            textoResumoGlobal = `📊 *LOGDRIVE PRO*\n👤 *Motorista:* ${resumoObjeto.nome}\n🚗 *Placa:* ${resumoObjeto.placa.toUpperCase()}\n⏱️ *Tempo:* ${dur}\n🛣️ *KM Total:* ${dist.toFixed(1)} km`;
+
             localStorage.removeItem('logdrive_viagem_id');
             localStorage.removeItem('logdrive_resumo');
+            
+            document.getElementById('dados-resumo-render').innerHTML = `
+                <div class="card p-6 bg-slate-900/50 space-y-2">
+                    <h2 class="text-xl font-bold border-b border-slate-800 pb-2">Resumo da Viagem</h2>
+                    <p class="text-slate-400">Motorista: <span class="text-white">${resumoObjeto.nome}</span></p>
+                    <p class="text-slate-400">Placa: <span class="text-white font-mono">${resumoObjeto.placa.toUpperCase()}</span></p>
+                    <p class="text-slate-400">KM Total: <span class="text-emerald-400 font-bold">${dist.toFixed(1)} km</span></p>
+                    <p class="text-slate-400">Tempo: <span class="text-blue-400 font-mono">${dur}</span></p>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="compartilharResumo()" class="w-full bg-blue-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <i data-lucide="share-2"></i> COMPARTILHAR
+                    </button>
+                    <button onclick="location.reload()" class="w-full bg-slate-800 py-4 rounded-xl font-bold">VOLTAR AO INÍCIO</button>
+                </div>
+            `;
             mudarTela('resumo');
-            document.getElementById('dados-resumo-texto').innerHTML = `<h2 class='text-xl font-bold'>Resumo</h2><p>KM Total: ${dist.toFixed(1)} km</p><p>Tempo: ${dur}</p>`;
         };
 
-        // --- EXPORTAÇÃO EXCEL ---
+        window.compartilharResumo = () => {
+            if (navigator.share) {
+                navigator.share({ text: textoResumoGlobal });
+            } else {
+                alert("Resumo copiado:\n\n" + textoResumoGlobal);
+            }
+        };
+
         window.abrirModalExport = async () => {
             const select = document.getElementById('select-placa-export');
             select.innerHTML = '<option value="TODAS">Todas as Placas</option>';
-            
             const querySnapshot = await getDocs(collection(db, "viagens"));
             const placas = new Set();
             querySnapshot.forEach(d => placas.add(d.data().placa.toUpperCase()));
             placas.forEach(p => select.innerHTML += `<option value="${p}">${p}</option>`);
-
             document.getElementById('modal-export').classList.remove('hidden');
         };
 
@@ -239,73 +261,98 @@
             const dIni = document.getElementById('data-exp-inicio').value;
             const dFim = document.getElementById('data-exp-fim').value;
             const pSel = document.getElementById('select-placa-export').value;
-
             const qS = await getDocs(query(collection(db, "viagens"), orderBy("dataInicio", "desc")));
             let dados = [];
-
             qS.forEach(docSnap => {
                 const v = docSnap.data();
                 const dataV = v.dataInicio?.toDate();
-                
                 let matchData = true;
                 if(dIni && dFim) {
                     const s = new Date(dIni + "T00:00:00");
                     const e = new Date(dFim + "T23:59:59");
                     matchData = dataV >= s && dataV <= e;
                 }
-
                 let matchPlaca = pSel === "TODAS" || v.placa.toUpperCase() === pSel;
-
                 if(matchData && matchPlaca) {
-                    dados.push({
-                        Motorista: v.nome, Placa: v.placa, Data: dataV?.toLocaleDateString(),
-                        Inicio: v.kmInicio, Fim: v.kmFim || "", Total: v.dispersao?.toFixed(1) || 0,
-                        Duracao: v.duracao || "", Local_Inicio: v.locInicio || "", Local_Fim: v.locFim || ""
-                    });
+                    dados.push({ Motorista: v.nome, Placa: v.placa, Data: dataV?.toLocaleDateString(), Inicio: v.kmInicio, Fim: v.kmFim || "", Total: v.dispersao?.toFixed(1) || 0, Duracao: v.duracao || "" });
                 }
             });
-
             const ws = XLSX.utils.json_to_sheet(dados);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Viagens");
-            XLSX.writeFile(wb, `Relatorio_${new Date().getTime()}.xlsx`);
+            XLSX.writeFile(wb, `LogDrive_${new Date().getTime()}.xlsx`);
             fecharModalExport();
         };
 
-        // --- LISTAGEM ADMIN ---
+        setInterval(() => {
+            const agora = new Date().getTime();
+            document.querySelectorAll('.cronometro-ativo-admin').forEach(el => {
+                const inicio = parseInt(el.getAttribute('data-inicio'));
+                const diff = Math.floor((agora - inicio) / 1000);
+                el.innerText = formatarTempo(diff);
+            });
+        }, 1000);
+
         onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
             const list = document.getElementById('lista-viagens');
             list.innerHTML = "";
             snap.forEach(d => {
                 const v = d.data();
-                const dataStr = v.dataInicio?.toDate().toLocaleDateString();
+                const inicioMS = v.dataInicio?.toDate().getTime();
+                const dataFormatada = v.dataInicio?.toDate().toLocaleDateString('pt-BR');
+                const isEmCurso = v.status === 'em_curso';
+                
                 list.innerHTML += `
-                    <div class="card p-5 border-l-4 ${v.status === 'em_curso' ? 'border-l-amber-500' : 'border-l-emerald-500'}">
+                    <div class="card p-5 mb-4 relative overflow-hidden">
                         <div class="flex justify-between items-start mb-4">
-                            <div><h3 class="font-bold text-lg">${v.nome}</h3><p class="text-blue-400 font-mono text-sm">${v.placa}</p></div>
-                            <button onclick="excluirViagem('${d.id}')" class="text-slate-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 text-xs mb-4">
-                            <div><p class="text-slate-500 uppercase">KM Inicial</p><p class="font-bold text-sm">${v.kmInicio} km</p></div>
-                            <div><p class="text-slate-500 uppercase">KM Final</p><p class="font-bold text-sm">${v.kmFim || '--'} km</p></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 mb-4">
-                            <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 py-2 rounded-lg font-bold text-[10px] uppercase">Foto Início</button>
-                            ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 py-2 rounded-lg font-bold text-[10px] uppercase">Foto Fim</button>` : ''}
-                        </div>
-                        <div class="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-800 pt-3">
-                            <div class="flex gap-2">
-                                <span onclick="window.open('https://www.google.com/maps?q=${v.locInicio}')" class="cursor-pointer text-blue-400">📍 Início</span>
-                                ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps?q=${v.locFim}')" class="cursor-pointer text-emerald-400">📍 Fim</span>` : ''}
+                            <div>
+                                <h3 class="font-bold text-lg uppercase">${v.nome}</h3>
+                                <p class="text-blue-400 font-mono text-xs uppercase">${v.placa}</p>
                             </div>
-                            <span>${dataStr}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] px-2 py-1 rounded-full font-bold uppercase ${isEmCurso ? 'badge-em-viagem' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}">
+                                    ${isEmCurso ? 'Em Viagem' : 'Concluído'}
+                                </span>
+                                <button onclick="excluirViagem('${d.id}')" class="text-slate-700 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/40 p-3 rounded-xl text-center mb-4 border border-slate-800/50">
+                            <p class="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Tempo de Viagem</p>
+                            <span class="font-mono text-xl font-bold ${isEmCurso ? 'text-blue-400 cronometro-ativo-admin' : 'text-slate-300'}" 
+                                  data-inicio="${inicioMS}">
+                                ${isEmCurso ? '00:00:00' : v.duracao}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-xs mb-4">
+                            <div>
+                                <p class="text-slate-500 uppercase text-[9px]">KM Inicial</p>
+                                <p class="font-bold text-sm text-slate-200">${v.kmInicio} km</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 uppercase text-[9px]">KM Final</p>
+                                <p class="font-bold text-sm text-slate-200">${v.kmFim ? v.kmFim + ' km' : '--'}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800/50 hover:bg-slate-800 py-2.5 rounded-lg font-bold text-[10px] uppercase transition">Foto Início</button>
+                            ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800/50 hover:bg-slate-800 py-2.5 rounded-lg font-bold text-[10px] uppercase transition">Foto Fim</button>` : ''}
+                        </div>
+
+                        <div class="flex justify-between items-center text-[10px] text-slate-600 border-t border-slate-800/50 pt-3 mt-2">
+                             <div class="flex gap-3">
+                                <span onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${v.locInicio}')" class="cursor-pointer hover:text-blue-400 flex items-center gap-1">📍 Início</span>
+                                ${v.locFim ? `<span onclick="window.open('http://googleusercontent.com/maps.google.com/?q=${v.locFim}')" class="cursor-pointer hover:text-emerald-400 flex items-center gap-1">📍 Fim</span>` : ''}
+                            </div>
+                            <span>${dataFormatada}</span>
                         </div>
                     </div>`;
             });
             lucide.createIcons();
         });
 
-        // Verificação de viagem ativa no Load
         window.addEventListener('load', async () => {
             if (idAtual) {
                 const docSnap = await getDoc(doc(db, "viagens", idAtual));
