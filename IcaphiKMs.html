@@ -15,20 +15,25 @@
         .btn-primary { background: #2563eb; transition: all 0.2s; }
         .glass-modal { background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(12px); z-index: 100; }
         
-        /* ANIMAÇÃO DO CARREGAMENTO */
+        /* ANIMAÇÃO DO CARREGAMENTO (CAMINHÃO) */
         #loading-screen { transition: opacity 0.5s ease-out; }
         .truck-container { animation: truckDrive 2s infinite ease-in-out; }
         @keyframes truckDrive {
-            0% { transform: translateX(-40px); opacity: 0; }
+            0% { transform: translateX(-50px); opacity: 0; }
             50% { transform: translateX(0px); opacity: 1; }
-            100% { transform: translateX(40px); opacity: 0; }
+            100% { transform: translateX(50px); opacity: 0; }
         }
         
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        .filter-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
         .badge-em-viagem { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
         .step-number { background: #2563eb; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+        
+        /* Ocultar barra de rolagem lateral nos filtros */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -37,7 +42,7 @@
         <div class="truck-container text-blue-500">
             <i data-lucide="truck" class="w-16 h-16"></i>
         </div>
-        <p class="text-blue-500 font-bold tracking-widest text-[10px] uppercase mt-6">IcaphiDrive Processando...</p>
+        <p class="text-blue-500 font-bold tracking-widest text-[10px] uppercase mt-6">Processando Informações...</p>
     </div>
 
     <header class="flex justify-between items-center py-6">
@@ -59,32 +64,32 @@
         <div class="card p-6 w-full max-w-sm space-y-6">
             <div class="text-center">
                 <i data-lucide="book-open" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
-                <h3 class="font-bold text-lg">Como usar o IcaphiDrive</h3>
+                <h3 class="font-bold text-lg">Guia do Motorista</h3>
             </div>
             <div class="space-y-4">
-                <div class="flex gap-3"><span class="step-number">1</span><p class="text-sm text-slate-300">Preencha nome, placa e o KM inicial do painel.</p></div>
-                <div class="flex gap-3"><span class="step-number">2</span><p class="text-sm text-slate-300">Tire uma foto nítida do odômetro no início.</p></div>
-                <div class="flex gap-3"><span class="step-number">3</span><p class="text-sm text-slate-300">Ao chegar, insira o KM Final e a foto de encerramento.</p></div>
+                <div class="flex gap-3"><span class="step-number">1</span><p class="text-sm text-slate-300">Informe seu nome, placa e o KM que aparece no painel.</p></div>
+                <div class="flex gap-3"><span class="step-number">2</span><p class="text-sm text-slate-300">Tire uma foto nítida do painel antes de sair.</p></div>
+                <div class="flex gap-3"><span class="step-number">3</span><p class="text-sm text-slate-300">Ao chegar, informe o KM final e a foto de encerramento.</p></div>
             </div>
             <button onclick="fecharTutorial()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">ENTENDI!</button>
         </div>
     </div>
 
     <main id="tela-inicio" class="fade-in space-y-6">
-        <div class="card p-6 border-t-4 border-t-blue-600 shadow-2xl">
+        <div class="card p-6 border-t-4 border-t-blue-600 shadow-xl">
             <h2 class="text-lg font-semibold mb-5 flex items-center gap-2">
-                <i data-lucide="play" class="text-emerald-400 fill-emerald-400 w-4 h-4"></i> Iniciar Viagem
+                <i data-lucide="play" class="text-emerald-400 w-4 h-4"></i> Iniciar Nova Viagem
             </h2>
             <div class="space-y-4">
                 <input type="text" id="motorista" placeholder="Nome do Motorista" class="input-style">
-                <input type="text" id="placa" placeholder="Placa do Carro" class="input-style uppercase font-mono">
-                <input type="number" id="km-inicio" placeholder="KM Inicial do Odômetro" class="input-style">
+                <input type="text" id="placa" placeholder="Placa do Veículo" class="input-style uppercase font-mono">
+                <input type="number" id="km-inicio" placeholder="KM Inicial (Odômetro)" class="input-style">
                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/20 cursor-pointer">
                     <i data-lucide="camera" class="text-slate-500 mb-2"></i>
                     <span class="text-sm text-slate-400" id="label-foto-inicio">Foto do Painel (Início)</span>
                     <input type="file" id="foto-inicio" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-inicio')">
                 </label>
-                <button onclick="iniciarViagem()" id="btn-iniciar" class="w-full btn-primary py-4 rounded-xl font-bold">INICIAR AGORA</button>
+                <button onclick="iniciarViagem()" class="w-full btn-primary py-4 rounded-xl font-bold shadow-lg shadow-blue-900/40">INICIAR AGORA</button>
             </div>
         </div>
     </main>
@@ -92,27 +97,39 @@
     <main id="tela-viagem" class="hidden fade-in space-y-8 py-10 text-center">
         <div class="relative flex flex-col items-center justify-center">
             <div class="w-64 h-64 rounded-full border-4 border-blue-600/10 border-t-blue-500 animate-spin absolute"></div>
-            <div class="w-56 h-56 rounded-full flex flex-col items-center justify-center bg-slate-900 z-10">
+            <div class="w-56 h-56 rounded-full flex flex-col items-center justify-center bg-slate-900 z-10 shadow-inner">
                 <h3 id="cronometro-motorista" class="text-5xl font-mono font-bold">00:00:00</h3>
+                <p class="text-[10px] text-blue-400 mt-2 font-bold tracking-widest uppercase">Tempo de Viagem</p>
             </div>
         </div>
         <div class="card p-6 border-t-4 border-t-red-600 text-left">
             <p id="info-viagem-ativa" class="text-[10px] text-slate-500 mb-4 uppercase font-bold text-center"></p>
-            <input type="number" id="km-fim" placeholder="KM Final" class="input-style mb-4">
+            <input type="number" id="km-fim" placeholder="KM Final no Destino" class="input-style mb-4">
             <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-xl mb-6 bg-slate-800/20 cursor-pointer">
-                <span class="text-sm text-slate-400" id="label-foto-fim">Foto do Painel (Fim)</span>
+                <span class="text-sm text-slate-400" id="label-foto-fim">Foto do Painel (Final)</span>
                 <input type="file" id="foto-fim" accept="image/*" capture="environment" class="hidden" onchange="previewFoto(this, 'label-foto-fim')">
             </label>
-            <button onclick="finalizarViagem()" id="btn-finalizar" class="w-full bg-red-600 py-4 rounded-xl font-bold">ENCERRAR VIAGEM</button>
+            <button onclick="finalizarViagem()" class="w-full bg-red-600 hover:bg-red-500 py-4 rounded-xl font-bold transition-all shadow-lg shadow-red-900/30">ENCERRAR VIAGEM</button>
         </div>
     </main>
 
     <main id="tela-admin" class="hidden fade-in space-y-4 pb-10">
-        <div class="flex items-center justify-between sticky top-0 bg-[#020617] py-4 z-20">
-            <button onclick="mudarTela('inicio')" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <h2 class="text-xl font-bold text-blue-500">Histórico Admin</h2>
-            <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/20"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></button>
+        <div class="sticky top-0 bg-[#020617] pt-4 pb-2 z-20 space-y-4">
+            <div class="flex items-center justify-between">
+                <button onclick="mudarTela('inicio')" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+                <h2 class="text-xl font-bold text-blue-500">Histórico de Viagens</h2>
+                <button onclick="abrirModalExport()" class="p-3 bg-emerald-600 rounded-xl"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <button onclick="setFiltroStatus('TUDO')" id="btn-filtro-tudo" class="filter-btn active px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold uppercase whitespace-nowrap">TUDO</button>
+                <button onclick="setFiltroStatus('em_curso')" id="btn-filtro-em_curso" class="filter-btn px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold uppercase whitespace-nowrap">EM CURSO</button>
+                <button onclick="setFiltroStatus('finalizada')" id="btn-filtro-finalizada" class="filter-btn px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold uppercase whitespace-nowrap">FINALIZADAS</button>
+            </div>
+            
+            <input type="text" id="busca-admin" oninput="renderizarAdmin()" placeholder="Buscar por motorista ou placa..." class="input-style text-xs">
         </div>
+        
         <div id="lista-viagens" class="space-y-4"></div>
     </main>
 
@@ -122,14 +139,14 @@
 
     <div id="modal-export" class="hidden fixed inset-0 flex items-center justify-center glass-modal p-6">
         <div class="card p-6 w-full max-w-sm space-y-4 shadow-2xl">
-            <h3 class="font-bold text-center text-lg">Exportar Relatório Excel</h3>
+            <h3 class="font-bold text-center text-lg">Exportar para Excel</h3>
             <select id="select-placa-export" class="input-style"></select>
             <div class="grid grid-cols-2 gap-2">
                 <input type="date" id="data-exp-inicio" class="input-style text-xs">
                 <input type="date" id="data-exp-fim" class="input-style text-xs">
             </div>
-            <button onclick="gerarExcel()" class="w-full bg-emerald-600 py-4 rounded-xl font-bold">BAIXAR EXCEL</button>
-            <button onclick="fecharModalExport()" class="w-full text-slate-500 text-sm">Cancelar</button>
+            <button onclick="gerarExcel()" class="w-full bg-emerald-600 py-4 rounded-xl font-bold">GERAR ARQUIVO</button>
+            <button onclick="fecharModalExport()" class="w-full text-slate-500 text-sm font-bold">CANCELAR</button>
         </div>
     </div>
 
@@ -155,12 +172,20 @@
 
         let idAtual = localStorage.getItem('icaphidrive_viagem_id');
         let resumoObjeto = JSON.parse(localStorage.getItem('icaphidrive_resumo')) || {};
-        let textoResumoGlobal = ""; 
+        let listaGlobalViagens = [];
+        let statusSelecionado = 'TUDO';
+        let textoResumoGlobal = "";
 
+        // CONTROLE DO LOADING
         const toggleLoading = (show) => {
             const screen = document.getElementById('loading-screen');
-            if(show) { screen.classList.remove('hidden'); screen.style.opacity = "1"; }
-            else { screen.style.opacity = "0"; setTimeout(() => screen.classList.add('hidden'), 500); }
+            if(show) {
+                screen.classList.remove('hidden');
+                screen.style.opacity = "1";
+            } else {
+                screen.style.opacity = "0";
+                setTimeout(() => screen.classList.add('hidden'), 500);
+            }
         };
 
         const formatarTempo = (s) => {
@@ -180,20 +205,105 @@
             }, 600);
         };
 
+        // LÓGICA DE FILTROS ADMIN
+        window.setFiltroStatus = (status) => {
+            statusSelecionado = status;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-filtro-${status}`).classList.add('active');
+            renderizarAdmin();
+        };
+
+        window.renderizarAdmin = () => {
+            const container = document.getElementById('lista-viagens');
+            const busca = document.getElementById('busca-admin').value.toLowerCase();
+            container.innerHTML = "";
+
+            const filtrados = listaGlobalViagens.filter(v => {
+                const matchStatus = statusSelecionado === 'TUDO' || v.status === statusSelecionado;
+                const matchBusca = v.nome.toLowerCase().includes(busca) || v.placa.toLowerCase().includes(busca);
+                return matchStatus && matchBusca;
+            });
+
+            filtrados.forEach(v => {
+                const isEmCurso = v.status === 'em_curso';
+                const inicioMS = v.dataInicio.toDate().getTime();
+                
+                container.innerHTML += `
+                    <div class="card p-5 space-y-4 fade-in relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-lg uppercase">${v.nome}</h3>
+                                <p class="text-blue-400 font-mono text-[10px] uppercase">${v.placa}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-[9px] px-2 py-1 rounded-full font-bold uppercase ${isEmCurso ? 'badge-em-viagem' : 'bg-emerald-500/10 text-emerald-500'}">
+                                    ${isEmCurso ? 'Em Curso' : 'Finalizada'}
+                                </span>
+                                <button onclick="excluirViagem('${v.id}')" class="text-slate-700 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/40 p-3 rounded-xl text-center border border-slate-800/50">
+                            <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Duração da Viagem</p>
+                            <span class="font-mono text-xl font-bold ${isEmCurso ? 'text-blue-400 cronometro-admin-live' : 'text-slate-300'}" data-inicio="${inicioMS}">
+                                ${isEmCurso ? '00:00:00' : v.duracao}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-xs">
+                            <div><p class="text-slate-500 uppercase text-[9px]">KM Início</p><p class="font-bold">${v.kmInicio} km</p></div>
+                            <div><p class="text-slate-500 uppercase text-[9px]">KM Final</p><p class="font-bold">${v.kmFim || '--'} km</p></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-[10px] uppercase font-bold transition">Ver Foto Início</button>
+                            ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-[10px] uppercase font-bold transition">Ver Foto Fim</button>` : ''}
+                        </div>
+
+                        <div class="flex justify-between items-center text-[10px] border-t border-slate-800/50 pt-3">
+                            <div class="flex gap-3">
+                                <span onclick="window.open('https://www.google.com/maps?q=${v.locInicio}')" class="cursor-pointer text-blue-400 font-bold">📍 MAPA INÍCIO</span>
+                                ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps?q=${v.locFim}')" class="cursor-pointer text-emerald-400 font-bold">📍 MAPA FIM</span>` : ''}
+                            </div>
+                            <span class="text-slate-500">${v.dataInicio.toDate().toLocaleDateString('pt-BR')}</span>
+                        </div>
+                    </div>`;
+            });
+            lucide.createIcons();
+        };
+
+        // ATUALIZAÇÃO DOS CRONÔMETROS DO ADMIN (LIVE)
+        setInterval(() => {
+            const agora = new Date().getTime();
+            document.querySelectorAll('.cronometro-admin-live').forEach(el => {
+                const inicio = parseInt(el.getAttribute('data-inicio'));
+                el.innerText = formatarTempo(Math.floor((agora - inicio) / 1000));
+            });
+        }, 1000);
+
+        // SNAPSHOT FIREBASE
+        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
+            listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderizarAdmin();
+        });
+
+        // AÇÕES DO MOTORISTA
         window.iniciarViagem = async () => {
             const n = document.getElementById('motorista').value;
             const p = document.getElementById('placa').value;
             const k = document.getElementById('km-inicio').value;
             const f = document.getElementById('foto-inicio').files[0];
-            if(!n || !p || !k || !f) return alert("Preencha todos os campos e a foto!");
+            if(!n || !p || !k || !f) return alert("Preencha todos os campos e anexe a foto!");
             
             toggleLoading(true);
             const fotoC = await compressImage(f);
             const loc = await getLoc();
             const agora = new Date();
+            
             const docRef = await addDoc(collection(db, "viagens"), {
                 nome: n, placa: p, kmInicio: parseFloat(k), fotoInicio: fotoC, locInicio: loc, status: 'em_curso', dataInicio: agora
             });
+            
             localStorage.setItem('icaphidrive_viagem_id', docRef.id);
             localStorage.setItem('icaphidrive_resumo', JSON.stringify({nome: n, placa: p, kmInicio: parseFloat(k), dataInicio: agora.toISOString()}));
             location.reload();
@@ -202,7 +312,7 @@
         window.finalizarViagem = async () => {
             const kF = document.getElementById('km-fim').value;
             const f = document.getElementById('foto-fim').files[0];
-            if(!kF || !f) return alert("Insira o KM final e a foto!");
+            if(!kF || !f) return alert("Preencha o KM final e anexe a foto!");
             
             toggleLoading(true);
             const fotoC = await compressImage(f);
@@ -216,28 +326,28 @@
                 kmFim: parseFloat(kF), dispersao: dist, fotoFim: fotoC, locFim: loc, status: 'finalizada', dataFim: agoraFim, duracao: dur
             });
 
-            const horaIni = dataInicio.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-            const horaFim = agoraFim.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const hIni = dataInicio.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const hFim = agoraFim.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 
-            textoResumoGlobal = `📊 *ICAPHIDRIVE PRO*\n📅 *Data:* ${dataInicio.toLocaleDateString()}\n👤 *Motorista:* ${resumoObjeto.nome}\n🚗 *Placa:* ${resumoObjeto.placa.toUpperCase()}\n\n🛫 *Início:* ${horaIni} (${resumoObjeto.kmInicio} km)\n🛬 *Fim:* ${horaFim} (${kF} km)\n⏱️ *Tempo:* ${dur}\n🛣️ *Total:* ${dist.toFixed(1)} km`;
+            textoResumoGlobal = `📊 *ICAPHIDRIVE PRO*\n📅 *Data:* ${dataInicio.toLocaleDateString()}\n👤 *Motorista:* ${resumoObjeto.nome}\n🚗 *Placa:* ${resumoObjeto.placa.toUpperCase()}\n\n🛫 *Início:* ${hIni} (${resumoObjeto.kmInicio} km)\n🛬 *Fim:* ${hFim} (${kF} km)\n⏱️ *Tempo:* ${dur}\n🛣️ *KM Total:* ${dist.toFixed(1)} km`;
 
             localStorage.removeItem('icaphidrive_viagem_id');
             localStorage.removeItem('icaphidrive_resumo');
             
             document.getElementById('dados-resumo-render').innerHTML = `
                 <div class="card p-6 bg-slate-900/50 space-y-3">
-                    <h2 class="text-xl font-bold border-b border-slate-800 pb-2">Resumo da Viagem</h2>
-                    <p class="text-sm">Data: <span class="text-white">${dataInicio.toLocaleDateString()}</span></p>
+                    <h2 class="text-xl font-bold border-b border-slate-800 pb-2">Resumo Final</h2>
                     <p class="text-sm">Motorista: <span class="text-white">${resumoObjeto.nome}</span></p>
-                    <p class="text-sm">Início: <span class="text-white">${horaIni}</span> • Fim: <span class="text-white">${horaFim}</span></p>
-                    <p class="text-sm">KM Total: <span class="text-emerald-400 font-bold">${dist.toFixed(1)} km</span></p>
-                    <p class="text-sm">Duração: <span class="text-blue-400 font-mono">${dur}</span></p>
+                    <p class="text-sm">Trajeto: <span class="text-white">${hIni} às ${hFim}</span></p>
+                    <p class="text-sm">Distância: <span class="text-emerald-400 font-bold">${dist.toFixed(1)} km</span></p>
+                    <p class="text-sm">Duração: <span class="text-blue-400 font-mono font-bold">${dur}</span></p>
                 </div>
-                <button onclick="compartilharResumo()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">COMPARTILHAR</button>
+                <button onclick="compartilharResumo()" class="w-full bg-blue-600 py-4 rounded-xl font-bold shadow-lg shadow-blue-900/30">COMPARTILHAR NO WHATSAPP</button>
                 <button onclick="location.reload()" class="w-full bg-slate-800 py-4 rounded-xl font-bold">VOLTAR AO INÍCIO</button>`;
             mudarTela('resumo');
         };
 
+        // UTILITÁRIOS IMAGEM E GPS
         const compressImage = (file) => new Promise(res => {
             const r = new FileReader(); r.readAsDataURL(file);
             r.onload = (e) => {
@@ -256,68 +366,52 @@
             navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res("Sem GPS"), {enableHighAccuracy: true});
         });
 
+        // FUNÇÕES GERAIS
         window.abrirTutorial = () => document.getElementById('modal-tutorial').classList.remove('hidden');
         window.fecharTutorial = () => document.getElementById('modal-tutorial').classList.add('hidden');
-        window.previewFoto = (i, l) => { if(i.files[0]) document.getElementById(l).innerText = "Foto Selecionada ✅"; };
-        window.acessoAdmin = () => { if(prompt("Senha:") === "60010774") mudarTela('admin'); };
+        window.previewFoto = (i, l) => { if(i.files[0]) document.getElementById(l).innerText = "Foto Capturada ✅"; };
+        window.acessoAdmin = () => { if(prompt("Senha de Acesso:") === "60010774") mudarTela('admin'); };
         window.verFoto = (src) => { document.getElementById('img-full').src = src; document.getElementById('modal-img').classList.remove('hidden'); };
-        window.excluirViagem = async (id) => { if(confirm("Apagar registro?")) await deleteDoc(doc(db, "viagens", id)); };
+        window.excluirViagem = async (id) => { if(confirm("Deseja apagar este registro permanentemente?")) await deleteDoc(doc(db, "viagens", id)); };
         window.compartilharResumo = () => navigator.share ? navigator.share({text: textoResumoGlobal}) : alert(textoResumoGlobal);
 
-        // ATUALIZAÇÃO DO CRONÔMETRO ADMIN
-        setInterval(() => {
-            const agora = new Date().getTime();
-            document.querySelectorAll('.cronometro-admin-real').forEach(el => {
-                const inicio = parseInt(el.getAttribute('data-inicio'));
-                el.innerText = formatarTempo(Math.floor((agora - inicio) / 1000));
-            });
-        }, 1000);
+        // EXPORTAÇÃO EXCEL
+        window.abrirModalExport = async () => {
+            const sel = document.getElementById('select-placa-export');
+            sel.innerHTML = '<option value="TODAS">Todas as Placas</option>';
+            const placas = [...new Set(listaGlobalViagens.map(v => v.placa.toUpperCase()))];
+            placas.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
+            document.getElementById('modal-export').classList.remove('hidden');
+        };
+        window.fecharModalExport = () => document.getElementById('modal-export').classList.add('hidden');
+        window.gerarExcel = async () => {
+            toggleLoading(true);
+            const dI = document.getElementById('data-exp-inicio').value;
+            const dF = document.getElementById('data-exp-fim').value;
+            const pS = document.getElementById('select-placa-export').value;
+            
+            let dados = listaGlobalViagens.filter(v => {
+                const dataV = v.dataInicio.toDate();
+                let m = (pS === "TODAS" || v.placa.toUpperCase() === pS);
+                if(dI && dF) {
+                    const s = new Date(dI + "T00:00:00"), e = new Date(dF + "T23:59:59");
+                    m = m && (dataV >= s && dataV <= e);
+                }
+                return m;
+            }).map(v => ({
+                Motorista: v.nome, Placa: v.placa, Data: v.dataInicio.toDate().toLocaleDateString(),
+                KM_Inicial: v.kmInicio, KM_Final: v.kmFim || "", Total_KM: v.dispersao || 0, Duracao: v.duracao || ""
+            }));
 
-        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
-            const list = document.getElementById('lista-viagens');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const v = d.data();
-                const isEmCurso = v.status === 'em_curso';
-                const inicioMS = v.dataInicio.toDate().getTime();
-                list.innerHTML += `
-                    <div class="card p-5 space-y-3 relative overflow-hidden fade-in">
-                        <div class="flex justify-between items-start">
-                            <div><h3 class="font-bold uppercase">${v.nome}</h3><p class="text-blue-400 font-mono text-[10px]">${v.placa}</p></div>
-                            <div class="flex gap-2">
-                                <span class="text-[9px] px-2 py-1 rounded-full font-bold uppercase ${isEmCurso ? 'badge-em-viagem' : 'bg-emerald-500/10 text-emerald-500'}">
-                                    ${isEmCurso ? 'Em Curso' : 'Finalizada'}
-                                </span>
-                                <button onclick="excluirViagem('${d.id}')" class="text-slate-700 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                        </div>
-                        <div class="bg-slate-950/40 p-3 rounded-xl text-center">
-                            <p class="text-[9px] text-slate-500 uppercase">Tempo</p>
-                            <span class="font-mono text-xl font-bold ${isEmCurso ? 'text-blue-400 cronometro-admin-real' : 'text-slate-300'}" data-inicio="${inicioMS}">
-                                ${isEmCurso ? '00:00:00' : v.duracao}
-                            </span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 text-xs">
-                            <div><p class="text-slate-500 text-[9px]">INÍCIO</p><p class="font-bold">${v.kmInicio} km</p></div>
-                            <div><p class="text-slate-500 text-[9px]">FIM</p><p class="font-bold">${v.kmFim || '--'} km</p></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="verFoto('${v.fotoInicio}')" class="bg-slate-800 py-2 rounded-lg text-[10px] uppercase font-bold">Foto Início</button>
-                            ${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="bg-slate-800 py-2 rounded-lg text-[10px] uppercase font-bold">Foto Fim</button>` : ''}
-                        </div>
-                        <div class="flex justify-between text-[10px] pt-3 border-t border-slate-800/50">
-                            <div class="flex gap-3">
-                                <span onclick="window.open('https://www.google.com/maps?q=${v.locInicio}')" class="cursor-pointer text-blue-400 font-bold">📍 MAPA INÍCIO</span>
-                                ${v.locFim ? `<span onclick="window.open('https://www.google.com/maps?q=${v.locFim}')" class="cursor-pointer text-emerald-400 font-bold">📍 MAPA FIM</span>` : ''}
-                            </div>
-                            <span>${v.dataInicio.toDate().toLocaleDateString('pt-BR')}</span>
-                        </div>
-                    </div>`;
-            });
-            lucide.createIcons();
-        });
+            const ws = XLSX.utils.json_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Relatório");
+            XLSX.writeFile(wb, `IcaphiDrive_Relatorio.xlsx`);
+            toggleLoading(false);
+            fecharModalExport();
+        };
 
-        // RECONECTAR VIAGEM ATIVA
+        // AO CARREGAR
         window.addEventListener('load', async () => {
             if (idAtual) {
                 const docSnap = await getDoc(doc(db, "viagens", idAtual));
@@ -333,41 +427,6 @@
             }
             lucide.createIcons();
         });
-
-        window.abrirModalExport = async () => {
-            const select = document.getElementById('select-placa-export');
-            select.innerHTML = '<option value="TODAS">Todas as Placas</option>';
-            const qS = await getDocs(collection(db, "viagens"));
-            const placas = new Set();
-            qS.forEach(d => placas.add(d.data().placa.toUpperCase()));
-            placas.forEach(p => select.innerHTML += `<option value="${p}">${p}</option>`);
-            document.getElementById('modal-export').classList.remove('hidden');
-        };
-        window.fecharModalExport = () => document.getElementById('modal-export').classList.add('hidden');
-        window.gerarExcel = async () => {
-            toggleLoading(true);
-            const dIni = document.getElementById('data-exp-inicio').value;
-            const dFim = document.getElementById('data-exp-fim').value;
-            const pSel = document.getElementById('select-placa-export').value;
-            const qS = await getDocs(query(collection(db, "viagens"), orderBy("dataInicio", "desc")));
-            let dados = [];
-            qS.forEach(docSnap => {
-                const v = docSnap.data();
-                const dataV = v.dataInicio?.toDate();
-                let match = (pSel === "TODAS" || v.placa.toUpperCase() === pSel);
-                if(dIni && dFim) {
-                    const s = new Date(dIni + "T00:00:00"), e = new Date(dFim + "T23:59:59");
-                    match = match && (dataV >= s && dataV <= e);
-                }
-                if(match) dados.push({ Motorista: v.nome, Placa: v.placa, Data: dataV?.toLocaleDateString(), Inicio: v.kmInicio, Fim: v.kmFim || "--", Total: v.dispersao?.toFixed(1) || 0, Duracao: v.duracao || "--" });
-            });
-            const ws = XLSX.utils.json_to_sheet(dados);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Viagens");
-            XLSX.writeFile(wb, `Relatorio_IcaphiDrive.xlsx`);
-            toggleLoading(false);
-            fecharModalExport();
-        };
     </script>
 </body>
 </html>
