@@ -9,57 +9,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        /* Variáveis de Tema */
-        :root { 
-            --primary: #2563eb; 
-            --bg: #020617; 
-            --card-bg: #0f172a; 
-            --text-main: #f8fafc;
-            --border: #1e293b;
-        }
-
-        .light-theme {
-            --bg: #f1f5f9;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --border: #e2e8f0;
-        }
-
+        :root { --primary: #2563eb; --bg: #020617; --card-bg: #0f172a; --text-main: #f8fafc; --border: #1e293b; }
+        .light-theme { --bg: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --border: #e2e8f0; }
         body { background-color: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; transition: background 0.4s, color 0.4s; }
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 1.5rem; transition: transform 0.3s, box-shadow 0.3s; position: relative; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        
         .input-style { background: var(--border) !important; border: 1px solid var(--border) !important; color: var(--text-main) !important; width: 100%; padding: 0.85rem; border-radius: 1rem; outline: none; }
         .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); font-weight: 800; border-radius: 1.25rem; transition: 0.3s; color: white; }
-        .btn-primary:active { scale: 0.95; }
         .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); font-weight: 800; border-radius: 1.25rem; color: white; }
-        
         .close-modal { position: absolute; top: 1.25rem; right: 1.25rem; color: #64748b; cursor: pointer; z-index: 50; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* Filtros */
         .filter-btn { padding: 8px 16px; border-radius: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; transition: 0.2s; border: 1px solid var(--border); color: var(--text-main); }
         .filter-btn.active { background: #2563eb; border-color: #2563eb; color: white; }
-
-        /* Loader Caminhão */
-        #loader {
-            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        #loader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .truck-anim { animation: moveTruck 2s infinite linear; font-size: 50px; }
-        @keyframes moveTruck {
-            0% { transform: translateX(-20px); }
-            50% { transform: translateX(20px); }
-            100% { transform: translateX(-20px); }
-        }
-
-        /* Animação PopUp Modais */
+        @keyframes moveTruck { 0% { transform: translateX(-20px); } 50% { transform: translateX(20px); } 100% { transform: translateX(-20px); } }
         .modal-animate { animation: zoomIn 0.3s; }
-        @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -172,45 +139,19 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, setDoc, getDocs, where, writeBatch, getDoc, updateDoc, Timestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U", 
-            authDomain: "marcador-ponto-digital.firebaseapp.com", 
-            projectId: "marcador-ponto-digital", 
-            storageBucket: "marcador-ponto-digital.firebasestorage.app", 
-            messagingSenderId: "774324665760", 
-            appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5" 
-        };
-        const app = initializeApp(firebaseConfig); 
-        const db = getFirestore(app);
+        const firebaseConfig = { apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U", authDomain: "marcador-ponto-digital.firebaseapp.com", projectId: "marcador-ponto-digital", storageBucket: "marcador-ponto-digital.firebasestorage.app", messagingSenderId: "774324665760", appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
         let listaGlobalViagens = [];
         let timerMotorista = null;
         let timerAdminGlobal = null;
         let filtroAtual = 'todos';
 
-        // --- LÓGICA DE TEMA ---
-        window.toggleTheme = () => {
-            document.body.classList.toggle('light-theme');
-            const icon = document.getElementById('theme-icon');
-            const isLight = document.body.classList.contains('light-theme');
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
-            lucide.createIcons();
-        };
-
-        // --- LÓGICA DE CARREGAMENTO ---
+        window.toggleTheme = () => { document.body.classList.toggle('light-theme'); const isLight = document.body.classList.contains('light-theme'); localStorage.setItem('theme', isLight ? 'light' : 'dark'); lucide.createIcons(); };
         const showLoader = () => { document.getElementById('loader').style.display = 'flex'; };
         const hideLoader = () => { setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 800); };
-
         window.fecharModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.mudarTela = (t) => { 
-            showLoader();
-            setTimeout(() => {
-                document.querySelectorAll('main').forEach(m => m.classList.add('hidden')); 
-                document.getElementById('tela-' + t).classList.remove('hidden'); 
-                lucide.createIcons(); 
-                hideLoader();
-            }, 500);
-        };
+        window.mudarTela = (t) => { showLoader(); setTimeout(() => { document.querySelectorAll('main').forEach(m => m.classList.add('hidden')); document.getElementById('tela-' + t).classList.remove('hidden'); lucide.createIcons(); hideLoader(); }, 500); };
 
         const comprimir = (f) => new Promise(res => {
             const r = new FileReader(); r.readAsDataURL(f);
@@ -232,14 +173,7 @@
             return `${h}:${m}:${s}`;
         };
 
-        window.setFiltro = (f) => {
-            filtroAtual = f;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            if(f === 'todos') document.getElementById('f-todos').classList.add('active');
-            if(f === 'em_curso') document.getElementById('f-curso').classList.add('active');
-            if(f === 'finalizada') document.getElementById('f-final').classList.add('active');
-            renderizarAdmin();
-        };
+        window.setFiltro = (f) => { filtroAtual = f; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); if(f === 'todos') document.getElementById('f-todos').classList.add('active'); if(f === 'em_curso') document.getElementById('f-curso').classList.add('active'); if(f === 'finalizada') document.getElementById('f-final').classList.add('active'); renderizarAdmin(); };
 
         window.iniciarViagem = async () => {
             const n = document.getElementById('motorista').value, p = document.getElementById('placa').value.toUpperCase(), k = document.getElementById('km-inicio').value, f = document.getElementById('foto-inicio').files[0];
@@ -248,28 +182,17 @@
             const pos = await new Promise(res => navigator.geolocation.getCurrentPosition(res, () => res({coords:{latitude:0,longitude:0}})));
             const fC = await comprimir(f);
             const docRef = await addDoc(collection(db, "viagens"), {
-                nome: n, placa: p, kmInicio: Number(k), fotoInicio: fC,
-                tipoViagem: document.getElementById('tipo-viagem').value, 
-                dataInicio: Timestamp.now(), 
-                locInicio: `${pos.coords.latitude},${pos.coords.longitude}`,
-                status: "em_curso", duracao: "00:00:00",
-                historico_obs: []
+                nome: n, placa: p, kmInicio: Number(k), fotoInicio: fC, tipoViagem: document.getElementById('tipo-viagem').value, dataInicio: Timestamp.now(), locInicio: `${pos.coords.latitude},${pos.coords.longitude}`, status: "em_curso", duracao: "00:00:00", historico_obs: []
             });
-            localStorage.setItem('v_id', docRef.id);
-            verificarViagemAtiva();
+            localStorage.setItem('v_id', docRef.id); verificarViagemAtiva();
         };
 
         window.encerrarViagem = async () => {
-            const id = localStorage.getItem('v_id');
-            const kf = document.getElementById('km-fim').value, ff = document.getElementById('foto-fim').files[0];
+            const id = localStorage.getItem('v_id'); const kf = document.getElementById('km-fim').value, ff = document.getElementById('foto-fim').files[0];
             if(!kf || !ff) return alert("KM e Foto final!");
-            showLoader();
-            const fC = await comprimir(ff);
-            const pos = await new Promise(res => navigator.geolocation.getCurrentPosition(res, () => res({coords:{latitude:0,longitude:0}})));
+            showLoader(); const fC = await comprimir(ff); const pos = await new Promise(res => navigator.geolocation.getCurrentPosition(res, () => res({coords:{latitude:0,longitude:0}})));
             const duracaoFinal = document.getElementById('cronometro-motorista').innerText;
-            await updateDoc(doc(db, "viagens", id), { 
-                kmFim: Number(kf), fotoFim: fC, status: "finalizada", duracao: duracaoFinal, dataFim: Timestamp.now(), locFim: `${pos.coords.latitude},${pos.coords.longitude}`
-            });
+            await updateDoc(doc(db, "viagens", id), { kmFim: Number(kf), fotoFim: fC, status: "finalizada", duracao: duracaoFinal, dataFim: Timestamp.now(), locFim: `${pos.coords.latitude},${pos.coords.longitude}` });
             document.getElementById('btn-share-final').onclick = () => compartilharWpp(id);
             localStorage.removeItem('v_id'); if(timerMotorista) clearInterval(timerMotorista); mudarTela('final');
         };
@@ -279,9 +202,7 @@
             if(id) {
                 const docSnap = await getDoc(doc(db, "viagens", id));
                 if(docSnap.exists() && docSnap.data().status === 'em_curso') {
-                    const dados = docSnap.data();
-                    mudarTela('em-curso');
-                    document.getElementById('info-viagem-ativa').innerText = "VEÍCULO: " + dados.placa;
+                    const dados = docSnap.data(); mudarTela('em-curso'); document.getElementById('info-viagem-ativa').innerText = "VEÍCULO: " + dados.placa;
                     const inicioMs = dados.dataInicio.toMillis();
                     if(timerMotorista) clearInterval(timerMotorista);
                     timerMotorista = setInterval(() => { document.getElementById('cronometro-motorista').innerText = calcularTempo(inicioMs); }, 1000);
@@ -294,8 +215,10 @@
             if(!v) { const docSnap = await getDoc(doc(db, "viagens", id)); if(docSnap.exists()) v = { id: docSnap.id, ...docSnap.data() }; }
             if(!v) return alert("Dados não encontrados.");
             const extrairH = (ts) => ts && ts.toDate ? ts.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+            const extrairD = (ts) => ts && ts.toDate ? ts.toDate().toLocaleDateString() : '--/--/--';
+            const kmTot = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : '0.0';
             const dur = v.status === 'em_curso' ? calcularTempo(v.dataInicio.toMillis()) : v.duracao;
-            const texto = `📌 *RELATÓRIO ICAPHIDRIVE*%0A👤 *Motorista:* ${v.nome}%0A🚗 *Placa:* ${v.placa}%0A📅 *Data:* ${v.dataInicio?.toDate().toLocaleDateString()}%0A🏁 *KM:* ${v.kmInicio} ➔ ${v.kmFim || '--'}%0A🕒 *Horário:* ${extrairH(v.dataInicio)} ➔ ${extrairH(v.dataFim)}%0A⏳ *Duração:* ${dur}`;
+            const texto = `📌 *RELATÓRIO ICAPHIDRIVE*%0A👤 *Motorista:* ${v.nome}%0A🚗 *Placa:* ${v.placa}%0A📅 *Início:* ${extrairD(v.dataInicio)} às ${extrairH(v.dataInicio)}%0A🏁 *Fim:* ${extrairD(v.dataFim)} às ${extrairH(v.dataFim)}%0A⛽ *KM:* ${v.kmInicio} ➔ ${v.kmFim || '--'}%0A📈 *KM TOTAL:* ${kmTot} KM%0A⏳ *Duração:* ${dur}`;
             window.open(`https://api.whatsapp.com/send?text=${texto}`, '_blank');
         };
 
@@ -303,15 +226,11 @@
             const container = document.getElementById('lista-viagens');
             const b = document.getElementById('busca-admin').value.toLowerCase();
             container.innerHTML = "";
-
-            listaGlobalViagens
-                .filter(v => (filtroAtual === 'todos' || v.status === filtroAtual))
-                .filter(v => v.nome.toLowerCase().includes(b) || v.placa.toLowerCase().includes(b))
-                .forEach(v => {
+            listaGlobalViagens.filter(v => (filtroAtual === 'todos' || v.status === filtroAtual)).filter(v => v.nome.toLowerCase().includes(b) || v.placa.toLowerCase().includes(b)).forEach(v => {
                 const isE = v.status === 'em_curso';
                 const formatH = (ts) => ts && ts.toDate ? ts.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--";
-                const dataFormatada = v.dataInicio?.toDate().toLocaleDateString('pt-BR');
-
+                const dataF = v.dataInicio?.toDate().toLocaleDateString('pt-BR');
+                const kmTot = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : '--';
                 container.innerHTML += `
                 <div class="card p-6 border-l-4 animate__animated animate__fadeInUp ${isE ? 'border-l-yellow-500' : 'border-l-emerald-500'}">
                     <div class="flex justify-between items-start mb-3">
@@ -319,17 +238,17 @@
                             <p class="text-[9px] font-black text-blue-400 uppercase">${v.tipoViagem}</p>
                             <h3 class="font-black text-xl uppercase">${v.nome}</h3>
                             <p class="text-slate-500 font-mono text-xs">${v.placa}</p>
-                            <p class="text-[10px] text-slate-400 font-bold">${dataFormatada}</p>
+                            <p class="text-[10px] text-slate-400 font-bold">${dataF}</p>
                         </div>
-                        <div class="flex gap-3">
-                            <button onclick="compartilharWpp('${v.id}')" class="text-emerald-500"><i data-lucide="message-circle"></i></button>
-                            <button onclick="excluirCard('${v.id}')" class="text-slate-700 hover:text-red-500"><i data-lucide="trash-2"></i></button>
-                        </div>
+                        <div class="flex gap-3"><button onclick="compartilharWpp('${v.id}')" class="text-emerald-500"><i data-lucide="message-circle"></i></button><button onclick="excluirCard('${v.id}')" class="text-slate-700 hover:text-red-500"><i data-lucide="trash-2"></i></button></div>
                     </div>
-                    <div id="admin-timer-${v.id}" class="text-center font-mono text-4xl font-black py-4 ${isE ? 'text-yellow-500' : 'text-slate-500'}">
-                        ${isE ? '00:00:00' : (v.duracao || '00:00:00')}
+                    <div class="grid grid-cols-3 gap-1 text-center border-y border-slate-800/50 py-3 mb-3">
+                        <div><p class="text-[8px] text-slate-500 uppercase font-bold">INI</p><p class="font-black text-xs">${v.kmInicio}</p></div>
+                        <div><p class="text-[8px] text-slate-500 uppercase font-bold">FIM</p><p class="font-black text-xs">${v.kmFim || '--'}</p></div>
+                        <div><p class="text-[8px] text-blue-500 uppercase font-bold">TOTAL</p><p class="font-black text-xs text-blue-500">${kmTot}</p></div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div id="admin-timer-${v.id}" class="text-center font-mono text-4xl font-black py-2 ${isE ? 'text-yellow-500' : 'text-slate-500'}">${isE ? '00:00:00' : (v.duracao || '00:00:00')}</div>
+                    <div class="grid grid-cols-2 gap-2 mt-4">
                         <div class="text-center bg-blue-500/10 p-2 rounded-lg"><p class="text-[8px] text-blue-400 font-bold uppercase">Início</p><p class="text-sm font-black text-blue-500">${formatH(v.dataInicio)}</p></div>
                         <div class="text-center bg-emerald-500/10 p-2 rounded-lg"><p class="text-[8px] text-emerald-400 font-bold uppercase">Fim</p><p class="text-sm font-black text-emerald-500">${formatH(v.dataFim)}</p></div>
                         <button onclick="verGps('${v.locInicio}')" class="bg-slate-800/40 py-3 rounded-xl text-[8px] font-black uppercase text-white">GPS INI</button>
@@ -339,120 +258,34 @@
                         <button onclick="abrirObsAdmin('${v.id}')" class="col-span-2 bg-slate-800 py-3 rounded-xl text-[9px] font-black uppercase mt-1 text-white">Relatório (${v.historico_obs?.length || 0})</button>
                     </div>
                 </div>`;
-            });
-            lucide.createIcons();
-            iniciarTimerAdmin();
+            }); lucide.createIcons(); iniciarTimerAdmin();
         };
 
-        const iniciarTimerAdmin = () => {
-            if(timerAdminGlobal) clearInterval(timerAdminGlobal);
-            timerAdminGlobal = setInterval(() => {
-                listaGlobalViagens.forEach(v => {
-                    if(v.status === 'em_curso') {
-                        const el = document.getElementById(`admin-timer-${v.id}`);
-                        if(el) el.innerText = calcularTempo(v.dataInicio.toMillis());
-                    }
-                });
-            }, 1000);
-        };
-
-        window.salvarObservacaoMotorista = async () => {
-            const id = localStorage.getItem('v_id');
-            const item = { tipo: document.getElementById('comp-tipo').value, valor: document.getElementById('comp-valor').value || 0, texto: document.getElementById('comp-obs').value, hora: new Date().toLocaleTimeString() };
-            if(!item.texto && !item.valor) return;
-            await updateDoc(doc(db, "viagens", id), { historico_obs: arrayUnion(item) });
-            document.getElementById('comp-obs').value = ""; document.getElementById('comp-valor').value = ""; fecharModal('modal-complementos');
-        };
-
-        window.abrirObsAdmin = (id) => {
-            const v = listaGlobalViagens.find(x => x.id === id);
-            document.getElementById('conteudo-obs-admin').innerHTML = (v.historico_obs || []).map(h => `
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <div class="flex justify-between mb-2">
-                        <span class="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-black uppercase">${h.tipo}</span>
-                        <span class="text-[9px] text-slate-500 font-mono">${h.hora}</span>
-                    </div>
-                    ${h.valor > 0 ? `<p class="text-blue-400 font-black text-xs mb-1">Valor: R$ ${Number(h.valor).toFixed(2)}</p>` : ''}
-                    <p class="text-white text-sm">${h.texto || '-'}</p>
-                </div>`).join('');
-            document.getElementById('modal-ver-obs').classList.remove('hidden');
-        };
-
+        const iniciarTimerAdmin = () => { if(timerAdminGlobal) clearInterval(timerAdminGlobal); timerAdminGlobal = setInterval(() => { listaGlobalViagens.forEach(v => { if(v.status === 'em_curso') { const el = document.getElementById(`admin-timer-${v.id}`); if(el) el.innerText = calcularTempo(v.dataInicio.toMillis()); } }); }, 1000); };
+        window.salvarObservacaoMotorista = async () => { const id = localStorage.getItem('v_id'); const item = { tipo: document.getElementById('comp-tipo').value, valor: document.getElementById('comp-valor').value || 0, texto: document.getElementById('comp-obs').value, hora: new Date().toLocaleTimeString() }; if(!item.texto && !item.valor) return; await updateDoc(doc(db, "viagens", id), { historico_obs: arrayUnion(item) }); document.getElementById('comp-obs').value = ""; document.getElementById('comp-valor').value = ""; fecharModal('modal-complementos'); };
+        window.abrirObsAdmin = (id) => { const v = listaGlobalViagens.find(x => x.id === id); document.getElementById('conteudo-obs-admin').innerHTML = (v.historico_obs || []).map(h => `<div class="bg-slate-900 p-4 rounded-xl border border-slate-800"><div class="flex justify-between mb-2"><span class="text-[9px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-black uppercase">${h.tipo}</span><span class="text-[9px] text-slate-500 font-mono">${h.hora}</span></div>${h.valor > 0 ? `<p class="text-blue-400 font-black text-xs mb-1">Valor: R$ ${Number(h.valor).toFixed(2)}</p>` : ''}<p class="text-white text-sm">${h.texto || '-'}</p></div>`).join(''); document.getElementById('modal-ver-obs').classList.remove('hidden'); };
         window.validarAcessoExtrato = async () => {
             const p = document.getElementById('login-placa').value.toUpperCase(), c = document.getElementById('login-codigo').value;
             const docRef = await getDoc(doc(db, "codigos_acesso", p));
             if(docRef.exists() && docRef.data().codigo === c) {
                 const f = listaGlobalViagens.filter(v => v.placa === p);
-                
-                // CORREÇÃO: Mapeamento detalhado para mostrar KM Total e ambas as fotos
                 document.getElementById('corpo-extrato').innerHTML = f.map(v => {
-                    const kmTotal = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : '--';
-                    return `
-                    <tr class="border-b border-slate-800">
-                        <td class="p-4 text-left">
-                            <div class="font-bold">${v.dataInicio?.toDate().toLocaleDateString()}</div>
-                            <div class="text-[8px] text-blue-400">TOTAL: ${kmTotal} KM</div>
-                        </td>
-                        <td class="p-4 text-center font-mono">
-                            <span class="text-slate-500">${v.kmInicio}</span> / <span class="text-emerald-500">${v.kmFim || '--'}</span>
-                        </td>
-                        <td class="p-4 flex gap-2 justify-center">
-                            <button onclick="verFoto('${v.fotoInicio}')" class="p-2 bg-blue-500/10 rounded-lg" title="Foto Inicial">
-                                <i data-lucide="camera" class="w-3 h-3 text-blue-400"></i>
-                            </button>
-                            ${v.fotoFim ? `
-                            <button onclick="verFoto('${v.fotoFim}')" class="p-2 bg-emerald-500/10 rounded-lg" title="Foto Final">
-                                <i data-lucide="camera" class="w-3 h-3 text-emerald-400"></i>
-                            </button>` : ''}
-                        </td>
-                    </tr>`;
+                    const kmTot = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : '--';
+                    return `<tr class="border-b border-slate-800"><td class="p-4 text-left font-bold"><div>${v.dataInicio?.toDate().toLocaleDateString()}</div><div class="text-[8px] text-blue-400">TOT: ${kmTot} KM</div></td><td class="p-4 text-center font-mono">${v.kmInicio}/${v.kmFim||'-'}</td><td class="p-4 flex gap-2 justify-center"><button onclick="verFoto('${v.fotoInicio}')" class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="camera" class="w-3 h-3 text-blue-400"></i></button>${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-2 bg-emerald-500/10 rounded-lg"><i data-lucide="camera" class="w-3 h-3 text-emerald-400"></i></button>` : ''}</td></tr>`
                 }).join('');
-                
-                fecharModal('modal-extrato-login'); 
-                document.getElementById('modal-tabela-extrato').classList.remove('hidden'); 
-                lucide.createIcons();
+                fecharModal('modal-extrato-login'); document.getElementById('modal-tabela-extrato').classList.remove('hidden'); lucide.createIcons();
             } else alert("Código incorreto.");
         };
-
-        window.excluirPorPeriodo = async () => {
-            const i = document.getElementById('data-exp-inicio').value, f = document.getElementById('data-exp-fim').value;
-            if(!i || !f || !confirm("Apagar período?")) return;
-            const snap = await getDocs(query(collection(db, "viagens"), where("dataInicio", ">=", Timestamp.fromDate(new Date(i))), where("dataInicio", "<=", Timestamp.fromDate(new Date(f + "T23:59:59")))));
-            const b = writeBatch(db); snap.forEach(d => b.delete(d.ref)); await b.commit(); alert("Feito.");
-        };
-
-        window.gerarExcel = () => {
-            const d = listaGlobalViagens.map(v => ({ Data: v.dataInicio?.toDate().toLocaleDateString(), Motorista: v.nome, Placa: v.placa, KM_Ini: v.kmInicio, KM_Fim: v.kmFim, Total: v.kmFim ? (v.kmFim-v.kmInicio).toFixed(1) : 0, Tempo: v.status === 'em_curso' ? calcularTempo(v.dataInicio.toMillis()) : v.duracao }));
-            const ws = XLSX.utils.json_to_sheet(d); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatório"); XLSX.writeFile(wb, "IcaphiDrive_Export.xlsx");
-        };
-
-        window.abrirModalGerarSenha = () => { 
-            document.getElementById('senha-placa-select').innerHTML = [...new Set(listaGlobalViagens.map(v => v.placa))].map(p => `<option value="${p}">${p}</option>`).join(''); 
-            document.getElementById('modal-gerar-senha').classList.remove('hidden'); 
-        };
-        
-        window.gerarSenhaFirebase = async () => { 
-            const p = document.getElementById('senha-placa-select').value, cod = Math.floor(1000 + Math.random() * 9000).toString(); 
-            await setDoc(doc(db, "codigos_acesso", p), { codigo: cod }); 
-            document.getElementById('resultado-senha').innerText = cod; 
-            document.getElementById('resultado-senha').classList.remove('hidden'); 
-        };
-
+        window.excluirPorPeriodo = async () => { const i = document.getElementById('data-exp-inicio').value, f = document.getElementById('data-exp-fim').value; if(!i || !f || !confirm("Apagar período?")) return; const snap = await getDocs(query(collection(db, "viagens"), where("dataInicio", ">=", Timestamp.fromDate(new Date(i))), where("dataInicio", "<=", Timestamp.fromDate(new Date(f + "T23:59:59"))))); const b = writeBatch(db); snap.forEach(d => b.delete(d.ref)); await b.commit(); alert("Feito."); };
+        window.gerarExcel = () => { const d = listaGlobalViagens.map(v => ({ Data: v.dataInicio?.toDate().toLocaleDateString(), Motorista: v.nome, Placa: v.placa, KM_Ini: v.kmInicio, KM_Fim: v.kmFim, Total: v.kmFim ? (v.kmFim-v.kmInicio).toFixed(1) : 0, Tempo: v.status === 'em_curso' ? calcularTempo(v.dataInicio.toMillis()) : v.duracao })); const ws = XLSX.utils.json_to_sheet(d); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatório"); XLSX.writeFile(wb, "IcaphiDrive_Export.xlsx"); };
+        window.abrirModalGerarSenha = () => { document.getElementById('senha-placa-select').innerHTML = [...new Set(listaGlobalViagens.map(v => v.placa))].map(p => `<option value="${p}">${p}</option>`).join(''); document.getElementById('modal-gerar-senha').classList.remove('hidden'); };
+        window.gerarSenhaFirebase = async () => { const p = document.getElementById('senha-placa-select').value, cod = Math.floor(1000 + Math.random() * 9000).toString(); await setDoc(doc(db, "codigos_acesso", p), { codigo: cod }); document.getElementById('resultado-senha').innerText = cod; document.getElementById('resultado-senha').classList.remove('hidden'); };
         window.verGps = (l) => { if(!l || l === "0,0") return alert("Sem GPS."); document.getElementById('gps-iframe').src = `https://maps.google.com/maps?q=${l}&z=15&output=embed`; document.getElementById('modal-gps').classList.remove('hidden'); };
         window.verFoto = (s) => { if(!s) return alert("Sem foto."); document.getElementById('foto-view').src = s; document.getElementById('modal-foto').classList.remove('hidden'); };
         window.excluirCard = async (id) => { if(confirm("Apagar?")) await deleteDoc(doc(db, "viagens", id)); };
         window.acessoAdmin = () => { if(prompt("Senha:") === "60010774") mudarTela('admin'); };
-        
-        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => {
-            listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderizarAdmin();
-        });
-
-        window.onload = () => { 
-            lucide.createIcons(); 
-            if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme');
-            verificarViagemAtiva(); 
-        };
+        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => { listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderizarAdmin(); });
+        window.onload = () => { lucide.createIcons(); if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme'); verificarViagemAtiva(); };
     </script>
 </body>
 </html>
