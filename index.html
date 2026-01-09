@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Eyelashes | Luxury Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --gold: #d4a373; --gold-light: #e9d1b7; --dark: #2c2c2e;
+            --white: #ffffff; --bg: #fdfaf9; --accent: #ff85a2;
+            --glass: rgba(255, 255, 255, 0.9); --shadow: 0 20px 40px rgba(0,0,0,0.06);
+        }
+
+        * { box-sizing: border-box; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #fdfaf9 0%, #f7ebe8 100%);
+            margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* Top Bar de Controle */
+        .top-bar {
+            width: 100%; padding: 15px; background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(15px); position: sticky; top: 0; z-index: 1000;
+            display: flex; justify-content: center; gap: 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .view-btn {
+            background: white; border: 1px solid #ddd; padding: 8px 16px; 
+            border-radius: 20px; font-size: 0.75rem; cursor: pointer; font-weight: 600;
+        }
+        .view-btn.active { background: var(--dark); color: white; border-color: var(--dark); }
+
+        .container {
+            background: var(--glass); border-radius: 35px; padding: 30px;
+            box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.7);
+            margin: 20px auto; position: relative; width: 90%;
+        }
+
+        .view-mobile { max-width: 420px; }
+        .view-desktop { max-width: 1100px; }
+
+        .screen { display: none; opacity: 0; transform: translateY(15px); }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--dark); margin-top: 0; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #b38b5d);
+            color: white; border: none; padding: 16px; border-radius: 18px;
+            font-weight: 600; cursor: pointer; width: 100%; box-shadow: 0 10px 20px rgba(212, 163, 115, 0.2);
+        }
+
+        .glass-card {
+            background: white; border-radius: 24px; padding: 20px; margin-bottom: 15px;
+            border: 1px solid rgba(0,0,0,0.03); box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+        }
+
+        /* Badge Admin Especial */
+        #admin-hub-btn {
+            background: var(--dark); color: white; display: none; margin-top: 10px;
+            font-size: 0.7rem; padding: 10px; border-radius: 12px;
+        }
+
+        input, select, textarea {
+            width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #eee; border-radius: 15px;
+        }
+
+        .stat-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; }
+        .status-concluido { background: #e8f5e9; color: #2e7d32; }
+        .status-ativo { background: #fff3e0; color: #ef6c00; }
+        .status-faltou { background: #ffebee; color: #c62828; }
+
+        .grid-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .stat-item { background: white; padding: 12px; border-radius: 15px; text-align: center; border: 1px solid #f0f0f0; }
+        .stat-item b { font-size: 1.2rem; color: var(--gold); display: block; }
+
+        .chart-wrapper { height: 250px; margin-top: 20px; }
+        .table-container { overflow-x: auto; margin-top: 15px; border-radius: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8f8f8; padding: 12px; text-align: left; color: #999; }
+        td { padding: 12px; border-bottom: 1px solid #f9f9f9; }
+
+    </style>
+</head>
+<body class="view-mobile" id="body-viewport">
+
+    <div class="top-bar">
+        <button class="view-btn active" id="btn-m" onclick="changeView('mobile')">📱 Celular</button>
+        <button class="view-btn" id="btn-d" onclick="changeView('desktop')">💻 Computador</button>
+    </div>
+
+    <div class="container">
+        
+        <div id="screen-login" class="screen active">
+            <h1>Studio Eyelashes</h1>
+            <p style="font-size: 0.85rem; color: #888;">Elegância em cada detalhe.</p>
+            <input type="email" id="login-email" placeholder="E-mail">
+            <input type="password" id="login-pass" placeholder="Senha">
+            <button class="btn-gold" onclick="fazerLogin()">Acessar Conta</button>
+        </div>
+
+        <div id="screen-dashboard" class="screen">
+            <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                <h2>Minha Agenda</h2>
+                <button id="btn-go-admin" class="view-btn" style="display:none; background:var(--gold); color:white; border:none" onclick="showScreen('screen-admin')">⚙️ GESTÃO</button>
+            </div>
+            <div id="client-area"></div>
+            <button class="btn-gold" onclick="showScreen('screen-agendar')">Novo Agendamento</button>
+            <button onclick="logout()" style="margin-top:20px; cursor:pointer; background:none; border:none; color:#bbb; width:100%">Sair</button>
+        </div>
+
+        <div id="screen-agendar" class="screen">
+            <h2>Marcar Horário</h2>
+            <select id="agendar-tipo">
+                <option>Fio a Fio Luxo</option>
+                <option>Volume Russo</option>
+                <option>Híbrido Natural</option>
+            </select>
+            <input type="date" id="agendar-data" onchange="carregarHoras()">
+            <div id="horas-container" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;"></div>
+            <button id="btn-confirm" class="btn-gold" disabled onclick="confirmar()" style="margin-top:20px">Confirmar</button>
+            <button onclick="showScreen('screen-dashboard')" style="background:none; border:none; margin-top:15px; color:#999; cursor:pointer; width:100%">Voltar</button>
+        </div>
+
+        <div id="screen-admin" class="screen">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin:0">Agenda Geral</h2>
+                <div style="display:flex; gap:5px">
+                    <button class="view-btn" onclick="showScreen('screen-reports')">📊</button>
+                    <button class="view-btn" onclick="showScreen('screen-dashboard')">👤</button>
+                </div>
+            </div>
+            <div id="admin-list"></div>
+        </div>
+
+        <div id="screen-reports" class="screen">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px">
+                <button onclick="showScreen('screen-admin')" style="background:none; border:none; font-size:1.2rem; cursor:pointer">⬅</button>
+                <h2 style="margin:0">Relatórios</h2>
+            </div>
+
+            <div class="glass-card">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px">
+                    <select id="filter-period" onchange="processarRelatorios()">
+                        <option value="hoje">Hoje</option><option value="semana">Semana</option>
+                        <option value="mes">Mês</option><option value="ano">Ano</option>
+                    </select>
+                    <select id="filter-status" onchange="processarRelatorios()">
+                        <option value="todos">Todos</option><option value="concluido">Feitos</option>
+                        <option value="ativo">Agendados</option><option value="faltou">Faltas</option>
+                    </select>
+                </div>
+                <button class="btn-gold" onclick="exportarExcel()" style="margin-top:10px; padding:10px; font-size:0.75rem">📥 Baixar Excel</button>
+            </div>
+
+            <div class="grid-stats">
+                <div class="stat-item"><small>Total</small><b id="stat-count">0</b></div>
+                <div class="stat-item"><small>Feitos</small><b id="stat-done" style="color:#2e7d32">0</b></div>
+                <div class="stat-item"><small>Faltas</small><b id="stat-miss" style="color:#c62828">0</b></div>
+            </div>
+
+            <div class="chart-wrapper"><canvas id="myChart"></canvas></div>
+
+            <div class="table-container">
+                <table id="table-reports">
+                    <thead><tr><th>Data</th><th>Cliente</th><th>Status</th></tr></thead>
+                    <tbody id="report-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCizOHjzkUxoSyAKA6u9GW0TQ5p4Pk2v1o",
+            authDomain: "eyelashes-350ef.firebaseapp.com",
+            projectId: "eyelashes-350ef",
+            storageBucket: "eyelashes-350ef.firebasestorage.app",
+            messagingSenderId: "196481090828",
+            appId: "1:196481090828:web:16791f3f7fe508a9c13529"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let chartRef = null;
+        let isAdmin = false;
+
+        window.changeView = (mode) => {
+            document.getElementById('body-viewport').className = mode === 'mobile' ? 'view-mobile' : 'view-desktop';
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(mode === 'mobile' ? 'btn-m' : 'btn-d').classList.add('active');
+        };
+
+        window.showScreen = (id) => {
+            document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+            const target = document.getElementById(id);
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 50);
+
+            if(id === 'screen-reports') processarRelatorios();
+            if(id === 'screen-admin') renderPainelAdmin();
+            if(id === 'screen-dashboard') carregarDashboard();
+        };
+
+        window.fazerLogin = async () => {
+            try {
+                const cred = await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value);
+                const user = (await getDoc(doc(db, "usuarios", cred.user.uid))).data();
+                if(user.perfil === 'admin') {
+                    isAdmin = true;
+                    document.getElementById('btn-go-admin').style.display = 'block';
+                    showScreen('screen-admin');
+                } else {
+                    showScreen('screen-dashboard');
+                }
+            } catch(e) { alert("Erro no login"); }
+        };
+
+        window.processarRelatorios = async () => {
+            const snap = await getDocs(collection(db, "agendamentos"));
+            const dados = snap.docs.map(d => d.data());
+            const period = document.getElementById('filter-period').value;
+            const statusF = document.getElementById('filter-status').value;
+            const agora = new Date().getTime();
+
+            const filtrados = dados.filter(item => {
+                const dif = (agora - item.timestamp) / (1000*60*60*24);
+                let bateP = (period === 'hoje' && dif < 1) || (period === 'semana' && dif < 7) || (period === 'mes' && dif < 30) || (period === 'ano' && dif < 365);
+                let bateS = statusF === 'todos' || item.status === statusF;
+                return bateP && bateS;
+            });
+
+            const body = document.getElementById('report-body');
+            body.innerHTML = "";
+            let counts = {concluido: 0, ativo: 0, faltou: 0};
+
+            filtrados.sort((a,b) => b.timestamp - a.timestamp).forEach(i => {
+                counts[i.status]++;
+                body.innerHTML += `<tr><td>${i.data.split('-').reverse().join('/')}</td><td>${i.clienteNome}</td><td><span class="stat-badge status-${i.status}">${i.status}</span></td></tr>`;
+            });
+
+            document.getElementById('stat-count').innerText = filtrados.length;
+            document.getElementById('stat-done').innerText = counts.concluido;
+            document.getElementById('stat-miss').innerText = counts.faltou;
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if(chartRef) chartRef.destroy();
+            chartRef = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Feitos', 'Agendados', 'Faltas'], datasets: [{ data: [counts.concluido, counts.ativo, counts.faltou], backgroundColor: ['#d4a373', '#e9d1b7', '#ff85a2'], borderWidth: 0 }] },
+                options: { cutout: '75%', maintainAspectRatio: false }
+            });
+        };
+
+        window.renderPainelAdmin = async () => {
+            const snap = await getDocs(collection(db, "agendamentos"));
+            const ags = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(a => a.status === 'ativo');
+            const list = document.getElementById('admin-list');
+            list.innerHTML = ags.length ? "" : "<p style='text-align:center; color:#999'>Agenda vazia.</p>";
+            ags.forEach(ag => {
+                list.innerHTML += `
+                    <div class="glass-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center">
+                            <b>${ag.clienteNome}</b>
+                            <span style="color:var(--gold); font-weight:600">${ag.hora}h</span>
+                        </div>
+                        <p style="margin:5px 0; font-size:0.8rem">${ag.servico}</p>
+                        <div style="display:flex; gap:10px; margin-top:10px">
+                            <button onclick="marcarStatus('${ag.id}', 'concluido')" class="btn-gold" style="padding:8px; font-size:0.6rem; background:#4caf50">FEITO</button>
+                            <button onclick="marcarStatus('${ag.id}', 'faltou')" class="btn-gold" style="padding:8px; font-size:0.6rem; background:#f44336">FALTOU</button>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.marcarStatus = async (id, s) => {
+            await updateDoc(doc(db, "agendamentos", id), {status: s});
+            renderPainelAdmin();
+        };
+
+        async function carregarDashboard() {
+            if(isAdmin) document.getElementById('btn-go-admin').style.display = 'block';
+            const q = query(collection(db, "agendamentos"), where("clienteId", "==", auth.currentUser.uid));
+            const snap = await getDocs(q);
+            const ativos = snap.docs.map(d => d.data()).filter(a => a.status === 'ativo');
+            const area = document.getElementById('client-area');
+            if(!ativos.length) { area.innerHTML = "<div class='glass-card' style='text-align:center'><p>Nenhum agendamento pessoal.</p></div>"; return; }
+            const ag = ativos[0];
+            area.innerHTML = `
+                <div class="glass-card" style="text-align:center; border: 1px solid var(--gold-light)">
+                    <small style="text-transform:uppercase; letter-spacing:1px; color:var(--gold)">Próxima Sessão</small>
+                    <h3 style="margin:10px 0">${ag.servico}</h3>
+                    <p style="margin:0; font-weight:500">${ag.data.split('-').reverse().join('/')} às ${ag.hora}h</p>
+                </div>
+            `;
+        }
+
+        let hSel = null;
+        window.carregarHoras = async () => {
+            const d = document.getElementById('agendar-data').value;
+            const snap = await getDocs(query(collection(db, "agendamentos"), where("data", "==", d), where("status", "==", "ativo")));
+            const ocup = snap.docs.map(doc => doc.data().hora);
+            const cont = document.getElementById('horas-container');
+            cont.innerHTML = "";
+            ["09:00", "11:00", "14:00", "16:00", "18:00"].forEach(h => {
+                const b = document.createElement('button');
+                b.innerText = h; b.className = 'view-btn';
+                if(ocup.includes(h)) b.disabled = true;
+                else b.onclick = () => {
+                    document.querySelectorAll('#horas-container button').forEach(el => el.classList.remove('active'));
+                    b.classList.add('active'); hSel = h; document.getElementById('btn-confirm').disabled = false;
+                }
+                cont.appendChild(b);
+            });
+        };
+
+        window.confirmar = async () => {
+            const d = document.getElementById('agendar-data').value;
+            const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
+            await addDoc(collection(db, "agendamentos"), {
+                clienteId: auth.currentUser.uid, clienteNome: u.nome,
+                servico: document.getElementById('agendar-tipo').value,
+                data: d, hora: hSel, status: 'ativo', timestamp: new Date(d + "T" + hSel).getTime()
+            });
+            alert("Agendado com sucesso!"); showScreen('screen-dashboard');
+        };
+
+        window.exportarExcel = () => {
+            let csv = "Data,Cliente,Status\n";
+            document.querySelectorAll("#report-body tr").forEach(tr => {
+                const td = tr.querySelectorAll("td");
+                csv += `${td[0].innerText},${td[1].innerText},${td[2].innerText}\n`;
+            });
+            const blob = new Blob([csv], {type:'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'financeiro_studio.csv'; a.click();
+        };
+
+        window.logout = () => { signOut(auth); location.reload(); };
+
+    </script>
+</body>
+</html>
