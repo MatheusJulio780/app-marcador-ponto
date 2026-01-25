@@ -31,6 +31,7 @@
         .btn-pix { background: var(--pix-color); color: white; }
         .btn-driver { background: var(--driver-color); color: white; }
         .btn-danger { background: #ff6b81; color: white; }
+        .btn-success { background: var(--success); color: white; }
         
         input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #dfe4ea; border-radius: 12px; background: #f8f9fa; font-size: 0.95rem; outline: none; }
         
@@ -54,8 +55,6 @@
         #panel-status { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; padding: 30px 20px; overflow-y: auto; text-align: center; }
         .status-line { height: 6px; background: #dfe4ea; width: 100%; margin-bottom: 10px; border-radius: 10px; overflow: hidden; }
         .status-progress { height: 100%; background: var(--success); width: 0%; transition: 1s ease; }
-        
-        /* Alerta Pix */
         .pix-alert-card { background: #fff3cd; border: 2px solid #ffc107; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
@@ -65,20 +64,25 @@
 
         /* --- ADMIN & DRIVER --- */
         #app-admin, #app-driver { display: none; min-height: 100vh; background: #dfe6e9; display: flex; }
-        
         .sidebar { width: 250px; background: #2d3436; color: white; padding: 20px; display: flex; flex-direction: column; position: fixed; height: 100%; }
         .main-content { margin-left: 250px; flex: 1; padding: 20px; width: calc(100% - 250px); }
         .nav-btn { background: transparent; color: #b2bec3; text-align: left; margin-bottom: 5px; border-radius: 8px; padding: 10px; width: 100%; }
         .nav-btn.active { background: rgba(255,255,255,0.1); color: white; }
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-
         .card-pix-pending { background: #fff0f6; border: 2px solid var(--pix-color); }
+
+        /* TABLE REPORTS */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
+        .report-table th, .report-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .report-table th { background: #2d3436; color: white; }
+        .report-table tr:hover { background: #f1f2f6; }
 
         @media (max-width: 768px) {
             #app-admin, #app-driver { flex-direction: column; }
             .sidebar { width: 100%; position: relative; height: auto; }
             .main-content { margin-left: 0; width: 100%; }
             .admin-grid { grid-template-columns: 1fr; }
+            .report-table { display: block; overflow-x: auto; }
         }
 
         #admin-map-container { height: 300px; width: 100%; border-radius: 12px; margin-top: 15px; }
@@ -224,13 +228,15 @@
         <button class="nav-btn active" data-tab="orders">📦 Pedidos</button>
         <button class="nav-btn" data-tab="menu">🍔 Cardápio</button>
         <button class="nav-btn" data-tab="districts">🛵 Bairros</button>
-        <button class="nav-btn btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
+        <button class="nav-btn" data-tab="reports">📊 Relatórios</button> <button class="nav-btn btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
     </div>
     <div class="main-content">
+        
         <div id="tab-orders">
             <h3>Pedidos Ativos</h3>
             <div id="admin-orders-grid" class="admin-grid"></div>
         </div>
+
         <div id="tab-menu" class="hidden">
             <h3>Cardápio</h3>
             <div class="card">
@@ -244,6 +250,7 @@
             </div>
             <div id="admin-menu-list"></div>
         </div>
+
         <div id="tab-districts" class="hidden">
             <h3>Bairros</h3>
             <div class="card">
@@ -252,6 +259,42 @@
                 <button class="btn btn-primary" id="btn-add-dist">Adicionar Bairro</button>
             </div>
             <div id="admin-districts-list"></div>
+        </div>
+
+        <div id="tab-reports" class="hidden">
+            <h3>Relatório de Vendas</h3>
+            <div class="card">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex:1;">
+                        <label>Data Inicial</label>
+                        <input type="date" id="rep-start" style="margin:0;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Data Final</label>
+                        <input type="date" id="rep-end" style="margin:0;">
+                    </div>
+                    <button class="btn btn-primary" style="width:auto; margin:0;" id="btn-filter-rep">Filtrar</button>
+                    <button class="btn btn-success" style="width:auto; margin:0;" id="btn-export-rep">Baixar Excel</button>
+                </div>
+            </div>
+            
+            <div class="card" style="padding:0;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Cliente</th>
+                            <th>Prato</th>
+                            <th>Valor</th>
+                            <th>Pagamento</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-body">
+                        <tr><td colspan="6" style="text-align:center;">Selecione as datas e clique em Filtrar</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -270,7 +313,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB9NyBVa1Ha_42kwos09SV5VTN7NQWqHjM",
@@ -290,6 +333,7 @@
     let localMenu = [];
     let localDistricts = [];
     let map = null;
+    let reportDataCache = []; // Para armazenar dados do relatorio
 
     const getEl = (id) => document.getElementById(id);
     const hide = (id) => getEl(id).classList.add('hidden');
@@ -313,7 +357,7 @@
     }
     init();
 
-    // --- UI CLIENTE ---
+    // --- CLIENTE --- (Mantido igual)
     function renderClientMenu() {
         const sel = getEl('dish-select');
         sel.innerHTML = '<option value="">Selecione o prato...</option>';
@@ -379,20 +423,18 @@
         return total;
     }
 
-    // --- FLUXO DE PEDIDO ---
     getEl('btn-confirm-order').onclick = () => {
         const name = getEl('client-name').value;
         const dishId = getEl('dish-select').value;
         const method = getEl('delivery-method').value;
 
-        if(!name || !dishId) return alert("Preencha seu nome e escolha um prato");
+        if(!name || !dishId) return alert("Preencha nome e prato");
         
         if(method === 'entrega') {
             const idx = getEl('district-select').value;
             if(idx === "") return alert("Escolha o bairro");
             getEl('modal-district-display').innerText = localDistricts[idx].name;
             show('modal-address');
-            // Reset Geo state
             tempGeo = null;
             getEl('geo-status').innerText = "";
         } else {
@@ -400,58 +442,40 @@
         }
     };
 
-    // CORREÇÃO DO GPS
     getEl('btn-geo').onclick = () => {
         const status = getEl('geo-status');
-        status.innerText = "Buscando satélites...";
+        status.innerText = "Buscando...";
         status.style.color = "orange";
-        
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(pos => {
                 tempGeo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                status.innerText = "✅ Localização encontrada com sucesso!";
+                status.innerText = "✅ Localização encontrada!";
                 status.style.color = "green";
             }, (err) => {
-                status.innerText = "❌ Erro ao buscar localização. Digite manualmente.";
+                status.innerText = "❌ Erro ao buscar. Digite manualmente.";
                 status.style.color = "red";
-                console.error(err);
             }, { enableHighAccuracy: true });
-        } else {
-            status.innerText = "❌ GPS não suportado.";
-        }
+        } else { status.innerText = "❌ GPS não suportado."; }
     };
 
     getEl('btn-close-addr').onclick = () => hide('modal-address');
-    
     getEl('btn-save-addr').onclick = () => {
         const street = getEl('addr-street').value;
         const ref = getEl('addr-ref').value;
         const idx = getEl('district-select').value;
-        
-        if(!street) return alert("Digite a rua e número");
-        
+        if(!street) return alert("Digite rua e número");
         tempAddress = { street, ref, geo: tempGeo, district: localDistricts[idx].name };
         hide('modal-address');
         finalizePaymentLogic(tempAddress);
     };
 
     function finalizePaymentLogic(addr) {
-        if(getEl('payment-method').value === 'pix') {
-            show('modal-pix');
-        } else {
-            createOrder(addr, 'pending');
-        }
+        if(getEl('payment-method').value === 'pix') show('modal-pix');
+        else createOrder(addr, 'pending');
     }
 
-    getEl('btn-pix-copy').onclick = () => {
-        navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000");
-        alert("Chave Copiada!");
-    };
-    
-    getEl('btn-pix-paid').onclick = () => {
-        hide('modal-pix');
-        createOrder(tempAddress, 'awaiting_payment');
-    };
+    getEl('btn-pix-copy').onclick = () => { navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000"); alert("Chave Copiada!"); };
+    getEl('btn-pix-paid').onclick = () => { hide('modal-pix'); createOrder(tempAddress, 'awaiting_payment'); };
     getEl('btn-cancel-pix').onclick = () => hide('modal-pix');
 
     async function createOrder(addr, initialStatus) {
@@ -474,12 +498,9 @@
             const docRef = await addDoc(collection(db, "orders"), orderData);
             localStorage.setItem('activeOrderId', docRef.id);
             trackOrder(docRef.id);
-        } catch (e) {
-            alert("Erro ao enviar pedido: " + e.message);
-        }
+        } catch (e) { alert("Erro: " + e.message); }
     }
 
-    // --- TRACKING REALTIME DO CLIENTE ---
     function trackOrder(id) {
         hide('view-order');
         show('panel-status');
@@ -490,10 +511,7 @@
             
             getEl('st-dish').innerText = `${data.dish} (${data.size})`;
             getEl('st-total').innerText = `R$ ${data.total.toFixed(2)}`;
-            if(data.address) {
-                show('st-addr-block');
-                getEl('st-addr').innerText = `${data.address.street} - ${data.address.district}`;
-            }
+            if(data.address) { show('st-addr-block'); getEl('st-addr').innerText = `${data.address.street} - ${data.address.district}`; }
 
             const bar = getEl('progress-bar');
             const icon = getEl('status-icon');
@@ -502,99 +520,57 @@
             const cardUI = getEl('status-card-ui');
             const btnCancel = getEl('btn-client-cancel');
 
-            // Reset Card Style
             cardUI.className = 'card';
             cardUI.style.background = "#fff8f9";
 
-            // Botão Cancelar: Só aparece se ainda não começou a fazer
-            if(data.status === 'awaiting_payment' || data.status === 'pending') {
-                show('btn-client-cancel');
-            } else {
-                hide('btn-client-cancel');
-            }
+            if(data.status === 'awaiting_payment' || data.status === 'pending') show('btn-client-cancel');
+            else hide('btn-client-cancel');
 
-            // LÓGICA DE STATUS
             if(data.status === 'awaiting_payment') {
                 bar.style.width = '5%'; bar.style.background = '#ffd32a';
-                icon.innerText = '⚠️'; 
-                txt.innerText = 'AGUARDANDO PIX';
-                desc.innerText = 'O restaurante está conferindo o pagamento.';
-                // Estilo chamativo
+                icon.innerText = '⚠️'; txt.innerText = 'AGUARDANDO PIX';
+                desc.innerText = 'Restaurante conferindo pagamento...';
                 cardUI.classList.add('pix-alert-card');
-
             } else if(data.status === 'pending') {
                 bar.style.width = '10%'; bar.style.background = '#ffa502';
-                icon.innerText = '⏳'; txt.innerText = 'Aguardando restaurante';
-                desc.innerText = 'Pedido na fila da cozinha.';
-
+                icon.innerText = '⏳'; txt.innerText = 'Na Cozinha'; desc.innerText = 'Pedido na fila.';
             } else if(data.status === 'prep') {
                 bar.style.width = '40%'; bar.style.background = '#ffa502';
-                icon.innerText = '🔥'; txt.innerText = 'Em Preparo';
-                desc.innerText = 'O cheirinho está subindo...';
-
+                icon.innerText = '🔥'; txt.innerText = 'Em Preparo'; desc.innerText = 'Cozinhando...';
             } else if(data.status === 'delivery') {
                 bar.style.width = '80%'; bar.style.background = '#2ed573';
-                icon.innerText = '🛵'; txt.innerText = 'Saiu para Entrega';
-                desc.innerText = 'Entregador a caminho do endereço.';
-
+                icon.innerText = '🛵'; txt.innerText = 'Saiu p/ Entrega'; desc.innerText = 'Entregador a caminho.';
             } else if(data.status === 'done') {
                 bar.style.width = '100%'; bar.style.background = '#2ed573';
-                icon.innerText = '✅'; txt.innerText = 'Entregue!';
-                desc.innerText = 'Obrigado pela preferência!';
-                show('btn-new-order');
-
+                icon.innerText = '✅'; txt.innerText = 'Entregue!'; desc.innerText = 'Obrigado!'; show('btn-new-order');
             } else if(data.status === 'cancelled') {
                 bar.style.width = '0%'; bar.style.background = 'red';
-                icon.innerText = '❌'; txt.innerText = 'Cancelado';
-                desc.innerText = 'Este pedido foi cancelado.';
-                show('btn-new-order');
+                icon.innerText = '❌'; txt.innerText = 'Cancelado'; desc.innerText = 'Pedido cancelado.'; show('btn-new-order');
             }
 
-            // Ação do Botão Cancelar
-            btnCancel.onclick = async () => {
-                if(confirm("Deseja realmente cancelar este pedido?")) {
-                    await updateDoc(doc(db, "orders", id), { status: 'cancelled' });
-                }
-            };
+            btnCancel.onclick = async () => { if(confirm("Cancelar pedido?")) await updateDoc(doc(db, "orders", id), { status: 'cancelled' }); };
         });
     }
-    
-    getEl('btn-new-order').onclick = () => {
-        localStorage.removeItem('activeOrderId');
-        location.reload();
-    }
+    getEl('btn-new-order').onclick = () => { localStorage.removeItem('activeOrderId'); location.reload(); }
 
-    // --- LOGIN GERAL ---
+    // --- LOGIN ---
     getEl('btn-login-access').onclick = () => show('modal-login');
     getEl('btn-close-login').onclick = () => hide('modal-login');
-    
     getEl('btn-do-login').onclick = () => {
         const pass = getEl('login-pass').value;
-        hide('modal-login');
-        hide('app-client');
-
-        if(pass === '452505') {
-            show('app-admin');
-            getEl('app-admin').style.display = 'flex';
-            setupAdminListeners();
-        } else if(pass === 'moto123') {
-            show('app-driver');
-            getEl('app-driver').style.display = 'flex';
-            setupDriverListeners();
-        } else {
-            alert('Senha incorreta');
-            location.reload();
-        }
+        hide('modal-login'); hide('app-client');
+        if(pass === '452505') { show('app-admin'); getEl('app-admin').style.display = 'flex'; setupAdminListeners(); }
+        else if(pass === 'moto123') { show('app-driver'); getEl('app-driver').style.display = 'flex'; setupDriverListeners(); }
+        else { alert('Senha errada'); location.reload(); }
     };
-    
     document.querySelectorAll('.btn-logout').forEach(b => b.onclick = () => location.reload());
 
-    // --- PAINEL ADMIN ---
+    // --- ADMIN ---
     document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            ['orders','menu','districts'].forEach(t => hide('tab-'+t));
+            ['orders','menu','districts','reports'].forEach(t => hide('tab-'+t)); // Esconde todos
             show('tab-' + btn.dataset.tab);
         };
     });
@@ -604,7 +580,6 @@
         onSnapshot(q, (snap) => {
             const grid = getEl('admin-orders-grid');
             grid.innerHTML = '';
-            
             snap.forEach(docSnap => {
                 const o = docSnap.data();
                 const oid = docSnap.id;
@@ -615,171 +590,140 @@
                 if(o.status === 'awaiting_payment') div.classList.add('card-pix-pending');
 
                 let mapBtn = '';
-                if(o.address && o.address.geo) {
-                    mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="map-${oid}">🗺️ Ver Mapa</button>`;
-                }
+                if(o.address && o.address.geo) mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="map-${oid}">🗺️ Ver Mapa</button>`;
 
                 let actionButtons = '';
                 if (o.status === 'awaiting_payment') {
-                    actionButtons = `
-                        <p style="color:#e84118; font-weight:bold;">⚠️ PIX PENDENTE</p>
-                        <button class="btn btn-pix" onclick="window.upStatus('${oid}','pending')">💰 Confirmar Pix</button>
-                        <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Recusar</button>
-                    `;
+                    actionButtons = `<p style="color:#e84118; font-weight:bold;">⚠️ PIX PENDENTE</p><button class="btn btn-pix" onclick="window.upStatus('${oid}','pending')">💰 Confirmar Pix</button><button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Recusar</button>`;
                 } else {
-                    actionButtons = `
-                        <div style="display:flex; gap:5px; margin-top:10px;">
-                            <button class="btn btn-outline" onclick="window.upStatus('${oid}','prep')">🔥 Preparar</button>
-                            <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Cancelar</button>
-                        </div>
-                    `;
+                    actionButtons = `<div style="display:flex; gap:5px; margin-top:10px;"><button class="btn btn-outline" onclick="window.upStatus('${oid}','prep')">🔥 Preparar</button><button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Cancelar</button></div>`;
                 }
 
-                div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>${o.client}</strong>
-                        <span style="font-weight:bold; color:var(--primary)">${translateStatus(o.status)}</span>
-                    </div>
-                    <p>${o.dish} (${o.size})</p>
-                    <p>R$ ${o.total.toFixed(2)} - <strong>${o.payment}</strong></p>
-                    ${o.method === 'entrega' ? `<div style="background:#f1f2f6; p:5px; border-radius:5px; font-size:0.9rem;">📍 ${o.address.street} <br> ${o.address.district} ${mapBtn}</div>` : 'Retirada'}
-                    ${actionButtons}
-                `;
+                div.innerHTML = `<div style="display:flex; justify-content:space-between;"><strong>${o.client}</strong><span style="font-weight:bold; color:var(--primary)">${o.status.toUpperCase()}</span></div><p>${o.dish} (${o.size})</p><p>R$ ${o.total.toFixed(2)} - <strong>${o.payment}</strong></p>${o.method === 'entrega' ? `<div style="background:#f1f2f6; p:5px; border-radius:5px; font-size:0.9rem;">📍 ${o.address.street} <br> ${o.address.district} ${mapBtn}</div>` : 'Retirada'}${actionButtons}`;
                 grid.appendChild(div);
-
-                if(o.address && o.address.geo) {
-                    setTimeout(() => {
-                        const btn = document.getElementById(`map-${oid}`);
-                        if(btn) btn.onclick = () => openMap(o.address.geo, o.client);
-                    }, 100);
-                }
+                if(o.address && o.address.geo) setTimeout(() => { getEl(`map-${oid}`).onclick = () => openMap(o.address.geo, o.client); }, 100);
             });
         });
-        
-        renderAdminMenu();
-        renderAdminDistricts();
+        renderAdminMenu(); renderAdminDistricts();
     }
 
-    // --- PAINEL ENTREGADOR ---
+    // --- REPORT LOGIC (NOVO) ---
+    getEl('btn-filter-rep').onclick = async () => {
+        const start = getEl('rep-start').value;
+        const end = getEl('rep-end').value;
+        if(!start || !end) return alert("Selecione datas");
+
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        
+        reportDataCache = []; // Limpa cache
+        const tbody = getEl('report-body');
+        tbody.innerHTML = '';
+
+        snap.forEach(doc => {
+            const o = doc.data();
+            const dateOnly = o.timestamp.split('T')[0];
+            
+            if(dateOnly >= start && dateOnly <= end) {
+                reportDataCache.push(o); // Salva para exportar
+                
+                const dateFmt = new Date(o.timestamp).toLocaleString('pt-BR');
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${dateFmt}</td>
+                        <td>${o.client}</td>
+                        <td>${o.dish}</td>
+                        <td>R$ ${o.total.toFixed(2)}</td>
+                        <td>${o.payment}</td>
+                        <td>${o.status}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        if(reportDataCache.length === 0) tbody.innerHTML = '<tr><td colspan="6">Nenhum pedido neste período.</td></tr>';
+    };
+
+    getEl('btn-export-rep').onclick = () => {
+        if(reportDataCache.length === 0) return alert("Filtre primeiro para ter dados.");
+        
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Data;Cliente;Prato;Tamanho;Total;Pagamento;Status;Endereco\n"; // Header
+
+        reportDataCache.forEach(o => {
+            const date = new Date(o.timestamp).toLocaleString('pt-BR');
+            const addr = o.address ? `${o.address.street} - ${o.address.district}` : "Retirada";
+            // Substituir ; por , para não quebrar CSV
+            const row = `${date};${o.client};${o.dish};${o.size};${o.total.toFixed(2)};${o.payment};${o.status};${addr}`;
+            csvContent += row + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "relatorio_vendas.csv");
+        document.body.appendChild(link);
+        link.click();
+    };
+
+
+    // --- ENTREGADOR (NOVO VISUAL DE PAGAMENTO) ---
     function setupDriverListeners() {
-        // Entregador vê tudo, mas a UI foca no que ele precisa
         const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
         onSnapshot(q, (snap) => {
             const grid = getEl('driver-orders-grid');
             grid.innerHTML = '';
-            
             snap.forEach(docSnap => {
                 const o = docSnap.data();
                 const oid = docSnap.id;
-                
-                // Entregador só vê o que está em 'prep' (pronto para sair) ou 'delivery' (na mão dele)
                 if(o.status !== 'prep' && o.status !== 'delivery') return;
-                if(o.method !== 'entrega') return; // Ignora retiradas
+                if(o.method !== 'entrega') return;
 
                 const div = document.createElement('div');
                 div.className = 'card';
                 div.style.borderLeft = "5px solid #2f3542";
 
                 let mapBtn = '';
-                if(o.address && o.address.geo) {
-                    mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="dmap-${oid}">🗺️ Ver Mapa</button>`;
+                if(o.address && o.address.geo) mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="dmap-${oid}">🗺️ Ver Mapa</button>`;
+
+                // LOGICA DE EXIBIÇÃO DE PAGAMENTO PARA O MOTOBOY
+                let payDisplay = '';
+                if(o.payment === 'pix') {
+                    // Se chegou aqui, o admin ja confirmou o pix
+                    payDisplay = `<div style="background:#d1fae5; color:#065f46; padding:10px; border-radius:8px; text-align:center; font-weight:bold; margin:10px 0; border:1px solid #34d399;">✅ PIX JÁ PAGO</div>`;
+                } else {
+                    // Dinheiro ou Cartão
+                    payDisplay = `<div style="background:#fee2e2; color:#b91c1c; padding:10px; border-radius:8px; text-align:center; font-weight:bold; margin:10px 0; border:1px solid #fca5a5;">💰 COBRAR: ${o.payment.toUpperCase()}<br>Valor: R$ ${o.total.toFixed(2)}</div>`;
                 }
 
                 let driverAction = '';
-                if(o.status === 'prep') {
-                    driverAction = `<button class="btn btn-driver" onclick="window.upStatus('${oid}','delivery')">🛵 Pegar Pedido (Sair)</button>`;
-                } else if(o.status === 'delivery') {
-                    driverAction = `<button class="btn btn-success" onclick="window.upStatus('${oid}','done')">✅ Pedido Entregue</button>`;
-                }
+                if(o.status === 'prep') driverAction = `<button class="btn btn-driver" onclick="window.upStatus('${oid}','delivery')">🛵 Pegar Pedido (Sair)</button>`;
+                else if(o.status === 'delivery') driverAction = `<button class="btn btn-success" onclick="window.upStatus('${oid}','done')">✅ Pedido Entregue</button>`;
 
-                div.innerHTML = `
-                    <h3>${o.client}</h3>
-                    <p style="font-size:1.1rem; font-weight:bold;">${translateStatus(o.status)}</p>
-                    <div style="background:#f1f2f6; padding:10px; margin:10px 0; border-radius:8px;">
-                        📍 ${o.address.street}<br>
-                        Ref: ${o.address.ref}<br>
-                        <strong>${o.address.district}</strong>
-                        ${mapBtn}
-                    </div>
-                    <p>Pgto: <strong>${o.payment}</strong> (R$ ${o.total.toFixed(2)})</p>
-                    ${driverAction}
-                `;
+                div.innerHTML = `<h3>${o.client}</h3><p style="font-size:1.1rem; font-weight:bold;">${o.status.toUpperCase()}</p><div style="background:#f1f2f6; padding:10px; margin:10px 0; border-radius:8px;">📍 ${o.address.street}<br>Ref: ${o.address.ref}<br><strong>${o.address.district}</strong>${mapBtn}</div>${payDisplay}${driverAction}`;
                 grid.appendChild(div);
-
-                if(o.address && o.address.geo) {
-                    setTimeout(() => {
-                        const btn = document.getElementById(`dmap-${oid}`);
-                        if(btn) btn.onclick = () => openMap(o.address.geo, o.client);
-                    }, 100);
-                }
+                if(o.address && o.address.geo) setTimeout(() => { getEl(`dmap-${oid}`).onclick = () => openMap(o.address.geo, o.client); }, 100);
             });
         });
     }
 
     // Globais
-    function translateStatus(st) {
-        if(st==='awaiting_payment') return 'CONFIRMAR PIX';
-        if(st==='pending') return 'PENDENTE (COZINHA)';
-        if(st==='prep') return 'EM PREPARO (COZINHA)';
-        if(st==='delivery') return 'EM ROTA DE ENTREGA';
-        return st.toUpperCase();
-    }
-
-    window.upStatus = async (id, status) => {
-        await updateDoc(doc(db, "orders", id), { status: status });
-    };
-
-    function openMap(geo, name) {
-        show('modal-map-admin');
-        if(map) map.remove();
-        setTimeout(() => {
-            map = L.map('admin-map-container').setView([geo.lat, geo.lng], 16);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            L.marker([geo.lat, geo.lng]).addTo(map).bindPopup(name).openPopup();
-        }, 200);
-    }
+    window.upStatus = async (id, status) => { await updateDoc(doc(db, "orders", id), { status: status }); };
+    function openMap(geo, name) { show('modal-map-admin'); if(map) map.remove(); setTimeout(() => { map = L.map('admin-map-container').setView([geo.lat, geo.lng], 16); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); L.marker([geo.lat, geo.lng]).addTo(map).bindPopup(name).openPopup(); }, 200); }
     getEl('btn-close-map').onclick = () => hide('modal-map-admin');
 
-    // Admin CRUD Helpers
+    // CRUD Admin
     function renderAdminMenu() {
-        const list = getEl('admin-menu-list');
-        list.innerHTML = '';
-        localMenu.forEach(m => {
-            list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
-                <b>${m.name}</b> <small>P:${m.p} M:${m.m} G:${m.g}</small>
-                <button style="color:red; border:none; bg:none;" onclick="window.delItem('menu','${m.id}')">X</button>
-            </div>`;
-        });
+        const list = getEl('admin-menu-list'); list.innerHTML = '';
+        localMenu.forEach(m => { list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;"><b>${m.name}</b> <small>P:${m.p} M:${m.m} G:${m.g}</small><button style="color:red; border:none; bg:none;" onclick="window.delItem('menu','${m.id}')">X</button></div>`; });
     }
-
     function renderAdminDistricts() {
-        const list = getEl('admin-districts-list');
-        list.innerHTML = '';
-        localDistricts.forEach(d => {
-            list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
-                <b>${d.name}</b> <span>R$ ${d.price}</span>
-                <button style="color:red; border:none; bg:none;" onclick="window.delItem('districts','${d.id}')">X</button>
-            </div>`;
-        });
+        const list = getEl('admin-districts-list'); list.innerHTML = '';
+        localDistricts.forEach(d => { list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;"><b>${d.name}</b> <span>R$ ${d.price}</span><button style="color:red; border:none; bg:none;" onclick="window.delItem('districts','${d.id}')">X</button></div>`; });
     }
-
-    getEl('btn-add-menu').onclick = async () => {
-        const name = getEl('menu-name').value;
-        if(!name) return;
-        await addDoc(collection(db, "menu"), { name: name, p: getEl('menu-p').value, m: getEl('menu-m').value, g: getEl('menu-g').value });
-        getEl('menu-name').value = '';
-    };
-
-    getEl('btn-add-dist').onclick = async () => {
-        const name = getEl('dist-name').value;
-        if(!name) return;
-        await addDoc(collection(db, "districts"), { name: name, price: getEl('dist-price').value });
-        getEl('dist-name').value = '';
-    };
-
-    window.delItem = async (col, id) => {
-        if(confirm('Excluir?')) await deleteDoc(doc(db, col, id));
-    };
+    getEl('btn-add-menu').onclick = async () => { const name = getEl('menu-name').value; if(!name) return; await addDoc(collection(db, "menu"), { name: name, p: getEl('menu-p').value, m: getEl('menu-m').value, g: getEl('menu-g').value }); getEl('menu-name').value = ''; };
+    getEl('btn-add-dist').onclick = async () => { const name = getEl('dist-name').value; if(!name) return; await addDoc(collection(db, "districts"), { name: name, price: getEl('dist-price').value }); getEl('dist-name').value = ''; };
+    window.delItem = async (col, id) => { if(confirm('Excluir?')) await deleteDoc(doc(db, col, id)); };
 
 </script>
 </body>
