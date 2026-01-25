@@ -2,290 +2,662 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matheus Júlio | Currículo Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tempero da Casa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #1e293b; }
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.4s ease forwards; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .modal.active { display: flex; }
-        .section-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #4f46e5; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 16px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .tab-btn.active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        :root {
+            --primary: #ff4757;
+            --bg-app: #f1f2f6;
+            --bg-card: #ffffff;
+            --text-dark: #2f3542;
+            --success: #2ed573;
+            --pix-color: #32bcad;
+        }
+
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background-color: var(--bg-app); color: var(--text-dark); }
+
+        /* --- UI COMPONENTS --- */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); }
+        .btn-outline { background: transparent; border: 2px solid #ccc; color: #747d8c; }
+        .btn-pix { background: var(--pix-color); color: white; }
+        
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #dfe4ea; border-radius: 12px; background: #f8f9fa; font-size: 0.95rem; outline: none; }
+        
+        .card { background: var(--bg-card); padding: 20px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .hidden { display: none !important; }
+
+        /* --- CLIENTE --- */
+        #app-client { max-width: 500px; margin: 0 auto; min-height: 100vh; background: white; position: relative; padding-bottom: 100px;}
+        .hero-banner { background: var(--primary); height: 100px; border-radius: 0 0 25px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; position: relative; }
+        #btn-admin-access { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display:flex; align-items:center; justify-content:center; }
+
+        .menu-grid { padding: 0 20px; }
+        .size-selector { display: flex; background: #f1f2f6; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
+        .size-opt { flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; font-weight: 600; color: #747d8c; transition: 0.2s; }
+        .size-opt.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .total-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); border-radius: 20px 20px 0 0; z-index: 900; max-width: 500px; margin: 0 auto; right: 0; }
+        .price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 1.2rem; font-weight: 700; }
+
+        /* --- STATUS --- */
+        #panel-status { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; padding: 30px 20px; overflow-y: auto; text-align: center; }
+        .status-line { height: 6px; background: #dfe4ea; width: 100%; margin-bottom: 10px; border-radius: 10px; overflow: hidden; }
+        .status-progress { height: 100%; background: var(--success); width: 0%; transition: 1s ease; }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-box { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; }
+
+        /* --- ADMIN --- */
+        #app-admin { display: none; min-height: 100vh; background: #dfe6e9; display: flex; }
+        .sidebar { width: 250px; background: #2d3436; color: white; padding: 20px; display: flex; flex-direction: column; position: fixed; height: 100%; }
+        .main-content { margin-left: 250px; flex: 1; padding: 20px; width: calc(100% - 250px); }
+        .nav-btn { background: transparent; color: #b2bec3; text-align: left; margin-bottom: 5px; border-radius: 8px; padding: 10px; width: 100%; }
+        .nav-btn.active { background: rgba(255,255,255,0.1); color: white; }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        /* Card especial para Pix Pendente no Admin */
+        .card-pix-pending { background: #fff0f6; border: 2px solid var(--pix-color); }
+
+        /* Responsivo Admin */
+        @media (max-width: 768px) {
+            #app-admin { flex-direction: column; }
+            .sidebar { width: 100%; position: relative; height: auto; }
+            .main-content { margin-left: 0; width: 100%; }
+            .admin-grid { grid-template-columns: 1fr; }
+        }
+
+        #admin-map-container { height: 300px; width: 100%; border-radius: 12px; margin-top: 15px; }
+        .qr-placeholder { width: 200px; height: 200px; background: #f0f0f0; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc; }
     </style>
 </head>
-<body class="pb-20">
+<body>
 
-    <button id="btnOpenAdmin" class="fixed bottom-6 right-6 z-50 bg-white shadow-xl p-4 rounded-full text-slate-400 border border-slate-100 transition-all active:scale-90">
-        <i class="ph ph-lock-key text-2xl"></i>
-    </button>
-
-    <section id="page-cv" class="page active">
-        <header class="bg-indigo-700 text-white px-6 pt-12 pb-8 rounded-b-[3rem] shadow-xl mb-8 text-center">
-            <div class="max-w-md mx-auto">
-                <div class="mb-4 flex justify-center">
-                    <div class="w-24 h-24 rounded-full border-4 border-white/20 shadow-lg bg-indigo-800 overflow-hidden">
-                        <img id="display-foto" src="" alt="" class="w-full h-full object-cover hidden">
-                        <div id="foto-placeholder" class="w-full h-full flex items-center justify-center text-2xl font-bold">MJ</div>
-                    </div>
-                </div>
-                <h1 id="display-nome" class="text-xl font-extrabold uppercase tracking-tight"></h1>
-                <p id="display-endereco" class="text-indigo-100 text-[11px] mt-2 opacity-90"></p>
-                <div id="display-contato" class="mt-4 text-[11px] text-indigo-100 flex flex-col gap-1"></div>
-                
-                <button onclick="showPage('page-certs')" class="mt-8 bg-white text-indigo-700 px-8 py-4 rounded-2xl font-bold shadow-lg flex items-center gap-2 mx-auto active:scale-95 text-sm uppercase">
-                    <i class="ph ph-graduation-cap text-xl"></i> Ver Certificados
-                </button>
+<div id="app-client">
+    <div id="view-order">
+        <div class="hero-banner">
+            Tempero da Casa 🥘
+            <button id="btn-admin-access"><i class="fas fa-lock"></i></button>
+        </div>
+        
+        <div class="menu-grid">
+            <div class="card">
+                <label><strong>Quem está pedindo?</strong></label>
+                <input type="text" id="client-name" placeholder="Seu nome completo">
             </div>
-        </header>
 
-        <div class="max-w-md mx-auto px-6 space-y-10">
-            <section>
-                <h2 class="section-title">Objetivo</h2>
-                <div class="flex gap-3">
-                    <i class="ph ph-target text-indigo-500 text-xl mt-1"></i>
-                    <p id="display-objetivo" class="text-sm text-slate-600 leading-relaxed"></p>
+            <div class="card">
+                <label><strong>Escolha o Prato</strong></label>
+                <select id="dish-select"><option value="">Carregando cardápio...</option></select>
+                <div class="size-selector">
+                    <div class="size-opt" id="s-p" data-size="P">P</div>
+                    <div class="size-opt active" id="s-m" data-size="M">M</div>
+                    <div class="size-opt" id="s-g" data-size="G">G</div>
                 </div>
-            </section>
+            </div>
 
-            <section>
-                <h2 class="section-title">Resumo de Qualificações</h2>
-                <div id="display-resumo" class="space-y-4"></div>
-            </section>
+            <div class="card">
+                <label><strong>Entrega ou Retirada?</strong></label>
+                <select id="delivery-method">
+                    <option value="retirada">Retirada no Balcão</option>
+                    <option value="entrega">Entrega Delivery</option>
+                </select>
+                <div id="district-container" class="hidden">
+                    <label style="margin-top:10px; display:block;">Selecione o Bairro:</label>
+                    <select id="district-select"><option value="">Carregando bairros...</option></select>
+                </div>
+            </div>
 
-            <section>
-                <h2 class="section-title">Formação Acadêmica</h2>
-                <div id="display-formacao" class="text-sm text-slate-600 space-y-3"></div>
-            </section>
+            <div class="card">
+                <label><strong>Pagamento</strong></label>
+                <select id="payment-method">
+                    <option value="dinheiro">Dinheiro (Trazer troco)</option>
+                    <option value="credito">Cartão de Crédito (+ R$ 2,00)</option>
+                    <option value="debito">Cartão de Débito (+ R$ 1,00)</option>
+                    <option value="pix">Pix (Necessária Aprovação)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="total-bar">
+            <div class="price-row"><span>Total</span><span id="total-display">R$ 0,00</span></div>
+            <div id="fee-display" style="font-size:0.8rem; color:#777; text-align:right;"></div>
+            <button class="btn btn-primary" id="btn-confirm-order">Confirmar Pedido <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <div id="panel-status" class="hidden">
+        <h2 style="color: var(--primary);">Status do Pedido</h2>
+        <div class="card" style="background: #fff8f9; border: 1px solid #ffdde1;">
+            <h1 id="status-icon" style="margin: 0; font-size: 3rem;">🕒</h1>
+            <h3 id="status-text" style="margin: 10px 0;">Aguardando...</h3>
+            <p id="status-desc" style="font-size: 0.9rem; color: #777;">...</p>
+        </div>
+        <div class="status-tracker">
+            <div class="status-line"><div class="status-progress" id="progress-bar"></div></div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa;">
+                <span>Pedido</span><span>Preparo</span><span>Entrega</span><span>Fim</span>
+            </div>
+        </div>
+        <div class="card" style="text-align: left;">
+            <p><strong>Pedido:</strong> <span id="st-dish"></span></p>
+            <p><strong>Total:</strong> <span id="st-total"></span></p>
+            <p id="st-addr-block" class="hidden"><strong>Endereço:</strong> <br><span id="st-addr"></span></p>
+        </div>
+        <button id="btn-new-order" class="btn btn-primary hidden">Fazer Novo Pedido</button>
+    </div>
+</div>
+
+<div id="modal-address" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3>Endereço</h3>
+        <p>Bairro: <strong id="modal-district-display"></strong></p>
+        <input type="text" id="addr-street" placeholder="Rua e Número">
+        <input type="text" id="addr-ref" placeholder="Ponto de Referência">
+        <button class="btn btn-outline" id="btn-geo">📍 Usar minha localização</button>
+        <p id="geo-msg" style="display:none; color:green; font-size:0.8rem;">Localização salva!</p>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-primary" id="btn-save-addr">Continuar</button>
+            <button class="btn btn-outline" id="btn-close-addr">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-pix" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3 style="color: var(--pix-color);">Pagamento Pix</h3>
+        <p style="font-size:0.9rem;">Escaneie o QR Code e realize o pagamento.</p>
+        
+        <div class="qr-placeholder">
+            <i class="fas fa-qrcode" style="font-size:4rem; color:#ccc;"></i>
+        </div>
+        
+        <div style="background:#f1f2f6; padding:10px; border-radius:8px; font-size:0.7rem; margin-bottom:15px; word-break:break-all;">
+            00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000
+        </div>
+
+        <button class="btn btn-pix" id="btn-pix-copy">📋 Copiar Chave</button>
+        <button class="btn btn-primary" id="btn-pix-paid">✅ Já realizei o pagamento</button>
+        <button class="btn btn-outline" id="btn-cancel-pix" style="margin-top:10px; border:none;">Cancelar</button>
+    </div>
+</div>
+
+<div id="modal-login" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h3>Acesso Admin</h3>
+        <input type="password" id="admin-pass" placeholder="Senha">
+        <button class="btn btn-primary" id="btn-do-login">Entrar</button>
+        <button class="btn btn-outline" id="btn-close-login">Voltar</button>
+    </div>
+</div>
+
+<div id="modal-map-admin" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:600px; width:95%;">
+        <h3>Localização</h3>
+        <div id="admin-map-container"></div>
+        <button class="btn btn-primary" id="btn-close-map" style="margin-top:15px;">Fechar</button>
+    </div>
+</div>
+
+<div id="app-admin" class="hidden">
+    <div class="sidebar">
+        <h2>Painel Admin</h2>
+        <button class="nav-btn active" data-tab="orders">📦 Pedidos</button>
+        <button class="nav-btn" data-tab="menu">🍔 Cardápio</button>
+        <button class="nav-btn" data-tab="districts">🛵 Bairros</button>
+        <button class="nav-btn" id="btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
+    </div>
+    <div class="main-content">
+        <div id="tab-orders">
+            <h3>Pedidos Ativos</h3>
+            <div id="admin-orders-grid" class="admin-grid"></div>
+        </div>
+        <div id="tab-menu" class="hidden">
+            <h3>Cardápio</h3>
+            <div class="card">
+                <input type="text" id="menu-name" placeholder="Nome">
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="menu-p" placeholder="P">
+                    <input type="number" id="menu-m" placeholder="M">
+                    <input type="number" id="menu-g" placeholder="G">
+                </div>
+                <button class="btn btn-success" id="btn-add-menu">Adicionar Prato</button>
+            </div>
+            <div id="admin-menu-list"></div>
+        </div>
+        <div id="tab-districts" class="hidden">
+            <h3>Bairros</h3>
+            <div class="card">
+                <input type="text" id="dist-name" placeholder="Nome Bairro">
+                <input type="number" id="dist-price" placeholder="Taxa R$">
+                <button class="btn btn-primary" id="btn-add-dist">Adicionar Bairro</button>
+            </div>
+            <div id="admin-districts-list"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9NyBVa1Ha_42kwos09SV5VTN7NQWqHjM",
+      authDomain: "tempero-da-casa-a2217.firebaseapp.com",
+      projectId: "tempero-da-casa-a2217",
+      storageBucket: "tempero-da-casa-a2217.firebasestorage.app",
+      messagingSenderId: "92967322711",
+      appId: "1:92967322711:web:88d151d9345f9191a8cf12"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentSize = 'M';
+    let tempGeo = null;
+    let tempAddress = null;
+    let localMenu = [];
+    let localDistricts = [];
+    let map = null;
+
+    const getEl = (id) => document.getElementById(id);
+    const hide = (id) => getEl(id).classList.add('hidden');
+    const show = (id) => getEl(id).classList.remove('hidden');
+
+    async function init() {
+        onSnapshot(collection(db, "menu"), (snap) => {
+            localMenu = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderClientMenu();
+            if(!getEl('app-admin').classList.contains('hidden')) renderAdminMenu();
+        });
+
+        onSnapshot(collection(db, "districts"), (snap) => {
+            localDistricts = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderClientDistricts();
+            if(!getEl('app-admin').classList.contains('hidden')) renderAdminDistricts();
+        });
+
+        const activeOrderId = localStorage.getItem('activeOrderId');
+        if(activeOrderId) trackOrder(activeOrderId);
+    }
+    init();
+
+    // --- UI CLIENTE ---
+    function renderClientMenu() {
+        const sel = getEl('dish-select');
+        sel.innerHTML = '<option value="">Selecione o prato...</option>';
+        localMenu.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.innerText = item.name;
+            sel.appendChild(opt);
+        });
+    }
+
+    function renderClientDistricts() {
+        const sel = getEl('district-select');
+        sel.innerHTML = '<option value="">Selecione o bairro...</option>';
+        localDistricts.forEach((d, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerText = `${d.name} (+ R$ ${d.price})`;
+            sel.appendChild(opt);
+        });
+    }
+
+    getEl('dish-select').onchange = calcTotal;
+    getEl('delivery-method').onchange = () => {
+        const method = getEl('delivery-method').value;
+        method === 'entrega' ? show('district-container') : hide('district-container');
+        calcTotal();
+    };
+    getEl('payment-method').onchange = calcTotal;
+    getEl('district-select').onchange = calcTotal;
+
+    document.querySelectorAll('.size-opt').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.size-opt').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSize = btn.dataset.size;
+            calcTotal();
+        }
+    });
+
+    function calcTotal() {
+        const dishId = getEl('dish-select').value;
+        const method = getEl('delivery-method').value;
+        const pay = getEl('payment-method').value;
+        let total = 0;
+        let fees = [];
+
+        if(dishId) {
+            const prato = localMenu.find(m => m.id === dishId);
+            if(prato) total += parseFloat(prato[currentSize.toLowerCase()] || 0);
+        }
+
+        if(method === 'entrega') {
+            const idx = getEl('district-select').value;
+            if(idx !== "") total += parseFloat(localDistricts[idx].price);
+        }
+
+        if(pay === 'credito') { total += 2; fees.push("+ R$ 2 Crédito"); }
+        if(pay === 'debito') { total += 1; fees.push("+ R$ 1 Débito"); }
+
+        getEl('total-display').innerText = `R$ ${total.toFixed(2)}`;
+        getEl('fee-display').innerText = fees.join(' ');
+        return total;
+    }
+
+    // --- FLUXO DE PEDIDO ---
+    getEl('btn-confirm-order').onclick = () => {
+        const name = getEl('client-name').value;
+        const dishId = getEl('dish-select').value;
+        const method = getEl('delivery-method').value;
+
+        if(!name || !dishId) return alert("Preencha seu nome e escolha um prato");
+        
+        if(method === 'entrega') {
+            const idx = getEl('district-select').value;
+            if(idx === "") return alert("Escolha o bairro");
+            getEl('modal-district-display').innerText = localDistricts[idx].name;
+            show('modal-address');
+        } else {
+            finalizePaymentLogic(null);
+        }
+    };
+
+    getEl('btn-geo').onclick = () => {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                tempGeo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                show('geo-msg');
+            });
+        }
+    };
+    getEl('btn-close-addr').onclick = () => hide('modal-address');
+    getEl('btn-save-addr').onclick = () => {
+        const street = getEl('addr-street').value;
+        const ref = getEl('addr-ref').value;
+        const idx = getEl('district-select').value;
+        if(!street) return alert("Digite a rua");
+        tempAddress = { street, ref, geo: tempGeo, district: localDistricts[idx].name };
+        hide('modal-address');
+        finalizePaymentLogic(tempAddress);
+    };
+
+    function finalizePaymentLogic(addr) {
+        if(getEl('payment-method').value === 'pix') {
+            // Abre Modal Pix
+            show('modal-pix');
+        } else {
+            // Outros métodos: status 'pending' direto
+            createOrder(addr, 'pending');
+        }
+    }
+
+    // Botões Modal Pix
+    getEl('btn-pix-copy').onclick = () => {
+        navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000");
+        alert("Chave Copiada!");
+    };
+    
+    getEl('btn-pix-paid').onclick = () => {
+        // Cliente diz que pagou. Status vira 'awaiting_payment'
+        hide('modal-pix');
+        createOrder(tempAddress, 'awaiting_payment');
+    };
+    getEl('btn-cancel-pix').onclick = () => hide('modal-pix');
+
+    async function createOrder(addr, initialStatus) {
+        const dishId = getEl('dish-select').value;
+        const prato = localMenu.find(m => m.id === dishId);
+        
+        const orderData = {
+            client: getEl('client-name').value,
+            dish: prato.name,
+            size: currentSize,
+            total: calcTotal(),
+            method: getEl('delivery-method').value,
+            payment: getEl('payment-method').value,
+            address: addr,
+            status: initialStatus, // pending OU awaiting_payment
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            const docRef = await addDoc(collection(db, "orders"), orderData);
+            localStorage.setItem('activeOrderId', docRef.id);
+            trackOrder(docRef.id);
+        } catch (e) {
+            alert("Erro ao enviar pedido: " + e.message);
+        }
+    }
+
+    // --- TRACKING REALTIME ---
+    function trackOrder(id) {
+        hide('view-order');
+        show('panel-status');
+        
+        onSnapshot(doc(db, "orders", id), (doc) => {
+            if(!doc.exists()) { localStorage.removeItem('activeOrderId'); location.reload(); return; }
+            const data = doc.data();
             
-            <section>
-                <h2 class="section-title">Experiência Profissional</h2>
-                <div class="flex gap-3">
-                    <i class="ph ph-briefcase text-indigo-500 text-xl mt-1"></i>
-                    <div id="display-experiencia" class="text-xs text-slate-500 space-y-4 whitespace-pre-wrap leading-relaxed"></div>
-                </div>
-            </section>
-
-            <section class="pb-10">
-                <h2 class="section-title">Competências Técnicas</h2>
-                <div id="display-competencias" class="flex flex-wrap gap-2"></div>
-            </section>
-        </div>
-    </section>
-
-    <section id="page-certs" class="page">
-        <header class="p-6 flex items-center gap-4 sticky top-0 bg-[#f8fafc]/90 backdrop-blur-md z-10">
-            <button onclick="showPage('page-cv')" class="p-2 bg-white shadow-sm rounded-full"><i class="ph ph-arrow-left text-xl"></i></button>
-            <h1 class="text-lg font-bold">Documentação</h1>
-        </header>
-        <div id="certificateList" class="px-6 grid gap-4 max-w-md mx-auto pb-10"></div>
-    </section>
-
-    <div id="passwordModal" class="modal">
-        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-xs text-center shadow-2xl">
-            <h2 class="text-lg font-bold mb-6">Acesso Restrito</h2>
-            <input type="password" id="adminPass" placeholder="PIN" maxlength="4" class="w-full p-4 bg-slate-100 rounded-2xl text-center text-3xl font-mono outline-none mb-4">
-            <button onclick="checkPassword()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl">Entrar</button>
-            <button onclick="closeModal('passwordModal')" class="mt-4 text-slate-400 text-xs">Cancelar</button>
-        </div>
-    </div>
-
-    <div id="adminPanelModal" class="modal">
-        <div class="bg-white p-6 rounded-[2.5rem] w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
-            <div class="flex border-b mb-6">
-                <button onclick="switchTab('tab-edit-cv')" class="tab-btn flex-1 py-3 font-bold text-[10px] uppercase active">Editar CV</button>
-                <button onclick="switchTab('tab-new-cert')" class="tab-btn flex-1 py-3 font-bold text-[10px] uppercase">Novo Curso</button>
-            </div>
-
-            <div id="tab-edit-cv" class="tab-content active overflow-y-auto pr-2">
-                <form id="editCvForm" class="space-y-4">
-                    <div><label class="text-[9px] font-bold text-slate-400 ml-1">LINK DA FOTO</label>
-                    <input type="text" id="edit-foto" class="w-full p-3 bg-slate-50 rounded-xl border text-sm"></div>
-                    <input type="text" id="edit-nome" placeholder="Nome" class="w-full p-3 bg-slate-50 rounded-xl border text-sm">
-                    <input type="text" id="edit-endereco" placeholder="Endereço" class="w-full p-3 bg-slate-50 rounded-xl border text-sm">
-                    <input type="text" id="edit-contato" placeholder="Tel | Email" class="w-full p-3 bg-slate-50 rounded-xl border text-sm">
-                    <textarea id="edit-objetivo" class="w-full p-3 bg-slate-50 rounded-xl border h-24 text-sm"></textarea>
-                    <textarea id="edit-resumo" class="w-full p-3 bg-slate-50 rounded-xl border h-40 text-sm"></textarea>
-                    <textarea id="edit-formacao" class="w-full p-3 bg-slate-50 rounded-xl border h-24 text-sm"></textarea>
-                    <textarea id="edit-experiencia" class="w-full p-3 bg-slate-50 rounded-xl border h-48 text-sm"></textarea>
-                    <input type="text" id="edit-competencias" class="w-full p-3 bg-slate-50 rounded-xl border text-sm">
-                    <button type="submit" class="w-full bg-green-600 text-white font-bold py-4 rounded-2xl">SALVAR</button>
-                </form>
-            </div>
-
-            <div id="tab-new-cert" class="tab-content overflow-y-auto">
-                <form id="certForm" class="space-y-4">
-                    <input type="text" id="courseName" placeholder="Curso" class="w-full p-3 bg-slate-50 rounded-xl border" required>
-                    <input type="text" id="institution" placeholder="Instituição" class="w-full p-3 bg-slate-50 rounded-xl border" required>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="number" id="courseHours" placeholder="Horas" class="p-3 bg-slate-50 rounded-xl border" required>
-                        <input type="number" id="courseYear" placeholder="Ano" class="p-3 bg-slate-50 rounded-xl border" required>
-                    </div>
-                    <input type="url" id="fileLink" placeholder="Link do Certificado" class="w-full p-3 bg-slate-50 rounded-xl border" required>
-                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl">CADASTRAR</button>
-                </form>
-            </div>
-            <button onclick="closeModal('adminPanelModal')" class="mt-4 text-slate-400 text-[10px] font-bold uppercase text-center w-full">Sair</button>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDpoxJe613DNq-XZNKHYokQNLHEDlRc8Kc",
-            authDomain: "certificados-85852.firebaseapp.com",
-            projectId: "certificados-85852",
-            storageBucket: "certificados-85852.firebasestorage.app",
-            messagingSenderId: "226212139010",
-            appId: "1:226212139010:web:ccec1ab73e04f3a57e171b"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const defaultData = {
-            fotoUrl: "",
-            nome: "MATHEUS JÚLIO SILVA LEITE",
-            endereco: "Vila Maria Helena, Duque de Caxias - RJ",
-            contato: "(21) 99283-4805 | [Seu E-mail]",
-            objetivo: "Atuar na área de Logística, Controladoria ou Planejamento, aplicando sólida experiência em rotinas operacionais de transporte, gestão de indicadores e desenvolvimento de ferramentas inteligentes de monitoramento.",
-            resumo: "• Expertise em Excel: Domínio avançado de fórmulas para automação de cálculos, tratamento de dados e criação de planilhas complexas.\n• Gestão de Operações: Experiência em emissão de documentos fiscais (CT-e, MDF-e) e gestão financeira de agregados.\n• Análise de Dados: Capacidade técnica para criar dashboards e monitoramentos no Microsoft Power BI.\n• Inovação: Desenvolvimento de soluções tecnológicas (apps/sites) integradas com Inteligência Artificial para otimização de fluxos logísticos.",
-            formacao: "• Ensino Superior: Logística (Cursando) - Unigranrio.\n• Ensino Médio Completo.",
-            experiencia: "RECAL TRANSPORTES E LOGISTICA LTDA\nCargo: Auxiliar de Logística (03/01/2022 – Atual)\n\n• Desenvolvimento de Ferramentas: Criação e gerenciamento de planilhas avançadas para monitoramento de entregas, conferência de fretes e controle de produtividade.\n• Rotinas Fiscais: Emissão de CT-e, MDF-e e conferência rigorosa de Notas Fiscais e canhotos.\n• Gestão Financeira: Revisão e realização de pagamentos de agregados, incluindo a conferência de complementos (descarga, pedágio, balsa, ajudantes).\n• Tecnologia Aplicada: Criação de aplicações com IA para suporte à operação e conferência de dados em tempo real.",
-            competencias: "Excel Avançado, Power BI, Monitoramento Logístico, Rotinas Fiscais (CT-e/MDF-e), Gestão de Agregados, IA Aplicada"
-        };
-
-        window.showPage = (id) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.scrollTo(0,0);
-        };
-
-        window.switchTab = (id) => {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(id).classList.add('active');
-        };
-
-        window.closeModal = (id) => document.getElementById(id).classList.remove('active');
-        document.getElementById('btnOpenAdmin').onclick = () => document.getElementById('passwordModal').classList.add('active');
-
-        window.checkPassword = () => {
-            if (document.getElementById('adminPass').value === "4525") {
-                closeModal('passwordModal');
-                document.getElementById('adminPanelModal').classList.add('active');
-                fillEditForm();
-            } else { alert("PIN Incorreto"); }
-        };
-
-        async function loadCvData() {
-            const docRef = doc(db, "config_curriculo", "perfil");
-            const docSnap = await getDoc(docRef);
-            const d = docSnap.exists() ? docSnap.data() : defaultData;
-
-            // Lógica da Foto
-            const img = document.getElementById('display-foto');
-            const placeholder = document.getElementById('foto-placeholder');
-            if (d.fotoUrl && d.fotoUrl.trim() !== "") {
-                img.src = d.fotoUrl;
-                img.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-            } else {
-                img.classList.add('hidden');
-                placeholder.classList.remove('hidden');
+            getEl('st-dish').innerText = `${data.dish} (${data.size})`;
+            getEl('st-total').innerText = `R$ ${data.total.toFixed(2)}`;
+            if(data.address) {
+                show('st-addr-block');
+                getEl('st-addr').innerText = `${data.address.street} - ${data.address.district}`;
             }
 
-            document.getElementById('display-nome').innerText = d.nome;
-            document.getElementById('display-endereco').innerText = d.endereco;
-            document.getElementById('display-contato').innerText = d.contato;
-            document.getElementById('display-objetivo').innerText = d.objetivo;
-            document.getElementById('display-experiencia').innerText = d.experiencia;
+            const bar = getEl('progress-bar');
+            const icon = getEl('status-icon');
+            const txt = getEl('status-text');
+            const desc = getEl('status-desc');
+
+            // LÓGICA DE VISUALIZAÇÃO DO STATUS
+            if(data.status === 'awaiting_payment') {
+                bar.style.width = '5%'; bar.style.background = '#32bcad';
+                icon.innerText = '🧾'; 
+                txt.innerText = 'Verificando Pix';
+                desc.innerText = 'O restaurante está conferindo seu pagamento...';
+            } else if(data.status === 'pending') {
+                bar.style.width = '10%'; bar.style.background = '#ffa502';
+                icon.innerText = '⏳'; 
+                txt.innerText = 'Aguardando restaurante';
+                desc.innerText = 'Pedido recebido na cozinha.';
+            } else if(data.status === 'prep') {
+                bar.style.width = '50%'; bar.style.background = '#ffa502';
+                icon.innerText = '🔥'; 
+                txt.innerText = 'Em preparo!';
+                desc.innerText = 'O cheirinho está subindo...';
+            } else if(data.status === 'delivery') {
+                bar.style.width = '80%'; bar.style.background = '#2ed573';
+                icon.innerText = '🛵'; 
+                txt.innerText = 'Saiu para entrega!';
+                desc.innerText = 'Entregador à caminho.';
+            } else if(data.status === 'done') {
+                bar.style.width = '100%'; bar.style.background = '#2ed573';
+                icon.innerText = '✅'; txt.innerText = 'Entregue!';
+                desc.innerText = 'Bom apetite!';
+                show('btn-new-order');
+            } else if(data.status === 'cancelled') {
+                bar.style.width = '0%'; bar.style.background = 'red';
+                icon.innerText = '❌'; txt.innerText = 'Cancelado';
+                desc.innerText = 'Entre em contato com o restaurante.';
+                show('btn-new-order');
+            }
+        });
+    }
+    
+    getEl('btn-new-order').onclick = () => {
+        localStorage.removeItem('activeOrderId');
+        location.reload();
+    }
+
+    // --- ADMIN LOGIC ---
+    getEl('btn-admin-access').onclick = () => show('modal-login');
+    getEl('btn-close-login').onclick = () => hide('modal-login');
+    getEl('btn-do-login').onclick = () => {
+        if(getEl('admin-pass').value === '452505') {
+            hide('modal-login');
+            hide('app-client');
+            show('app-admin');
+            getEl('app-admin').style.display = 'flex';
+            setupAdminListeners();
+        } else alert('Senha incorreta');
+    };
+    getEl('btn-logout').onclick = () => location.reload();
+
+    document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            ['orders','menu','districts'].forEach(t => hide('tab-'+t));
+            show('tab-' + btn.dataset.tab);
+        };
+    });
+
+    function setupAdminListeners() {
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snap) => {
+            const grid = getEl('admin-orders-grid');
+            grid.innerHTML = '';
             
-            document.getElementById('display-formacao').innerHTML = d.formacao.split('\n').map(line => 
-                `<div class="flex gap-3"><i class="ph ph-student text-indigo-500 text-lg"></i><p>${line.replace('• ', '')}</p></div>`
-            ).join('');
+            snap.forEach(docSnap => {
+                const o = docSnap.data();
+                const oid = docSnap.id;
+                if(o.status === 'done' || o.status === 'cancelled') return;
 
-            const resumoDiv = document.getElementById('display-resumo');
-            resumoDiv.innerHTML = d.resumo.split('\n').map(line => {
-                let icon = "ph-check-circle";
-                if(line.includes("Excel")) icon = "ph-microsoft-excel text-green-600";
-                if(line.includes("Gestão")) icon = "ph-truck text-amber-500";
-                if(line.includes("Dados")) icon = "ph-chart-bar text-blue-500";
-                if(line.includes("Inovação")) icon = "ph-cpu text-indigo-500";
-                return `<div class="flex gap-3 items-start"><i class="ph ${icon} text-lg mt-0.5"></i><p class="text-sm text-slate-600">${line.replace('• ', '')}</p></div>`;
-            }).join('');
+                const div = document.createElement('div');
+                div.className = 'card';
+                
+                // SE FOR PIX PENDENTE, MUDA O ESTILO DO CARD
+                if(o.status === 'awaiting_payment') {
+                    div.classList.add('card-pix-pending');
+                }
 
-            document.getElementById('display-competencias').innerHTML = d.competencias.split(',').map(c => 
-                `<span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-bold border border-indigo-100">${c.trim()}</span>`
-            ).join('');
-        }
+                let mapBtn = '';
+                if(o.address && o.address.geo) {
+                    mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="map-${oid}">🗺️ Ver Mapa</button>`;
+                }
 
-        async function fillEditForm() {
-            const docSnap = await getDoc(doc(db, "config_curriculo", "perfil"));
-            const d = docSnap.exists() ? docSnap.data() : defaultData;
-            document.getElementById('edit-foto').value = d.fotoUrl || "";
-            document.getElementById('edit-nome').value = d.nome;
-            document.getElementById('edit-endereco').value = d.endereco;
-            document.getElementById('edit-contato').value = d.contato;
-            document.getElementById('edit-objetivo').value = d.objetivo;
-            document.getElementById('edit-resumo').value = d.resumo;
-            document.getElementById('edit-formacao').value = d.formacao;
-            document.getElementById('edit-experiencia').value = d.experiencia;
-            document.getElementById('edit-competencias').value = d.competencias;
-        }
+                // LÓGICA DE BOTÕES DO ADMIN
+                let actionButtons = '';
+                if (o.status === 'awaiting_payment') {
+                    // Botão Especial para confirmar Pix
+                    actionButtons = `
+                        <p style="color:#e84118; font-size:0.9rem; font-weight:bold;">⚠️ Verifique seu banco!</p>
+                        <button class="btn btn-pix" onclick="window.upStatus('${oid}','pending')">💰 Confirmar Pix Recebido</button>
+                        <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Pix não caiu</button>
+                    `;
+                } else {
+                    // Botões Normais
+                    actionButtons = `
+                        <div style="display:flex; gap:5px; margin-top:10px;">
+                            <button class="btn btn-outline" onclick="window.upStatus('${oid}','prep')">🔥</button>
+                            <button class="btn btn-primary" onclick="window.upStatus('${oid}','delivery')">🛵</button>
+                            <button class="btn btn-success" onclick="window.upStatus('${oid}','done')">✅</button>
+                            <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌</button>
+                        </div>
+                    `;
+                }
 
-        document.getElementById('editCvForm').onsubmit = async (e) => {
-            e.preventDefault();
-            await setDoc(doc(db, "config_curriculo", "perfil"), {
-                fotoUrl: document.getElementById('edit-foto').value,
-                nome: document.getElementById('edit-nome').value,
-                endereco: document.getElementById('edit-endereco').value,
-                contato: document.getElementById('edit-contato').value,
-                objetivo: document.getElementById('edit-objetivo').value,
-                resumo: document.getElementById('edit-resumo').value,
-                formacao: document.getElementById('edit-formacao').value,
-                experiencia: document.getElementById('edit-experiencia').value,
-                competencias: document.getElementById('edit-competencias').value
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${o.client}</strong>
+                        <span style="font-weight:bold; color:var(--primary)">${translateStatus(o.status)}</span>
+                    </div>
+                    <p>${o.dish} (${o.size})</p>
+                    <p>R$ ${o.total.toFixed(2)} - <strong>${o.payment}</strong></p>
+                    ${o.method === 'entrega' ? `<div style="background:#f1f2f6; p:5px; border-radius:5px; font-size:0.9rem;">📍 ${o.address.street} <br> ${o.address.district} ${mapBtn}</div>` : 'Retirada'}
+                    ${actionButtons}
+                `;
+                grid.appendChild(div);
+
+                if(o.address && o.address.geo) {
+                    setTimeout(() => {
+                        const btn = document.getElementById(`map-${oid}`);
+                        if(btn) btn.onclick = () => openMap(o.address.geo, o.client);
+                    }, 100);
+                }
             });
-            location.reload();
-        };
+        });
+        
+        renderAdminMenu();
+        renderAdminDistricts();
+    }
 
-        document.getElementById('certForm').onsubmit = async (e) => {
-            e.preventDefault();
-            await addDoc(collection(db, "certificados"), {
-                course: document.getElementById('courseName').value,
-                institution: document.getElementById('institution').value,
-                hours: document.getElementById('courseHours').value,
-                year: document.getElementById('courseYear').value,
-                url: document.getElementById('fileLink').value,
-                timestamp: new Date()
-            });
-            location.reload();
-        };
+    function translateStatus(st) {
+        if(st==='awaiting_payment') return 'CONFIRMAR PIX';
+        if(st==='pending') return 'NA COZINHA';
+        if(st==='prep') return 'PREPARANDO';
+        if(st==='delivery') return 'NA ENTREGA';
+        return st;
+    }
 
-        async function loadCertificates() {
-            const list = document.getElementById('certificateList');
-            const q = query(collection(db, "certificados"), orderBy("timestamp", "desc"));
-            const querySnapshot = await getDocs(q);
-            list.innerHTML = "";
-            querySnapshot.forEach(doc => {
-                const cert = doc.data();
-                list.innerHTML += `<div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm"><div class="flex justify-between items-start mb-1"><h3 class="font-bold text-slate-800 text-sm">${cert.course}</h3><span class="text-[9px] font-bold text-slate-400">${cert.year}</span></div><p class="text-[10px] text-indigo-500 font-bold mb-4 uppercase">${cert.institution} • ${cert.hours}H</p><a href="${cert.url}" target="_blank" class="block text-center bg-slate-900 text-white text-[10px] font-bold py-3 rounded-xl">DOCUMENTO</a></div>`;
-            });
-        }
+    window.upStatus = async (id, status) => {
+        await updateDoc(doc(db, "orders", id), { status: status });
+    };
 
-        loadCvData();
-        loadCertificates();
-    </script>
+    function openMap(geo, name) {
+        show('modal-map-admin');
+        if(map) map.remove();
+        setTimeout(() => {
+            map = L.map('admin-map-container').setView([geo.lat, geo.lng], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.marker([geo.lat, geo.lng]).addTo(map).bindPopup(name).openPopup();
+        }, 200);
+    }
+    getEl('btn-close-map').onclick = () => hide('modal-map-admin');
+
+    function renderAdminMenu() {
+        const list = getEl('admin-menu-list');
+        list.innerHTML = '';
+        localMenu.forEach(m => {
+            list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
+                <b>${m.name}</b> <small>P:${m.p} M:${m.m} G:${m.g}</small>
+                <button style="color:red; border:none; bg:none;" onclick="window.delItem('menu','${m.id}')">X</button>
+            </div>`;
+        });
+    }
+
+    function renderAdminDistricts() {
+        const list = getEl('admin-districts-list');
+        list.innerHTML = '';
+        localDistricts.forEach(d => {
+            list.innerHTML += `<div class="card" style="padding:10px; display:flex; justify-content:space-between;">
+                <b>${d.name}</b> <span>R$ ${d.price}</span>
+                <button style="color:red; border:none; bg:none;" onclick="window.delItem('districts','${d.id}')">X</button>
+            </div>`;
+        });
+    }
+
+    getEl('btn-add-menu').onclick = async () => {
+        const name = getEl('menu-name').value;
+        if(!name) return;
+        await addDoc(collection(db, "menu"), { name: name, p: getEl('menu-p').value, m: getEl('menu-m').value, g: getEl('menu-g').value });
+        getEl('menu-name').value = '';
+    };
+
+    getEl('btn-add-dist').onclick = async () => {
+        const name = getEl('dist-name').value;
+        if(!name) return;
+        await addDoc(collection(db, "districts"), { name: name, price: getEl('dist-price').value });
+        getEl('dist-name').value = '';
+    };
+
+    window.delItem = async (col, id) => {
+        if(confirm('Excluir?')) await deleteDoc(doc(db, col, id));
+    };
+
+</script>
 </body>
 </html>
