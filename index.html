@@ -17,6 +17,7 @@
             --text-dark: #2f3542;
             --success: #2ed573;
             --pix-color: #32bcad;
+            --driver-color: #2f3542;
         }
 
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -28,6 +29,8 @@
         .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3); }
         .btn-outline { background: transparent; border: 2px solid #ccc; color: #747d8c; }
         .btn-pix { background: var(--pix-color); color: white; }
+        .btn-driver { background: var(--driver-color); color: white; }
+        .btn-danger { background: #ff6b81; color: white; }
         
         input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #dfe4ea; border-radius: 12px; background: #f8f9fa; font-size: 0.95rem; outline: none; }
         
@@ -37,7 +40,7 @@
         /* --- CLIENTE --- */
         #app-client { max-width: 500px; margin: 0 auto; min-height: 100vh; background: white; position: relative; padding-bottom: 100px;}
         .hero-banner { background: var(--primary); height: 100px; border-radius: 0 0 25px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; position: relative; }
-        #btn-admin-access { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display:flex; align-items:center; justify-content:center; }
+        #btn-login-access { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display:flex; align-items:center; justify-content:center; }
 
         .menu-grid { padding: 0 20px; }
         .size-selector { display: flex; background: #f1f2f6; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
@@ -51,25 +54,28 @@
         #panel-status { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; padding: 30px 20px; overflow-y: auto; text-align: center; }
         .status-line { height: 6px; background: #dfe4ea; width: 100%; margin-bottom: 10px; border-radius: 10px; overflow: hidden; }
         .status-progress { height: 100%; background: var(--success); width: 0%; transition: 1s ease; }
+        
+        /* Alerta Pix */
+        .pix-alert-card { background: #fff3cd; border: 2px solid #ffc107; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
         /* --- MODALS --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
         .modal-box { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; }
 
-        /* --- ADMIN --- */
-        #app-admin { display: none; min-height: 100vh; background: #dfe6e9; display: flex; }
+        /* --- ADMIN & DRIVER --- */
+        #app-admin, #app-driver { display: none; min-height: 100vh; background: #dfe6e9; display: flex; }
+        
         .sidebar { width: 250px; background: #2d3436; color: white; padding: 20px; display: flex; flex-direction: column; position: fixed; height: 100%; }
         .main-content { margin-left: 250px; flex: 1; padding: 20px; width: calc(100% - 250px); }
         .nav-btn { background: transparent; color: #b2bec3; text-align: left; margin-bottom: 5px; border-radius: 8px; padding: 10px; width: 100%; }
         .nav-btn.active { background: rgba(255,255,255,0.1); color: white; }
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-        
-        /* Card especial para Pix Pendente no Admin */
+
         .card-pix-pending { background: #fff0f6; border: 2px solid var(--pix-color); }
 
-        /* Responsivo Admin */
         @media (max-width: 768px) {
-            #app-admin { flex-direction: column; }
+            #app-admin, #app-driver { flex-direction: column; }
             .sidebar { width: 100%; position: relative; height: auto; }
             .main-content { margin-left: 0; width: 100%; }
             .admin-grid { grid-template-columns: 1fr; }
@@ -85,7 +91,7 @@
     <div id="view-order">
         <div class="hero-banner">
             Tempero da Casa 🥘
-            <button id="btn-admin-access"><i class="fas fa-lock"></i></button>
+            <button id="btn-login-access"><i class="fas fa-lock"></i></button>
         </div>
         
         <div class="menu-grid">
@@ -122,7 +128,7 @@
                     <option value="dinheiro">Dinheiro (Trazer troco)</option>
                     <option value="credito">Cartão de Crédito (+ R$ 2,00)</option>
                     <option value="debito">Cartão de Débito (+ R$ 1,00)</option>
-                    <option value="pix">Pix (Necessária Aprovação)</option>
+                    <option value="pix">Pix (Aprovação Necessária)</option>
                 </select>
             </div>
         </div>
@@ -136,22 +142,27 @@
 
     <div id="panel-status" class="hidden">
         <h2 style="color: var(--primary);">Status do Pedido</h2>
-        <div class="card" style="background: #fff8f9; border: 1px solid #ffdde1;">
+        
+        <div class="card" id="status-card-ui" style="background: #fff8f9; border: 1px solid #ffdde1;">
             <h1 id="status-icon" style="margin: 0; font-size: 3rem;">🕒</h1>
             <h3 id="status-text" style="margin: 10px 0;">Aguardando...</h3>
             <p id="status-desc" style="font-size: 0.9rem; color: #777;">...</p>
         </div>
+
         <div class="status-tracker">
             <div class="status-line"><div class="status-progress" id="progress-bar"></div></div>
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa;">
                 <span>Pedido</span><span>Preparo</span><span>Entrega</span><span>Fim</span>
             </div>
         </div>
+        
         <div class="card" style="text-align: left;">
             <p><strong>Pedido:</strong> <span id="st-dish"></span></p>
             <p><strong>Total:</strong> <span id="st-total"></span></p>
             <p id="st-addr-block" class="hidden"><strong>Endereço:</strong> <br><span id="st-addr"></span></p>
         </div>
+
+        <button id="btn-client-cancel" class="btn btn-danger hidden">❌ Cancelar Pedido</button>
         <button id="btn-new-order" class="btn btn-primary hidden">Fazer Novo Pedido</button>
     </div>
 </div>
@@ -162,8 +173,12 @@
         <p>Bairro: <strong id="modal-district-display"></strong></p>
         <input type="text" id="addr-street" placeholder="Rua e Número">
         <input type="text" id="addr-ref" placeholder="Ponto de Referência">
-        <button class="btn btn-outline" id="btn-geo">📍 Usar minha localização</button>
-        <p id="geo-msg" style="display:none; color:green; font-size:0.8rem;">Localização salva!</p>
+        
+        <button class="btn btn-outline" id="btn-geo">
+            <i class="fas fa-map-marker-alt"></i> Usar minha localização atual
+        </button>
+        <p id="geo-status" style="font-size:0.8rem; margin-top:5px; color:#666;"></p>
+
         <div style="display: flex; gap: 10px; margin-top: 15px;">
             <button class="btn btn-primary" id="btn-save-addr">Continuar</button>
             <button class="btn btn-outline" id="btn-close-addr">Cancelar</button>
@@ -175,15 +190,10 @@
     <div class="modal-box">
         <h3 style="color: var(--pix-color);">Pagamento Pix</h3>
         <p style="font-size:0.9rem;">Escaneie o QR Code e realize o pagamento.</p>
-        
-        <div class="qr-placeholder">
-            <i class="fas fa-qrcode" style="font-size:4rem; color:#ccc;"></i>
-        </div>
-        
+        <div class="qr-placeholder"><i class="fas fa-qrcode" style="font-size:4rem; color:#ccc;"></i></div>
         <div style="background:#f1f2f6; padding:10px; border-radius:8px; font-size:0.7rem; margin-bottom:15px; word-break:break-all;">
             00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000
         </div>
-
         <button class="btn btn-pix" id="btn-pix-copy">📋 Copiar Chave</button>
         <button class="btn btn-primary" id="btn-pix-paid">✅ Já realizei o pagamento</button>
         <button class="btn btn-outline" id="btn-cancel-pix" style="margin-top:10px; border:none;">Cancelar</button>
@@ -192,8 +202,9 @@
 
 <div id="modal-login" class="modal-overlay hidden">
     <div class="modal-box">
-        <h3>Acesso Admin</h3>
-        <input type="password" id="admin-pass" placeholder="Senha">
+        <h3>Acesso Restrito</h3>
+        <p style="font-size:0.8rem; color:#777;">Admin: 452505 | Entregador: moto123</p>
+        <input type="password" id="login-pass" placeholder="Senha" style="text-align: center;">
         <button class="btn btn-primary" id="btn-do-login">Entrar</button>
         <button class="btn btn-outline" id="btn-close-login">Voltar</button>
     </div>
@@ -213,7 +224,7 @@
         <button class="nav-btn active" data-tab="orders">📦 Pedidos</button>
         <button class="nav-btn" data-tab="menu">🍔 Cardápio</button>
         <button class="nav-btn" data-tab="districts">🛵 Bairros</button>
-        <button class="nav-btn" id="btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
+        <button class="nav-btn btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
     </div>
     <div class="main-content">
         <div id="tab-orders">
@@ -242,6 +253,18 @@
             </div>
             <div id="admin-districts-list"></div>
         </div>
+    </div>
+</div>
+
+<div id="app-driver" class="hidden">
+    <div class="sidebar" style="background: #2f3542;">
+        <h2>Entregas 🛵</h2>
+        <p style="color:#a4b0be; font-size:0.9rem;">Painel do Motoboy</p>
+        <button class="nav-btn btn-logout" style="margin-top:auto; color:#ff6b81;">Sair</button>
+    </div>
+    <div class="main-content">
+        <h3>Pedidos Prontos para Entrega</h3>
+        <div id="driver-orders-grid" class="admin-grid"></div>
     </div>
 </div>
 
@@ -369,25 +392,44 @@
             if(idx === "") return alert("Escolha o bairro");
             getEl('modal-district-display').innerText = localDistricts[idx].name;
             show('modal-address');
+            // Reset Geo state
+            tempGeo = null;
+            getEl('geo-status').innerText = "";
         } else {
             finalizePaymentLogic(null);
         }
     };
 
+    // CORREÇÃO DO GPS
     getEl('btn-geo').onclick = () => {
+        const status = getEl('geo-status');
+        status.innerText = "Buscando satélites...";
+        status.style.color = "orange";
+        
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(pos => {
                 tempGeo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                show('geo-msg');
-            });
+                status.innerText = "✅ Localização encontrada com sucesso!";
+                status.style.color = "green";
+            }, (err) => {
+                status.innerText = "❌ Erro ao buscar localização. Digite manualmente.";
+                status.style.color = "red";
+                console.error(err);
+            }, { enableHighAccuracy: true });
+        } else {
+            status.innerText = "❌ GPS não suportado.";
         }
     };
+
     getEl('btn-close-addr').onclick = () => hide('modal-address');
+    
     getEl('btn-save-addr').onclick = () => {
         const street = getEl('addr-street').value;
         const ref = getEl('addr-ref').value;
         const idx = getEl('district-select').value;
-        if(!street) return alert("Digite a rua");
+        
+        if(!street) return alert("Digite a rua e número");
+        
         tempAddress = { street, ref, geo: tempGeo, district: localDistricts[idx].name };
         hide('modal-address');
         finalizePaymentLogic(tempAddress);
@@ -395,22 +437,18 @@
 
     function finalizePaymentLogic(addr) {
         if(getEl('payment-method').value === 'pix') {
-            // Abre Modal Pix
             show('modal-pix');
         } else {
-            // Outros métodos: status 'pending' direto
             createOrder(addr, 'pending');
         }
     }
 
-    // Botões Modal Pix
     getEl('btn-pix-copy').onclick = () => {
         navigator.clipboard.writeText("00020126580014BR.GOV.BCB.PIX0136CHAVEPIX@EMAIL.COM52040000");
         alert("Chave Copiada!");
     };
     
     getEl('btn-pix-paid').onclick = () => {
-        // Cliente diz que pagou. Status vira 'awaiting_payment'
         hide('modal-pix');
         createOrder(tempAddress, 'awaiting_payment');
     };
@@ -428,7 +466,7 @@
             method: getEl('delivery-method').value,
             payment: getEl('payment-method').value,
             address: addr,
-            status: initialStatus, // pending OU awaiting_payment
+            status: initialStatus,
             timestamp: new Date().toISOString()
         };
 
@@ -441,7 +479,7 @@
         }
     }
 
-    // --- TRACKING REALTIME ---
+    // --- TRACKING REALTIME DO CLIENTE ---
     function trackOrder(id) {
         hide('view-order');
         show('panel-status');
@@ -461,39 +499,63 @@
             const icon = getEl('status-icon');
             const txt = getEl('status-text');
             const desc = getEl('status-desc');
+            const cardUI = getEl('status-card-ui');
+            const btnCancel = getEl('btn-client-cancel');
 
-            // LÓGICA DE VISUALIZAÇÃO DO STATUS
+            // Reset Card Style
+            cardUI.className = 'card';
+            cardUI.style.background = "#fff8f9";
+
+            // Botão Cancelar: Só aparece se ainda não começou a fazer
+            if(data.status === 'awaiting_payment' || data.status === 'pending') {
+                show('btn-client-cancel');
+            } else {
+                hide('btn-client-cancel');
+            }
+
+            // LÓGICA DE STATUS
             if(data.status === 'awaiting_payment') {
-                bar.style.width = '5%'; bar.style.background = '#32bcad';
-                icon.innerText = '🧾'; 
-                txt.innerText = 'Verificando Pix';
-                desc.innerText = 'O restaurante está conferindo seu pagamento...';
+                bar.style.width = '5%'; bar.style.background = '#ffd32a';
+                icon.innerText = '⚠️'; 
+                txt.innerText = 'AGUARDANDO PIX';
+                desc.innerText = 'O restaurante está conferindo o pagamento.';
+                // Estilo chamativo
+                cardUI.classList.add('pix-alert-card');
+
             } else if(data.status === 'pending') {
                 bar.style.width = '10%'; bar.style.background = '#ffa502';
-                icon.innerText = '⏳'; 
-                txt.innerText = 'Aguardando restaurante';
-                desc.innerText = 'Pedido recebido na cozinha.';
+                icon.innerText = '⏳'; txt.innerText = 'Aguardando restaurante';
+                desc.innerText = 'Pedido na fila da cozinha.';
+
             } else if(data.status === 'prep') {
-                bar.style.width = '50%'; bar.style.background = '#ffa502';
-                icon.innerText = '🔥'; 
-                txt.innerText = 'Em preparo!';
+                bar.style.width = '40%'; bar.style.background = '#ffa502';
+                icon.innerText = '🔥'; txt.innerText = 'Em Preparo';
                 desc.innerText = 'O cheirinho está subindo...';
+
             } else if(data.status === 'delivery') {
                 bar.style.width = '80%'; bar.style.background = '#2ed573';
-                icon.innerText = '🛵'; 
-                txt.innerText = 'Saiu para entrega!';
-                desc.innerText = 'Entregador à caminho.';
+                icon.innerText = '🛵'; txt.innerText = 'Saiu para Entrega';
+                desc.innerText = 'Entregador a caminho do endereço.';
+
             } else if(data.status === 'done') {
                 bar.style.width = '100%'; bar.style.background = '#2ed573';
                 icon.innerText = '✅'; txt.innerText = 'Entregue!';
-                desc.innerText = 'Bom apetite!';
+                desc.innerText = 'Obrigado pela preferência!';
                 show('btn-new-order');
+
             } else if(data.status === 'cancelled') {
                 bar.style.width = '0%'; bar.style.background = 'red';
                 icon.innerText = '❌'; txt.innerText = 'Cancelado';
-                desc.innerText = 'Entre em contato com o restaurante.';
+                desc.innerText = 'Este pedido foi cancelado.';
                 show('btn-new-order');
             }
+
+            // Ação do Botão Cancelar
+            btnCancel.onclick = async () => {
+                if(confirm("Deseja realmente cancelar este pedido?")) {
+                    await updateDoc(doc(db, "orders", id), { status: 'cancelled' });
+                }
+            };
         });
     }
     
@@ -502,20 +564,32 @@
         location.reload();
     }
 
-    // --- ADMIN LOGIC ---
-    getEl('btn-admin-access').onclick = () => show('modal-login');
+    // --- LOGIN GERAL ---
+    getEl('btn-login-access').onclick = () => show('modal-login');
     getEl('btn-close-login').onclick = () => hide('modal-login');
+    
     getEl('btn-do-login').onclick = () => {
-        if(getEl('admin-pass').value === '452505') {
-            hide('modal-login');
-            hide('app-client');
+        const pass = getEl('login-pass').value;
+        hide('modal-login');
+        hide('app-client');
+
+        if(pass === '452505') {
             show('app-admin');
             getEl('app-admin').style.display = 'flex';
             setupAdminListeners();
-        } else alert('Senha incorreta');
+        } else if(pass === 'moto123') {
+            show('app-driver');
+            getEl('app-driver').style.display = 'flex';
+            setupDriverListeners();
+        } else {
+            alert('Senha incorreta');
+            location.reload();
+        }
     };
-    getEl('btn-logout').onclick = () => location.reload();
+    
+    document.querySelectorAll('.btn-logout').forEach(b => b.onclick = () => location.reload());
 
+    // --- PAINEL ADMIN ---
     document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -538,34 +612,25 @@
 
                 const div = document.createElement('div');
                 div.className = 'card';
-                
-                // SE FOR PIX PENDENTE, MUDA O ESTILO DO CARD
-                if(o.status === 'awaiting_payment') {
-                    div.classList.add('card-pix-pending');
-                }
+                if(o.status === 'awaiting_payment') div.classList.add('card-pix-pending');
 
                 let mapBtn = '';
                 if(o.address && o.address.geo) {
                     mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="map-${oid}">🗺️ Ver Mapa</button>`;
                 }
 
-                // LÓGICA DE BOTÕES DO ADMIN
                 let actionButtons = '';
                 if (o.status === 'awaiting_payment') {
-                    // Botão Especial para confirmar Pix
                     actionButtons = `
-                        <p style="color:#e84118; font-size:0.9rem; font-weight:bold;">⚠️ Verifique seu banco!</p>
-                        <button class="btn btn-pix" onclick="window.upStatus('${oid}','pending')">💰 Confirmar Pix Recebido</button>
-                        <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Pix não caiu</button>
+                        <p style="color:#e84118; font-weight:bold;">⚠️ PIX PENDENTE</p>
+                        <button class="btn btn-pix" onclick="window.upStatus('${oid}','pending')">💰 Confirmar Pix</button>
+                        <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Recusar</button>
                     `;
                 } else {
-                    // Botões Normais
                     actionButtons = `
                         <div style="display:flex; gap:5px; margin-top:10px;">
-                            <button class="btn btn-outline" onclick="window.upStatus('${oid}','prep')">🔥</button>
-                            <button class="btn btn-primary" onclick="window.upStatus('${oid}','delivery')">🛵</button>
-                            <button class="btn btn-success" onclick="window.upStatus('${oid}','done')">✅</button>
-                            <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌</button>
+                            <button class="btn btn-outline" onclick="window.upStatus('${oid}','prep')">🔥 Preparar</button>
+                            <button class="btn btn-outline" style="color:red;" onclick="window.upStatus('${oid}','cancelled')">❌ Cancelar</button>
                         </div>
                     `;
                 }
@@ -595,12 +660,69 @@
         renderAdminDistricts();
     }
 
+    // --- PAINEL ENTREGADOR ---
+    function setupDriverListeners() {
+        // Entregador vê tudo, mas a UI foca no que ele precisa
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snap) => {
+            const grid = getEl('driver-orders-grid');
+            grid.innerHTML = '';
+            
+            snap.forEach(docSnap => {
+                const o = docSnap.data();
+                const oid = docSnap.id;
+                
+                // Entregador só vê o que está em 'prep' (pronto para sair) ou 'delivery' (na mão dele)
+                if(o.status !== 'prep' && o.status !== 'delivery') return;
+                if(o.method !== 'entrega') return; // Ignora retiradas
+
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.borderLeft = "5px solid #2f3542";
+
+                let mapBtn = '';
+                if(o.address && o.address.geo) {
+                    mapBtn = `<button class="btn btn-outline" style="font-size:0.8rem; margin-top:5px;" id="dmap-${oid}">🗺️ Ver Mapa</button>`;
+                }
+
+                let driverAction = '';
+                if(o.status === 'prep') {
+                    driverAction = `<button class="btn btn-driver" onclick="window.upStatus('${oid}','delivery')">🛵 Pegar Pedido (Sair)</button>`;
+                } else if(o.status === 'delivery') {
+                    driverAction = `<button class="btn btn-success" onclick="window.upStatus('${oid}','done')">✅ Pedido Entregue</button>`;
+                }
+
+                div.innerHTML = `
+                    <h3>${o.client}</h3>
+                    <p style="font-size:1.1rem; font-weight:bold;">${translateStatus(o.status)}</p>
+                    <div style="background:#f1f2f6; padding:10px; margin:10px 0; border-radius:8px;">
+                        📍 ${o.address.street}<br>
+                        Ref: ${o.address.ref}<br>
+                        <strong>${o.address.district}</strong>
+                        ${mapBtn}
+                    </div>
+                    <p>Pgto: <strong>${o.payment}</strong> (R$ ${o.total.toFixed(2)})</p>
+                    ${driverAction}
+                `;
+                grid.appendChild(div);
+
+                if(o.address && o.address.geo) {
+                    setTimeout(() => {
+                        const btn = document.getElementById(`dmap-${oid}`);
+                        if(btn) btn.onclick = () => openMap(o.address.geo, o.client);
+                    }, 100);
+                }
+            });
+        });
+    }
+
+    // Globais
     function translateStatus(st) {
         if(st==='awaiting_payment') return 'CONFIRMAR PIX';
-        if(st==='pending') return 'NA COZINHA';
-        if(st==='prep') return 'PREPARANDO';
-        if(st==='delivery') return 'NA ENTREGA';
-        return st;
+        if(st==='pending') return 'PENDENTE (COZINHA)';
+        if(st==='prep') return 'EM PREPARO (COZINHA)';
+        if(st==='delivery') return 'EM ROTA DE ENTREGA';
+        return st.toUpperCase();
     }
 
     window.upStatus = async (id, status) => {
@@ -618,6 +740,7 @@
     }
     getEl('btn-close-map').onclick = () => hide('modal-map-admin');
 
+    // Admin CRUD Helpers
     function renderAdminMenu() {
         const list = getEl('admin-menu-list');
         list.innerHTML = '';
