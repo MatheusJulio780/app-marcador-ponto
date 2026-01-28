@@ -42,7 +42,7 @@
             padding: 20px 20px 20px 26px; 
             margin-bottom: 0; 
             position: relative; 
-            overflow: visible;
+            overflow: hidden; /* Mantém a barrinha dentro do card */
             display: flex; 
             flex-direction: column;
             justify-content: space-between;
@@ -58,8 +58,8 @@
         .admin-card.cancelada { opacity: 0.75; filter: grayscale(0.2); }
 
         /* Loader & Utils */
-        #main-loader { position: fixed; inset: 0; background: #020617; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; pointer-events: none; }
-        .loader-ring { width: 40px; height: 40px; border: 3px solid rgba(59, 130, 246, 0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s infinite linear; }
+        #main-loader { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s; pointer-events: all; backdrop-filter: blur(10px); }
+        .loader-ring { width: 45px; height: 45px; border: 4px solid rgba(59, 130, 246, 0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .hidden { display: none !important; }
         
@@ -109,7 +109,7 @@
 </head>
 <body class="p-3 selection:bg-blue-500 selection:text-white">
     
-    <div id="main-loader"><div class="loader-ring"></div><p class="mt-4 text-[10px] font-black text-blue-500 uppercase tracking-[3px]">Carregando...</p></div>
+    <div id="main-loader"><div class="loader-ring"></div><p id="loader-msg" class="mt-4 text-[11px] font-black text-blue-500 uppercase tracking-[2px] animate-pulse">Carregando Sistema...</p></div>
 
     <div id="popup-foto" class="viewer-overlay" onclick="fecharPopup('popup-foto')">
         <div class="viewer-content" onclick="event.stopPropagation()">
@@ -229,8 +229,8 @@ Cálculo: (KM x Valor) + Taxa Fixa. Considera estimativa para quem está na rua.
 Soma de toda a distância percorrida pela frota no período."><div><p class="text-[10px] text-cyan-400/80 font-bold uppercase mb-1">KM Total</p><h3 id="kpi-km-total" class="text-xl font-black text-cyan-400">0 KM</h3></div><i data-lucide="activity" class="w-5 h-5 text-cyan-500"></i></div>
                 <div class="col-span-12 md:col-span-4 row-span-5 bg-slate-900/60 rounded-2xl border border-white/5 p-4 flex flex-col tooltip-block" data-info="FROTA
 Distribuição por tipo de veículo."><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Frota</h4><div class="flex-1 relative"><canvas id="chart-status-realtime"></canvas></div></div>
-                <div class="col-span-12 md:col-span-8 row-span-5 bg-slate-900/60 rounded-2xl border border-white/5 p-4 flex flex-col tooltip-block" data-info="TIMELINE
-Horários de chegada dos veículos."><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Fluxo de Chegadas</h4><div class="flex-1 relative"><canvas id="chart-timeline-realtime"></canvas></div></div>
+                <div class="col-span-12 md:col-span-8 row-span-5 bg-slate-900/60 rounded-2xl border border-white/5 p-4 flex flex-col tooltip-block" data-info="RANKING FATURAMENTO
+Placas que mais geraram receita no período selecionado."><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Ranking de Faturamento (Top 10)</h4><div class="flex-1 relative"><canvas id="chart-ranking-realtime"></canvas></div></div>
                 <div class="col-span-12 md:col-span-6 row-span-5 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col overflow-hidden tooltip-block" data-info="LISTA ATIVA
 Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-white/[0.02]"><h3 class="text-xs font-black text-white uppercase">Veículos em Rota</h3></div><div id="lista-mon-ativos" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide"></div></div>
                 <div class="col-span-12 md:col-span-6 row-span-5 bg-slate-900/60 rounded-2xl border border-white/5 flex flex-col overflow-hidden tooltip-block" data-info="FINALIZADOS
@@ -262,14 +262,17 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         const app = initializeApp(firebaseConfig); 
         const db = getFirestore(app);
 
+        // VARIÁVEIS GLOBAIS
+        const PERFIS_PADRAO = { "FIORINO": { valorFrete: 268.00, valorKm: 1.12 }, "VAN": { valorFrete: 407.00, valorKm: 1.28 }, "VUC": { valorFrete: 440.00, valorKm: 1.35 }, "LEVE 3/4": { valorFrete: 528.00, valorKm: 1.54 }, "LEVE 3/4 ESPECIAL": { valorFrete: 545.00, valorKm: 1.60 }, "TOCO": { valorFrete: 880.00, valorKm: 1.67 }, "TRUCK": { valorFrete: 1012.00, valorKm: 1.87 } };
         let listaGlobalViagens = [], listaNotificacoes = [], filtroAdminAtual = 'todos', isFirstLoadNotif = true;
         let placaLogadaAtual = "";
         let globalPrecos = {};
-        let globalPrevisoesHoje = {}; // NOVO: Armazena dados importados do dia para lookup rápido
-        let chartStatus = null, chartTimeline = null, monitInterval = null;
+        let globalPrevisoesHoje = {}; 
+        let chartStatus = null, chartRanking = null, monitInterval = null;
         const bipSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg"); 
-        
         let tutorialPasso = 0;
+        let sistemaCarregado = false; 
+
         const tutorialSteps = [
             { titulo: "Bem-vindo!", texto: "O IcaphiDrive ajuda você a controlar suas entregas e viagens em tempo real, com cálculo automático de rotas.", icone: "truck" },
             { titulo: "Iniciar Rota", texto: "Preencha a placa, o KM inicial e tire uma foto do painel. Seus dados são salvos automaticamente.", icone: "play-circle" },
@@ -285,7 +288,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         const safeStr = (v) => v ? String(v) : '';
         const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
 
-        // CARREGA PREVISÕES DO DIA PARA MEMÓRIA (Corrigir cards em rota)
+        // CARREGA PREVISÕES DO DIA PARA MEMÓRIA
         const carregarPrevisoesDoDia = async () => {
             const hoje = new Date().toISOString().split('T')[0];
             const q = query(collection(db, "previsoes"), where("dataReferencia", "==", hoje));
@@ -297,10 +300,10 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     globalPrevisoesHoje[data.placa] = data.rotas;
                 }
             });
-            renderizarAdmin(); // Atualiza a tela assim que carregar
+            renderizarAdmin(); 
         };
 
-        // IMPORTADOR PAGÉ (PERMISSIVO: Aceita sem KM)
+        // IMPORTADOR PAGÉ
         window.processarPlanilhaPrevisao = async () => { 
             const dt = document.getElementById('data-importacao').value; 
             const file = document.getElementById('file-previsao').files[0]; 
@@ -322,14 +325,12 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                             const placa = normalizarPlaca(rawPlaca);
                             
                             if(placa.length >= 5) {
-                                // Tenta pegar KM, se não der, assume 0
                                 let km = row[14];
                                 if (km === undefined) km = row[12];
                                 if (km === undefined) km = row[13];
                                 let kmFinal = Number(km);
-                                if(isNaN(kmFinal)) kmFinal = 0; // CORREÇÃO: Assume 0 se vazio
+                                if(isNaN(kmFinal)) kmFinal = 0; 
 
-                                // Pega Perfil e Cidade sempre
                                 let perf = "PADRÃO";
                                 if(row[14] !== undefined) perf = row[4]; 
                                 else if(row[12] !== undefined) perf = row[3]; 
@@ -339,7 +340,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                                 const cid = (row[9] || row[8] || "").toString().toUpperCase().trim();
                                 
                                 if(!mapaRotas[placa]) mapaRotas[placa] = [];
-                                // Evita duplicatas idênticas
                                 const existe = mapaRotas[placa].find(r => r.km === kmFinal && r.cidades === cid);
                                 if(!existe) {
                                     mapaRotas[placa].push({ km: kmFinal, perfil: perf, cidades: cid });
@@ -356,7 +356,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     }
                     
                     await Promise.all(batchPromises); 
-                    await carregarPrevisoesDoDia(); // Atualiza memória global
+                    await carregarPrevisoesDoDia(); 
                     hideLoader(); 
                     alert(`Importação concluída! Processadas ${Object.keys(mapaRotas).length} placas.`); 
                     fecharModal('modal-importar-previsao'); 
@@ -365,7 +365,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             reader.readAsArrayBuffer(file); 
         };
         
-        // INICIAR VIAGEM
+        // INICIAR VIAGEM OTIMIZADO
         window.iniciarViagem = async () => { 
             const n = document.getElementById('motorista').value;
             const p = normalizarPlaca(document.getElementById('placa').value);
@@ -374,19 +374,26 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             const t = document.getElementById('tipo-servico').value; 
             
             if(!n || !p || !k || !f) return alert("Preencha tudo!"); 
-            showLoader(); 
+            
+            showLoader("Obtendo Localização e Processando Foto..."); 
+            
             try { 
-                const pos = await obterPosicao(); 
-                const fotoComprimida = await comprimir(f); 
+                const [pos, fotoComprimida] = await Promise.all([
+                    obterPosicao(),
+                    comprimir(f)
+                ]);
+
+                showLoader("Buscando Previsões...");
                 
                 const hojeStr = new Date().toISOString().split('T')[0]; 
-                const docPrev = await getDoc(doc(db, "previsoes", `${p}_${hojeStr}`)); 
-                
+                let docPrev = null;
+                try { docPrev = await getDoc(doc(db, "previsoes", `${p}_${hojeStr}`)); } catch(e){}
+
                 let rotasPossiveis = [];
                 let perfilEncontrado = "PADRÃO";
                 let cidadesEncontradas = "";
                 
-                if(docPrev.exists()) { 
+                if(docPrev && docPrev.exists()) { 
                     const dados = docPrev.data();
                     if(dados.rotas && dados.rotas.length > 0) {
                         rotasPossiveis = dados.rotas;
@@ -397,6 +404,8 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     const hist = await obterPerfilRecente(p); 
                     if(hist) perfilEncontrado = hist; 
                 } 
+
+                showLoader("Salvando Dados...");
 
                 const docRef = await addDoc(collection(db, "viagens"), { 
                     nome: n, placa: p, kmInicio: Number(k), fotoInicio: fotoComprimida, dataInicio: Timestamp.now(), locInicio: `${pos.coords.latitude},${pos.coords.longitude}`, 
@@ -413,13 +422,18 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
 
         // UI & HELPERS
         window.fecharModal = (id) => document.getElementById(id).classList.add('hidden');
-        window.mudarTela = (t) => { if(localStorage.getItem('v_id') && t !== 'em-curso') return; document.querySelectorAll('main').forEach(m => m.classList.add('hidden')); document.getElementById('tela-'+t).classList.remove('hidden'); lucide.createIcons(); };
+        window.mudarTela = (t) => { if(localStorage.getItem('v_id') && t !== 'em-curso') return; document.querySelectorAll('main').forEach(m => m.classList.add('hidden')); document.getElementById('tela-'+t).classList.remove('hidden'); if(window.lucide) lucide.createIcons(); };
         window.fotoTirada = (id, idc) => { document.getElementById(id).innerText = 'OK, ANEXADO'; document.getElementById(idc).classList.add('attached'); };
-        const showLoader = () => { document.getElementById('main-loader').style.display = 'flex'; setTimeout(() => document.getElementById('main-loader').style.opacity = '1', 10); };
+        
+        const showLoader = (msg = "Carregando...") => { 
+            document.getElementById('loader-msg').innerText = msg;
+            document.getElementById('main-loader').style.display = 'flex'; 
+            setTimeout(() => document.getElementById('main-loader').style.opacity = '1', 10); 
+        };
         const hideLoader = () => { const l = document.getElementById('main-loader'); l.style.opacity = '0'; setTimeout(() => l.style.display = 'none', 500); };
         
         window.abrirTutorial = () => { tutorialPasso = 0; renderizarTutorial(); document.getElementById('modal-tutorial').classList.remove('hidden'); };
-        window.renderizarTutorial = () => { const s = tutorialSteps[tutorialPasso]; document.getElementById('tutorial-content').innerHTML = `<div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 mx-auto"><i data-lucide="${s.icone}" class="w-8 h-8 text-blue-400"></i></div><h3 class="text-xl font-black text-white uppercase mb-2">${s.titulo}</h3><p class="text-sm text-slate-400 px-4">${s.texto}</p>`; document.getElementById('tutorial-dots').innerHTML = tutorialSteps.map((_, i) => `<div class="w-2 h-2 rounded-full ${i === tutorialPasso ? 'bg-blue-500' : 'bg-slate-700'}"></div>`).join(''); lucide.createIcons(); };
+        window.renderizarTutorial = () => { const s = tutorialSteps[tutorialPasso]; document.getElementById('tutorial-content').innerHTML = `<div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 mx-auto"><i data-lucide="${s.icone}" class="w-8 h-8 text-blue-400"></i></div><h3 class="text-xl font-black text-white uppercase mb-2">${s.titulo}</h3><p class="text-sm text-slate-400 px-4">${s.texto}</p>`; document.getElementById('tutorial-dots').innerHTML = tutorialSteps.map((_, i) => `<div class="w-2 h-2 rounded-full ${i === tutorialPasso ? 'bg-blue-500' : 'bg-slate-700'}"></div>`).join(''); if(window.lucide) lucide.createIcons(); };
         window.proximoPasso = () => { if(tutorialPasso < tutorialSteps.length - 1) { tutorialPasso++; renderizarTutorial(); } else { fecharModal('modal-tutorial'); } };
         window.passoAnterior = () => { if(tutorialPasso > 0) { tutorialPasso--; renderizarTutorial(); } };
 
@@ -430,7 +444,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         window.verFoto = (u) => { if(!u) return alert("Indisponível"); document.getElementById('img-viewer').src = u; document.getElementById('popup-foto').classList.add('active'); };
         window.verGps = (c) => { if(!c || c==='0,0') return alert("Indisponível"); const [lat,lon] = c.split(','); document.getElementById('iframe-gps').src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`; document.getElementById('popup-gps').classList.add('active'); };
 
-        // RENDERIZAÇÃO ADMIN (CORRIGIDO: PUXA DADOS DA PLANILHA SE EM ROTA + CALCULO)
+        // RENDERIZAÇÃO ADMIN (CORRIGIDA - DADOS FANTASMAS)
         window.renderizarAdmin = () => {
             const container = document.getElementById('lista-viagens');
             const busca = document.getElementById('busca-admin').value.toLowerCase();
@@ -459,65 +473,68 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                 const dIni = safeDate(v.dataInicio), dFim = safeDate(v.dataFim);
                 const kmIni = safeNum(v.kmInicio), kmFim = v.kmFim ? safeNum(v.kmFim) : 0;
                 const kmTotal = v.kmFim ? (kmFim - kmIni).toFixed(1) : 0;
-
-                // Tenta achar a rota na memória importada do dia, senão usa a do banco
-                let rotaImportadaRecente = globalPrevisoesHoje[v.placa] && globalPrevisoesHoje[v.placa][0];
                 
-                // Prioridade de dados para exibição:
-                // 1. Dados salvos no banco (se já tiver sido definido e não for padrão)
-                // 2. Dados da importação recente (se no banco estiver padrão/vazio)
-                // 3. Fallback
-                let perfilExibir = v.perfilVeiculo;
-                let cidadeExibir = v.rotaCidades;
+                let placaNorm = normalizarPlaca(v.placa);
+                let rotaImportadaRecente = globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0];
+                
+                // Prioridade 1: Dados salvos na viagem
+                // Prioridade 2: Dados da planilha de HOJE (se existir)
+                // Prioridade 3: Histórico (apenas para perfil, NUNCA para cidade/km)
+                
+                let perfilExibir = v.perfilVeiculo || (rotaImportadaRecente ? rotaImportadaRecente.perfil : "PADRÃO");
+                
+                let cidadeExibir = v.rotaCidades; 
+                if(!cidadeExibir && rotaImportadaRecente) cidadeExibir = rotaImportadaRecente.cidades;
+                
                 let kmMetaExibir = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0].km : 0;
+                if(kmMetaExibir === 0 && rotaImportadaRecente) kmMetaExibir = rotaImportadaRecente.km;
 
-                if (rotaImportadaRecente) {
-                    if (!perfilExibir || perfilExibir === "PADRÃO") perfilExibir = rotaImportadaRecente.perfil;
-                    if (!cidadeExibir) cidadeExibir = rotaImportadaRecente.cidades;
-                    if (kmMetaExibir === 0) kmMetaExibir = rotaImportadaRecente.km;
+                // Se não tem info nem na viagem nem na planilha de hoje, deixa VAZIO
+                if(!v.rotaCidades && !rotaImportadaRecente) {
+                    cidadeExibir = null;
+                    kmMetaExibir = 0;
                 }
                 
                 let alertaDuplicidade = "";
-                // Verifica duplicidade nas rotas importadas (se houver)
-                let rotasParaVerificar = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? v.rotasPossiveis : (globalPrevisoesHoje[v.placa] || []);
+                let rotasParaVerificar = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? v.rotasPossiveis : (globalPrevisoesHoje[placaNorm] || []);
                 
                 if(rotasParaVerificar.length > 1 && isE) {
                     const options = rotasParaVerificar.map((r, i) => `<option value="${i}" ${v.rotaIndexSelected === i ? 'selected' : ''}>${r.km || '0'}km - ${r.cidades || 'S/ Cidade'} (${r.perfil})</option>`).join('');
                     alertaDuplicidade = `<div class="mb-3 bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg animate-pulse"><p class="text-[9px] text-amber-500 font-bold uppercase mb-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Duplicidade: Escolha a Rota</p><select onchange="selecionarRotaDuplicada('${v.id}', this.value)" class="w-full bg-slate-900 text-white text-[10px] p-1 rounded border border-white/10 outline-none uppercase font-bold cursor-pointer hover:bg-slate-800"><option value="">Selecione...</option>${options}</select></div>`;
                 }
 
-                // Cálculo da Diferença (Só exibe se finalizada e tinha meta > 0)
                 let metaHtml = "";
+                // Só mostra diferença se tiver META definida
                 if(kmMetaExibir > 0 && isF) { 
                     const diff = kmTotal - kmMetaExibir;
                     const color = diff > 0 ? "text-red-400" : "text-emerald-400";
                     const sinal = diff > 0 ? "+" : "";
                     metaHtml = `<div class="mt-2 bg-slate-900/50 p-2 rounded-lg border border-white/5 text-[9px] uppercase font-bold flex justify-between"><span class="text-slate-500">Meta: <span class="text-white">${Math.round(kmMetaExibir)}</span></span><span class="${color}">Dif: ${sinal}${Math.round(diff)} km</span></div>`;
+                } else if (!cidadeExibir && !kmMetaExibir && !isC) {
+                    metaHtml = `<div class="mt-2 bg-slate-900/50 p-2 rounded-lg border border-white/5 text-[9px] uppercase font-bold text-center text-slate-500"><i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i> SEM ROTA / IMPORTAÇÃO</div>`;
                 }
 
                 let tagsHtml = "";
                 if(perfilExibir) tagsHtml += `<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-[10px] mr-1 border border-blue-500/30 uppercase">${perfilExibir}</span>`;
                 if(cidadeExibir) tagsHtml += `<span class="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded text-[10px] border border-purple-500/30 uppercase max-w-[150px] truncate inline-block align-bottom" title="${cidadeExibir}">${cidadeExibir}</span>`;
 
-                // CÁLCULO FINANCEIRO
                 let financeiroHtml = "";
                 const perfilPreco = globalPrecos[perfilExibir] || PERFIS_PADRAO[perfilExibir] || { valorKm: 0, valorFrete: 0 };
                 
-                // Calcula se tiver preço configurado
                 if(perfilPreco.valorKm > 0 || perfilPreco.valorFrete > 0) {
                     let kmBase = 0;
                     let labelFin = "";
                     let colorFin = "";
                     let mostrar = false;
+                    const temInformacao = cidadeExibir || (kmMetaExibir > 0);
 
                     if(isE) {
-                        // Em Rota: Usa a meta da planilha (mesmo que seja 0, cobra o fixo)
-                        kmBase = kmMetaExibir || 0;
+                        // Se não tem informação de rota, calcula apenas o FRETE (kmBase = 0)
+                        kmBase = temInformacao ? (kmMetaExibir || 0) : 0;
                         labelFin = "ESTIMADO";
                         colorFin = "text-amber-500";
                         mostrar = true;
                     } else if (isF) {
-                        // Finalizada: Usa o KM Real
                         kmBase = kmTotal;
                         labelFin = "FATURAMENTO";
                         colorFin = "text-emerald-400";
@@ -549,7 +566,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     </div>
                 </div>`;
             }).join('');
-            lucide.createIcons();
+            if(window.lucide) lucide.createIcons();
         };
 
         window.selecionarRotaDuplicada = async (viagemId, index) => {
@@ -559,19 +576,25 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             hideLoader();
         };
 
-        const PERFIS_PADRAO = { "FIORINO": { valorFrete: 268.00, valorKm: 1.12 }, "VAN": { valorFrete: 407.00, valorKm: 1.28 }, "VUC": { valorFrete: 440.00, valorKm: 1.35 }, "LEVE 3/4": { valorFrete: 528.00, valorKm: 1.54 }, "LEVE 3/4 ESPECIAL": { valorFrete: 545.00, valorKm: 1.60 }, "TOCO": { valorFrete: 880.00, valorKm: 1.67 }, "TRUCK": { valorFrete: 1012.00, valorKm: 1.87 } };
-
+        // ENCERRAR VIAGEM OTIMIZADO
         window.encerrarViagem = async () => {
             const id = localStorage.getItem('v_id'); if(!id) return;
             const kf = document.getElementById('km-fim').value, ff = document.getElementById('foto-fim').files[0];
             if(!kf || !ff) return alert("Preencha KM final e Foto.");
-            showLoader();
+            
+            showLoader("Processando Dados Finais...");
+            
             try {
                 const docRef = doc(db, "viagens", id);
-                const snap = await getDoc(docRef);
+                const [snap, pos, fotoComprimida] = await Promise.all([
+                    getDoc(docRef),
+                    obterPosicao(),
+                    comprimir(ff)
+                ]);
+
+                showLoader("Salvando e Finalizando...");
+
                 const v = snap.data();
-                const pos = await obterPosicao();
-                const fotoComprimida = await comprimir(ff);
                 const duracao = document.getElementById('cronometro-motorista').innerText;
                 
                 const dInicio = safeDate(v.dataInicio);
@@ -579,10 +602,10 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                 let status = "finalizada", msg = "";
                 if(diffMin < 20) { status = "cancelada"; msg = "Viagem muito curta. Cancelada."; }
                 
-                // Pega a rota correta (do banco ou da memoria)
+                let placaNorm = normalizarPlaca(v.placa);
                 let rotaFinal = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? 
                     ((v.rotaIndexSelected !== undefined) ? v.rotasPossiveis[v.rotaIndexSelected] : v.rotasPossiveis[0]) : 
-                    (globalPrevisoesHoje[v.placa] && globalPrevisoesHoje[v.placa][0] ? globalPrevisoesHoje[v.placa][0] : {});
+                    (globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0] ? globalPrevisoesHoje[placaNorm][0] : {});
 
                 await updateDoc(docRef, { 
                     kmFim: Number(kf), fotoFim: fotoComprimida, status: status, duracao: duracao, dataFim: Timestamp.now(), 
@@ -615,9 +638,10 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             const kmFim = v.kmFim || '...';
             const total = v.kmFim ? (v.kmFim - v.kmInicio).toFixed(1) : '...';
             
+            let placaNorm = normalizarPlaca(v.placa);
             let rotaAtiva = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? 
                 ((v.rotaIndexSelected !== undefined) ? v.rotasPossiveis[v.rotaIndexSelected] : v.rotasPossiveis[0]) : 
-                (globalPrevisoesHoje[v.placa] && globalPrevisoesHoje[v.placa][0] ? globalPrevisoesHoje[v.placa][0] : {});
+                (globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0] ? globalPrevisoesHoje[placaNorm][0] : {});
 
             let txtPrev = "";
             if(rotaAtiva && rotaAtiva.km !== undefined && rotaAtiva.km > 0 && v.kmFim) {
@@ -630,13 +654,76 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             window.open(`https://api.whatsapp.com/send?text=${txt}`); 
         };
 
-        const exportarDados = (dados, nome) => { const exportData = dados.map(v => ({ Data: safeDate(v.dataInicio)?.toLocaleDateString(), Motorista: v.nome, Placa: v.placa, Perfil: v.perfilVeiculo, Cidades: v.rotaCidades, KM_Total: v.kmFim ? v.kmFim - v.kmInicio : 0, Status: v.status })); const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Frota"); XLSX.writeFile(wb, nome); };
-        window.gerarExcelAdmin = async () => { const ini = document.getElementById('data-exp-inicio').value; const fim = document.getElementById('data-exp-fim').value; if(!ini || !fim) return alert("Selecione datas."); showLoader(); const dIni = new Date(ini+"T00:00:00"); const dFim = new Date(fim+"T23:59:59"); const q = query(collection(db, "viagens"), where("dataInicio", ">=", Timestamp.fromDate(dIni)), where("dataInicio", "<=", Timestamp.fromDate(dFim)), orderBy("dataInicio", "desc")); const snaps = await getDocs(q); exportarDados(snaps.docs.map(d=>d.data()), `Relatorio_${ini}.xlsx`); hideLoader(); };
-        window.gerarExcelMotorista = async () => { if(!placaLogadaAtual) return; showLoader(); exportarDados(listaGlobalViagens.filter(v=>v.placa===placaLogadaAtual), `Extrato_${placaLogadaAtual}.xlsx`); hideLoader(); };
+        // EXPORTAÇÃO EXCEL PROFISSIONAL
+        const prepararDadosExportacao = (dados) => {
+            return dados.map(v => {
+                const dIni = safeDate(v.dataInicio);
+                const dFim = safeDate(v.dataFim);
+                const kmTotal = (v.kmFim && v.kmInicio) ? (v.kmFim - v.kmInicio) : 0;
+                
+                let placaNorm = normalizarPlaca(v.placa);
+                let rota = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0] : 
+                           (globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0]);
+                
+                const kmMeta = rota ? safeNum(rota.km) : 0;
+                const difKm = (v.kmFim && kmMeta > 0) ? (kmTotal - kmMeta) : 0;
+
+                return {
+                    "DATA": dIni ? dIni.toLocaleDateString() : "-",
+                    "HORA SAÍDA": dIni ? dIni.toLocaleTimeString() : "-",
+                    "HORA CHEGADA": dFim ? dFim.toLocaleTimeString() : "-",
+                    "MOTORISTA": v.nome || "-",
+                    "PLACA": v.placa || "-",
+                    "TIPO SERVIÇO": v.tipoServico || "-",
+                    "PERFIL": v.perfilVeiculo || "-",
+                    "ROTA / CIDADES": v.rotaCidades || "-",
+                    "KM INICIAL": v.kmInicio || 0,
+                    "KM FINAL": v.kmFim || 0,
+                    "KM RODADO": kmTotal,
+                    "KM META (PREVISÃO)": kmMeta || 0,
+                    "DIFERENÇA KM": difKm, // Positivo = rodou a mais, Negativo = economizou
+                    "STATUS": v.status ? v.status.toUpperCase() : "-"
+                };
+            });
+        };
+
+        const gerarExcelComEstilo = (dados, nomeArquivo) => {
+            const dadosFormatados = prepararDadosExportacao(dados);
+            const ws = XLSX.utils.json_to_sheet(dadosFormatados);
+            
+            // Tenta ajustar largura das colunas (Auto-Width Simples)
+            const wscols = Object.keys(dadosFormatados[0] || {}).map(k => ({wch: k.length + 5}));
+            ws['!cols'] = wscols;
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Relatório");
+            XLSX.writeFile(wb, nomeArquivo);
+        };
+
+        window.gerarExcelAdmin = async () => { 
+            const ini = document.getElementById('data-exp-inicio').value; 
+            const fim = document.getElementById('data-exp-fim').value; 
+            if(!ini || !fim) return alert("Selecione datas."); 
+            showLoader(); 
+            const dIni = new Date(ini+"T00:00:00"); 
+            const dFim = new Date(fim+"T23:59:59"); 
+            const q = query(collection(db, "viagens"), where("dataInicio", ">=", Timestamp.fromDate(dIni)), where("dataInicio", "<=", Timestamp.fromDate(dFim)), orderBy("dataInicio", "desc")); 
+            const snaps = await getDocs(q); 
+            
+            gerarExcelComEstilo(snaps.docs.map(d=>d.data()), `Relatorio_Frota_${ini}.xlsx`); 
+            hideLoader(); 
+        };
+
+        window.gerarExcelMotorista = async () => { 
+            if(!placaLogadaAtual) return; 
+            showLoader(); 
+            gerarExcelComEstilo(listaGlobalViagens.filter(v=>v.placa===placaLogadaAtual), `Extrato_${placaLogadaAtual}.xlsx`); 
+            hideLoader(); 
+        };
+
         window.excluirPeriodoSelecionado = async () => { const ini = document.getElementById('data-exp-inicio').value; const fim = document.getElementById('data-exp-fim').value; if(confirm("Apagar tudo neste período?")) { showLoader(); const dIni = new Date(ini+"T00:00:00"); const dFim = new Date(fim+"T23:59:59"); const q = query(collection(db, "viagens"), where("dataInicio", ">=", Timestamp.fromDate(dIni)), where("dataInicio", "<=", Timestamp.fromDate(dFim))); const snaps = await getDocs(q); await Promise.all(snaps.docs.map(d => deleteDoc(doc(db, "viagens", d.id)))); hideLoader(); alert("Feito."); } };
         window.validarAcessoExtrato = async () => { const p = document.getElementById('login-placa-manual').value.toUpperCase().trim(); const c = document.getElementById('login-codigo').value.trim(); const dr = await getDoc(doc(db, "codigos_acesso", p)); if(dr.exists() && String(dr.data().codigo) === c) { placaLogadaAtual = p; document.getElementById('extrato-placa-titulo').innerText = "Veículo: " + p; fecharModal('modal-extrato-login'); document.getElementById('modal-tabela-extrato').classList.remove('hidden'); if(!document.getElementById('mot-data-ini').value) { const h = new Date(); document.getElementById('mot-data-ini').value = new Date(h.getFullYear(), h.getMonth(), 1).toISOString().split('T')[0]; document.getElementById('mot-data-fim').value = h.toISOString().split('T')[0]; } atualizarExtratoVisual(); } else { alert("Acesso negado."); } };
         
-        // EXTRATO MOTORISTA (CORRIGIDO: DIFERENÇA)
         window.atualizarExtratoVisual = () => { 
             if(!placaLogadaAtual) return; 
             const iniStr = document.getElementById('mot-data-ini').value; 
@@ -652,17 +739,19 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             }).sort((a,b) => safeDate(b.dataInicio) - safeDate(a.dataInicio)); 
             
             document.getElementById('corpo-extrato').innerHTML = historico.map(v => { 
-                let rota = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0] : (globalPrevisoesHoje[v.placa] && globalPrevisoesHoje[v.placa][0]);
-                const kmMeta = rota ? rota.km : 0;
+                let placaNorm = normalizarPlaca(v.placa);
+                // Lógica igual à exportação para garantir consistência
+                let rota = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0] : (globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0]);
+                const kmMeta = rota ? safeNum(rota.km) : 0;
                 const kmTotal = (v.kmFim && v.kmInicio) ? (v.kmFim - v.kmInicio) : 0;
                 const diffKm = (v.kmFim && kmMeta > 0) ? (kmTotal - kmMeta) : null; 
                 
-                return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="p-3 text-[10px] text-white font-bold">${safeDate(v.dataInicio)?.toLocaleDateString()}<br><span class="text-slate-400 font-normal uppercase text-[9px]">${v.nome}</span></td><td class="p-3 text-[9px] text-slate-300 max-w-[80px] truncate">${v.rotaCidades || '-'}</td><td class="p-3 text-center text-[10px] text-slate-300 font-mono">${v.kmInicio} / ${v.kmFim || '...'}</td><td class="p-3 text-center text-[10px] text-white font-black font-mono">${v.kmFim ? kmTotal.toFixed(1) : '-'}</td><td class="p-3 text-center text-[10px] font-bold font-mono ${diffKm > 0 ? 'text-red-400' : 'text-emerald-400'}">${diffKm !== null ? (diffKm>0 ? '+'+diffKm.toFixed(0) : diffKm.toFixed(0)) : '-'}</td><td class="p-3 text-center flex justify-center gap-1"><button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20"><i data-lucide="log-out" class="w-3 h-3"></i></button>${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20"><i data-lucide="flag" class="w-3 h-3"></i></button>` : ''}</td><td class="p-3 text-center"><button onclick="compartilharWpp('${v.id}')" class="p-1.5 bg-emerald-500/20 text-emerald-500 rounded-lg"><i data-lucide="message-circle" class="w-3 h-3"></i></button></td></tr>`; 
-            }).join(''); lucide.createIcons(); 
+                return `<tr class="border-b border-white/5 hover:bg-white/5"><td class="p-3 text-[10px] text-white font-bold">${safeDate(v.dataInicio)?.toLocaleDateString()}<br><span class="text-slate-400 font-normal uppercase text-[9px]">${v.nome}</span></td><td class="p-3 text-[9px] text-slate-300 max-w-[80px] truncate">${v.rotaCidades || '-'}</td><td class="p-3 text-center text-[10px] text-slate-300 font-mono">${v.kmInicio} / ${v.kmFim || '...'}</td><td class="p-3 text-center text-[10px] text-white font-black font-mono">${v.kmFim ? kmTotal.toFixed(1) : '-'}</td><td class="p-3 text-center text-[10px] font-bold font-mono ${diffKm !== null && diffKm > 0 ? 'text-red-400' : 'text-emerald-400'}">${diffKm !== null ? (diffKm>0 ? '+'+diffKm.toFixed(0) : diffKm.toFixed(0)) : '-'}</td><td class="p-3 text-center flex justify-center gap-1"><button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20"><i data-lucide="log-out" class="w-3 h-3"></i></button>${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20"><i data-lucide="flag" class="w-3 h-3"></i></button>` : ''}</td><td class="p-3 text-center"><button onclick="compartilharWpp('${v.id}')" class="p-1.5 bg-emerald-500/20 text-emerald-500 rounded-lg"><i data-lucide="message-circle" class="w-3 h-3"></i></button></td></tr>`; 
+            }).join(''); if(window.lucide) lucide.createIcons(); 
         };
 
         window.abrirModalOcorrenciasMotorista = () => { document.getElementById('modal-ocorrencias-motorista').classList.remove('hidden'); renderizarMinhasOcorrencias(); };
-        window.renderizarMinhasOcorrencias = async () => { const id = localStorage.getItem('v_id'); const docRef = doc(db, "viagens", id); const snap = await getDoc(docRef); if(snap.exists()) { const obs = snap.data().historico_obs || []; const lista = document.getElementById('lista-minhas-ocorrencias'); if(obs.length === 0) { lista.innerHTML = "<p class='text-center text-slate-500 text-xs py-4'>Nenhuma ocorrência registrada.</p>"; return; } lista.innerHTML = obs.map((o, idx) => `<div class="bg-slate-800/50 p-3 rounded-xl border border-white/5 relative"><div class="flex justify-between items-start mb-1"><span class="text-[10px] text-cyan-400 font-bold uppercase">${o.tipo}</span><span class="text-[9px] text-slate-500 font-mono">${o.hora}</span></div><p class="text-xs text-slate-300 pr-6">${o.texto}</p><div class="flex gap-2 mt-3 justify-end border-t border-white/5 pt-2"><button onclick="excluirOcorrencia(${idx})" class="text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/10 px-2 py-1 rounded">Excluir</button></div></div>`).join(''); lucide.createIcons(); } };
+        window.renderizarMinhasOcorrencias = async () => { const id = localStorage.getItem('v_id'); const docRef = doc(db, "viagens", id); const snap = await getDoc(docRef); if(snap.exists()) { const obs = snap.data().historico_obs || []; const lista = document.getElementById('lista-minhas-ocorrencias'); if(obs.length === 0) { lista.innerHTML = "<p class='text-center text-slate-500 text-xs py-4'>Nenhuma ocorrência registrada.</p>"; return; } lista.innerHTML = obs.map((o, idx) => `<div class="bg-slate-800/50 p-3 rounded-xl border border-white/5 relative"><div class="flex justify-between items-start mb-1"><span class="text-[10px] text-cyan-400 font-bold uppercase">${o.tipo}</span><span class="text-[9px] text-slate-500 font-mono">${o.hora}</span></div><p class="text-xs text-slate-300 pr-6">${o.texto}</p><div class="flex gap-2 mt-3 justify-end border-t border-white/5 pt-2"><button onclick="excluirOcorrencia(${idx})" class="text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/10 px-2 py-1 rounded">Excluir</button></div></div>`).join(''); if(window.lucide) lucide.createIcons(); } };
         window.excluirOcorrencia = async (index) => { if(!confirm("Excluir esta ocorrência?")) return; const id = localStorage.getItem('v_id'); const docRef = doc(db, "viagens", id); const snap = await getDoc(docRef); if(snap.exists()) { let obs = snap.data().historico_obs || []; obs.splice(index, 1); await updateDoc(docRef, { historico_obs: obs }); renderizarMinhasOcorrencias(); } };
         
         window.acessoAdmin = () => { if(prompt("Senha:") === "60010774") mudarTela('admin'); };
@@ -679,7 +768,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         
         window.abrirModalNotifAdmin = () => { document.getElementById('modal-gerenciar-notif').classList.remove('hidden'); renderizarNotificacoesAdmin(); };
         window.abrirModalMuralMotorista = () => { document.getElementById('modal-notificacoes').classList.remove('hidden'); document.getElementById('notif-badge').classList.add('hidden'); try{bipSound.play().catch(e=>{});}catch(e){} };
-        window.renderizarNotificacoesAdmin = () => { document.getElementById('lista-notif-admin').innerHTML = listaNotificacoes.map(n => `<div class="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/10 mb-2"><span class="text-[10px] text-slate-300 w-4/5">${n.texto}</span><button onclick="excluirNotificacao('${n.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>`).join(''); lucide.createIcons(); };
+        window.renderizarNotificacoesAdmin = () => { document.getElementById('lista-notif-admin').innerHTML = listaNotificacoes.map(n => `<div class="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/10 mb-2"><span class="text-[10px] text-slate-300 w-4/5">${n.texto}</span><button onclick="excluirNotificacao('${n.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>`).join(''); if(window.lucide) lucide.createIcons(); };
         window.salvarNotificacao = async () => { const t = document.getElementById('notif-texto').value; if(t) { await addDoc(collection(db, "notificacoes"), { texto: t, criadoEm: Date.now() }); document.getElementById('notif-texto').value = ""; } };
         window.excluirNotificacao = async (id) => { if(confirm("Excluir?")) await deleteDoc(doc(db, "notificacoes", id)); };
         
@@ -701,29 +790,44 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             const finalizados = dados.filter(v => v.status === 'finalizada');
             
             let totalFat = 0, totalKm = 0, dist = {};
+            let ranking = {}; 
             
+            const calcularFatViagem = (v, kmReal, isEstimativa) => {
+                let valor = 0;
+                let perfil = v.perfilVeiculo;
+                
+                if(isEstimativa) {
+                    let placaNorm = normalizarPlaca(v.placa);
+                    let rota = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0] : (globalPrevisoesHoje[placaNorm] && globalPrevisoesHoje[placaNorm][0]);
+                    if(rota) {
+                        kmReal = rota.km || 0;
+                        perfil = rota.perfil || perfil;
+                    }
+                }
+
+                if(perfil) {
+                    const p = globalPrecos[perfil] || PERFIS_PADRAO[perfil] || {valorKm:0, valorFrete:0}; 
+                    valor = (kmReal * p.valorKm) + p.valorFrete;
+                }
+                return { valor, perfil };
+            };
+
             finalizados.forEach(v => { 
                 const km = (v.kmFim||0) - (v.kmInicio||0); 
                 totalKm += km; 
-                if(v.perfilVeiculo) { 
-                    const p = globalPrecos[v.perfilVeiculo] || PERFIS_PADRAO[v.perfilVeiculo] || {valorKm:0, valorFrete:0}; 
-                    totalFat += (km*p.valorKm)+p.valorFrete; 
-                    dist[v.perfilVeiculo] = (dist[v.perfilVeiculo]||0)+1; 
-                } 
+                const { valor, perfil } = calcularFatViagem(v, km, false);
+                totalFat += valor;
+                if(perfil) dist[perfil] = (dist[perfil]||0)+1;
+                const chave = v.placa || "DESCONHECIDO";
+                ranking[chave] = (ranking[chave] || 0) + valor;
             });
 
             emRota.forEach(v => { 
-                let kmEst = 0;
-                // Busca meta na memoria global se não tiver na viagem
-                let rota = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? v.rotasPossiveis[0] : (globalPrevisoesHoje[v.placa] && globalPrevisoesHoje[v.placa][0]);
-                if(rota && rota.km) kmEst = rota.km;
-                let perfil = rota ? rota.perfil : v.perfilVeiculo;
-
-                if(perfil) { 
-                    const p = globalPrecos[perfil] || PERFIS_PADRAO[perfil] || {valorKm:0, valorFrete:0}; 
-                    totalFat += (kmEst*p.valorKm)+p.valorFrete; 
-                    dist[perfil] = (dist[perfil]||0)+1; 
-                } 
+                const { valor, perfil } = calcularFatViagem(v, 0, true);
+                totalFat += valor;
+                if(perfil) dist[perfil] = (dist[perfil]||0)+1;
+                const chave = v.placa || "DESCONHECIDO";
+                ranking[chave] = (ranking[chave] || 0) + valor;
             });
             
             document.getElementById('kpi-total').innerText = emRota.length + finalizados.length;
@@ -736,19 +840,54 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             
             if(chartStatus) chartStatus.destroy();
             chartStatus = new Chart(document.getElementById('chart-status-realtime').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(dist), datasets: [{ data: Object.values(dist), backgroundColor: ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6'], borderWidth: 0 }] }, options: { plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: {size: 9} } } }, maintainAspectRatio: false } });
-            if(chartTimeline) chartTimeline.destroy();
-            const fluxo = {}; finalizados.forEach(v => { const h = safeDate(v.dataFim).getHours(); fluxo[h] = (fluxo[h]||0)+1; });
-            chartTimeline = new Chart(document.getElementById('chart-timeline-realtime').getContext('2d'), { type: 'bar', data: { labels: Array.from({length:24},(_,i)=>`${i}h`), datasets: [{ label: 'Chegadas', data: Array.from({length:24},(_,i)=>fluxo[i]||0), backgroundColor: '#06b6d4', borderRadius: 4 }] }, options: { scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false } });
+            
+            if(chartRanking) chartRanking.destroy();
+            const rankingArray = Object.entries(ranking).sort((a,b) => b[1] - a[1]).slice(0, 10); // TOP 10
+            chartRanking = new Chart(document.getElementById('chart-ranking-realtime').getContext('2d'), { 
+                type: 'bar', 
+                data: { 
+                    labels: rankingArray.map(r => r[0]), 
+                    datasets: [{ 
+                        label: 'Faturamento (R$)', 
+                        data: rankingArray.map(r => r[1]), 
+                        backgroundColor: '#06b6d4', 
+                        borderRadius: 4 
+                    }] 
+                }, 
+                options: { 
+                    indexAxis: 'y', 
+                    scales: { 
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: {size: 9} } }, 
+                        y: { grid: { display: false }, ticks: { color: '#fff', font: {size: 10, weight: 'bold'} } } 
+                    }, 
+                    plugins: { legend: { display: false } }, 
+                    maintainAspectRatio: false 
+                } 
+            });
         };
         const calcularTempo = (i) => { const d = Math.floor((Date.now()-i)/1000); return new Date(d*1000).toISOString().substr(11,8); };
-        const obterPosicao = () => new Promise((resolve) => { if (!navigator.geolocation) { resolve({coords: {latitude:0, longitude:0}}); } navigator.geolocation.getCurrentPosition((pos) => resolve(pos), () => resolve({coords: {latitude:0, longitude:0}}), { enableHighAccuracy: true }); });
+        const obterPosicao = () => new Promise((resolve) => { 
+            if (!navigator.geolocation) { resolve({coords: {latitude:0, longitude:0}}); return; }
+            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve(pos), 
+                () => resolve({coords: {latitude:0, longitude:0}}), 
+                options
+            );
+        });
         const obterPerfilRecente = async (placa) => { const q = query(collection(db, "previsoes"), where("placa", "==", placa), orderBy("atualizadoEm", "desc"), limit(1)); const snap = await getDocs(q); return !snap.empty && snap.docs[0].data().rotas && snap.docs[0].data().rotas.length > 0 ? snap.docs[0].data().rotas[0].perfil : null; };
         const verificarViagemLonga = async (dataInicioTimestamp) => { const agora = Date.now(); const inicio = safeDate(dataInicioTimestamp).getTime(); if((agora - inicio)/(1000*60*60) > 24) document.getElementById('modal-alerta-24h').classList.remove('hidden'); };
         const comprimir = (f) => new Promise((resolve, reject) => { const url = URL.createObjectURL(f); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); const maxW = 800; let w = img.width, h = img.height; if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; } const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', 0.6)); }; img.onerror = reject; img.src = url; });
         window.cancelarViagemManual = async () => { if(!confirm("Cancelar viagem?")) return; showLoader(); try { const id = localStorage.getItem('v_id'); const duracao = document.getElementById('cronometro-motorista').innerText; await updateDoc(doc(db, "viagens", id), { status: "cancelada", duracao: duracao, dataFim: Timestamp.now(), motivoCancelamento: "Manual" }); localStorage.removeItem('v_id'); hideLoader(); location.reload(); } catch (e) { hideLoader(); alert("Erro: " + e.message); } };
 
         // Listeners
-        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => { listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderizarAdmin(); if(!document.getElementById('modal-monitoramento').classList.contains('hidden')) atualizarMonitoramento(); });
+        onSnapshot(query(collection(db, "viagens"), orderBy("dataInicio", "desc")), (snap) => { 
+            listaGlobalViagens = snap.docs.map(d => ({ id: d.id, ...d.data() })); 
+            renderizarAdmin(); 
+            if(!document.getElementById('modal-monitoramento').classList.contains('hidden')) atualizarMonitoramento(); 
+            if(!sistemaCarregado) { sistemaCarregado = true; hideLoader(); }
+        });
+
         onSnapshot(collection(db, "notificacoes"), (snap) => { 
             listaNotificacoes = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => b.criadoEm - a.criadoEm); 
             document.getElementById('lista-notificacoes-motorista').innerHTML = listaNotificacoes.map(n => `<div class='p-3 bg-white/5 rounded-xl border-l-2 border-amber-500 mb-2'><p class='text-[9px] text-amber-500 font-bold mb-1'>${new Date(n.criadoEm).toLocaleDateString()}</p><p class='text-xs text-slate-300'>${n.texto}</p></div>`).join(''); 
@@ -763,19 +902,48 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         setInterval(() => { listaGlobalViagens.filter(v => v.status === 'em_curso').forEach(v => { const el = document.getElementById(`admin-timer-${v.id}`); if(el) el.innerText = calcularTempo(safeDate(v.dataInicio).getTime()); }); }, 1000);
         
         window.addEventListener('load', async () => { 
-            lucide.createIcons(); hideLoader(); await carregarConfigPrecos(); await carregarPrevisoesDoDia();
+            if(window.lucide) lucide.createIcons(); 
+            setTimeout(() => { if(!sistemaCarregado) hideLoader(); }, 5000);
+
+            await carregarConfigPrecos(); 
+            await carregarPrevisoesDoDia();
             const vid = localStorage.getItem('v_id'); 
             if(vid) { 
                 try { 
-                    const s = await getDoc(doc(db, "viagens", vid)); 
-                    if(s.exists() && s.data().status === 'em_curso') { 
-                        mudarTela('em-curso'); 
-                        document.getElementById('info-viagem-ativa').innerText = "EM ROTA: " + s.data().placa; 
-                        setInterval(() => document.getElementById('cronometro-motorista').innerText = calcularTempo(safeDate(s.data().dataInicio).getTime()), 1000); 
-                        verificarViagemLonga(s.data().dataInicio); 
-                    } else { 
-                        localStorage.removeItem('v_id'); 
-                    } 
+                    // ATUALIZAÇÃO: Monitoramento em Tempo Real para o Motorista
+                    const unsub = onSnapshot(doc(db, "viagens", vid), (docSnap) => {
+                        if(docSnap.exists()) {
+                            const data = docSnap.data();
+                            
+                            // SE FOI CANCELADA, RESETA
+                            if(data.status === 'cancelada') {
+                                alert("🛑 VIAGEM CANCELADA PELO GESTOR!");
+                                localStorage.removeItem('v_id');
+                                location.reload();
+                                return;
+                            }
+                            
+                            // SE ESTÁ EM CURSO, MOSTRA
+                            if(data.status === 'em_curso') {
+                                mudarTela('em-curso'); 
+                                document.getElementById('info-viagem-ativa').innerText = "EM ROTA: " + data.placa; 
+                                verificarViagemLonga(data.dataInicio); 
+                            } else {
+                                localStorage.removeItem('v_id'); 
+                                location.reload();
+                            }
+                        } else {
+                            // Documento sumiu (excluído)
+                            localStorage.removeItem('v_id');
+                            location.reload();
+                        }
+                    });
+
+                    // Intervalo para cronometro local (visual apenas)
+                    const s = await getDoc(doc(db, "viagens", vid));
+                    if(s.exists()) {
+                        setInterval(() => document.getElementById('cronometro-motorista').innerText = calcularTempo(safeDate(s.data().dataInicio).getTime()), 1000);
+                    }
                 } catch(e) {} 
             } 
             if(window.innerWidth > 768) {
