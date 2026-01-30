@@ -27,7 +27,7 @@
         }
         body { 
             background-color: #020617;
-            background-image: radial-gradient(circle at top right, rgba(6, 182, 212, 0.15), transparent 40%), radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.15), transparent 40%);
+            background-image: radial-gradient(circle at top right, rgba(6, 182, 212, 0.15), transparent 40%), radial-gradient(circle at bottom left, rgba(59, 256, 246, 0.15), transparent 40%);
             background-attachment: fixed; margin: 0; color: #f8fafc; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden;
             overscroll-behavior-y: none;
         }
@@ -153,6 +153,7 @@
                     <label id="lbl-foto-inicio" class="file-box flex flex-col items-center justify-center w-full h-24 rounded-2xl cursor-pointer hover:border-cyan-500/50 transition-colors"><i data-lucide="camera" class="w-6 h-6 text-slate-400 mb-2"></i><span id="txt-foto" class="text-[9px] font-bold text-slate-400 uppercase">Foto Painel</span><input type="file" id="foto-inicio" accept="image/*" capture="environment" class="hidden" onchange="fotoTirada('txt-foto', 'lbl-foto-inicio')"></label>
                     <button type="button" onclick="iniciarViagem()" class="btn-primary mt-1 flex items-center justify-center gap-2">Iniciar Rota <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
                 </div>
+                <button onclick="abrirModalRecuperar()" class="w-full text-center text-[10px] font-bold text-amber-500 uppercase tracking-[1px] hover:text-amber-400 py-3 mt-2 border border-amber-500/20 rounded-xl bg-amber-500/5 flex justify-center gap-2 items-center"><i data-lucide="refresh-ccw" class="w-3 h-3"></i> Recuperar Viagem Ativa</button>
             </div>
             <button onclick="abrirTutorial()" class="w-full text-center text-[10px] font-bold text-slate-600 uppercase tracking-[2px] hover:text-slate-400 pb-4 flex justify-center gap-2 items-center"><i data-lucide="help-circle" class="w-3 h-3"></i> Como Usar</button>
         </main>
@@ -288,6 +289,26 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         <div id="modal-gerenciar-notif" class="hidden fixed inset-0 flex items-center justify-center glass z-[2500]"><div class="modal-container"><div class="flex justify-between mb-4"><h3 class="font-bold uppercase text-amber-500 text-xs flex gap-2"><i data-lucide="megaphone"></i> Novo Aviso</h3><i data-lucide="x" class="text-slate-400 cursor-pointer" onclick="fecharModal('modal-gerenciar-notif')"></i></div><textarea id="notif-texto" placeholder="Mensagem..." class="input-style h-24 mb-4 resize-none text-sm"></textarea><button onclick="salvarNotificacao()" class="btn-primary !bg-amber-600 hover:!bg-amber-500 mb-6 text-white text-xs !py-3">ENVIAR</button><div id="lista-notif-admin" class="max-h-40 overflow-auto space-y-2 pr-2"></div></div></div>
         <div id="modal-gerar-codigo" class="hidden fixed inset-0 flex items-center justify-center glass z-[3000]"><div class="modal-container text-center"><i data-lucide="x" class="absolute top-4 right-4 cursor-pointer text-slate-500 hover:text-white" onclick="fecharModal('modal-gerar-codigo')"></i><h3 class="text-cyan-400 font-black uppercase text-sm mb-6">Acesso Condutor</h3><select id="gc-placa-select" class="input-style mb-4 font-bold text-center appearance-none cursor-pointer"></select><div id="display-codigo-gerado" class="hidden py-6 bg-black/40 rounded-2xl text-5xl font-black text-white tracking-[8px] mb-4 font-mono border border-cyan-500/20">0000</div><button onclick="processarGeracaoCodigo()" class="btn-primary mt-2">GERAR SENHA</button></div></div>
         <div id="modal-extrato-login" class="hidden fixed inset-0 flex items-center justify-center glass z-[2000]"><div class="modal-container text-center"><i data-lucide="x" class="absolute top-4 right-4 cursor-pointer text-slate-500 hover:text-white" onclick="fecharModal('modal-extrato-login')"></i><h3 class="text-white font-black uppercase text-sm mb-6">Acesso Histórico</h3><input type="text" id="login-placa-manual" placeholder="PLACA DO VEÍCULO" class="input-style mb-3 text-center uppercase font-bold tracking-widest"><input type="tel" id="login-codigo" placeholder="SENHA" class="input-style mb-6 text-center tracking-[10px] font-bold text-xl" maxlength="4"><button onclick="validarAcessoExtrato()" class="btn-primary">ACESSAR</button></div></div>
+        
+        <div id="modal-recuperar-sessao" class="hidden fixed inset-0 flex items-center justify-center glass z-[2000]">
+            <div class="modal-container text-center border-amber-500/30">
+                <i data-lucide="x" class="absolute top-4 right-4 cursor-pointer text-slate-500 hover:text-white" onclick="fecharModal('modal-recuperar-sessao')"></i>
+                <h3 class="text-amber-500 font-black uppercase text-sm mb-6 flex items-center justify-center gap-2"><i data-lucide="refresh-ccw"></i> Recuperar Viagem</h3>
+                <p class="text-slate-400 text-xs mb-4">Digite a placa do veículo que estava em rota.</p>
+                <input type="text" id="recuperar-placa" placeholder="PLACA DO VEÍCULO" class="input-style mb-6 text-center uppercase font-bold tracking-widest">
+                <button onclick="tentarRecuperarSessao()" class="btn-primary !bg-amber-600 hover:!bg-amber-500">BUSCAR E RECONECTAR</button>
+            </div>
+        </div>
+
+        <div id="modal-acoes-admin" class="hidden fixed inset-0 flex items-center justify-center bg-black/80 z-[6000]">
+            <div class="modal-container !max-w-xs text-center border-blue-500/30">
+                <i data-lucide="x" class="absolute top-4 right-4 cursor-pointer text-slate-500 hover:text-white" onclick="fecharModal('modal-acoes-admin')"></i>
+                <h3 class="text-blue-400 font-black uppercase text-sm mb-6 flex items-center justify-center gap-2"><i data-lucide="settings"></i> Gerenciar Viagem</h3>
+                <div id="lista-acoes-admin" class="space-y-3">
+                    </div>
+            </div>
+        </div>
+
         <div id="modal-sucesso-viagem" class="hidden fixed inset-0 flex items-center justify-center glass z-[5000]"><div class="modal-container text-center border-emerald-500/30"><div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="check" class="text-emerald-400 w-10 h-10"></i></div><h3 class="text-xl font-black text-white uppercase mb-2">Sucesso!</h3><p class="text-slate-400 text-xs mb-8">Viagem finalizada.</p><button id="btn-share-wpp" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold uppercase p-4 rounded-xl flex items-center justify-center gap-3 mb-3 text-xs transition-colors"><i data-lucide="message-circle" class="w-5 h-5"></i> Enviar WhatsApp</button><button onclick="voltarInicioReal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase p-3 rounded-xl text-xs transition-colors">Voltar ao Início</button></div></div>
         <div id="modal-alerta-24h" class="hidden fixed inset-0 flex items-center justify-center bg-black/95 z-[9999]"><div class="modal-container border-red-500 text-center animate-pulse"><i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i><h2 class="text-2xl font-black text-red-500 uppercase mb-2">Atenção!</h2><p class="text-white text-sm mb-6">Viagem aberta há mais de 24h.</p><button onclick="document.getElementById('modal-alerta-24h').classList.add('hidden')" class="w-full bg-red-600 hover:bg-red-500 p-4 rounded-xl font-bold uppercase text-white">Entendi</button></div></div>
         <div id="modal-tutorial" class="hidden fixed inset-0 flex items-center justify-center glass z-[3000]"><div class="modal-container !max-w-md bg-[#0f172a] relative overflow-hidden"><button onclick="fecharModal('modal-tutorial')" class="absolute top-4 right-4 text-slate-500 hover:text-white z-20"><i data-lucide="x"></i></button><div id="tutorial-content" class="flex flex-col items-center justify-center text-center py-8"></div><div class="flex justify-between items-center mt-4 border-t border-white/5 pt-4"><button onclick="passoAnterior()" class="text-slate-400 hover:text-white text-xs font-bold uppercase flex items-center gap-1">Voltar</button><div id="tutorial-dots" class="flex gap-1"></div><button onclick="proximoPasso()" class="text-blue-400 hover:text-blue-300 text-xs font-bold uppercase flex items-center gap-1">Próximo</button></div></div></div>
@@ -330,7 +351,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         let globalPrevisoesCache = {}; 
         let chartStatus = null, chartRanking = null, monitInterval = null;
         let listenerViagemAtiva = null; 
-        let visualizacaoCompleta = false; // NOVA VARIÁVEL DE ESTADO
+        let visualizacaoCompleta = false; 
         const bipSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg"); 
         let tutorialPasso = 0;
         let sistemaCarregado = false; 
@@ -359,15 +380,12 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         // =================================================================
         const obterPosicaoSimples = () => new Promise((resolve) => { 
             if (!navigator.geolocation) { resolve("0,0"); return; }
-            // Tenta GPS REAL (Alta Precisão) por 8 segundos
             navigator.geolocation.getCurrentPosition(
                 (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`), 
                 (err) => {
-                    // Se falhar (timeout ou erro), tenta Rede/Wifi (Baixa Precisão)
-                    console.warn("GPS Alta precisão falhou, tentando baixa...", err);
                     navigator.geolocation.getCurrentPosition(
                         (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`), 
-                        () => resolve("0,0"), // Se tudo falhar, retorna 0,0
+                        () => resolve("0,0"), 
                         { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
                     );
                 },
@@ -403,6 +421,21 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             
             if(!n || !p || !k || !f) return alert("Preencha tudo!"); 
             
+            showLoader("Verificando veículo...");
+
+            // Persiste a placa do motorista (STICKY PLACA)
+            localStorage.setItem('ul_placa', p);
+
+            try {
+                const qDup = query(collection(db, "viagens"), where("placa", "==", p), where("status", "==", "em_curso"));
+                const snapDup = await getDocs(qDup);
+                if(!snapDup.empty) {
+                    hideLoader();
+                    alert("ERRO: Este veículo já possui uma viagem em andamento! Finalize a anterior primeiro.");
+                    return;
+                }
+            } catch(e) { hideLoader(); alert("Erro de rede ao verificar placa."); return; }
+            
             showLoader("Iniciando..."); 
             
             try { 
@@ -411,7 +444,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     comprimirSeguro(f)
                 ]);
 
-                // Busca previsão
                 const hojeStr = formatarDataLocal(new Date());
                 let rotas = [], perfil = "PADRÃO", cidades = "";
                 try {
@@ -441,9 +473,8 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             const id = localStorage.getItem('v_id'); 
             if(!id) { alert("ID da viagem não encontrado."); return; }
 
-            // 1. KILL SWITCH: Desliga o ouvinte para evitar conflito de reload
             if(listenerViagemAtiva) {
-                listenerViagemAtiva(); // Para de ouvir o banco
+                listenerViagemAtiva(); 
                 listenerViagemAtiva = null;
             }
 
@@ -455,13 +486,11 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             showLoader("Finalizando... NÃO FECHE!");
             
             try {
-                // 2. Busca dados (Sem listener)
                 const docRef = doc(db, "viagens", id);
                 const snap = await getDoc(docRef);
                 if(!snap.exists()) throw new Error("Viagem não encontrada.");
                 const v = snap.data();
 
-                // 3. Processa GPS e Foto (Seguro)
                 let locFim = "0,0";
                 let foto = null;
                 try {
@@ -471,7 +500,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
 
                 if(!foto) foto = "https://placehold.co/400?text=Foto+Erro";
 
-                // 4. Prepara Dados (Lógica de Negócio)
                 const duracao = document.getElementById('cronometro-motorista').innerText || "00:00:00";
                 const dInicio = safeDate(v.dataInicio);
                 let placaNorm = normalizarPlaca(v.placa);
@@ -480,7 +508,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     ((v.rotaIndexSelected !== undefined) ? v.rotasPossiveis[v.rotaIndexSelected] : v.rotasPossiveis[0]) : 
                     (globalPrevisoesCache[`${placaNorm}_${dataViagemStr}`] && globalPrevisoesCache[`${placaNorm}_${dataViagemStr}`][0] ? globalPrevisoesCache[`${placaNorm}_${dataViagemStr}`][0] : {});
 
-                // 5. O UPDATE BLINDADO (Sem undefined)
                 const updateData = {
                     kmFim: Number(kf), 
                     fotoFim: foto, 
@@ -494,7 +521,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
 
                 await updateDoc(docRef, updateData);
                 
-                // 6. Limpeza e Sucesso
                 localStorage.removeItem('v_id'); 
                 hideLoader();
 
@@ -504,7 +530,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             } catch(e) { 
                 hideLoader(); 
                 alert("ERRO CRÍTICO AO SALVAR:\n" + e.message + "\n\nTire print e mande ao suporte."); 
-                // Se der erro, reativa o listener recarregando a página
                 location.reload();
             }
         };
@@ -526,7 +551,7 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             showLoader(); 
             try { 
                 const id = localStorage.getItem('v_id'); 
-                if(listenerViagemAtiva) listenerViagemAtiva(); // Kill switch no cancelar também
+                if(listenerViagemAtiva) listenerViagemAtiva(); 
                 const duracao = document.getElementById('cronometro-motorista').innerText; 
                 await updateDoc(doc(db, "viagens", id), { status: "cancelada", duracao: duracao, dataFim: Timestamp.now(), motivoCancelamento: "Manual" }); 
                 voltarInicioReal();
@@ -536,16 +561,127 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         window.voltarInicioReal = () => { localStorage.removeItem('v_id'); location.reload(); };
 
         // =================================================================
-        // FUNÇÃO NOVA: ALTERNAR VISUALIZAÇÃO
+        // RECUPERAR SESSÃO
         // =================================================================
-        window.alternarModoVisualizacao = () => {
-            visualizacaoCompleta = document.getElementById('toggle-view-mode').checked;
-            renderizarAdmin(); // Re-renderiza a lista com o novo estado
+        window.abrirModalRecuperar = () => document.getElementById('modal-recuperar-sessao').classList.remove('hidden');
+        window.tentarRecuperarSessao = async () => {
+            const p = normalizarPlaca(document.getElementById('recuperar-placa').value);
+            if(!p) return alert("Digite a placa.");
+            showLoader("Buscando viagem...");
+            
+            // Persiste a placa do motorista
+            localStorage.setItem('ul_placa', p);
+
+            try {
+                const q = query(collection(db, "viagens"), where("placa", "==", p), where("status", "==", "em_curso"), orderBy("dataInicio", "desc"), limit(1));
+                const snap = await getDocs(q);
+                if(snap.empty) {
+                    hideLoader();
+                    alert("Nenhuma viagem ativa encontrada para esta placa.");
+                } else {
+                    const id = snap.docs[0].id;
+                    localStorage.setItem('v_id', id);
+                    alert("Viagem encontrada! Reconectando...");
+                    location.reload();
+                }
+            } catch(e) { 
+                hideLoader(); alert("Erro ao buscar: " + e.message); 
+            }
+        };
+
+        // =================================================================
+        // NOVO: SISTEMA DE MODAL PARA AÇÕES DO ADMIN
+        // =================================================================
+        window.abrirModalAcoesAdmin = (id, status, existeKmFim) => {
+            const container = document.getElementById('lista-acoes-admin');
+            let html = '';
+
+            // 1. Edição do INÍCIO (Sempre disponível)
+            html += `<button onclick="adminEditarKm('${id}', 'kmInicio')" class="w-full bg-slate-800 text-white p-4 rounded-xl font-bold uppercase hover:bg-slate-700 flex items-center justify-center gap-2 border border-white/10"><i data-lucide="edit-2" class="w-4 h-4"></i> Editar KM Início</button>`;
+            html += `<button onclick="adminEditarFoto('${id}', 'fotoInicio')" class="w-full bg-slate-800 text-white p-4 rounded-xl font-bold uppercase hover:bg-slate-700 flex items-center justify-center gap-2 border border-white/10"><i data-lucide="camera" class="w-4 h-4"></i> Editar Foto Início</button>`;
+
+            // Separador
+            html += `<div class="h-px bg-white/10 my-2"></div>`;
+
+            // 2. Edição do FIM (SEMPRE DISPONÍVEL)
+            html += `<button onclick="adminEditarKm('${id}', 'kmFim')" class="w-full bg-slate-800 text-emerald-400 p-4 rounded-xl font-bold uppercase hover:bg-slate-700 flex items-center justify-center gap-2 border border-emerald-500/20"><i data-lucide="flag" class="w-4 h-4"></i> Editar KM Final</button>`;
+            html += `<button onclick="adminEditarFoto('${id}', 'fotoFim')" class="w-full bg-slate-800 text-emerald-400 p-4 rounded-xl font-bold uppercase hover:bg-slate-700 flex items-center justify-center gap-2 border border-emerald-500/20"><i data-lucide="camera" class="w-4 h-4"></i> Editar Foto Final</button>`;
+
+
+            // 3. Opção de FINALIZAR (Apenas se estiver em curso)
+            if (status === 'em_curso') {
+                 html += `<div class="h-px bg-white/10 my-2"></div>`; // Separador extra
+                 html += `<button onclick="adminForcarFinalizacao('${id}')" class="w-full bg-red-900/30 text-red-400 p-4 rounded-xl font-bold uppercase hover:bg-red-600/30 flex items-center justify-center gap-2 border border-red-500/30"><i data-lucide="stop-circle" class="w-4 h-4"></i> Forçar Finalização</button>`;
+            }
+
+            container.innerHTML = html;
+            if(window.lucide) lucide.createIcons();
+            document.getElementById('modal-acoes-admin').classList.remove('hidden');
+        };
+
+        window.adminEditarKm = async (id, tipo) => {
+            fecharModal('modal-acoes-admin');
+            const novoValorStr = prompt(`Digite o novo valor para KM ${tipo === 'kmInicio' ? 'Inicial' : 'Final'}:`);
+            if(novoValorStr === null) return; 
+            const novoValor = Number(novoValorStr);
+            if(isNaN(novoValor) || novoValor < 0) return alert("Valor inválido.");
+            
+            showLoader("Atualizando KM...");
+            try {
+                await updateDoc(doc(db, "viagens", id), { [tipo]: novoValor });
+                hideLoader();
+            } catch(e) { hideLoader(); alert("Erro ao atualizar: " + e.message); }
+        };
+
+        window.adminEditarFoto = async (id, campo) => { // campo: 'fotoInicio' ou 'fotoFim'
+            fecharModal('modal-acoes-admin');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                if(!e.target.files[0]) return;
+                showLoader("Atualizando Foto...");
+                try {
+                    const novaFoto = await comprimirSeguro(e.target.files[0]);
+                    await updateDoc(doc(db, "viagens", id), { [campo]: novaFoto });
+                    hideLoader();
+                    alert("Foto atualizada com sucesso!");
+                } catch(err) { hideLoader(); alert("Erro: " + err.message); }
+            };
+            input.click();
+        };
+
+        window.adminForcarFinalizacao = async (id) => {
+            fecharModal('modal-acoes-admin');
+            const kmFimStr = prompt("ATENÇÃO: Isso finalizará a viagem imediatamente.\n\nDigite o KM FINAL do veículo:");
+            if(kmFimStr === null) return;
+            const kmFim = Number(kmFimStr);
+            if(isNaN(kmFim) || kmFim <= 0) return alert("KM Final inválido.");
+
+            if(!confirm(`Tem certeza que deseja finalizar a viagem com KM Final: ${kmFim}?`)) return;
+
+            showLoader("Forçando finalização...");
+            try {
+                await updateDoc(doc(db, "viagens", id), {
+                    status: 'finalizada',
+                    kmFim: kmFim,
+                    dataFim: Timestamp.now(),
+                    duracao: "Finalizado pelo Admin",
+                    fotoFim: "https://placehold.co/400?text=Finalizado+Admin" 
+                });
+                hideLoader();
+                alert("Viagem finalizada com sucesso.");
+            } catch(e) { hideLoader(); alert("Erro ao finalizar: " + e.message); }
         };
 
         // =================================================================
         // RESTO DO SISTEMA MANTIDO ORIGINAL
         // =================================================================
+        window.alternarModoVisualizacao = () => {
+            visualizacaoCompleta = document.getElementById('toggle-view-mode').checked;
+            renderizarAdmin(); 
+        };
+
         window.carregarPrevisoesCache = async () => {
             if(listaGlobalViagens.length === 0) return;
             const datasUnicas = [...new Set(listaGlobalViagens.map(v => formatarDataLocal(safeDate(v.dataInicio))).filter(d=>d))];
@@ -617,7 +753,6 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
             reader.readAsArrayBuffer(file); 
         };
 
-        // ADMIN RENDER - OTIMIZADO COM VISUALIZAÇÃO SELETIVA
         window.renderizarAdmin = async () => {
             await carregarPrevisoesCache(); 
             const container = document.getElementById('lista-viagens');
@@ -653,15 +788,14 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                 let kmMetaExibir = (v.rotasPossiveis && v.rotasPossiveis[0]) ? v.rotasPossiveis[0].km : 0;
                 if(kmMetaExibir === 0 && rotaImportadaRecente) kmMetaExibir = rotaImportadaRecente.km;
                 
-                // CONDICIONAIS DE RENDERIZAÇÃO
                 let acoesHtml = "";
                 let alertaDuplicidade = "";
                 let financeiroHtml = "";
                 let timerHtml = "";
                 let botoesBaixoHtml = "";
+                let editBtnHtml = ""; 
 
                 if (visualizacaoCompleta) {
-                    // MODO COMPLETO: GERA TUDO
                     acoesHtml = `<div class="flex gap-1"><button onclick="compartilharWpp('${v.id}')" class="text-emerald-400 bg-emerald-500/10 p-2 rounded-lg hover:bg-emerald-500/20"><i data-lucide="message-circle" class="w-4 h-4"></i></button><button onclick="excluirCard('${v.id}')" class="text-red-400 bg-red-500/10 p-2 rounded-lg hover:bg-red-500/20"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
 
                     let rotasParaVerificar = (v.rotasPossiveis && v.rotasPossiveis.length > 0) ? v.rotasPossiveis : (globalPrevisoesCache[`${placaNorm}_${dataViagemStr}`] || []);
@@ -685,6 +819,11 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     timerHtml = `<div id="admin-timer-${v.id}" class="text-2xl font-black text-center mb-4 ${isE ? 'text-amber-500' : 'text-slate-600'} font-mono mt-4">${isE ? '00:00:00' : (v.duracao || '--')}</div>`;
 
                     botoesBaixoHtml = `<div class="mt-auto"><div class="grid grid-cols-2 gap-2 text-[9px] font-bold uppercase"><div class="flex flex-col gap-2"><button onclick="verGps('${v.locInicio}')" class="glass p-2 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-white w-full"><i data-lucide="map-pin"></i> GPS Início</button><button onclick="verFoto('${v.fotoInicio}')" class="glass p-2 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-white w-full"><i data-lucide="image"></i> Foto Início</button></div><div class="flex flex-col gap-2"><button onclick="verGps('${v.locFim}')" class="glass p-2 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-white w-full"><i data-lucide="map-pin" class="text-red-500"></i> GPS Fim</button>${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="glass p-2 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:text-white w-full"><i data-lucide="image" class="text-red-500"></i> Foto Fim</button>` : ''}</div></div><button onclick="abrirObsAdmin('${v.id}')" class="w-full mt-3 bg-slate-800/50 text-slate-400 text-[9px] py-2 rounded-lg hover:bg-slate-800 uppercase font-bold border border-white/5">${v.historico_obs?.length > 0 ? `<span class="text-amber-400">Ver ${v.historico_obs.length} Ocorrências</span>` : 'Nenhuma Ocorrência'}</button></div>`;
+                
+                    // BOTÃO ENGRENAGEM (ABRE MODAL EM VEZ DE DROPDOWN)
+                    editBtnHtml = `
+                        <button onclick="abrirModalAcoesAdmin('${v.id}', '${v.status}', ${!!v.kmFim})" class="absolute top-2 right-2 z-20 bg-slate-800/80 p-1.5 rounded-full hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i></button>
+                    `;
                 }
 
                 let metaHtml = "";
@@ -694,13 +833,13 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
                     metaHtml = `<div class="mt-2 bg-slate-900/50 p-2 rounded-lg border border-white/5 text-[9px] uppercase font-bold flex justify-between"><span class="text-slate-500">Meta: <span class="text-white">${Math.round(kmMetaExibir)}</span></span><span class="${color}">Dif: ${diff>0?"+":""}${Math.round(diff)} km</span></div>`;
                 }
                 
-                // RENDERIZAÇÃO FINAL DO CARD
-                return `<div class="admin-card ${isE ? 'em-curso' : ''} ${isC ? 'cancelada' : ''}">
+                return `<div class="admin-card ${isE ? 'em-curso' : ''} ${isC ? 'cancelada' : ''} relative">
+                    ${editBtnHtml}
                     <div class="flex justify-between items-start mb-2">
                         <div>
                             ${isE ? '<span class="text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded text-[9px] font-black uppercase">EM ROTA</span>' : isC ? '<span class="text-red-500 bg-red-500/10 px-2 py-0.5 rounded text-[9px] font-black uppercase">CANCELADA</span>' : '<span class="text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded text-[9px] font-black uppercase">FINALIZADA</span>'} 
                             <span class="text-[9px] text-slate-500 uppercase font-bold ml-1">• ${v.tipoServico || 'Geral'}</span>
-                            <h2 class="text-lg font-black uppercase text-white leading-tight mt-1">${v.nome || 'Motorista'}</h2>
+                            <h2 class="text-lg font-black uppercase text-white leading-tight mt-1 pr-8">${v.nome || 'Motorista'}</h2>
                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${v.placa || 'PLACA'}</p>
                         </div>
                         ${acoesHtml}
@@ -838,35 +977,87 @@ Veículos que estão rodando agora."><div class="p-3 border-b border-white/5 bg-
         onSnapshot(collection(db, "notificacoes"), (snap) => { listaNotificacoes = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => b.criadoEm - a.criadoEm); document.getElementById('lista-notificacoes-motorista').innerHTML = listaNotificacoes.map(n => `<div class='p-3 bg-white/5 rounded-xl border-l-2 border-amber-500 mb-2'><p class='text-[9px] text-amber-500 font-bold mb-1'>${new Date(n.criadoEm).toLocaleDateString()}</p><p class='text-xs text-slate-300'>${n.texto}</p></div>`).join(''); if(!document.getElementById('modal-gerenciar-notif').classList.contains('hidden')) renderizarNotificacoesAdmin(); if (!isFirstLoadNotif && snap.docChanges().some(c => c.type === 'added')) { document.getElementById('notif-badge').classList.remove('hidden'); try { bipSound.play().catch(e=>{}); } catch(e){} } isFirstLoadNotif = false; });
         setInterval(() => { listaGlobalViagens.filter(v => v.status === 'em_curso').forEach(v => { const el = document.getElementById(`admin-timer-${v.id}`); if(el) el.innerText = calcularTempo(safeDate(v.dataInicio).getTime()); }); }, 1000);
         
+        // =================================================================
+        // AUTO-RECUPERAÇÃO INTELIGENTE NO LOAD
+        // =================================================================
         window.addEventListener('load', async () => { 
-            if(window.lucide) lucide.createIcons(); setTimeout(() => { if(!sistemaCarregado) hideLoader(); }, 5000);
+            if(window.lucide) lucide.createIcons(); 
+            setTimeout(() => { if(!sistemaCarregado) hideLoader(); }, 5000);
+            
+            // Setup inicial de selects e configs
             const selPlaca = document.getElementById('col-placa-manual'), selKm = document.getElementById('col-km-manual'), alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", optionsHTML = alphabet.split('').map(char => `<option value="${char}">${char}</option>`).join('');
             selPlaca.innerHTML = optionsHTML; selKm.innerHTML = optionsHTML; selPlaca.value = "D"; selKm.value = "O";
             await carregarConfigPrecos(); await carregarPrevisoesCache();
-            const vid = localStorage.getItem('v_id'); if(vid) { try { 
-                
-                // CRIAÇÃO DO OUVINTE COM REFERENCIA PARA O KILL SWITCH
-                listenerViagemAtiva = onSnapshot(doc(db, "viagens", vid), (docSnap) => { 
-                    if(docSnap.exists()) { 
-                        const data = docSnap.data(); 
-                        if(data.status === 'cancelada') { alert("🛑 VIAGEM CANCELADA PELO GESTOR!"); localStorage.removeItem('v_id'); location.reload(); return; } 
-                        if(data.status === 'em_curso') { 
-                            mudarTela('em-curso'); 
-                            document.getElementById('info-viagem-ativa').innerText = "EM ROTA: " + data.placa; 
-                            verificarViagemLonga(data.dataInicio); 
+            
+            // LÓGICA DE PERSISTÊNCIA E RECUPERAÇÃO AUTOMÁTICA
+            let vid = localStorage.getItem('v_id'); 
+            const lastPlaca = localStorage.getItem('ul_placa');
+
+            // SE NÃO TEM ID, MAS TEM PLACA SALVA NO NAVEGADOR -> TENTA RECUPERAR SOZINHO
+            if (!vid && lastPlaca) {
+                showLoader("Restaurando sessão...");
+                try {
+                    const q = query(collection(db, "viagens"), where("placa", "==", lastPlaca), where("status", "==", "em_curso"), orderBy("dataInicio", "desc"), limit(1));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        vid = snap.docs[0].id;
+                        localStorage.setItem('v_id', vid);
+                        console.log("Sessão restaurada automaticamente para placa:", lastPlaca);
+                    } else {
+                         hideLoader(); // Não achou nada ativo, libera pro usuário iniciar
+                    }
+                } catch(e) {
+                    console.error("Erro na auto-recuperação:", e);
+                    hideLoader();
+                }
+            }
+
+            // SE TIVER ID (OU SE ACABOU DE RECUPERAR), ATIVA O LISTENER
+            if(vid) { 
+                try { 
+                    listenerViagemAtiva = onSnapshot(doc(db, "viagens", vid), (docSnap) => { 
+                        if(docSnap.exists()) { 
+                            const data = docSnap.data(); 
+                            
+                            // Se foi cancelada por fora, avisa e limpa
+                            if(data.status === 'cancelada') { 
+                                alert("🛑 VIAGEM CANCELADA PELO GESTOR!"); 
+                                localStorage.removeItem('v_id'); 
+                                location.reload(); 
+                                return; 
+                            } 
+                            
+                            // Se tá em curso, mostra a tela certa
+                            if(data.status === 'em_curso') { 
+                                mudarTela('em-curso'); 
+                                document.getElementById('info-viagem-ativa').innerText = "EM ROTA: " + data.placa; 
+                                verificarViagemLonga(data.dataInicio); 
+                                hideLoader(); // Garante que o loader saia se foi recuperação
+                            } else { 
+                                // Se finalizou, limpa o ID local pra permitir nova viagem
+                                localStorage.removeItem('v_id'); 
+                                location.reload(); 
+                            } 
                         } else { 
-                            // Se já não está mais em curso, limpa e reseta
+                            // Documento sumiu (excluído)
                             localStorage.removeItem('v_id'); 
                             location.reload(); 
                         } 
-                    } else { 
-                        localStorage.removeItem('v_id'); 
-                        location.reload(); 
-                    } 
-                }); 
+                    }, (error) => {
+                        console.error("Erro no listener:", error);
+                        // Em caso de erro de permissão ou rede, tenta manter o estado visual
+                        hideLoader();
+                    }); 
 
-                const s = await getDoc(doc(db, "viagens", vid)); 
-                if(s.exists()) { setInterval(() => document.getElementById('cronometro-motorista').innerText = calcularTempo(safeDate(s.data().dataInicio).getTime()), 1000); } } catch(e) {} } 
+                    const s = await getDoc(doc(db, "viagens", vid)); 
+                    if(s.exists()) { 
+                        setInterval(() => document.getElementById('cronometro-motorista').innerText = calcularTempo(safeDate(s.data().dataInicio).getTime()), 1000); 
+                    } 
+                } catch(e) {
+                    console.error("Erro geral no load:", e);
+                    hideLoader();
+                } 
+            } 
             
             if(window.innerWidth > 768) { if(!document.getElementById('app-wrap').classList.contains('w-full-pc')){ alternarModoPC(); } }
         });
