@@ -173,17 +173,6 @@
     <div id="popup-foto" class="viewer-overlay" onclick="el('popup-foto').classList.remove('active')"><div class="relative max-w-[95%] max-h-[95%]"><button class="absolute -top-12 right-0 text-white" onclick="el('popup-foto').classList.remove('active')"><i data-lucide="x"></i></button><img id="img-viewer" class="rounded-xl shadow-2xl max-h-[85vh] object-contain bg-black/90"></div></div>
     <div id="popup-gps" class="viewer-overlay" onclick="el('popup-gps').classList.remove('active')"><div class="w-[90%] h-[80%] bg-white dark:bg-zinc-900 rounded-xl overflow-hidden relative shadow-2xl"><button class="absolute top-2 right-2 z-10 bg-white dark:bg-zinc-800 p-2 rounded-full shadow" onclick="el('popup-gps').classList.remove('active')"><i data-lucide="x" class="text-red-500"></i></button><iframe id="iframe-gps" class="w-full h-full border-0"></iframe></div></div>
 
-    <div id="modal-rastreio" class="viewer-overlay">
-        <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative border border-gray-200 dark:border-zinc-700 overflow-hidden shadow-2xl">
-            <button onclick="el('modal-rastreio').classList.remove('active'); pararRastreioAdmin();" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-xl text-red-500 shadow hover:bg-red-50"><i data-lucide="x"></i></button>
-            <div id="rastreio-header" class="absolute top-4 left-4 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
-                <h3 class="font-bold text-sm dark:text-white" id="rastreio-placa">Carregando...</h3>
-                <p class="text-xs text-gray-500" id="rastreio-status">Aguardando sinal...</p>
-            </div>
-            <div id="mapa-rastreio" class="w-full h-full z-0"></div>
-        </div>
-    </div>
-
     <div id="view-motorista">
         <header class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-40 flex justify-between items-center bg-white/95">
             <div class="flex items-center gap-2.5 font-bold text-lg text-zinc-800 dark:text-white">
@@ -393,9 +382,31 @@
     <div id="modal-obs-motorista" class="viewer-overlay"><div class="bg-white dark:bg-zinc-900 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><div class="flex justify-between items-center mb-4"><h3 class="font-bold dark:text-white">Observações</h3><button onclick="el('modal-obs-motorista').classList.remove('active')" class="text-gray-500"><i data-lucide="x"></i></button></div><div class="space-y-3 mb-4"><input type="text" id="obs-assunto" class="coss-input" placeholder="Assunto"><textarea id="obs-texto" class="coss-input h-24 resize-none" placeholder="Descrição..."></textarea><button onclick="adicionarObs()" class="coss-btn bg-blue-600 text-white">ADICIONAR</button></div><div class="border-t pt-4 max-h-40 overflow-y-auto space-y-2" id="lista-obs-motorista"></div></div></div>
     <div id="modal-obs-admin" class="viewer-overlay"><div class="bg-white dark:bg-zinc-900 w-full max-w-md p-6 rounded-2xl shadow-2xl"><div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold dark:text-white">Observações da Viagem</h3><button onclick="el('modal-obs-admin').classList.remove('active')" class="text-gray-500"><i data-lucide="x"></i></button></div><div id="lista-obs-admin" class="space-y-3 max-h-96 overflow-y-auto"></div></div></div>
 
+    <div id="modal-rastreio" class="viewer-overlay">
+        <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative border border-gray-200 dark:border-zinc-700 overflow-hidden shadow-2xl">
+            <button onclick="el('modal-rastreio').classList.remove('active'); pararRastreioAdmin();" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-xl text-red-500 shadow hover:bg-red-50"><i data-lucide="x"></i></button>
+            <div id="rastreio-header" class="absolute top-4 left-4 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 dark:border-zinc-700 flex flex-col gap-1">
+                <div>
+                    <h3 class="font-bold text-sm dark:text-white" id="rastreio-placa">Carregando...</h3>
+                    <p class="text-xs text-gray-500" id="rastreio-status">Aguardando sinal...</p>
+                </div>
+                <button onclick="atualizarRastreioIndividual()" class="mt-1 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-2 rounded flex items-center gap-1 justify-center transition">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> ATUALIZAR
+                </button>
+            </div>
+            <div id="mapa-rastreio" class="w-full h-full z-0"></div>
+        </div>
+    </div>
+
     <div id="modal-mapa" class="viewer-overlay">
         <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative border border-gray-200 dark:border-zinc-700 overflow-hidden">
-            <div class="map-inputs-container"><input type="date" id="filtro-mapa-ini" onchange="carregarMapa()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1"><input type="date" id="filtro-mapa-fim" onchange="carregarMapa()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1"></div>
+            <div class="map-inputs-container">
+                <input type="date" id="filtro-mapa-ini" onchange="carregarMapa()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
+                <input type="date" id="filtro-mapa-fim" onchange="carregarMapa()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
+                <button onclick="carregarMapa()" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded transition flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> ATUALIZAR FROTA
+                </button>
+            </div>
             <button onclick="el('modal-mapa').classList.remove('active')" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-xl text-red-500 shadow hover:bg-red-50"><i data-lucide="x"></i></button>
             <div id="mapa-container" class="w-full h-full relative z-0"></div>
             <div id="map-legend-left" class="map-legend-container legend-left"></div>
@@ -439,6 +450,7 @@
         let todasViagens = []; let viagemAtualId = localStorage.getItem('v_id'); let filtroAdminAtual = 'todos'; 
         let fotoInicioBase64 = null; let fotoFimBase64 = null;
         let mapaLeaflet = null; let mapaRastreio = null; let markerRastreio = null; let polylineRastreio = null; let unsubRastreio = null;
+        let currentRastreioId = null; // Para saber qual rastreio está aberto
         let charts = {}; const cityCache = {}; 
         let dadosExtrato = []; let obsViagem = [];
         let gpsWatchId = null; 
@@ -494,44 +506,56 @@
             if(gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
         }
 
-        // --- MAPA RASTREIO INDIVIDUAL ---
+        // --- MAPA RASTREIO INDIVIDUAL (ATUALIZADO V30) ---
+        // Agora desenha linha em tempo real
         window.abrirRastreioAdmin = async (idViagem) => {
+            currentRastreioId = idViagem;
             const v = todasViagens.find(x => x.id === idViagem);
             if(!v) return;
             el('modal-rastreio').classList.add('active');
             el('rastreio-placa').innerText = v.placa + " - " + v.nome;
-            el('rastreio-status').innerText = v.status === 'em_curso' ? 'AO VIVO' : 'ROTA FINALIZADA';
+            el('rastreio-status').innerText = v.status === 'em_curso' ? 'AO VIVO - Rastreando...' : 'VIAGEM FINALIZADA';
             
             if(!mapaRastreio) {
                 mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaRastreio);
             }
+            // Limpa camadas anteriores
             mapaRastreio.eachLayer((layer) => {
                 if(layer instanceof L.Marker || layer instanceof L.Polyline) mapaRastreio.removeLayer(layer);
             });
             setTimeout(() => mapaRastreio.invalidateSize(), 300);
 
+            // Se estiver EM CURSO: Escuta Realtime e desenha linha completa
             if (v.status === 'em_curso') {
                 unsubRastreio = onSnapshot(doc(db, "viagens", idViagem), (docSnap) => {
                     if(docSnap.exists()) {
                         const data = docSnap.data();
+                        
+                        // Desenha Rota Completa se houver histórico
+                        if (data.rotaReal && data.rotaReal.length > 0) {
+                             if(polylineRastreio) mapaRastreio.removeLayer(polylineRastreio);
+                             const latlngs = data.rotaReal.map(c => c.split(',').map(Number));
+                             polylineRastreio = L.polyline(latlngs, {color: '#3b82f6', weight: 4}).addTo(mapaRastreio);
+                             mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding: [50,50]});
+                        }
+
+                        // Atualiza Marcador do Carro
                         if(data.locAtual) {
                             const [lat, lng] = data.locAtual.split(',').map(Number);
-                            if(!markerRastreio) {
-                                const iconCar = L.divIcon({className:'custom', html:`<div style="background:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #3b82f6;"></div>`});
-                                markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio);
-                                mapaRastreio.setView([lat, lng], 15);
-                            } else {
-                                markerRastreio.setLatLng([lat, lng]);
-                                mapaRastreio.panTo([lat, lng]);
-                            }
+                            if(markerRastreio) mapaRastreio.removeLayer(markerRastreio);
+                            
+                            const iconCar = L.divIcon({className:'custom', html:`<div style="background:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #3b82f6;"></div>`});
+                            markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio);
+                            // O fitBounds acima já centraliza, não precisa forçar panTo toda vez se não quiser que fique "preso"
                         }
                     }
                 });
             } else {
+                // Se finalizada, desenha o histórico estático
                 if(v.rotaReal && v.rotaReal.length > 1) {
                     const latlngs = v.rotaReal.map(c => c.split(',').map(Number));
-                    polylineRastreio = L.polyline(latlngs, {color: 'blue', weight: 4}).addTo(mapaRastreio);
+                    polylineRastreio = L.polyline(latlngs, {color: '#10b981', weight: 4}).addTo(mapaRastreio);
                     mapaRastreio.fitBounds(polylineRastreio.getBounds());
                     L.marker(latlngs[0]).addTo(mapaRastreio).bindPopup("Início");
                     L.marker(latlngs[latlngs.length-1]).addTo(mapaRastreio).bindPopup("Fim");
@@ -545,30 +569,79 @@
                 }
             }
         };
-        window.pararRastreioAdmin = () => { if(unsubRastreio) { unsubRastreio(); unsubRastreio = null; markerRastreio = null; } };
 
-        window.abrirModalMapa = () => { el('modal-mapa').classList.add('active'); const h=new Date().toISOString().split('T')[0]; if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } if(!mapaLeaflet) { mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet); } setTimeout(()=> { mapaLeaflet.invalidateSize(); carregarMapa(); }, 300); };
+        // Função do botão "Atualizar" no modal individual
+        window.atualizarRastreioIndividual = () => {
+            if(currentRastreioId) {
+                // Reabre para forçar limpeza e re-leitura
+                abrirRastreioAdmin(currentRastreioId);
+            }
+        };
+
+        window.pararRastreioAdmin = () => { 
+            if(unsubRastreio) { unsubRastreio(); unsubRastreio = null; }
+            markerRastreio = null; 
+            polylineRastreio = null;
+            currentRastreioId = null;
+        };
+
+        // --- MAPA GLOBAL DA FROTA (ATUALIZADO V30) ---
+        // Apenas localização atual, sem linhas. Botão Atualizar recarrega.
+        window.abrirModalMapa = () => { 
+            el('modal-mapa').classList.add('active'); 
+            const h=new Date().toISOString().split('T')[0]; 
+            if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } 
+            if(!mapaLeaflet) { 
+                mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); 
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet); 
+            } 
+            setTimeout(()=> { mapaLeaflet.invalidateSize(); carregarMapa(); }, 300); 
+        };
+
         window.carregarMapa = async () => { 
-            mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
+            // Limpa tudo
+            mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); if(l instanceof L.Polyline) mapaLeaflet.removeLayer(l); }); 
+            
             const ini=el('filtro-mapa-ini').value, fim=el('filtro-mapa-fim').value; 
             const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); }); 
             const bounds = []; const placas = []; 
+            
             dados.forEach(v => {
                 let lat = null, lng = null, tipo = null;
-                if (v.status === 'em_curso' && v.locAtual) { [lat, lng] = v.locAtual.split(',').map(Number); tipo = 'vivo'; } else if (v.status === 'finalizada' && v.locFim) { [lat, lng] = v.locFim.split(',').map(Number); tipo = 'fim'; }
+                // Pega apenas a ULTIMA localização conhecida
+                if (v.status === 'em_curso' && v.locAtual) { 
+                    [lat, lng] = v.locAtual.split(',').map(Number); 
+                    tipo = 'vivo'; // Laranja
+                } else if (v.status === 'finalizada' && v.locFim) { 
+                    [lat, lng] = v.locFim.split(',').map(Number); 
+                    tipo = 'fim'; // Verde
+                }
+
                 if (lat && lng) {
-                    const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981'; 
+                    const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981'; // Laranja ou Verde
                     const zIndex = tipo === 'vivo' ? 1000 : 1;
                     const pulse = tipo === 'vivo' ? 'box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);' : '';
+                    
                     const icon = L.divIcon({ className: 'custom-pin', html: `<div style="background:${cor};width:12px;height:12px;border-radius:50%;border:2px solid white;${pulse}"></div>` });
-                    const mk = L.marker([lat, lng], {icon, zIndexOffset: zIndex}).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🔴 EM MOVIMENTO' : '🏁 FINALIZADO'}`);
+                    
+                    const mk = L.marker([lat, lng], {icon, zIndexOffset: zIndex}).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🟠 EM ROTA' : '🟢 FINALIZADO'}`);
+                    
                     bounds.push([lat, lng]);
                     placas.push({ placa: v.placa, status: v.status, lat: lat, lng: lng, marker: mk });
                 }
             });
+
             if(bounds.length) mapaLeaflet.fitBounds(bounds, {padding:[50,50], maxZoom:14}); 
+            
             const legRight = el('map-legend-right'); legRight.innerHTML = '';
-            placas.sort((a,b) => (a.status === 'em_curso' ? -1 : 1)).slice(0, 50).forEach(p => { const item = document.createElement('div'); item.className = 'legend-item'; const cor = p.status === 'em_curso' ? 'bg-orange-500' : 'bg-emerald-500'; item.innerHTML = `<div><span class="status-dot ${cor}"></span><span class="font-bold text-[10px]">${p.placa}</span></div>`; item.onclick = () => { mapaLeaflet.setView([p.lat, p.lng], 15); p.marker.openPopup(); }; legRight.appendChild(item); });
+            placas.sort((a,b) => (a.status === 'em_curso' ? -1 : 1)).slice(0, 50).forEach(p => { 
+                const item = document.createElement('div'); 
+                item.className = 'legend-item'; 
+                const cor = p.status === 'em_curso' ? 'bg-orange-500' : 'bg-emerald-500'; 
+                item.innerHTML = `<div><span class="status-dot ${cor}"></span><span class="font-bold text-[10px]">${p.placa}</span></div>`; 
+                item.onclick = () => { mapaLeaflet.setView([p.lat, p.lng], 15); p.marker.openPopup(); }; 
+                legRight.appendChild(item); 
+            });
             el('map-legend-left').style.display = 'none'; 
         };
 
@@ -582,11 +655,37 @@
         window.salvarSenhaPlaca = async () => { const placa = el('placa-senha-select').value; const senha = el('senha-input-manual').value; if(!placa || !senha) return alert("Preencha placa e senha."); try { await setDoc(doc(db, "credenciais", placa), { senha: senha, atualizadoEm: serverTimestamp() }); alert(`Senha para ${placa} salva!`); el('modal-senhas').classList.remove('active'); } catch(e) { alert("Erro: " + e.message); } };
         window.abrirLoginExtrato = () => { el('login-placa').value = ''; el('login-senha').value = ''; el('modal-login-extrato').classList.add('active'); };
         window.acessarExtrato = async () => { const p = formatarPlaca(el('login-placa').value); const s = el('login-senha').value; if(!p || !s) return alert("Preencha campos"); el('main-loader').style.display='flex'; const docSnap = await getDoc(doc(db, "credenciais", p)); if (docSnap.exists() && docSnap.data().senha === s) { const vSnap = await getDocs(query(collection(db, "viagens"), where("placa", "==", p), orderBy("dataInicio", "desc"))); dadosExtrato = vSnap.docs.map(d => ({id:d.id, ...d.data()})); el('modal-login-extrato').classList.remove('active'); el('modal-view-extrato').classList.add('active'); el('main-loader').style.display='none'; renderizarExtrato(); } else { el('main-loader').style.display='none'; alert("Credenciais inválidas."); } };
-        window.renderizarExtrato = () => { const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-zinc-400 mt-10 p-5">Nenhum registro.</p>'; return; } cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); return `<div class="extrato-item" style="--st-color: ${stColor}"><div class="ex-header"><span class="ex-date">${fmtData(dIni)} <span class="font-normal text-gray-400 text-[10px]">${fmtHora(dIni)}</span></span><span class="ex-status">${v.status}</span></div><div class="ex-rota"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'N/D'}</div><div class="ex-metrics"><div class="ex-m-box"><span class="ex-lbl">KM Ini</span><span class="ex-val">${Math.round(v.kmInicio)}</span></div><div class="ex-m-box"><span class="ex-lbl">KM Fim</span><span class="ex-val">${isE?'-':Math.round(v.kmFim)}</span></div><div class="ex-m-box"><span class="ex-lbl">Total</span><span class="ex-val">${isE?'-':kmT}</span></div><div class="ex-m-box"><span class="ex-lbl">Meta</span><span class="ex-val text-gray-500">${meta}</span></div><div class="ex-m-box col-span-2"><span class="ex-lbl">Diferença</span><span class="ex-val ${diff>0?'text-red-500':'text-emerald-500'}">${isE?'-':(diff>0?'+':'')+diff}</span></div></div><div class="ex-actions">${v.fotoInicio ? `<button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}</div></div>`; }).join('') + '</div>'; lucide.createIcons(); };
+        
+        // --- EXTRATO DO MOTORISTA COM BOTÃO COMPARTILHAR (UPDATED V30) ---
+        window.renderizarExtrato = () => { 
+            const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; 
+            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); 
+            
+            if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-zinc-400 mt-10 p-5">Nenhum registro.</p>'; return; } 
+            
+            cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { 
+                const kmT = Math.round((v.kmFim||0) - v.kmInicio); 
+                const meta = Math.round(v.metaKm||0); 
+                const diff = kmT - meta; 
+                const dIni = safeDate(v.dataInicio); 
+                const isE = v.status === 'em_curso'; 
+                const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); 
+                
+                // Botão de Compartilhar
+                const btnShare = `<button onclick="compartilharExtrato('${v.id}')" class="p-1.5 bg-green-50 text-green-600 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>`;
+
+                return `<div class="extrato-item" style="--st-color: ${stColor}"><div class="ex-header"><span class="ex-date">${fmtData(dIni)} <span class="font-normal text-gray-400 text-[10px]">${fmtHora(dIni)}</span></span><span class="ex-status">${v.status}</span></div><div class="ex-rota"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'N/D'}</div><div class="ex-metrics"><div class="ex-m-box"><span class="ex-lbl">KM Ini</span><span class="ex-val">${Math.round(v.kmInicio)}</span></div><div class="ex-m-box"><span class="ex-lbl">KM Fim</span><span class="ex-val">${isE?'-':Math.round(v.kmFim)}</span></div><div class="ex-m-box"><span class="ex-lbl">Total</span><span class="ex-val">${isE?'-':kmT}</span></div><div class="ex-m-box"><span class="ex-lbl">Meta</span><span class="ex-val text-gray-500">${meta}</span></div><div class="ex-m-box col-span-2"><span class="ex-lbl">Diferença</span><span class="ex-val ${diff>0?'text-red-500':'text-emerald-500'}">${isE?'-':(diff>0?'+':'')+diff}</span></div></div><div class="ex-actions">${btnShare}${v.fotoInicio ? `<button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}</div></div>`; 
+            }).join('') + '</div>'; lucide.createIcons(); 
+        };
+
+        window.compartilharExtrato = (id) => {
+            const v = dadosExtrato.find(x => x.id === id);
+            if(v) window.enviarZap(v); // Reutiliza a função de enviar Zap que já formata tudo
+        };
+
         window.exportarExtratoPessoal = () => { const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim||0) - v.kmInicio), "Meta": Math.round(v.metaKm||0) })); const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Extrato"); XLSX.writeFile(wb, `Extrato_${filtrados[0]?.placa}.xlsx`); };
         window.abrirModalDash = () => { el('modal-dash').classList.add('active'); const h=new Date().toISOString().split('T')[0]; if(!el('filtro-dash-ini').value) { el('filtro-dash-ini').value=h; el('filtro-dash-fim').value=h; } carregarDash(); };
         
-        // --- DASHBOARD UPDATED (Meta counts ALL trips) ---
         window.carregarDash = () => { 
             const ini = el('filtro-dash-ini').value, fim = el('filtro-dash-fim').value; 
             const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); }); 
@@ -594,13 +693,9 @@
             el('kpi-viagens').innerText = total; el('kpi-em-rota').innerText = emRota; el('kpi-final').innerText = finalizadas; 
             const dadosFinalizados = dados.filter(v => v.status === 'finalizada'); 
             
-            // --- FIX: META COUNTS ALL TRIPS (Active + Finalized) ---
             const totalMeta = dados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; 
-            
             const totalKM = dadosFinalizados.reduce((acc, v) => acc + ((v.kmFim||0) - v.kmInicio), 0) || 0; 
-            const totalMetaFinalizadas = dadosFinalizados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; // Para calcular dispersão correta apenas do que finalizou
-            
-            // Dispersão é calculada apenas sobre as finalizadas para ser justa
+            const totalMetaFinalizadas = dadosFinalizados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; 
             const dispTotal = totalKM - totalMetaFinalizadas; 
             
             el('kpi-meta').innerText = Math.round(totalMeta).toLocaleString('pt-BR'); 
@@ -719,7 +814,6 @@
         window.getGPS = () => new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(`${p.coords.latitude},${p.coords.longitude}`), () => r(null)) : r(null));
         window.handleFileSelect = (inp, divId) => { const f = inp.files[0]; if(f) { try { const r = new FileReader(); r.onload = e => { const i = new Image(); i.src = e.target.result; i.onload = () => { const maxWidth = 600; const scale = maxWidth / i.width; const newWidth = maxWidth; const newHeight = i.height * scale; const c = document.createElement('canvas'); const ctx = c.getContext('2d'); c.width = newWidth; c.height = newHeight; ctx.drawImage(i, 0, 0, c.width, c.height); const b64 = c.toDataURL('image/jpeg', 0.5); if(divId.includes('ini')) fotoInicioBase64 = b64; else fotoFimBase64 = b64; el(divId).classList.add('has-file'); el(divId).querySelector('span').innerText = 'FOTO OK'; lucide.createIcons(); } }; r.readAsDataURL(f); } catch(err) { alert("Erro ao processar foto."); } } };
         
-        // --- INICIAR VIAGEM (UPDATED SOURCE CHECK) ---
         window.iniciarViagem = async () => { 
             const n=el('motorista').value; const p=formatarPlaca(el('placa').value); const k=el('km-inicio').value; 
             if(!fotoInicioBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Por favor, tire a foto do painel para iniciar."); 
@@ -732,7 +826,6 @@
                 const s=await getDoc(doc(db,"previsoes",`${p}_${hj}`)); 
                 if(s.exists()) { const d = s.data(); ex = { rotaCidades: d.rota || "Rota não definida", perfilVeiculo: d.perfil || "PADRÃO", metaKm: d.meta || 0 }; } 
                 
-                // --- DETECÇÃO FORÇADA DE APP ---
                 const isApp = (window.AndroidInterface || (window.AndroidInterface && window.AndroidInterface.startTracking)) ? true : false;
                 const origem = isApp ? 'APP' : 'WEB';
                 
@@ -832,14 +925,13 @@
             abrirModalDash, carregarDash, abrirModalImportacao, processarImportacao, 
             abrirModalExportacao, confirmarExportacao, abrirModalPrecos, salvarPrecos, atualizarPreco,
             abrirModalSenhas, salvarSenhaPlaca, abrirObsMotorista, adicionarObs, excluirObs, verObsAdmin,
-            abrirRastreioAdmin, pararRastreioAdmin, 
+            abrirRastreioAdmin, pararRastreioAdmin, atualizarRastreioIndividual, 
             abrirEdicao, salvarEdicaoCompleta, finalizarPeloAdmin, excluirViagemAdmin,
             abrirModalMapa, carregarMapa, gerarTextoZap, enviarZap,
-            garantirSenha, cancelarViagemMotorista, toggleSidebar
+            garantirSenha, cancelarViagemMotorista, toggleSidebar, compartilharExtrato
         });
 
         lucide.createIcons();
     </script>
 </body>
 </html>
-
