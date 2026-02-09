@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>IcaphiDrive</title>
+    <title>IcaphiDrive V29 Stable</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -312,7 +312,6 @@
             <div id="lista-viagens" class="grid-cards pb-20"></div>
         </div>
     </div>
-    
     <div id="modal-importacao" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="upload-cloud" class="text-blue-500"></i> Importar Excel</h3><input type="date" id="data-importacao" class="coss-input mb-4"><div class="file-upload mb-4"><input type="file" id="file-import" onchange="processarImportacao(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"><span class="text-xs text-gray-500">Arraste ou clique (.xlsx)</span></div><button onclick="el('modal-importacao').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Cancelar</button></div></div>
     <div id="modal-exportar" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="download" class="text-teal-500"></i> Exportar</h3><div class="grid grid-cols-2 gap-3 mb-4"><input type="date" id="data-export-ini" class="coss-input"><input type="date" id="data-export-fim" class="coss-input"></div><button onclick="confirmarExportacao()" class="coss-btn bg-teal-600 mb-2 text-white">BAIXAR</button><button onclick="el('modal-exportar').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Cancelar</button></div></div>
     <div id="modal-senhas" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="key" class="text-orange-500"></i> Senhas</h3><select id="placa-senha-select" class="coss-input mb-3"></select><input type="text" id="senha-input-manual" class="coss-input mb-4 text-center font-bold text-lg"><button onclick="salvarSenhaPlaca()" class="coss-btn bg-orange-600 mb-2 text-white">Salvar</button><button onclick="el('modal-senhas').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Fechar</button></div></div>
@@ -357,7 +356,7 @@
                     <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Disp</p><h3 id="kpi-disp" class="text-lg font-bold">0</h3></div>
                 </div>
                 <div class="charts-row">
-                    <div class="chart-card"><h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Dispersão</h4><div class="chart-wrapper mt-4"><canvas id="chart-dispersao"></canvas></div></div>
+                    <div class="chart-card"><h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Dispersão (Finalizadas)</h4><div class="chart-wrapper mt-4"><canvas id="chart-dispersao"></canvas></div></div>
                     <div class="chart-card"><h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Top Drivers</h4><div class="chart-wrapper mt-4"><canvas id="chart-top-driver"></canvas></div></div>
                     <div class="chart-card flex flex-col items-center justify-center"><h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Progresso da Frota</h4><div class="chart-wrapper mt-4 w-full flex items-center justify-center"><canvas id="chart-gauge"></canvas></div><span id="gauge-text" class="absolute bottom-4 text-xl font-bold dark:text-white">0%</span></div>
                     <div class="chart-card"><h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Perfil</h4><div class="chart-wrapper mt-4"><canvas id="chart-perfil"></canvas></div></div>
@@ -409,12 +408,10 @@
             try {
                 const vIdLocal = localStorage.getItem('v_id');
                 if (vIdLocal) {
-                    // NOTIFICAÇÃO ANDROID (Novo)
-                    if(window.AndroidInterface && window.AndroidInterface.startTracking) {
+                    // Check Android safely
+                    if(typeof window.AndroidInterface !== 'undefined' && window.AndroidInterface.startTracking) {
                         window.AndroidInterface.startTracking();
-                        console.log("Android Rastreio ATIVO (Recover)");
                     }
-
                     const telaIni = document.getElementById('tela-inicio');
                     if(telaIni) telaIni.classList.add('hidden');
                     const telaCurso = document.getElementById('tela-em-curso');
@@ -550,7 +547,6 @@
         };
         window.pararRastreioAdmin = () => { if(unsubRastreio) { unsubRastreio(); unsubRastreio = null; markerRastreio = null; } };
 
-        // --- MAPA FROTA AO VIVO ---
         window.abrirModalMapa = () => { el('modal-mapa').classList.add('active'); const h=new Date().toISOString().split('T')[0]; if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } if(!mapaLeaflet) { mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet); } setTimeout(()=> { mapaLeaflet.invalidateSize(); carregarMapa(); }, 300); };
         window.carregarMapa = async () => { 
             mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
@@ -576,7 +572,6 @@
             el('map-legend-left').style.display = 'none'; 
         };
 
-        // --- FUNÇÕES GERAIS ---
         window.abrirObsMotorista = async () => { el('modal-obs-motorista').classList.add('active'); renderizarObsDriver(); };
         window.adicionarObs = async () => { const assunto = el('obs-assunto').value; const texto = el('obs-texto').value; if(!assunto || !texto) return alert("Preencha tudo"); const novaObs = { id: Date.now(), assunto, texto, data: new Date().toISOString() }; try { if(viagemAtualId) { await updateDoc(doc(db, "viagens", viagemAtualId), { obs: arrayUnion(novaObs) }); el('obs-assunto').value = ''; el('obs-texto').value = ''; if(!obsViagem) obsViagem = []; obsViagem.push(novaObs); renderizarObsDriver(); } } catch(e) { alert("Erro ao salvar Obs"); } };
         const renderizarObsDriver = () => { const lista = el('lista-obs-motorista'); lista.innerHTML = ''; const v = todasViagens.find(x => x.id === viagemAtualId); const obs = v && v.obs ? v.obs : []; obs.forEach(o => { lista.innerHTML += `<div class="bg-gray-100 dark:bg-zinc-800 p-2 rounded text-sm relative group"><p class="font-bold text-gray-700 dark:text-gray-200">${o.assunto}</p><p class="text-gray-500 dark:text-gray-400">${o.texto}</p><button onclick="excluirObs(${o.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; }); lucide.createIcons(); };
@@ -590,16 +585,28 @@
         window.renderizarExtrato = () => { const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-zinc-400 mt-10 p-5">Nenhum registro.</p>'; return; } cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); return `<div class="extrato-item" style="--st-color: ${stColor}"><div class="ex-header"><span class="ex-date">${fmtData(dIni)} <span class="font-normal text-gray-400 text-[10px]">${fmtHora(dIni)}</span></span><span class="ex-status">${v.status}</span></div><div class="ex-rota"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'N/D'}</div><div class="ex-metrics"><div class="ex-m-box"><span class="ex-lbl">KM Ini</span><span class="ex-val">${Math.round(v.kmInicio)}</span></div><div class="ex-m-box"><span class="ex-lbl">KM Fim</span><span class="ex-val">${isE?'-':Math.round(v.kmFim)}</span></div><div class="ex-m-box"><span class="ex-lbl">Total</span><span class="ex-val">${isE?'-':kmT}</span></div><div class="ex-m-box"><span class="ex-lbl">Meta</span><span class="ex-val text-gray-500">${meta}</span></div><div class="ex-m-box col-span-2"><span class="ex-lbl">Diferença</span><span class="ex-val ${diff>0?'text-red-500':'text-emerald-500'}">${isE?'-':(diff>0?'+':'')+diff}</span></div></div><div class="ex-actions">${v.fotoInicio ? `<button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}</div></div>`; }).join('') + '</div>'; lucide.createIcons(); };
         window.exportarExtratoPessoal = () => { const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim||0) - v.kmInicio), "Meta": Math.round(v.metaKm||0) })); const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Extrato"); XLSX.writeFile(wb, `Extrato_${filtrados[0]?.placa}.xlsx`); };
         window.abrirModalDash = () => { el('modal-dash').classList.add('active'); const h=new Date().toISOString().split('T')[0]; if(!el('filtro-dash-ini').value) { el('filtro-dash-ini').value=h; el('filtro-dash-fim').value=h; } carregarDash(); };
+        
+        // --- DASHBOARD UPDATED (Meta counts ALL trips) ---
         window.carregarDash = () => { 
             const ini = el('filtro-dash-ini').value, fim = el('filtro-dash-fim').value; 
             const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); }); 
             const total = dados.length || 0; const emRota = dados.filter(x=>x.status==='em_curso').length || 0; const finalizadas = dados.filter(x=>x.status==='finalizada').length || 0; 
             el('kpi-viagens').innerText = total; el('kpi-em-rota').innerText = emRota; el('kpi-final').innerText = finalizadas; 
             const dadosFinalizados = dados.filter(v => v.status === 'finalizada'); 
+            
+            // --- FIX: META COUNTS ALL TRIPS (Active + Finalized) ---
+            const totalMeta = dados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; 
+            
             const totalKM = dadosFinalizados.reduce((acc, v) => acc + ((v.kmFim||0) - v.kmInicio), 0) || 0; 
-            const totalMeta = dadosFinalizados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; 
-            const dispTotal = totalKM - totalMeta; 
-            el('kpi-meta').innerText = Math.round(totalMeta).toLocaleString('pt-BR'); el('kpi-km').innerText = Math.round(totalKM).toLocaleString('pt-BR'); el('kpi-disp').innerText = (dispTotal > 0 ? '+' : '') + Math.round(dispTotal).toLocaleString('pt-BR'); el('kpi-disp').className = `text-lg font-bold ${dispTotal > 0 ? 'text-red-500' : 'text-emerald-500'}`; 
+            const totalMetaFinalizadas = dadosFinalizados.reduce((acc, v) => acc + (Number(v.metaKm)||0), 0) || 0; // Para calcular dispersão correta apenas do que finalizou
+            
+            // Dispersão é calculada apenas sobre as finalizadas para ser justa
+            const dispTotal = totalKM - totalMetaFinalizadas; 
+            
+            el('kpi-meta').innerText = Math.round(totalMeta).toLocaleString('pt-BR'); 
+            el('kpi-km').innerText = Math.round(totalKM).toLocaleString('pt-BR'); 
+            el('kpi-disp').innerText = (dispTotal > 0 ? '+' : '') + Math.round(dispTotal).toLocaleString('pt-BR'); 
+            el('kpi-disp').className = `text-lg font-bold ${dispTotal > 0 ? 'text-red-500' : 'text-emerald-500'}`; 
             
             const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }; 
             const progresso = total > 0 ? (finalizadas / total) * 100 : 0; el('gauge-text').innerText = progresso.toFixed(0) + "%"; 
@@ -652,12 +659,24 @@
                 const custoMeta = pr.frete + (meta * pr.km);
                 const custoReal = pr.frete + (kmT * pr.km);
                 
+                // SOURCE INDICATOR
+                const isApp = v.origem === 'APP';
+                const sourceBadge = isApp 
+                    ? `<span class="ml-2 text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 flex items-center gap-1"><i data-lucide="smartphone" class="w-3 h-3"></i>APP</span>`
+                    : `<span class="ml-2 text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i>WEB</span>`;
+
                 const card = document.createElement('div'); card.className = `coss-card ${stClass}`;
                 card.innerHTML = `
                     <div class="card-glow-top" style="background: ${isE?'#f59e0b':(v.status==='cancelada'?'#ef4444':'#10b981')};"></div>
                     <div class="card-content">
                         <div class="flex justify-between items-center mb-2">
-                            <div><span class="block font-bold text-zinc-800 dark:text-white text-lg tracking-tight">${v.placa}</span><span class="text-[10px] text-gray-400 font-bold uppercase">${v.perfilVeiculo}</span></div>
+                            <div class="flex items-center">
+                                <div>
+                                    <span class="block font-bold text-zinc-800 dark:text-white text-lg tracking-tight leading-tight">${v.placa}</span>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase">${v.perfilVeiculo}</span>
+                                </div>
+                                ${sourceBadge}
+                            </div>
                             <span class="status-badge ${stClass}">${isE?'EM ROTA':v.status}</span>
                         </div>
                         <div><h3 class="font-bold text-sm text-gray-700 dark:text-gray-200 truncate">${v.nome}</h3><p class="text-xs text-gray-500 dark:text-gray-400 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'Sem rota'}</p></div>
@@ -699,6 +718,8 @@
         window.verGps = (c) => { if(c) { el('iframe-gps').src = `https://maps.google.com/maps?q=${c}&z=15&output=embed`; el('popup-gps').classList.add('active'); } else alert("Sem GPS"); };
         window.getGPS = () => new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(`${p.coords.latitude},${p.coords.longitude}`), () => r(null)) : r(null));
         window.handleFileSelect = (inp, divId) => { const f = inp.files[0]; if(f) { try { const r = new FileReader(); r.onload = e => { const i = new Image(); i.src = e.target.result; i.onload = () => { const maxWidth = 600; const scale = maxWidth / i.width; const newWidth = maxWidth; const newHeight = i.height * scale; const c = document.createElement('canvas'); const ctx = c.getContext('2d'); c.width = newWidth; c.height = newHeight; ctx.drawImage(i, 0, 0, c.width, c.height); const b64 = c.toDataURL('image/jpeg', 0.5); if(divId.includes('ini')) fotoInicioBase64 = b64; else fotoFimBase64 = b64; el(divId).classList.add('has-file'); el(divId).querySelector('span').innerText = 'FOTO OK'; lucide.createIcons(); } }; r.readAsDataURL(f); } catch(err) { alert("Erro ao processar foto."); } } };
+        
+        // --- INICIAR VIAGEM (UPDATED SOURCE CHECK) ---
         window.iniciarViagem = async () => { 
             const n=el('motorista').value; const p=formatarPlaca(el('placa').value); const k=el('km-inicio').value; 
             if(!fotoInicioBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Por favor, tire a foto do painel para iniciar."); 
@@ -710,18 +731,23 @@
                 await garantirSenha(p); 
                 const s=await getDoc(doc(db,"previsoes",`${p}_${hj}`)); 
                 if(s.exists()) { const d = s.data(); ex = { rotaCidades: d.rota || "Rota não definida", perfilVeiculo: d.perfil || "PADRÃO", metaKm: d.meta || 0 }; } 
-                const r=await addDoc(collection(db,"viagens"),{ nome:n, placa:p, kmInicio:Number(k), ...ex, tipoServico:el('tipo-servico').value, status:'em_curso', dataInicio:serverTimestamp(), locInicio:gps, fotoInicio:fotoInicioBase64, rotaReal: [gps] }); 
+                
+                // --- DETECÇÃO FORÇADA DE APP ---
+                const isApp = (window.AndroidInterface || (window.AndroidInterface && window.AndroidInterface.startTracking)) ? true : false;
+                const origem = isApp ? 'APP' : 'WEB';
+                
+                const r=await addDoc(collection(db,"viagens"),{ nome:n, placa:p, kmInicio:Number(k), ...ex, tipoServico:el('tipo-servico').value, status:'em_curso', dataInicio:serverTimestamp(), locInicio:gps, fotoInicio:fotoInicioBase64, rotaReal: [gps], origem: origem }); 
                 localStorage.setItem('v_id',r.id); 
                 viagemAtualId=r.id; 
                 
-                // NOTIFICAÇÃO ANDROID
-                if(window.AndroidInterface && window.AndroidInterface.startTracking) {
+                if(isApp && window.AndroidInterface && window.AndroidInterface.startTracking) {
                     window.AndroidInterface.startTracking();
                 }
 
                 iniciarRastreamentoReal(r.id); monitorarViagemUnica(r.id); 
             }catch(e){ alert("Erro ao criar viagem: " + e.message); } el('main-loader').style.display='none'; 
         };
+
         window.encerrarViagem = async () => { 
             if(!fotoFimBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Por favor, tire a foto final do painel para encerrar."); 
             const k=el('km-fim').value; if(!k) return alert("KM?"); 
@@ -729,7 +755,6 @@
             const g=await getGPS(); const updateData = {kmFim:Number(k),status:'finalizada',dataFim:serverTimestamp(),locFim:g,fotoFim:fotoFimBase64}; 
             await updateDoc(doc(db,"viagens",viagemAtualId), updateData); 
             
-            // NOTIFICAÇÃO ANDROID
             if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
                 window.AndroidInterface.stopTracking();
             }
@@ -741,7 +766,6 @@
                 pararRastreamentoReal(); 
                 await updateDoc(doc(db,"viagens",viagemAtualId),{status:'cancelada',dataFim:serverTimestamp()}); 
                 
-                // NOTIFICAÇÃO ANDROID
                 if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
                     window.AndroidInterface.stopTracking();
                 }
