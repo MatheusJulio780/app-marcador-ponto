@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IcaphiDrive</title>
+    <title>IcaphiDrive V2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -486,12 +486,48 @@
             const ini = el('data-export-ini').value; const fim = el('data-export-fim').value;
             const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); });
             if(dados.length === 0) return alert("Nada para exportar");
-            const dadosExcel = dados.map(v => ({ 
-                "Placa": v.placa, "Motorista": v.nome, "Status": v.status, 
-                "Data": fmtData(safeDate(v.dataInicio)), "Inicio": fmtHora(safeDate(v.dataInicio)), "Fim": fmtHora(safeDate(v.dataFim)), 
-                "KM Ini": v.kmInicio, "KM Fim": v.kmFim, "Total KM": (v.kmFim||0)-v.kmInicio, "Meta": v.metaKm||0 
-            }));
-            const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatorio"); XLSX.writeFile(wb, `Relatorio_Geral.xlsx`);
+            
+            // MAPA DE COLUNAS CONFORME SOLICITADO
+            const dadosExcel = dados.map(v => {
+                const dIni = safeDate(v.dataInicio);
+                const dFim = safeDate(v.dataFim);
+                
+                // Calculo de horas
+                let totalHoras = "";
+                if(dIni && dFim) {
+                    const diffMs = dFim - dIni;
+                    const horas = Math.floor(diffMs / 3600000);
+                    const mins = Math.floor((diffMs % 3600000) / 60000);
+                    totalHoras = `${horas}:${mins.toString().padStart(2, '0')}`;
+                }
+
+                // Calculos de KM e Meta
+                const kmTotal = (v.kmFim || 0) - v.kmInicio;
+                const meta = v.metaKm || 0;
+                const dispersao = kmTotal - meta;
+
+                return { 
+                    "Placa": v.placa, 
+                    "Motorista": v.nome, 
+                    "Cidade": v.rotaCidades || "",
+                    "Status": v.status, 
+                    "Data inicio": fmtData(dIni), 
+                    "Hora Inicio": fmtHora(dIni), 
+                    "Data Fim": fmtData(dFim),
+                    "Hora Fim": fmtHora(dFim),
+                    "Total de hora de viagem": totalHoras,
+                    "KM Ini": v.kmInicio, 
+                    "KM Fim": v.kmFim, 
+                    "Total KM": kmTotal, 
+                    "Meta": meta,
+                    "Dispersão": dispersao
+                };
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(dadosExcel); 
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "Relatorio"); 
+            XLSX.writeFile(wb, `Relatorio_Geral.xlsx`);
             el('modal-exportar').classList.remove('active');
         }
 
@@ -865,11 +901,10 @@
         async function finalizarPeloAdmin() { const k = el('edit-km-fim').value; const f = el('edit-foto-fim-b64').value; if(!k || !f) return alert("Dados incompletos"); await db.collection("viagens").doc(el('edit-id').value).update({ kmFim: Number(k), fotoFim: f, status: 'finalizada', dataFim: firebase.firestore.FieldValue.serverTimestamp() }); el('modal-editar-admin').classList.remove('active'); alert("Finalizado"); }
         async function excluirViagemAdmin(id) { if(confirm("Apagar?")) await db.collection("viagens").doc(id).delete(); }
 
-        // MONITORAMENTO EM TEMPO REAL
-        db.collection("viagens").orderBy("dataInicio", "desc").limit(150).onSnapshot((snap) => {
+        // MONITORAMENTO EM TEMPO REAL (AGORA COM LIMITE 1000)
+        db.collection("viagens").orderBy("dataInicio", "desc").limit(1000).onSnapshot((snap) => {
             todasViagens = snap.docs.map(d => ({id: d.id, ...d.data()}));
             if(el('view-admin').style.display === 'flex') renderizarAdmin();
-            // ATUALIZA O MAPA AUTOMATICAMENTE SE ESTIVER ABERTO
             if(el('modal-mapa').classList.contains('active')) carregarMapa();
             
             el('main-loader').style.display='none';
