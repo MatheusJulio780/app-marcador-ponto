@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -28,271 +28,234 @@
     </script>
 
     <style>
-        :root { --bg-body: #f8fafc; --text-main: #334155; --card-bg: #ffffff; --border-color: #e2e8f0; }
+        :root { --bg-body: #f1f5f9; --text-main: #334155; --card-bg: #ffffff; --border-color: #e2e8f0; }
         .dark { --bg-body: #0f172a; --text-main: #cbd5e1; --card-bg: #1e293b; --border-color: #334155; }
         
         body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         
+        /* LAYOUT */
         #view-motorista { max-width: 480px; margin: 0 auto; min-height: 100vh; background: var(--bg-body); display: flex; flex-direction: column; border-x: 1px solid var(--border-color); }
         #view-admin { display: none; min-height: 100vh; background: var(--bg-body); }
         
-        .admin-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #0f172a; border-right: 1px solid #1e293b; z-index: 50; display: flex; flex-direction: column; transition: transform 0.3s ease; }
-        .admin-content { margin-left: 260px; padding: 2rem; width: calc(100% - 260px); }
+        .admin-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #0f172a; border-right: 1px solid #1e293b; z-index: 50; display: flex; flex-direction: column; }
+        .admin-content { margin-left: 260px; padding: 1.5rem; width: calc(100% - 260px); }
         
         @media (max-width: 1024px) { 
-            .admin-sidebar { transform: translateX(-100%); z-index: 10000; width: 85%; max-width: 300px; box-shadow: 10px 0 20px rgba(0,0,0,0.5); } 
-            .admin-sidebar.active { transform: translateX(0); }
+            .admin-sidebar { display: none; width: 100%; z-index: 9999; } 
+            .admin-sidebar.active { display: flex; }
             .admin-content { margin-left: 0; padding: 1rem; width: 100%; } 
         }
 
-        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 
         /* CARDS */
-        * { box-sizing: border-box; }
         .coss-card {
-            background: var(--card-bg); border-radius: 1.25rem; 
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); 
+            background: var(--card-bg); border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
             border: 1px solid var(--border-color); overflow: hidden; 
             position: relative; display: flex; flex-direction: column;
-            will-change: transform; transform: translateZ(0); 
         }
         
-        .card-glow-top { 
-            position: absolute; top: -40px; left: -40px; width: 120px; height: 120px; border-radius: 50%;
-            opacity: 0.4; filter: blur(25px); pointer-events: none; z-index: 0; background: var(--glow-color);
-            transform: translateZ(0);
-        }
-        .st-rota { --glow-color: #f59e0b; border-top: 1px solid rgba(245, 158, 11, 0.2); }
-        .st-fim { --glow-color: #10b981; border-top: 1px solid rgba(16, 185, 129, 0.2); }
-        .st-cancel { --glow-color: #ef4444; border-top: 1px solid rgba(239, 68, 68, 0.2); }
+        .st-rota { border-top: 4px solid #f59e0b; }
+        .st-fim { border-top: 4px solid #10b981; }
+        .st-cancel { border-top: 4px solid #ef4444; }
         
-        .card-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; padding: 1.25rem; gap: 0.75rem; }
-        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: var(--bg-body); border: 1px solid var(--border-color); }
+        .card-content { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
         
-        .card-actions-bar { background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
-        .dark .card-actions-bar { background: rgba(255,255,255,0.02); }
-        .action-btn { padding: 6px; border-radius: 6px; transition: 0.1s; color: #64748b; display: flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
-        .action-btn.sat { color: #8b5cf6; } .action-btn.sat:hover { background: rgba(139, 92, 246, 0.1); }
+        /* BADGES */
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; items-center: center; gap: 4px; }
+        .badge-servico { background: var(--bg-body); border: 1px solid var(--border-color); color: #64748b; }
+        .badge-app { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+        .badge-web { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+
+        .card-actions-bar { background: #f8fafc; border-top: 1px solid var(--border-color); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .dark .card-actions-bar { background: #1e293b; }
         
-        .timeline-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 8px; margin-top: 4px; }
-        .dark .timeline-row { background: rgba(255,255,255,0.02); color: #94a3b8; }
-        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 4px; }
-        .metric-pill { background: var(--bg-body); border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-        .metric-lbl { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; display: block; font-weight: 700; }
+        .action-btn { padding: 8px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: #64748b; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+        .action-btn:hover { background: #f8fafc; color: #0f172a; }
+
+        /* METRICS & FINANCE */
+        .timeline-box { background: var(--bg-body); padding: 8px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; }
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .metric-pill { background: var(--bg-body); border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; text-align: center; }
+        .metric-lbl { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
         .metric-val { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
-        
+        .finance-row { display: flex; justify-content: space-between; font-size: 0.75rem; padding-top: 8px; border-top: 1px solid var(--border-color); margin-top: 4px; }
+        .fin-item { display: flex; flex-direction: column; }
+        .fin-lbl { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .fin-val { font-weight: 700; color: #475569; }
+
+        /* GRID 2x2 FOTOS/GPS */
         .btn-grid-soft { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-        .btn-soft { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; font-size: 0.7rem; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-soft { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; font-size: 0.7rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
-        .info-viagem-box {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);
-            border-radius: 12px; padding: 12px; margin-top: -10px; margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .iv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
-        .iv-label { font-size: 0.6rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; display: block; }
-        .iv-val { font-size: 0.8rem; font-weight: 600; color: white; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .coss-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.5rem; color: var(--text-main); font-size: 0.9rem; }
-        .coss-btn { width: 100%; padding: 0.9rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: 0.1s; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-primary { background: #3b82f6; color: white; }
-
-        /* EXTRATO, MAPA, DASH */
-        .extrato-list { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
-        .extrato-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); position: relative; overflow: hidden; }
-        .extrato-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--st-color); }
-        .ex-header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 4px; }
-        .ex-date { font-weight: 700; font-size: 0.8rem; color: var(--text-main); }
-        .ex-status { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--st-color); background: rgba(0,0,0,0.03); padding: 2px 6px; border-radius: 4px; }
-        .ex-rota { grid-column: 1 / -1; font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ex-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-        .ex-m-box { background: var(--bg-body); padding: 4px; border-radius: 6px; text-align: center; }
-        .ex-lbl { font-size: 0.55rem; text-transform: uppercase; color: #94a3b8; display: block; }
-        .ex-val { font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
-        .ex-actions { display: flex; gap: 4px; align-items: flex-end; justify-content: flex-end; }
-        
-        .map-inputs-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; background: white; padding: 5px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; gap: 5px; }
-        .dark .map-inputs-container { background: #1e293b; }
-        .map-legend-container { position: absolute; top: 70px; bottom: 20px; width: 150px; background: rgba(255, 255, 255, 0.98); border-radius: 10px; padding: 8px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; gap: 4px; }
-        .dark .map-legend-container { background: rgba(15, 23, 42, 0.98); border-color: rgba(255,255,255,0.1); color: white; }
-        .legend-right { right: 15px; } .legend-left { left: 15px; }
-        .legend-item { padding: 5px; border-radius: 4px; font-size: 0.65rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-
-        .viewer-overlay { position: fixed; inset: 0; z-index: 9990; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; }
+        /* MODAIS - SOLID BG */
+        .viewer-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .viewer-overlay.active { opacity: 1; pointer-events: all; }
-        #popup-foto { z-index: 20000 !important; }
-        .file-upload { border: 2px dashed #cbd5e1; padding: 1.5rem; text-align: center; border-radius: 0.75rem; cursor: pointer; position: relative; }
-        .file-upload.has-file { border-color: #10b981; background: rgba(16,185,129,0.05); }
+        .modal-box { background: var(--card-bg); width: 95%; max-width: 450px; border-radius: 1rem; padding: 1.5rem; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-color); }
+        .modal-close-btn { position: absolute; top: 12px; right: 12px; background: #f1f5f9; color: #ef4444; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; border: 1px solid #e2e8f0; z-index: 50; }
+
+        /* DASHBOARD - CORREÇÃO DE LAYOUT 2x2 */
+        .dash-modal-body { background: var(--bg-body); width: 98%; height: 96%; max-height: 96vh; border-radius: 1rem; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .dash-header { padding: 8px 16px; border-bottom: 1px solid var(--border-color); background: var(--card-bg); flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .dash-content { padding: 10px; overflow: hidden; flex: 1; display: flex; flex-direction: column; gap: 8px; }
         
-        .dash-container { display: grid; grid-template-rows: auto 1fr; height: 100%; overflow: hidden; gap: 1rem; padding: 1rem; }
-        .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; flex-shrink: 0; }
+        .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; flex-shrink: 0; }
+        .fin-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; flex-shrink: 0; }
         
+        /* GRÁFICOS EM 2x2 */
         .charts-row { 
             display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            grid-template-rows: 1fr 1fr; 
-            gap: 1rem; 
-            overflow: hidden; 
+            grid-template-columns: 1fr 1fr; /* 2 COLUNAS */
+            grid-template-rows: 1fr 1fr;    /* 2 LINHAS */
+            gap: 10px; 
+            flex: 1; 
             min-height: 0; 
         }
-        .chart-card { 
-            background: var(--card-bg); 
-            border: 1px solid var(--border-color); 
-            border-radius: 1rem; 
-            padding: 0.75rem; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%; 
-            position: relative; 
-            overflow: hidden; 
+        
+        .kpi-card { background: var(--card-bg); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .kpi-lbl { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .kpi-val { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+        
+        .chart-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; height: 100%; overflow: hidden; position: relative; }
+        .chart-wrapper { flex: 1; position: relative; width: 100%; min-height: 0; }
+
+        @media (max-width: 1024px) { 
+            .dash-modal-body { overflow-y: auto; display: block; }
+            .kpi-row, .fin-row { grid-template-columns: 1fr 1fr; }
+            .charts-row { display: flex; flex-direction: column; height: auto; } 
+            .chart-card { height: 300px; flex-shrink: 0; }
         }
-        .chart-wrapper { 
-            flex: 1; 
-            position: relative; 
-            width: 100%; 
-            height: 100%; 
-            min-height: 150px; 
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        @media (max-width: 768px) { 
-            .kpi-row { grid-template-columns: 1fr 1fr; } 
-            .charts-row { grid-template-columns: 1fr; grid-template-rows: auto; overflow-y: auto; display: flex; flex-direction: column; } 
-            .chart-card { min-height: 250px; flex-shrink: 0; }
-        }
+
+        /* NOTIFICATIONS */
+        .bell-btn { position: relative; }
+        .bell-dot { position: absolute; top: 0; right: 0; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; border: 2px solid white; display: none; }
+        .bell-dot.active { display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* EXTRATO */
+        .extrato-list { display: flex; flex-direction: column; gap: 10px; padding: 10px; }
+        .extrato-item { background: var(--card-bg); border: 1px solid var(--border-color); border-left: 4px solid var(--st-color); border-radius: 12px; padding: 12px; }
+        .ex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+
+        /* INPUTS */
+        .coss-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border-color); padding: 0.8rem; border-radius: 0.75rem; color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .coss-btn { width: 100%; padding: 0.9rem; border-radius: 0.75rem; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .file-upload { border: 2px dashed #cbd5e1; padding: 1.5rem; text-align: center; border-radius: 1rem; cursor: pointer; }
+        .file-upload.has-file { border-color: #10b981; background: rgba(16,185,129,0.05); }
     </style>
 </head>
 <body id="body-root">
 
-    <div id="main-loader" class="fixed inset-0 z-[30000] bg-white dark:bg-zinc-950 flex flex-col items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div></div>
+    <div id="main-loader" class="fixed inset-0 z-[30000] bg-white dark:bg-zinc-950 flex flex-col items-center justify-center hidden"><div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div></div>
 
-    <div id="popup-foto" class="viewer-overlay" onclick="el('popup-foto').classList.remove('active')"><div class="relative max-w-[95%] max-h-[95%]"><button class="absolute -top-12 right-0 text-white" onclick="el('popup-foto').classList.remove('active')"><i data-lucide="x"></i></button><img id="img-viewer" class="rounded-xl shadow-2xl max-h-[85vh] object-contain bg-black/90"></div></div>
-    <div id="popup-gps" class="viewer-overlay" onclick="el('popup-gps').classList.remove('active')"><div class="w-[90%] h-[80%] bg-white dark:bg-zinc-900 rounded-xl overflow-hidden relative shadow-2xl"><button class="absolute top-2 right-2 z-10 bg-white dark:bg-zinc-800 p-2 rounded-full shadow" onclick="el('popup-gps').classList.remove('active')"><i data-lucide="x" class="text-red-500"></i></button><iframe id="iframe-gps" class="w-full h-full border-0"></iframe></div></div>
+    <audio id="audio-notif" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <div id="popup-foto" class="viewer-overlay" onclick="el('popup-foto').classList.remove('active')"><div class="relative max-w-[95%] max-h-[95%]"><button class="absolute -top-12 right-0 text-white bg-black/50 rounded-full p-2" onclick="el('popup-foto').classList.remove('active')"><i data-lucide="x"></i></button><img id="img-viewer" class="rounded-xl shadow-2xl max-h-[85vh] object-contain bg-black"></div></div>
+    <div id="popup-gps" class="viewer-overlay" onclick="el('popup-gps').classList.remove('active')"><div class="w-[90%] h-[80%] bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden relative shadow-2xl"><button class="modal-close-btn" onclick="el('popup-gps').classList.remove('active')"><i data-lucide="x"></i></button><iframe id="iframe-gps" class="w-full h-full border-0"></iframe></div></div>
 
     <div id="view-motorista">
-        <header class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-40 flex justify-between items-center bg-white/95">
-            <div class="flex items-center gap-2.5 font-bold text-lg text-zinc-800 dark:text-white">
-                <div class="bg-blue-600 text-white p-1.5 rounded-lg"><i data-lucide="box" class="w-5 h-5"></i></div>
-                <div>IcaphiDrive<span class="block text-[8px] font-normal text-gray-400">By: Matheus Julio</span></div>
+        <header class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-40 flex justify-between items-center">
+            <div class="flex items-center gap-3 font-bold text-lg text-zinc-800 dark:text-white">
+                <div class="bg-blue-600 text-white p-2 rounded-lg"><i data-lucide="box" class="w-5 h-5"></i></div>
+                <div>IcaphiDrive<span class="block text-[9px] font-medium text-gray-400">By: Matheus Julio</span></div>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleTheme()" class="p-2.5 bg-gray-100 dark:bg-zinc-800 rounded-lg text-gray-500"><i data-lucide="sun-moon" class="w-5 h-5"></i></button>
-                <button onclick="recuperarViagem()" class="p-2.5 bg-gray-100 dark:bg-zinc-800 rounded-lg text-orange-500"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
-                <button onclick="abrirLoginExtrato()" class="p-2.5 bg-gray-100 dark:bg-zinc-800 rounded-lg text-purple-500"><i data-lucide="file-text" class="w-5 h-5"></i></button>
-                <button onclick="acessoAdmin()" class="p-2.5 bg-gray-100 dark:bg-zinc-800 rounded-lg text-blue-600"><i data-lucide="shield" class="w-5 h-5"></i></button>
+                <button onclick="verNotificacoesDriver()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-gray-500 bell-btn" id="btn-bell-driver"><i data-lucide="bell" class="w-5 h-5"></i><div class="bell-dot" id="bell-dot-driver"></div></button>
+                <button onclick="toggleTheme()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-gray-500"><i data-lucide="sun-moon" class="w-5 h-5"></i></button>
+                <button onclick="recuperarViagem()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-orange-500"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+                <button onclick="abrirLoginExtrato()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-purple-500"><i data-lucide="file-text" class="w-5 h-5"></i></button>
+                <button onclick="acessoAdmin()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-blue-600"><i data-lucide="shield" class="w-5 h-5"></i></button>
             </div>
         </header>
 
-        <main id="tela-inicio" class="p-5 flex-1 flex flex-col justify-start pt-6">
-            <div class="coss-card p-6 shadow-xl">
-                <div class="card-glow-top" style="background: #3b82f6;"></div>
-                <div class="card-content">
-                    <h2 class="text-xl font-bold mb-2 dark:text-white">Nova Viagem</h2>
-                    <div class="space-y-4">
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Serviço</label><select id="tipo-servico" class="coss-input mt-1"><option>Saida Dia</option><option>Apoio</option><option>Segunda Viagem</option></select></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Condutor</label><input type="text" id="motorista" class="coss-input mt-1"></div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div><label class="text-xs font-bold text-gray-500 uppercase">Placa</label><input type="text" id="placa" class="coss-input mt-1 uppercase font-bold" placeholder="ABC1234"></div>
-                            <div><label class="text-xs font-bold text-gray-500 uppercase">KM</label><input type="number" id="km-inicio" class="coss-input mt-1"></div>
-                        </div>
-                        <div class="file-upload mt-2" id="div-foto-ini" onclick="el('foto-inicio').click()"><input type="file" id="foto-inicio" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(this, 'div-foto-ini')"><span class="text-xs font-bold text-gray-500">FOTO PAINEL (OBRIGATÓRIO)</span></div>
-                        <button onclick="iniciarViagem()" class="coss-btn btn-primary mt-2">INICIAR</button>
+        <main id="tela-inicio" class="p-5 flex-1 pt-6">
+            <div class="coss-card p-6 shadow-lg border-t-4 border-blue-500">
+                <h2 class="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><i data-lucide="play-circle" class="text-blue-500"></i> Nova Viagem</h2>
+                <div class="space-y-4">
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Serviço</label><select id="tipo-servico" class="coss-input mt-1" onchange="autoSave()"><option>Saida Dia</option><option>Apoio</option><option>Segunda Viagem</option></select></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Condutor</label><input type="text" id="motorista" class="coss-input mt-1" oninput="autoSave()"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Placa</label><input type="text" id="placa" class="coss-input mt-1 uppercase font-bold" placeholder="ABC1234" oninput="autoSave()"></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">KM</label><input type="number" id="km-inicio" class="coss-input mt-1" oninput="autoSave()"></div>
                     </div>
+                    <div class="file-upload mt-2" id="div-foto-ini" onclick="el('foto-inicio').click()"><input type="file" id="foto-inicio" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(this, 'div-foto-ini')"><div class="flex flex-col items-center gap-2"><i data-lucide="camera" class="w-6 h-6 text-gray-400"></i><span class="text-xs font-bold text-gray-500">FOTO PAINEL (OBRIGATÓRIO)</span></div></div>
+                    <button onclick="iniciarViagem()" class="coss-btn btn-primary mt-2 shadow-lg shadow-blue-500/30">INICIAR AGORA</button>
                 </div>
             </div>
         </main>
 
         <main id="tela-em-curso" class="hidden p-5 flex-1 flex flex-col">
-            <div class="coss-card p-0 shadow-2xl flex-1 border-none bg-slate-50 dark:bg-zinc-900">
-                <div class="bg-slate-900 text-white p-8 pb-4 text-center rounded-b-3xl shadow-lg relative z-10">
-                    <div class="flex justify-center mb-4"><div class="animate-pulse bg-green-500 w-3 h-3 rounded-full shadow-[0_0_10px_#22c55e]"></div></div>
-                    <div id="cronometro-motorista" class="text-6xl font-mono font-bold tracking-tighter">00:00</div>
-                    <p class="text-xs text-slate-400 mt-2 uppercase tracking-widest mb-4">Tempo Decorrido</p>
-                    <div id="info-viagem-corrente" class="info-viagem-box">
-                        <div class="text-xs text-white/50">Carregando dados...</div>
-                    </div>
-                    <button onclick="abrirObsMotorista()" class="absolute top-4 right-4 bg-white/10 p-2 rounded-lg hover:bg-white/20 transition"><i data-lucide="clipboard-edit" class="w-5 h-5 text-white"></i></button>
-                </div>
-                
-                <div class="p-6 flex flex-col gap-6 flex-1 justify-center">
-                    <div class="bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-700">
-                        <label class="text-xs font-bold text-slate-400 uppercase block mb-2 text-center">Informe KM Final</label>
-                        <input type="number" id="km-fim" class="w-full text-center text-5xl font-bold bg-transparent border-b-2 border-slate-200 dark:border-zinc-600 focus:border-blue-500 outline-none pb-2 text-slate-800 dark:text-white" placeholder="00000">
-                    </div>
+            <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-xl relative mb-6 text-center">
+                <div id="cronometro-motorista" class="text-6xl font-mono font-bold">00:00</div>
+                <p class="text-xs text-slate-400 mt-2 uppercase tracking-widest">Tempo Decorrido</p>
+                <div id="info-viagem-corrente" class="mt-4 bg-white/10 p-3 rounded-lg text-left text-xs"></div>
+                <button onclick="abrirObsMotorista()" class="absolute top-4 right-4 bg-white/10 p-2 rounded-lg"><i data-lucide="clipboard-edit" class="w-5 h-5 text-white"></i></button>
+            </div>
+            
+            <div class="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 mb-6">
+                <label class="text-xs font-bold text-slate-400 uppercase block mb-2 text-center">Informe KM Final</label>
+                <input type="number" id="km-fim" oninput="autoSaveFim()" class="w-full text-center text-5xl font-bold bg-transparent border-b-2 border-slate-200 dark:border-zinc-600 outline-none pb-2 text-slate-800 dark:text-white" placeholder="00000">
+            </div>
 
-                    <div class="file-upload" id="div-foto-fim" onclick="el('foto-fim').click()">
-                        <input type="file" id="foto-fim" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(this, 'div-foto-fim')">
-                        <div class="flex flex-col items-center gap-2">
-                            <i data-lucide="camera" class="w-8 h-8 text-slate-400"></i>
-                            <span class="text-xs font-bold text-slate-500">FOTO FINAL (OBRIGATÓRIO)</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="file-upload mb-6" id="div-foto-fim" onclick="el('foto-fim').click()">
+                <input type="file" id="foto-fim" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(this, 'div-foto-fim')">
+                <span class="text-xs font-bold text-gray-500">FOTO FINAL (OBRIGATÓRIO)</span>
+            </div>
 
-                <div class="p-5 grid grid-cols-4 gap-3">
-                    <button onclick="cancelarViagemMotorista()" class="col-span-1 coss-btn bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-600 p-4 rounded-xl"><i data-lucide="x"></i></button>
-                    <button onclick="encerrarViagem()" class="col-span-3 coss-btn btn-primary text-lg shadow-lg shadow-blue-500/30">FINALIZAR VIAGEM</button>
-                </div>
+            <div class="grid grid-cols-4 gap-3">
+                <button onclick="cancelarViagemMotorista()" class="col-span-1 coss-btn bg-slate-200 text-slate-600 hover:text-red-600"><i data-lucide="x"></i></button>
+                <button onclick="encerrarViagem()" class="col-span-3 coss-btn btn-primary text-lg">FINALIZAR VIAGEM</button>
             </div>
         </main>
 
         <main id="tela-sucesso" class="hidden p-6 flex-1 flex flex-col items-center justify-center text-center">
-            <div class="bg-emerald-50 dark:bg-emerald-900/20 p-8 rounded-full mb-6"><i data-lucide="check-circle" class="w-16 h-16 text-emerald-500"></i></div>
+            <div class="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-full mb-6"><i data-lucide="check-circle" class="w-16 h-16 text-emerald-500"></i></div>
             <h2 class="text-2xl font-bold dark:text-white mb-2">Sucesso!</h2>
             <button id="btn-zap-motorista" class="coss-btn bg-[#25D366] text-white w-full mb-3">WHATSAPP</button>
-            <button onclick="location.reload()" class="coss-btn bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 w-full">Voltar ao Início</button>
+            <button onclick="location.reload()" class="coss-btn bg-gray-100 dark:bg-zinc-800 text-gray-600 w-full">Voltar</button>
         </main>
     </div>
 
     <div id="view-admin">
         <aside class="admin-sidebar" id="sidebar-admin">
-            <button onclick="toggleSidebar()" class="absolute top-4 right-4 md:hidden text-gray-500 bg-white/10 p-2 rounded-lg"><i data-lucide="x"></i></button>
-            <div class="p-8 border-b border-gray-800">
+            <button onclick="toggleSidebar()" class="absolute top-4 right-4 md:hidden text-gray-400"><i data-lucide="x"></i></button>
+            <div class="p-6 border-b border-gray-800">
                 <h1 class="text-xl font-bold flex items-center gap-2 text-white"><i data-lucide="box" class="text-blue-500"></i> IcaphiDrive</h1>
-                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest pl-8">Admin</p>
-                <p class="text-[8px] text-gray-600 mt-1 pl-8">By: Matheus Julio</p>
+                <p class="text-[9px] text-gray-500 mt-1 uppercase tracking-widest pl-8">By: Matheus Julio</p>
             </div>
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <button onclick="filtrarStatus('todos'); toggleSidebar()" id="side-todos" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-400 text-sm font-medium transition"><i data-lucide="list" class="w-4 h-4"></i> Todas</button>
-                <button onclick="filtrarStatus('em_curso'); toggleSidebar()" id="side-rota" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-400 text-sm font-medium transition"><i data-lucide="truck" class="w-4 h-4"></i> Em Rota</button>
-                <button onclick="filtrarStatus('finalizada'); toggleSidebar()" id="side-fim" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-400 text-sm font-medium transition"><i data-lucide="check-circle" class="w-4 h-4"></i> Finalizadas</button>
+                <button onclick="filtrarStatus('todos'); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-300 text-sm font-medium"><i data-lucide="list" class="w-4 h-4"></i> Todas</button>
+                <button onclick="filtrarStatus('em_curso'); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-300 text-sm font-medium"><i data-lucide="truck" class="w-4 h-4"></i> Em Rota</button>
+                <button onclick="filtrarStatus('finalizada'); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-gray-300 text-sm font-medium"><i data-lucide="check-circle" class="w-4 h-4"></i> Finalizadas</button>
                 <div class="my-4 border-t border-gray-800"></div>
-                <button onclick="abrirModalDash(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-purple-400 text-sm font-medium transition"><i data-lucide="gauge" class="w-4 h-4"></i> Dashboard</button>
-                <button onclick="abrirModalMapa(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-amber-400 text-sm font-medium transition"><i data-lucide="map" class="w-4 h-4"></i> Mapa Frota</button>
-                <button onclick="abrirModalPrecos(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-emerald-400 text-sm font-medium transition"><i data-lucide="dollar-sign" class="w-4 h-4"></i> Preços</button>
-                <button onclick="abrirModalSenhas(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-orange-400 text-sm font-medium transition"><i data-lucide="key" class="w-4 h-4"></i> Senhas</button>
-                <button onclick="abrirModalImportacao(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-blue-400 text-sm font-medium transition"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Importar</button>
-                <button onclick="abrirModalExportacao(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-teal-400 text-sm font-medium transition"><i data-lucide="download" class="w-4 h-4"></i> Exportar</button>
+                <button onclick="abrirModalDash(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-purple-400 text-sm font-medium"><i data-lucide="gauge" class="w-4 h-4"></i> Dashboard</button>
+                <button onclick="abrirModalMapa(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-amber-400 text-sm font-medium"><i data-lucide="map" class="w-4 h-4"></i> Mapa Frota</button>
+                <button onclick="abrirModalPrecos(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-emerald-400 text-sm font-medium"><i data-lucide="dollar-sign" class="w-4 h-4"></i> Preços</button>
+                <button onclick="abrirModalSenhas(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-orange-400 text-sm font-medium"><i data-lucide="key" class="w-4 h-4"></i> Senhas</button>
+                <button onclick="abrirModalImportacao(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-blue-400 text-sm font-medium"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Importar</button>
+                <button onclick="abrirModalExportacao(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-teal-400 text-sm font-medium"><i data-lucide="download" class="w-4 h-4"></i> Exportar</button>
+                <button onclick="abrirModalNotificacoesAdmin(); toggleSidebar()" class="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-white/5 text-red-400 text-sm font-medium"><i data-lucide="bell" class="w-4 h-4"></i> Notificações</button>
             </nav>
-            <div class="p-6 border-t border-gray-800"><button onclick="sairAdmin()" class="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition w-full justify-center"><i data-lucide="log-out" class="w-3 h-3"></i> Sair</button></div>
+            <div class="p-6 border-t border-gray-800"><button onclick="sairAdmin()" class="flex items-center gap-2 text-xs text-gray-500 hover:text-white justify-center w-full"><i data-lucide="log-out" class="w-3 h-3"></i> Sair</button></div>
         </aside>
 
         <div class="admin-content">
-            <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800">
+            <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800">
                 <div class="flex items-center gap-4 w-full md:w-auto">
-                    <button onclick="toggleSidebar()" class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
-                        <i data-lucide="menu"></i>
-                    </button>
-                    
+                    <button onclick="toggleSidebar()" class="md:hidden p-2 text-gray-600 dark:text-gray-300 rounded-lg"><i data-lucide="menu"></i></button>
                     <h2 class="text-xl font-bold text-zinc-800 dark:text-white">Visão Geral</h2>
-                    <div class="flex items-center gap-2 bg-gray-50 dark:bg-zinc-800 p-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 hidden sm:flex">
-                        <input type="date" id="filtro-data-ini" onchange="renderizarAdmin()" class="bg-transparent border-none text-xs text-black dark:text-white font-bold w-28 outline-none">
-                        <span class="text-gray-400">|</span>
-                        <input type="date" id="filtro-data-fim" onchange="renderizarAdmin()" class="bg-transparent border-none text-xs text-black dark:text-white font-bold w-28 outline-none">
+                    <div class="flex gap-2">
+                        <input type="date" id="filtro-data-ini" onchange="renderizarAdmin()" class="bg-gray-50 dark:bg-zinc-800 border rounded-lg px-2 text-xs h-8">
+                        <input type="date" id="filtro-data-fim" onchange="renderizarAdmin()" class="bg-gray-50 dark:bg-zinc-800 border rounded-lg px-2 text-xs h-8">
                     </div>
                 </div>
                 <div class="flex items-center gap-4 w-full md:w-auto">
-                    <button onclick="toggleTheme()" class="p-2 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-100 transition"><i data-lucide="sun-moon" class="w-5 h-5 text-gray-500"></i></button>
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="busca-admin" oninput="renderizarAdmin()" placeholder="Buscar..." class="pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-full text-sm w-full md:w-64 outline-none dark:text-white focus:border-blue-500 transition">
-                    </div>
-                    <label class="flex items-center gap-2 cursor-pointer select-none">
-                        <input type="checkbox" id="toggle-view-mode" onchange="renderizarAdmin()" class="w-4 h-4 accent-blue-600 rounded">
-                        <span class="text-xs font-bold text-gray-500 uppercase">Editar</span>
+                    <button onclick="toggleTheme()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-gray-500 hover:text-blue-500"><i data-lucide="sun-moon" class="w-5 h-5"></i></button>
+                    <input type="text" id="busca-admin" oninput="renderizarAdmin()" placeholder="Buscar..." class="bg-gray-50 dark:bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm w-full md:w-60">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold uppercase text-gray-500">
+                        <input type="checkbox" id="toggle-view-mode" onchange="renderizarAdmin()" class="accent-blue-600"> Editar
                     </label>
                 </div>
             </header>
@@ -300,178 +263,154 @@
             <div id="lista-viagens" class="grid-cards pb-20"></div>
         </div>
     </div>
-    <div id="modal-importacao" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="upload-cloud" class="text-blue-500"></i> Importar Excel</h3><input type="date" id="data-importacao" class="coss-input mb-4"><div class="file-upload mb-4"><input type="file" id="file-import" onchange="processarImportacao(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"><span class="text-xs text-gray-500">Arraste ou clique (.xlsx)</span></div><button onclick="el('modal-importacao').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Cancelar</button></div></div>
-    <div id="modal-exportar" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="download" class="text-teal-500"></i> Exportar</h3><div class="grid grid-cols-2 gap-3 mb-4"><input type="date" id="data-export-ini" class="coss-input"><input type="date" id="data-export-fim" class="coss-input"></div><button onclick="confirmarExportacao()" class="coss-btn bg-teal-600 mb-2 text-white">BAIXAR</button><button onclick="el('modal-exportar').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Cancelar</button></div></div>
-    <div id="modal-senhas" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="key" class="text-orange-500"></i> Senhas</h3><select id="placa-senha-select" class="coss-input mb-3"></select><input type="text" id="senha-input-manual" class="coss-input mb-4 text-center font-bold text-lg"><button onclick="salvarSenhaPlaca()" class="coss-btn bg-orange-600 mb-2 text-white">Salvar</button><button onclick="el('modal-senhas').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm dark:text-white">Fechar</button></div></div>
-    <div id="modal-precos" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-6 rounded-2xl shadow-2xl h-[80vh] overflow-y-auto"><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="dollar-sign" class="text-emerald-500"></i> Preços</h3><div id="lista-precos" class="space-y-3"></div><button onclick="salvarPrecos()" class="coss-btn bg-emerald-600 mt-4 sticky bottom-0 text-white shadow-xl">Salvar</button><button onclick="el('modal-precos').classList.remove('active')" class="w-full mt-2 py-2 text-xs text-gray-400">Fechar</button></div></div>
-    <div id="modal-login-extrato" class="viewer-overlay"><div class="bg-white dark:bg-zinc-800 w-full max-w-sm p-8 rounded-2xl shadow-2xl"><h3 class="font-bold text-xl text-center mb-4 dark:text-white">Extrato</h3><input type="text" id="login-placa" class="coss-input mb-3 text-center uppercase font-bold" placeholder="PLACA"><input type="password" id="login-senha" class="coss-input mb-4 text-center tracking-widest" placeholder="SENHA"><button onclick="acessarExtrato()" class="coss-btn bg-purple-600 text-white">Entrar</button><button onclick="el('modal-login-extrato').classList.remove('active')" class="w-full mt-3 text-sm text-gray-500">Cancelar</button></div></div>
     
-    <div id="modal-view-extrato" class="viewer-overlay" style="z-index: 9995;">
-        <div class="bg-white dark:bg-zinc-900 w-full h-full max-w-4xl md:h-[90%] md:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-4 border-b border-gray-200 dark:border-zinc-800 flex flex-col gap-4 md:flex-row md:justify-between md:items-center bg-gray-50 dark:bg-zinc-800">
-                <h3 class="font-bold dark:text-white flex gap-2 text-sm"><i data-lucide="file-text" class="text-purple-500"></i> Extrato Detalhado</h3>
-                <div class="flex flex-wrap gap-2 justify-end">
-                    <input type="date" id="extrato-ini" class="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded px-2 text-xs py-1">
-                    <input type="date" id="extrato-fim" class="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded px-2 text-xs py-1">
-                    <button onclick="renderizarExtrato()" class="p-1 bg-blue-500 text-white rounded"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
-                    <button onclick="exportarExtratoPessoal()" class="p-1 bg-teal-500 text-white rounded"><i data-lucide="download" class="w-4 h-4"></i></button>
-                    <button onclick="el('modal-view-extrato').classList.remove('active')" class="p-1 text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="modal-importacao" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-importacao').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="upload-cloud" class="text-blue-500"></i> Importar Excel</h3><input type="date" id="data-importacao" class="coss-input mb-4"><div class="file-upload mb-4"><input type="file" id="file-import" onchange="processarImportacao(this)" class="hidden"><span class="text-xs text-gray-500 font-bold" onclick="el('file-import').click()">CLIQUE PARA SELECIONAR ARQUIVO (.xlsx)</span></div></div></div>
+    
+    <div id="modal-exportar" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-exportar').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="download" class="text-teal-500"></i> Exportar</h3><div class="grid grid-cols-2 gap-3 mb-4"><input type="date" id="data-export-ini" class="coss-input"><input type="date" id="data-export-fim" class="coss-input"></div><button onclick="confirmarExportacao()" class="coss-btn bg-teal-600 text-white">BAIXAR RELATÓRIO</button></div></div>
+    
+    <div id="modal-senhas" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-senhas').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="key" class="text-orange-500"></i> Gerenciar Senhas</h3><select id="placa-senha-select" class="coss-input mb-3"></select><input type="text" id="senha-input-manual" class="coss-input mb-4 text-center font-bold text-lg"><button onclick="salvarSenhaPlaca()" class="coss-btn bg-orange-600 text-white">SALVAR SENHA</button></div></div>
+    
+    <div id="modal-precos" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-precos').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="dollar-sign" class="text-emerald-500"></i> Tabela de Preços</h3><div id="lista-precos" class="space-y-3"></div><button onclick="salvarPrecos()" class="coss-btn bg-emerald-600 mt-4 text-white">SALVAR ALTERAÇÕES</button></div></div>
+    
+    <div id="modal-login-extrato" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-login-extrato').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold text-xl text-center mb-4 dark:text-white">Acesso Motorista</h3><input type="text" id="login-placa" class="coss-input mb-3 text-center uppercase font-bold" placeholder="PLACA DO VEÍCULO"><input type="password" id="login-senha" class="coss-input mb-4 text-center tracking-widest" placeholder="SENHA"><button onclick="acessarExtrato()" class="coss-btn bg-purple-600 text-white">ACESSAR EXTRATO</button></div></div>
+    
+    <div id="modal-dash" class="viewer-overlay">
+        <div class="dash-modal-body bg-white dark:bg-zinc-900">
+            <div class="dash-header">
+                <h3 class="font-bold text-lg dark:text-white flex gap-2"><i data-lucide="layout-dashboard" class="text-purple-500"></i> Dashboard</h3>
+                <div class="flex gap-2">
+                    <input type="date" id="filtro-dash-ini" onchange="carregarDash()" class="border rounded px-2 py-1 text-xs">
+                    <input type="date" id="filtro-dash-fim" onchange="carregarDash()" class="border rounded px-2 py-1 text-xs">
+                    <select id="filtro-dash-placa" onchange="carregarDash()" class="border rounded px-2 py-1 text-xs font-bold uppercase text-blue-600"><option value="">Toda a Frota</option></select>
+                    <button class="text-red-500 bg-red-50 px-3 rounded-lg" onclick="el('modal-dash').classList.remove('active')"><i data-lucide="x"></i></button>
                 </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-0 bg-white dark:bg-zinc-950">
-                <div id="conteudo-extrato" class="w-full p-2"></div>
+            <div class="dash-content bg-slate-50 dark:bg-zinc-950">
+                <div id="dash-kpi-container" class="kpi-row"></div>
+                <div id="dash-finance-container" class="fin-row"></div>
+                <div class="charts-row">
+                    <div class="chart-card"><h4 class="text-[10px] font-bold text-gray-400 mb-2 uppercase">Ranking (KM+)</h4><div class="chart-wrapper"><canvas id="chart-main"></canvas></div></div>
+                    <div class="chart-card"><h4 class="text-[10px] font-bold text-gray-400 mb-2 uppercase">Dispersão Diária</h4><div class="chart-wrapper"><canvas id="chart-secondary"></canvas></div></div>
+                    <div class="chart-card flex items-center justify-center relative"><h4 class="absolute top-2 left-2 text-[10px] font-bold text-gray-400 uppercase">Status Global</h4><div class="chart-wrapper" style="display: flex; justify-content:center;"><canvas id="chart-gauge"></canvas></div><div class="absolute bottom-4 text-2xl font-bold dark:text-white" id="gauge-text">0%</div></div>
+                    <div class="chart-card"><h4 class="text-[10px] font-bold text-gray-400 mb-2 uppercase">Perfil</h4><div class="chart-wrapper"><canvas id="chart-perfil"></canvas></div></div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div id="modal-dash" class="viewer-overlay">
-        <div class="bg-white dark:bg-zinc-900 w-[98%] h-[95%] rounded-2xl overflow-hidden flex flex-col shadow-2xl">
-            <div class="p-3 bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 flex flex-col md:flex-row justify-between items-center shrink-0 gap-2">
-                <h3 class="font-bold flex gap-2 text-zinc-800 dark:text-white text-sm ml-2">
-                    <i data-lucide="layout-dashboard" class="text-purple-500 w-5 h-5"></i> 
-                    Analytics & Financeiro
-                </h3>
-                
-                <div class="flex flex-wrap gap-2 items-center justify-center bg-white dark:bg-zinc-900 p-1 rounded-lg border border-gray-200 dark:border-zinc-700">
-                    <div class="flex items-center gap-1 border-r border-gray-200 dark:border-zinc-700 pr-2">
-                        <input type="date" id="filtro-dash-ini" onchange="carregarDash()" class="bg-transparent text-xs font-bold text-gray-600 dark:text-gray-300 outline-none border border-gray-300 dark:border-zinc-600 rounded px-2 py-1">
-                        <span class="text-gray-400 text-[10px]">ATÉ</span>
-                        <input type="date" id="filtro-dash-fim" onchange="carregarDash()" class="bg-transparent text-xs font-bold text-gray-600 dark:text-gray-300 outline-none border border-gray-300 dark:border-zinc-600 rounded px-2 py-1">
-                    </div>
-                    <select id="filtro-dash-placa" onchange="carregarDash()" class="bg-transparent text-xs font-bold uppercase text-blue-600 dark:text-blue-400 outline-none border border-blue-200 dark:border-blue-900 rounded px-2 py-1 w-32">
-                        <option value="">Toda a Frota</option>
-                    </select>
-                    <button onclick="el('modal-dash').classList.remove('active')" class="text-gray-400 hover:text-red-500 ml-2">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
+    <div id="modal-notificacoes-admin" class="viewer-overlay">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="el('modal-notificacoes-admin').classList.remove('active')"><i data-lucide="x"></i></button>
+            <h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="bell" class="text-red-500"></i> Gerenciar Avisos</h3>
+            <div class="mb-4 space-y-2">
+                <input type="text" id="notif-titulo" class="coss-input" placeholder="Título">
+                <textarea id="notif-corpo" class="coss-input h-20" placeholder="Mensagem..."></textarea>
+                <button onclick="publicarNotificacao()" class="coss-btn bg-red-500 text-white">PUBLICAR</button>
+            </div>
+            <div id="lista-notificacoes-admin" class="space-y-2 border-t pt-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="modal-notificacoes-driver" class="viewer-overlay">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="el('modal-notificacoes-driver').classList.remove('active')"><i data-lucide="x"></i></button>
+            <h3 class="font-bold mb-4 flex gap-2 dark:text-white"><i data-lucide="bell" class="text-red-500"></i> Avisos Importantes</h3>
+            <div id="lista-notificacoes-driver" class="space-y-3 max-h-[70vh] overflow-y-auto"></div>
+        </div>
+    </div>
+    
+    <div id="modal-view-extrato" class="viewer-overlay" style="z-index: 9995;">
+        <div class="bg-white dark:bg-zinc-900 w-full max-w-2xl h-[90%] rounded-2xl flex flex-col shadow-2xl relative border border-gray-200">
+            <button class="modal-close-btn" onclick="el('modal-view-extrato').classList.remove('active')"><i data-lucide="x"></i></button>
+            <div class="p-5 border-b flex justify-between items-center bg-gray-50 dark:bg-zinc-800 rounded-t-2xl">
+                <h3 class="font-bold dark:text-white flex gap-2"><i data-lucide="file-text" class="text-purple-500"></i> Extrato</h3>
+                <div class="flex gap-2 mr-8">
+                    <input type="date" id="extrato-ini" class="border rounded px-2 py-1 text-xs">
+                    <input type="date" id="extrato-fim" class="border rounded px-2 py-1 text-xs">
+                    <button onclick="renderizarExtrato()" class="p-1.5 bg-blue-100 text-blue-600 rounded-lg"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                    <button onclick="exportarExtratoPessoal()" class="p-1.5 bg-teal-100 text-teal-600 rounded-lg"><i data-lucide="download" class="w-4 h-4"></i></button>
                 </div>
             </div>
-
-            <div class="dash-container bg-gray-50 dark:bg-zinc-950 p-4 overflow-y-auto">
-                
-                <div id="dash-kpi-container" class="kpi-row mb-2"></div>
-
-                <div id="dash-finance-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4"></div>
-
-                <div class="charts-row h-full pb-10">
-                    <div class="chart-card">
-                        <h4 id="lbl-chart-1" class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Carregando...</h4>
-                        <div class="chart-wrapper mt-4"><canvas id="chart-main"></canvas></div>
-                    </div>
-                    <div class="chart-card">
-                        <h4 id="lbl-chart-2" class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Carregando...</h4>
-                        <div class="chart-wrapper mt-4"><canvas id="chart-secondary"></canvas></div>
-                    </div>
-                    <div class="chart-card flex flex-col items-center justify-center">
-                        <h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Progresso / Status</h4>
-                        <div class="chart-wrapper mt-4 w-full flex items-center justify-center relative">
-                            <canvas id="chart-gauge"></canvas>
-                            <div class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none pt-10">
-                                <span id="gauge-text" class="text-2xl font-bold dark:text-white">0%</span>
-                                <span class="text-[8px] text-gray-400 uppercase">Concluído</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chart-card">
-                        <h4 class="text-[10px] font-bold uppercase text-gray-400 absolute top-2 left-3">Perfil Veículo</h4>
-                        <div class="chart-wrapper mt-4"><canvas id="chart-perfil"></canvas></div>
-                    </div>
-                </div>
-            </div>
+            <div class="flex-1 overflow-y-auto p-4 bg-white dark:bg-zinc-950"><div id="conteudo-extrato" class="w-full"></div></div>
         </div>
     </div>
 
     <div id="modal-editar-admin" class="viewer-overlay">
-        <div class="bg-white dark:bg-zinc-800 w-full max-w-md p-6 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 class="font-bold mb-4 dark:text-white">Editar</h3>
-            <input type="hidden" id="edit-id">
-            <input type="hidden" id="edit-foto-ini-b64">
-            <input type="hidden" id="edit-foto-fim-b64">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="el('modal-editar-admin').classList.remove('active')"><i data-lucide="x"></i></button>
+            <h3 class="font-bold mb-4 dark:text-white">Editar Viagem</h3>
+            <input type="hidden" id="edit-id"><input type="hidden" id="edit-foto-ini-b64"><input type="hidden" id="edit-foto-fim-b64">
             <div class="space-y-4">
-                <div><label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Placa</label><input id="edit-placa" class="coss-input uppercase font-bold"></div>
-                <div><label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Motorista</label><input id="edit-motorista" class="coss-input"></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Meta KM</label><input id="edit-meta" type="number" class="coss-input"></div>
-                    <div><label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">KM Início</label><input id="edit-km-ini" type="number" class="coss-input"></div>
-                </div>
-                <div><label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">KM Final</label><input id="edit-km-fim" type="number" class="coss-input"></div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="file-upload h-16 p-0 flex items-center justify-center" id="area-edit-foto-ini" onclick="el('input-edit-foto-ini').click()"><input type="file" id="input-edit-foto-ini" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-ini-b64','area-edit-foto-ini')"><span class="text-[10px] text-gray-500">Foto Ini</span></div>
-                    <div class="file-upload h-16 p-0 flex items-center justify-center" id="area-edit-foto-fim" onclick="el('input-edit-foto-fim').click()"><input type="file" id="input-edit-foto-fim" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-fim-b64','area-edit-foto-fim')"><span class="text-[10px] text-gray-500">Foto Fim</span></div>
-                </div>
-                <button onclick="salvarEdicaoCompleta()" class="coss-btn bg-blue-600 text-white">Salvar</button>
-                <div id="area-finalizar-admin" class="hidden"><button onclick="finalizarPeloAdmin()" class="coss-btn bg-emerald-600 mt-2 text-white">Finalizar Manual</button></div>
-                <button onclick="el('modal-editar-admin').classList.remove('active')" class="w-full py-2 bg-gray-100 dark:bg-zinc-700 rounded-xl text-sm mt-2 dark:text-white">Cancelar</button>
+                <div><label class="text-[10px] font-bold text-gray-400 uppercase">Placa</label><input id="edit-placa" class="coss-input uppercase font-bold"></div>
+                <div><label class="text-[10px] font-bold text-gray-400 uppercase">Motorista</label><input id="edit-motorista" class="coss-input"></div>
+                <div class="grid grid-cols-2 gap-3"><div><label class="text-[10px] font-bold text-gray-400 uppercase">Meta KM</label><input id="edit-meta" type="number" class="coss-input"></div><div><label class="text-[10px] font-bold text-gray-400 uppercase">KM Início</label><input id="edit-km-ini" type="number" class="coss-input"></div></div>
+                <div><label class="text-[10px] font-bold text-gray-400 uppercase">KM Final</label><input id="edit-km-fim" type="number" class="coss-input"></div>
+                <div class="grid grid-cols-2 gap-2 mt-2"><div class="file-upload p-2 h-16 flex items-center justify-center" onclick="el('input-edit-foto-ini').click()"><input type="file" id="input-edit-foto-ini" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-ini-b64')"><span class="text-[10px]">Alterar Foto Ini</span></div><div class="file-upload p-2 h-16 flex items-center justify-center" onclick="el('input-edit-foto-fim').click()"><input type="file" id="input-edit-foto-fim" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-fim-b64')"><span class="text-[10px]">Alterar Foto Fim</span></div></div>
+                <button onclick="salvarEdicaoCompleta()" class="coss-btn bg-blue-600 text-white mt-4">SALVAR ALTERAÇÕES</button>
+                <div id="area-finalizar-admin" class="hidden"><button onclick="finalizarPeloAdmin()" class="coss-btn bg-emerald-600 mt-2 text-white">FINALIZAR MANUALMENTE</button></div>
             </div>
         </div>
     </div>
 
-    <div id="modal-obs-motorista" class="viewer-overlay"><div class="bg-white dark:bg-zinc-900 w-full max-w-sm p-6 rounded-2xl shadow-2xl"><div class="flex justify-between items-center mb-4"><h3 class="font-bold dark:text-white">Observações</h3><button onclick="el('modal-obs-motorista').classList.remove('active')" class="text-gray-500"><i data-lucide="x"></i></button></div><div class="space-y-3 mb-4"><input type="text" id="obs-assunto" class="coss-input" placeholder="Assunto"><textarea id="obs-texto" class="coss-input h-24 resize-none" placeholder="Descrição..."></textarea><button onclick="adicionarObs()" class="coss-btn bg-blue-600 text-white">ADICIONAR</button></div><div class="border-t pt-4 max-h-40 overflow-y-auto space-y-2" id="lista-obs-motorista"></div></div></div>
-    <div id="modal-obs-admin" class="viewer-overlay"><div class="bg-white dark:bg-zinc-900 w-full max-w-md p-6 rounded-2xl shadow-2xl"><div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold dark:text-white">Observações da Viagem</h3><button onclick="el('modal-obs-admin').classList.remove('active')" class="text-gray-500"><i data-lucide="x"></i></button></div><div id="lista-obs-admin" class="space-y-3 max-h-96 overflow-y-auto"></div></div></div>
+    <div id="modal-obs-motorista" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-obs-motorista').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold dark:text-white mb-4">Adicionar Observação</h3><input type="text" id="obs-assunto" class="coss-input mb-2" placeholder="Assunto"><textarea id="obs-texto" class="coss-input h-24 mb-4" placeholder="Descrição..."></textarea><button onclick="adicionarObs()" class="coss-btn bg-blue-600 text-white">Adicionar</button><div class="border-t mt-4 pt-2 max-h-40 overflow-y-auto space-y-2" id="lista-obs-motorista"></div></div></div>
+    <div id="modal-obs-admin" class="viewer-overlay"><div class="modal-box"><button class="modal-close-btn" onclick="el('modal-obs-admin').classList.remove('active')"><i data-lucide="x"></i></button><h3 class="font-bold dark:text-white mb-4">Histórico de Observações</h3><div id="lista-obs-admin" class="space-y-3 max-h-96 overflow-y-auto"></div></div></div>
 
     <div id="modal-rastreio" class="viewer-overlay">
         <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative border border-gray-200 dark:border-zinc-700 overflow-hidden shadow-2xl">
-            <button onclick="el('modal-rastreio').classList.remove('active'); pararRastreioAdmin();" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-xl text-red-500 shadow hover:bg-red-50"><i data-lucide="x"></i></button>
-            <div id="rastreio-header" class="absolute top-4 left-4 z-[1000] bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-4 py-2 rounded-xl shadow border border-gray-200 dark:border-zinc-700 flex flex-col gap-1">
-                <div>
-                    <h3 class="font-bold text-sm dark:text-white" id="rastreio-placa">Carregando...</h3>
-                    <p class="text-xs text-gray-500" id="rastreio-status">Aguardando sinal...</p>
-                </div>
-                <button onclick="atualizarRastreioIndividual()" class="mt-1 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-2 rounded flex items-center gap-1 justify-center transition">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> ATUALIZAR
-                </button>
+            <button onclick="el('modal-rastreio').classList.remove('active'); pararRastreioAdmin();" class="absolute top-4 right-4 z-[1000] bg-white p-2 rounded-lg text-red-500 shadow"><i data-lucide="x"></i></button>
+            <div class="absolute top-4 left-4 z-[1000] bg-white/95 px-4 py-3 rounded-xl shadow border">
+                <h3 class="font-bold text-sm" id="rastreio-placa">...</h3>
+                <p class="text-xs text-gray-500" id="rastreio-status">...</p>
+                <div class="flex gap-2 mt-2"><button onclick="atualizarRastreioIndividual()" class="bg-blue-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg">ATUALIZAR</button><button onclick="resetRastreioZoom()" class="bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg">SEGUIR</button></div>
             </div>
             <div id="mapa-rastreio" class="w-full h-full z-0"></div>
         </div>
     </div>
 
     <div id="modal-mapa" class="viewer-overlay">
-        <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative border border-gray-200 dark:border-zinc-700 overflow-hidden">
-            <div class="map-inputs-container">
-                <input type="date" id="filtro-mapa-ini" onchange="resetMapZoom()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
-                <input type="date" id="filtro-mapa-fim" onchange="resetMapZoom()" class="bg-transparent text-black dark:text-white text-xs outline-none border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
-                <button onclick="resetMapZoom()" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded transition flex items-center gap-1">
-                    <i data-lucide="focus" class="w-3 h-3"></i> RECENTRALIZAR
-                </button>
+        <div class="bg-white dark:bg-zinc-900 w-[95%] h-[90%] rounded-2xl flex flex-col relative overflow-hidden">
+            <button onclick="el('modal-mapa').classList.remove('active')" class="absolute top-4 right-4 z-[1000] bg-white p-2 rounded-lg text-red-500 shadow"><i data-lucide="x"></i></button>
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white p-2 rounded-xl shadow flex gap-2">
+                <input type="date" id="filtro-mapa-ini" onchange="resetMapZoom()" class="border rounded px-2 text-xs">
+                <input type="date" id="filtro-mapa-fim" onchange="resetMapZoom()" class="border rounded px-2 text-xs">
+                <button onclick="resetMapZoom()" class="bg-blue-500 text-white text-[10px] px-3 rounded font-bold">FILTRAR</button>
             </div>
-            <button onclick="el('modal-mapa').classList.remove('active')" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-xl text-red-500 shadow hover:bg-red-50"><i data-lucide="x"></i></button>
             <div id="mapa-container" class="w-full h-full relative z-0"></div>
-            <div id="map-legend-left" class="map-legend-container legend-left"></div>
-            <div id="map-legend-right" class="map-legend-container legend-right"></div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = { apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U", authDomain: "marcador-ponto-digital.firebaseapp.com", projectId: "marcador-ponto-digital", storageBucket: "marcador-ponto-digital.firebasestorage.app", messagingSenderId: "774324665760", appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // VARIAVEIS GLOBAIS
         function el(id) { return document.getElementById(id); }
         const precosPadrao = { "FIORINO": { km: 1.12, frete: 268 }, "VAN": { km: 1.28, frete: 407 }, "VUC": { km: 1.35, frete: 440 }, "LEVE 3/4": { km: 1.54, frete: 528 }, "LEVE 3/4 ESPECIAL": { km: 1.60, frete: 545 }, "TOCO": { km: 1.67, frete: 880 }, "TRUCK": { km: 1.87, frete: 1012 }, "PADRÃO": { km: 1.00, frete: 0 } };
         let tabelaPrecos = JSON.parse(localStorage.getItem('tabelaPrecos')) || precosPadrao;
-        let todasViagens = []; 
-        let viagemAtualId = localStorage.getItem('v_id'); 
-        let filtroAdminAtual = 'todos'; 
-        let fotoInicioBase64 = null; 
-        let fotoFimBase64 = null;
+        let todasViagens = []; let viagemAtualId = localStorage.getItem('v_id'); let filtroAdminAtual = 'todos'; 
+        let fotoInicioBase64 = null; let fotoFimBase64 = null;
         let mapaLeaflet = null; 
-        let mapaRastreio = null; 
-        let markerRastreio = null; 
-        let polylineRastreio = null; 
-        let unsubRastreio = null;
-        let currentRastreioId = null; 
-        let charts = {}; 
-        let dadosExtrato = []; 
-        let obsViagem = [];
-        let gpsWatchId = null; 
-        let ignorarSnapshot = false;
-        
-        // CONTROLE DE ZOOM DO MAPA (FIX PARA NÃO RESETAR)
-        let mapaFocado = false;
+        let mapaRastreio = null; let markerRastreio = null; let polylineRastreio = null; let markerIni = null; let markerFim = null; let unsubRastreio = null; let currentRastreioId = null; let rastreioFocado = false;
+        let charts = {}; let dadosExtrato = []; let obsViagem = []; let gpsWatchId = null; let ignorarSnapshot = false; let mapaFocado = false;
+        let listaNotificacoes = [];
 
-        // FUNÇÕES UTILITÁRIAS
+        function autoSave() { localStorage.setItem('temp_servico', el('tipo-servico').value); localStorage.setItem('temp_motorista', el('motorista').value); localStorage.setItem('temp_placa', el('placa').value); localStorage.setItem('temp_km_ini', el('km-inicio').value); }
+        function autoSaveFim() { localStorage.setItem('temp_km_fim', el('km-fim').value); }
+        window.addEventListener('load', () => {
+            if (!viagemAtualId) {
+                if(localStorage.getItem('temp_servico')) el('tipo-servico').value = localStorage.getItem('temp_servico');
+                if(localStorage.getItem('temp_motorista')) el('motorista').value = localStorage.getItem('temp_motorista');
+                if(localStorage.getItem('temp_placa')) el('placa').value = localStorage.getItem('temp_placa');
+                if(localStorage.getItem('temp_km_ini')) el('km-inicio').value = localStorage.getItem('temp_km_ini');
+                const savedImg = localStorage.getItem('temp_foto_ini_b64');
+                if(savedImg) { fotoInicioBase64 = savedImg; el('div-foto-ini').classList.add('has-file'); el('div-foto-ini').querySelector('div span').innerText = 'FOTO RESTAURADA'; }
+            } else {
+                 if(localStorage.getItem('temp_km_fim')) el('km-fim').value = localStorage.getItem('temp_km_fim');
+                 const savedImgFim = localStorage.getItem('temp_foto_fim_b64');
+                 if(savedImgFim) { fotoFimBase64 = savedImgFim; el('div-foto-fim').classList.add('has-file'); el('div-foto-fim').querySelector('span').innerText = 'FOTO RESTAURADA'; }
+            }
+        });
+
         function toggleSidebar() { el('sidebar-admin').classList.toggle('active'); }
         function formatarPlaca(p) { return p ? p.toUpperCase().replace(/[^A-Z0-9]/g, '').trim() : ''; }
         function safeDate(ts) { return ts ? new Date(ts.seconds * 1000) : null; }
@@ -481,244 +420,229 @@
         function gerarSenhaAleatoria() { return Math.floor(1000 + Math.random() * 9000).toString(); }
         function getDataLocal() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            const isDark = html.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            if(el('modal-dash').classList.contains('active')) carregarDash();
-            setTimeout(() => lucide.createIcons(), 100);
-        }
+        function toggleTheme() { const html = document.documentElement; html.classList.toggle('dark'); const isDark = html.classList.contains('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); if(el('modal-dash').classList.contains('active')) carregarDash(); setTimeout(() => lucide.createIcons(), 100); }
         if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
 
-        // FUNÇÕES DE ABERTURA DE MODAL (AGORA NO TOPO PARA EVITAR ERROS)
         function abrirModalImportacao() { el('modal-importacao').classList.add('active'); }
         function abrirModalExportacao() { el('modal-exportar').classList.add('active'); const h=new Date().toISOString().split('T')[0]; el('data-export-ini').value=h; el('data-export-fim').value=h; }
         function abrirModalPrecos() { el('modal-precos').classList.add('active'); renderizarPrecos(); }
         
-        function renderizarPrecos() {
-            const lista = el('lista-precos'); lista.innerHTML = '';
-            for (const [veiculo, vals] of Object.entries(tabelaPrecos)) {
-                lista.innerHTML += `
-                    <div class="p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700">
-                        <p class="font-bold text-xs mb-2 dark:text-white">${veiculo}</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-[9px] text-gray-500 uppercase">Valor KM</label><input type="number" step="0.01" value="${vals.km}" onchange="atualizarPreco('${veiculo}', 'km', this.value)" class="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-xs"></div>
-                            <div><label class="text-[9px] text-gray-500 uppercase">Valor Saída</label><input type="number" step="1" value="${vals.frete}" onchange="atualizarPreco('${veiculo}', 'frete', this.value)" class="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-xs"></div>
-                        </div>
-                    </div>`;
-            }
-        }
+        function renderizarPrecos() { const lista = el('lista-precos'); lista.innerHTML = ''; for (const [veiculo, vals] of Object.entries(tabelaPrecos)) { lista.innerHTML += `<div class="p-3 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700"><p class="font-bold text-xs mb-2 dark:text-white">${veiculo}</p><div class="grid grid-cols-2 gap-2"><div><label class="text-[9px] text-gray-500 uppercase">Valor KM</label><input type="number" step="0.01" value="${vals.km}" onchange="atualizarPreco('${veiculo}', 'km', this.value)" class="w-full bg-white dark:bg-zinc-800 border rounded px-2 py-1 text-xs"></div><div><label class="text-[9px] text-gray-500 uppercase">Valor Saída</label><input type="number" step="1" value="${vals.frete}" onchange="atualizarPreco('${veiculo}', 'frete', this.value)" class="w-full bg-white dark:bg-zinc-800 border rounded px-2 py-1 text-xs"></div></div></div>`; } }
         
+        // --- FUNÇÃO DE EXPORTAR ATUALIZADA (V51) ---
         function confirmarExportacao() {
-            const ini = el('data-export-ini').value; const fim = el('data-export-fim').value;
-            const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); });
-            if(dados.length === 0) return alert("Nada para exportar");
-            
-            // MAPA DE COLUNAS CONFORME SOLICITADO
-            const dadosExcel = dados.map(v => {
+            const ini = el('data-export-ini').value;
+            const fim = el('data-export-fim').value;
+            const filtrados = todasViagens.filter(v => {
+                const d = safeDate(v.dataInicio);
+                if (!d) return false;
+                const dStr = d.toISOString().split('T')[0];
+                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
+            });
+
+            if (filtrados.length === 0) return alert("Nada para exportar");
+
+            // CABEÇALHO NA ORDEM EXATA DO CSV
+            const header = [
+                "Placa", "Motorista", "Cidade", "Status", "Servico",
+                "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem",
+                "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA",
+                "", "KM REAL PIFPAF", "DISPERSÃO REAL"
+            ];
+
+            const dataRows = filtrados.map(v => {
                 const dIni = safeDate(v.dataInicio);
                 const dFim = safeDate(v.dataFim);
                 
-                // Calculo de horas
                 let totalHoras = "";
                 if(dIni && dFim) {
                     const diffMs = dFim - dIni;
-                    const horas = Math.floor(diffMs / 3600000);
-                    const mins = Math.floor((diffMs % 3600000) / 60000);
-                    totalHoras = `${horas}:${mins.toString().padStart(2, '0')}`;
+                    const h = Math.floor(diffMs / 3600000);
+                    const m = Math.floor((diffMs % 3600000) / 60000);
+                    totalHoras = `${h}:${m.toString().padStart(2, '0')}`;
                 }
 
-                // Calculos de KM e Meta
-                const kmTotal = (v.kmFim || 0) - v.kmInicio;
+                const kmIni = v.kmInicio || 0;
+                const kmFim = v.kmFim || 0;
+                const totalKm = kmFim - kmIni;
                 const meta = v.metaKm || 0;
-                const dispersao = kmTotal - meta;
+                const dispEscala = totalKm - meta;
+                
+                // NOVOS CÁLCULOS
+                // KM REAL PIFPAF = Meta + 11.11%
+                const kmRealPifPaf = meta * 1.1111; 
+                const dispReal = totalKm - kmRealPifPaf;
 
-                return { 
-                    "Placa": v.placa, 
-                    "Motorista": v.nome, 
-                    "Cidade": v.rotaCidades || "",
-                    "Status": v.status, 
-                    "Data inicio": fmtData(dIni), 
-                    "Hora Inicio": fmtHora(dIni), 
-                    "Data Fim": fmtData(dFim),
-                    "Hora Fim": fmtHora(dFim),
-                    "Total de hora de viagem": totalHoras,
-                    "KM Ini": v.kmInicio, 
-                    "KM Fim": v.kmFim, 
-                    "Total KM": kmTotal, 
-                    "Meta": meta,
-                    "Dispersão": dispersao
-                };
+                return [
+                    v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D",
+                    fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras,
+                    kmIni, kmFim, totalKm, meta, dispEscala,
+                    "", // Coluna Vazia
+                    parseFloat(kmRealPifPaf.toFixed(2)),
+                    parseFloat(dispReal.toFixed(2))
+                ];
             });
-            
-            const ws = XLSX.utils.json_to_sheet(dadosExcel); 
-            const wb = XLSX.utils.book_new(); 
-            XLSX.utils.book_append_sheet(wb, ws, "Relatorio"); 
-            XLSX.writeFile(wb, `Relatorio_Geral.xlsx`);
+
+            const ws_data = [header, ...dataRows];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // ESTILIZAÇÃO E FORMATAÇÃO CONDICIONAL
+            ws['!cols'] = [{wch:10}, {wch:20}, {wch:20}, {wch:10}, {wch:15}, {wch:12}, {wch:10}, {wch:12}, {wch:10}, {wch:15}, {wch:10}, {wch:10}, {wch:10}, {wch:10}, {wch:15}, {wch:5}, {wch:15}, {wch:15}];
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_ref = XLSX.utils.encode_cell({c: C, r: R});
+                    if (!ws[cell_ref]) continue;
+
+                    // Estilo Cabeçalho (Azul Padrão)
+                    if (R === 0) {
+                        ws[cell_ref].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            fill: { fgColor: { rgb: "4472C4" } },
+                            alignment: { horizontal: "center", vertical: "center" }
+                        };
+                    } else {
+                        // Estilo Dados (Centralizado)
+                        if(!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } };
+
+                        // CONDICIONAL: Coluna 17 (DISPERSÃO REAL) > 50 -> AMARELO
+                        if (C === 17) {
+                            const val = ws[cell_ref].v;
+                            if (typeof val === 'number' && val > 50) {
+                                ws[cell_ref].s = {
+                                    fill: { fgColor: { rgb: "FFFF00" } }, // Amarelo
+                                    font: { bold: true, color: { rgb: "000000" } },
+                                    alignment: { horizontal: "center" }
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+            const nomeArquivo = `Relatorio_Geral_${ini || 'inicio'}_a_${fim || 'fim'}.xlsx`;
+            XLSX.writeFile(wb, nomeArquivo);
             el('modal-exportar').classList.remove('active');
         }
 
-        setInterval(() => {
-            document.querySelectorAll('.realtime-timer').forEach(el => {
-                const startTs = parseInt(el.dataset.start);
-                if(startTs) el.innerText = new Date(new Date() - new Date(startTs)).toISOString().substr(11, 8);
+        setInterval(() => { document.querySelectorAll('.realtime-timer').forEach(el => { const startTs = parseInt(el.dataset.start); if(startTs) el.innerText = new Date(new Date() - new Date(startTs)).toISOString().substr(11, 8); }); const driverTimer = el('cronometro-motorista'); if(driverTimer && driverTimer.dataset.start) { const startTs = parseInt(driverTimer.dataset.start); if(startTs) driverTimer.innerText = new Date(new Date() - new Date(startTs)).toISOString().substr(11, 8); } }, 1000);
+
+        function iniciarRastreamentoReal(idViagem) { if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = navigator.geolocation.watchPosition(async (pos) => { try { const timestamp = Date.now(); const coords = `${pos.coords.latitude},${pos.coords.longitude},${timestamp}`; await db.collection("viagens").doc(idViagem).update({ locAtual: coords, rotaReal: firebase.firestore.FieldValue.arrayUnion(coords) }); } catch(e) { console.error("Erro GPS JS:", e); } }, (err) => { console.warn("Erro GPS:", err); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }); }
+        function pararRastreamentoReal() { if(gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; } }
+
+        function filtrarRotaGps(rotaRaw) {
+            if (!rotaRaw || rotaRaw.length < 2) return [];
+            const rotaLimpa = []; let ultimoPonto = null;
+            const getDist = (lat1, lon1, lat2, lon2) => { const R = 6371; const dLat = (lat2-lat1) * Math.PI/180; const dLon = (lon2-lon1) * Math.PI/180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); };
+            rotaRaw.forEach((coordStr) => {
+                const parts = coordStr.split(','); const lat = parseFloat(parts[0]); const lng = parseFloat(parts[1]); const ts = parts[2] ? parseInt(parts[2]) : null;
+                if (!ultimoPonto) { ultimoPonto = { lat, lng, ts }; rotaLimpa.push(ultimoPonto); } 
+                else { const dist = getDist(ultimoPonto.lat, ultimoPonto.lng, lat, lng); const timeDiff = (ts && ultimoPonto.ts) ? (ts - ultimoPonto.ts) : 0; if (dist > 0.025 || timeDiff > 300000) { ultimoPonto = { lat, lng, ts }; rotaLimpa.push(ultimoPonto); } }
             });
-            const driverTimer = el('cronometro-motorista');
-            if(driverTimer && driverTimer.dataset.start) {
-                const startTs = parseInt(driverTimer.dataset.start);
-                if(startTs) driverTimer.innerText = new Date(new Date() - new Date(startTs)).toISOString().substr(11, 8);
-            }
-        }, 1000);
-
-        function iniciarRastreamentoReal(idViagem) {
-            if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
-            gpsWatchId = navigator.geolocation.watchPosition(async (pos) => {
-                try {
-                    const coords = `${pos.coords.latitude},${pos.coords.longitude}`;
-                    await db.collection("viagens").doc(idViagem).update({
-                        locAtual: coords,
-                        rotaReal: firebase.firestore.FieldValue.arrayUnion(coords)
-                    });
-                } catch(e) { console.error("Erro GPS JS:", e); }
-            }, (err) => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+            return rotaLimpa;
         }
 
-        function pararRastreamentoReal() {
-            if(gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
-        }
-
+        function resetRastreioZoom() { rastreioFocado = false; if(polylineRastreio) mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding:[50,50]}); }
         function abrirRastreioAdmin(idViagem) {
-            currentRastreioId = idViagem;
-            const v = todasViagens.find(x => x.id === idViagem);
-            if(!v) return;
-            el('modal-rastreio').classList.add('active');
-            el('rastreio-placa').innerText = v.placa + " - " + v.nome;
-            el('rastreio-status').innerText = v.status === 'em_curso' ? 'AO VIVO - Rastreando...' : 'VIAGEM FINALIZADA';
+            currentRastreioId = idViagem; const v = todasViagens.find(x => x.id === idViagem); if(!v) return;
+            el('modal-rastreio').classList.add('active'); el('rastreio-placa').innerText = v.placa + " - " + v.nome; el('rastreio-status').innerText = v.status === 'em_curso' ? 'AO VIVO' : 'FINALIZADA';
             
-            if(!mapaRastreio) {
-                mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaRastreio);
+            if(!mapaRastreio) { 
+                mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12); 
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaRastreio); 
+                mapaRastreio.on('movestart', () => { rastreioFocado = true; }); 
+                mapaRastreio.on('zoomstart', () => { rastreioFocado = true; }); 
             }
-            mapaRastreio.eachLayer((layer) => {
-                if(layer instanceof L.Marker || layer instanceof L.Polyline) mapaRastreio.removeLayer(layer);
-            });
+            rastreioFocado = false; 
+            mapaRastreio.eachLayer((layer) => { if(layer instanceof L.Marker || layer instanceof L.Polyline) mapaRastreio.removeLayer(layer); }); 
             setTimeout(() => mapaRastreio.invalidateSize(), 300);
 
+            const desenharRota = (rotaCrua) => {
+                if(polylineRastreio) mapaRastreio.removeLayer(polylineRastreio); if(markerRastreio) mapaRastreio.removeLayer(markerRastreio); if(markerIni) mapaRastreio.removeLayer(markerIni); if(markerFim) mapaRastreio.removeLayer(markerFim);
+                const pontosFiltrados = filtrarRotaGps(rotaCrua); const latlngs = pontosFiltrados.map(p => [p.lat, p.lng]);
+                if (latlngs.length > 0) {
+                    polylineRastreio = L.polyline(latlngs, {color: '#10b981', weight: 4}).addTo(mapaRastreio);
+                    if (!rastreioFocado) mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding: [50,50]});
+                    if(v.status === 'finalizada') {
+                        const pIni = latlngs[0]; const pFim = latlngs[latlngs.length - 1];
+                        markerIni = L.marker(pIni, {icon: L.divIcon({className:'custom', html:'<div style="background:#2563eb;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">I</div>'})}).addTo(mapaRastreio);
+                        markerFim = L.marker(pFim, {icon: L.divIcon({className:'custom', html:'<div style="background:#dc2626;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">F</div>'})}).addTo(mapaRastreio);
+                    }
+                }
+            };
             if (v.status === 'em_curso') {
                 unsubRastreio = db.collection("viagens").doc(idViagem).onSnapshot((docSnap) => {
-                    if(docSnap.exists) {
-                        const data = docSnap.data();
-                        if (data.rotaReal && data.rotaReal.length > 0) {
-                             if(polylineRastreio) mapaRastreio.removeLayer(polylineRastreio);
-                             const latlngs = data.rotaReal.map(c => c.split(',').map(Number));
-                             polylineRastreio = L.polyline(latlngs, {color: '#3b82f6', weight: 4}).addTo(mapaRastreio);
-                             mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding: [50,50]});
-                        }
-                        if(data.locAtual) {
-                            const [lat, lng] = data.locAtual.split(',').map(Number);
-                            if(markerRastreio) mapaRastreio.removeLayer(markerRastreio);
-                            const iconCar = L.divIcon({className:'custom', html:`<div style="background:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #3b82f6;"></div>`});
-                            markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio);
-                        }
-                    }
+                    if(docSnap.exists) { const data = docSnap.data(); if (data.rotaReal && data.rotaReal.length > 0) desenharRota(data.rotaReal); if(data.locAtual) { const parts = data.locAtual.split(','); const lat = parseFloat(parts[0]); const lng = parseFloat(parts[1]); if(markerRastreio) mapaRastreio.removeLayer(markerRastreio); const iconCar = L.divIcon({className:'custom', html:`<div style="background:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #3b82f6;"></div>`}); markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio); } }
                 });
-            } else {
-                if(v.rotaReal && v.rotaReal.length > 1) {
-                    const latlngs = v.rotaReal.map(c => c.split(',').map(Number));
-                    polylineRastreio = L.polyline(latlngs, {color: '#10b981', weight: 4}).addTo(mapaRastreio);
-                    mapaRastreio.fitBounds(polylineRastreio.getBounds());
-                    L.marker(latlngs[0]).addTo(mapaRastreio).bindPopup("Início");
-                    L.marker(latlngs[latlngs.length-1]).addTo(mapaRastreio).bindPopup("Fim");
-                } else if(v.locInicio && v.locFim) {
-                    const [lat1, lng1] = v.locInicio.split(',').map(Number);
-                    const [lat2, lng2] = v.locFim.split(',').map(Number);
-                    polylineRastreio = L.polyline([[lat1,lng1], [lat2,lng2]], {color: 'gray', dashArray: '5, 10'}).addTo(mapaRastreio);
-                    mapaRastreio.fitBounds(polylineRastreio.getBounds());
-                } else {
-                    alert("Sem dados de rota para esta viagem.");
-                }
-            }
+            } else { if(v.rotaReal && v.rotaReal.length > 1) { desenharRota(v.rotaReal); } else if(v.locInicio && v.locFim) { const [lat1, lng1] = v.locInicio.split(',').map(Number); const [lat2, lng2] = v.locFim.split(',').map(Number); polylineRastreio = L.polyline([[lat1,lng1], [lat2,lng2]], {color: 'gray', dashArray: '5, 10'}).addTo(mapaRastreio); mapaRastreio.fitBounds(polylineRastreio.getBounds()); } }
         }
-
         function atualizarRastreioIndividual() { if(currentRastreioId) { abrirRastreioAdmin(currentRastreioId); } }
-        function pararRastreioAdmin() { if(unsubRastreio) { unsubRastreio(); unsubRastreio = null; } markerRastreio = null; polylineRastreio = null; currentRastreioId = null; }
+        function pararRastreioAdmin() { if(unsubRastreio) { unsubRastreio(); unsubRastreio = null; } markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null; currentRastreioId = null; }
         
-        function abrirModalMapa() { 
-            el('modal-mapa').classList.add('active'); 
-            const h=new Date().toISOString().split('T')[0]; 
-            if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } 
-            
-            // Se o mapa não existe, cria. Se existe, invalida tamanho
-            if(!mapaLeaflet) { 
-                mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); 
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet);
-                
-                // DETECTA SE O USUÁRIO MEXEU NO MAPA PARA PARAR O AUTO-ZOOM
-                mapaLeaflet.on('movestart', () => { mapaFocado = true; });
-                mapaLeaflet.on('zoomstart', () => { mapaFocado = true; });
-            } 
-            
-            mapaFocado = false; // Reseta o foco ao abrir
-            setTimeout(()=> { mapaLeaflet.invalidateSize(); carregarMapa(); }, 300); 
-        }
-
-        function resetMapZoom() {
-            mapaFocado = false;
-            carregarMapa();
-        }
-
+        function abrirModalMapa() { el('modal-mapa').classList.add('active'); const h=new Date().toISOString().split('T')[0]; if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } if(!mapaLeaflet) { mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet); mapaLeaflet.on('movestart', () => { mapaFocado = true; }); mapaLeaflet.on('zoomstart', () => { mapaFocado = true; }); } mapaFocado = false; setTimeout(()=> { mapaLeaflet.invalidateSize(); carregarMapa(); }, 300); }
+        function resetMapZoom() { mapaFocado = false; carregarMapa(); }
         function carregarMapa() { 
-            if(!mapaLeaflet) return;
-
-            // Remove marcadores antigos (limpeza bruta para evitar duplicatas visuais)
-            mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
-
-            const ini=el('filtro-mapa-ini').value, fim=el('filtro-mapa-fim').value; 
-            const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); }); 
+            if(!mapaLeaflet) return; mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
+            const ini=el('filtro-mapa-ini').value, fim=el('filtro-mapa-fim').value; const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d>=ini) && (!fim || d<=fim); }); 
             const bounds = []; 
-            const placas = []; 
-            
             dados.forEach(v => {
-                let lat = null, lng = null, tipo = null;
-                if (v.status === 'em_curso') { 
-                    const loc = v.locAtual || v.locInicio;
-                    if(loc) { [lat, lng] = loc.split(',').map(Number); tipo = 'vivo'; }
-                } else if (v.status === 'finalizada' && v.locFim) { 
-                    [lat, lng] = v.locFim.split(',').map(Number); tipo = 'fim'; 
-                }
-
-                if (lat && lng) {
-                    const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981';
-                    const zIndex = tipo === 'vivo' ? 1000 : 1;
-                    const pulse = tipo === 'vivo' ? 'box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);' : '';
-                    const icon = L.divIcon({ className: 'custom-pin', html: `<div style="background:${cor};width:12px;height:12px;border-radius:50%;border:2px solid white;${pulse}"></div>` });
-                    const mk = L.marker([lat, lng], {icon, zIndexOffset: zIndex}).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🟠 EM ROTA' : '🟢 FINALIZADO'}`);
-                    bounds.push([lat, lng]);
-                    placas.push({ placa: v.placa, status: v.status, lat: lat, lng: lng, marker: mk });
-                }
+                let lat = null, lng = null, tipo = null; if (v.status === 'em_curso') { const loc = v.locAtual || v.locInicio; if(loc) { const p = loc.split(','); lat=Number(p[0]); lng=Number(p[1]); tipo = 'vivo'; } } else if (v.status === 'finalizada' && v.locFim) { const p = v.locFim.split(','); lat=Number(p[0]); lng=Number(p[1]); tipo = 'fim'; }
+                if (lat && lng) { const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981'; const icon = L.divIcon({ className: 'custom-pin', html: `<div style="background:${cor};width:12px;height:12px;border-radius:50%;border:2px solid white;${tipo==='vivo'?'box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);':''}"></div>` }); const mk = L.marker([lat, lng], {icon, zIndexOffset: tipo==='vivo'?1000:1}).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🟠 EM ROTA' : '🟢 FINALIZADO'}`); bounds.push([lat, lng]); }
             });
-            
-            // SÓ AJUSTA O ZOOM SE O USUÁRIO NÃO TIVER MEXIDO (mapaFocado === false)
-            if(bounds.length && !mapaFocado) {
-                mapaLeaflet.fitBounds(bounds, {padding:[50,50], maxZoom:14});
-            }
-
-            // LEGENDA
-            const legRight = el('map-legend-right'); legRight.innerHTML = '';
-            placas.sort((a,b) => (a.status === 'em_curso' ? -1 : 1)).slice(0, 50).forEach(p => { 
-                const item = document.createElement('div'); item.className = 'legend-item'; 
-                const cor = p.status === 'em_curso' ? 'bg-orange-500' : 'bg-emerald-500'; 
-                item.innerHTML = `<div><span class="status-dot ${cor}"></span><span class="font-bold text-[10px]">${p.placa}</span></div>`; 
-                item.onclick = () => { 
-                    mapaFocado = true; // Ao clicar num carro especifico, trava o zoom nele
-                    mapaLeaflet.setView([p.lat, p.lng], 15); 
-                    p.marker.openPopup(); 
-                }; 
-                legRight.appendChild(item); 
-            }); 
-            el('map-legend-left').style.display = 'none'; 
+            if(bounds.length && !mapaFocado) mapaLeaflet.fitBounds(bounds, {padding:[50,50], maxZoom:14});
         }
+
+        // --- SISTEMA DE NOTIFICAÇÕES ---
+        function abrirModalNotificacoesAdmin() { el('modal-notificacoes-admin').classList.add('active'); renderizarNotificacoesAdmin(); }
+        function verNotificacoesDriver() { el('modal-notificacoes-driver').classList.add('active'); renderizarNotificacoesDriver(); }
+        
+        async function publicarNotificacao() {
+            const t = el('notif-titulo').value; const c = el('notif-corpo').value;
+            if(!t || !c) return alert("Preencha título e mensagem");
+            await db.collection("notificacoes").add({ titulo: t, corpo: c, data: firebase.firestore.FieldValue.serverTimestamp() });
+            el('notif-titulo').value = ''; el('notif-corpo').value = ''; renderizarNotificacoesAdmin();
+        }
+
+        async function excluirNotificacao(id) {
+            if(confirm("Excluir este aviso?")) await db.collection("notificacoes").doc(id).delete();
+        }
+
+        function renderizarNotificacoesAdmin() {
+            const l = el('lista-notificacoes-admin'); l.innerHTML = '';
+            listaNotificacoes.forEach(n => {
+                l.innerHTML += `<div class="bg-gray-100 p-2 rounded flex justify-between items-center text-xs"><div><b>${n.titulo}</b><p>${n.corpo}</p></div><button onclick="excluirNotificacao('${n.id}')" class="text-red-500"><i data-lucide="trash"></i></button></div>`;
+            });
+            lucide.createIcons();
+        }
+
+        function renderizarNotificacoesDriver() {
+            const l = el('lista-notificacoes-driver'); l.innerHTML = '';
+            localStorage.setItem('last_read_notif', listaNotificacoes.length > 0 ? listaNotificacoes[0].id : '');
+            el('bell-dot-driver').classList.remove('active');
+            
+            if(listaNotificacoes.length === 0) { l.innerHTML = '<p class="text-center text-gray-400">Nenhum aviso.</p>'; return; }
+            listaNotificacoes.forEach(n => {
+                const d = safeDate(n.data);
+                l.innerHTML += `<div class="bg-red-50 border border-red-100 p-3 rounded-xl"><div class="flex justify-between mb-1"><b class="text-red-600">${n.titulo}</b><span class="text-[10px] text-gray-400">${d ? d.toLocaleDateString() : ''}</span></div><p class="text-sm text-gray-700">${n.corpo}</p></div>`;
+            });
+        }
+
+        db.collection("notificacoes").orderBy("data", "desc").limit(10).onSnapshot(snap => {
+            listaNotificacoes = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            if(el('modal-notificacoes-admin').classList.contains('active')) renderizarNotificacoesAdmin();
+            if(listaNotificacoes.length > 0) {
+                const lastId = listaNotificacoes[0].id; const savedId = localStorage.getItem('last_read_notif');
+                if(lastId !== savedId) {
+                    el('bell-dot-driver').classList.add('active');
+                    const audio = el('audio-notif'); audio.play().catch(e => console.log("Audio autoplay blocked"));
+                    if(window.AndroidInterface && window.AndroidInterface.sendNotification) { window.AndroidInterface.sendNotification(listaNotificacoes[0].titulo, listaNotificacoes[0].corpo); }
+                }
+            }
+        });
+
 
         function abrirObsMotorista() { el('modal-obs-motorista').classList.add('active'); renderizarObsDriver(); }
         async function adicionarObs() { const assunto = el('obs-assunto').value; const texto = el('obs-texto').value; if(!assunto || !texto) return alert("Preencha tudo"); const novaObs = { id: Date.now(), assunto, texto, data: new Date().toISOString() }; try { if(viagemAtualId) { await db.collection("viagens").doc(viagemAtualId).update({ obs: firebase.firestore.FieldValue.arrayUnion(novaObs) }); el('obs-assunto').value = ''; el('obs-texto').value = ''; if(!obsViagem) obsViagem = []; obsViagem.push(novaObs); renderizarObsDriver(); } } catch(e) { alert("Erro ao salvar Obs"); } }
@@ -729,272 +653,130 @@
         function abrirModalSenhas() { el('modal-senhas').classList.add('active'); const sel = el('placa-senha-select'); const placas = [...new Set(todasViagens.map(v => v.placa))].sort(); sel.innerHTML = '<option value="">Selecione a Placa...</option>'; placas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; sel.appendChild(opt); }); el('senha-input-manual').value = '---'; sel.onchange = async (e) => { const p = e.target.value; if(!p) { el('senha-input-manual').value = '---'; return; } el('senha-input-manual').value = 'Buscando...'; try { const docSnap = await db.collection("credenciais").doc(p).get(); if(docSnap.exists) el('senha-input-manual').value = docSnap.data().senha; else { const nova = gerarSenhaAleatoria(); await db.collection("credenciais").doc(p).set({senha: nova}); el('senha-input-manual').value = nova; } } catch(err) { console.error(err); } }; }
         async function salvarSenhaPlaca() { const placa = el('placa-senha-select').value; const senha = el('senha-input-manual').value; if(!placa || !senha) return alert("Preencha placa e senha."); try { await db.collection("credenciais").doc(placa).set({ senha: senha, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() }); alert(`Senha para ${placa} salva!`); el('modal-senhas').classList.remove('active'); } catch(e) { alert("Erro: " + e.message); } }
         function abrirLoginExtrato() { el('login-placa').value = ''; el('login-senha').value = ''; el('modal-login-extrato').classList.add('active'); }
-        async function acessarExtrato() { const p = formatarPlaca(el('login-placa').value); const s = el('login-senha').value; if(!p || !s) return alert("Preencha campos"); el('main-loader').style.display='flex'; const docSnap = await db.collection("credenciais").doc(p).get(); if (docSnap.exists && docSnap.data().senha === s) { const vSnap = await db.collection("viagens").where("placa", "==", p).orderBy("dataInicio", "desc").get(); dadosExtrato = vSnap.docs.map(d => ({id:d.id, ...d.data()})); el('modal-login-extrato').classList.remove('active'); el('modal-view-extrato').classList.add('active'); el('main-loader').style.display='none'; renderizarExtrato(); } else { el('main-loader').style.display='none'; alert("Credenciais inválidas."); } }
-        function renderizarExtrato() { const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-zinc-400 mt-10 p-5">Nenhum registro.</p>'; return; } cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); const btnShare = `<button onclick="compartilharExtrato('${v.id}')" class="p-1.5 bg-green-50 text-green-600 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>`; return `<div class="extrato-item" style="--st-color: ${stColor}"><div class="ex-header"><span class="ex-date">${fmtData(dIni)} <span class="font-normal text-gray-400 text-[10px]">${fmtHora(dIni)}</span></span><span class="ex-status">${v.status}</span></div><div class="ex-rota"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'N/D'}</div><div class="ex-metrics"><div class="ex-m-box"><span class="ex-lbl">KM Ini</span><span class="ex-val">${Math.round(v.kmInicio)}</span></div><div class="ex-m-box"><span class="ex-lbl">KM Fim</span><span class="ex-val">${isE?'-':Math.round(v.kmFim)}</span></div><div class="ex-m-box"><span class="ex-lbl">Total</span><span class="ex-val">${isE?'-':kmT}</span></div><div class="ex-m-box"><span class="ex-lbl">Meta</span><span class="ex-val text-gray-500">${meta}</span></div><div class="ex-m-box col-span-2"><span class="ex-lbl">Diferença</span><span class="ex-val ${diff>0?'text-red-500':'text-emerald-500'}">${isE?'-':(diff>0?'+':'')+diff}</span></div></div><div class="ex-actions">${btnShare}${v.fotoInicio ? `<button onclick="verFoto('${v.fotoInicio}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}</div></div>`; }).join('') + '</div>'; lucide.createIcons(); }
-        function compartilharExtrato(id) { const v = dadosExtrato.find(x => x.id === id); if(v) window.enviarZap(v); }
-        function exportarExtratoPessoal() { const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim||0) - v.kmInicio), "Meta": Math.round(v.metaKm||0) })); const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Extrato"); XLSX.writeFile(wb, `Extrato_${filtrados[0]?.placa}.xlsx`); }
-        function abrirModalDash() { 
-            el('modal-dash').classList.add('active'); 
-            const hj = new Date();
-            const inicioMes = new Date(hj.getFullYear(), hj.getMonth(), 1);
-            if(!el('filtro-dash-ini').value) { 
-                el('filtro-dash-ini').value = inicioMes.toISOString().split('T')[0]; 
-                el('filtro-dash-fim').value = hj.toISOString().split('T')[0]; 
-            }
-            const select = el('filtro-dash-placa');
-            const valorAtual = select.value;
-            select.innerHTML = '<option value="">VISÃO GERAL (FROTA)</option>';
-            const placasUnicas = [...new Set(todasViagens.map(v => v.placa))].sort();
-            placasUnicas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; select.appendChild(opt); });
-            select.value = valorAtual; 
-            carregarDash(); 
-        }
+        async function acessarExtrato() { const p = formatarPlaca(el('login-placa').value); const s = el('login-senha').value; if(!p || !s) return alert("Preencha campos"); el('main-loader').classList.remove('hidden'); const docSnap = await db.collection("credenciais").doc(p).get(); if (docSnap.exists && docSnap.data().senha === s) { const vSnap = await db.collection("viagens").where("placa", "==", p).orderBy("dataInicio", "desc").get(); dadosExtrato = vSnap.docs.map(d => ({id:d.id, ...d.data()})); el('modal-login-extrato').classList.remove('active'); el('modal-view-extrato').classList.add('active'); el('main-loader').classList.add('hidden'); renderizarExtrato(); } else { el('main-loader').classList.add('hidden'); alert("Credenciais inválidas."); } }
         
+        function getBadgeServico(tipo) { const t = tipo || 'N/D'; return `<span class="badge badge-servico">${t}</span>`; }
+
+        function renderizarExtrato() { 
+            const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; 
+            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); 
+            if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-gray-500 mt-10 p-5">Nenhum registro.</p>'; return; } 
+            cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { 
+                const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); 
+                const btnShare = `<button onclick="compartilharExtrato('${v.id}')" class="action-btn text-blue-600 bg-blue-50 border-blue-100"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`; 
+                return `<div class="extrato-item" style="border-left-color: ${stColor}">
+                    <div class="ex-row"><div><span class="metric-lbl">DATA</span><br><span class="text-sm font-bold text-gray-700">${fmtData(dIni)}</span></div><div><span class="metric-lbl">HORA</span><br><span class="text-sm font-bold text-gray-700">${fmtHora(dIni)}</span></div><div><span class="metric-lbl">STATUS</span><br><span class="badge" style="background:${stColor};color:white;">${v.status}</span></div></div>
+                    <div class="ex-row"><div><span class="metric-lbl">ROTA</span><br><span class="text-xs text-gray-500">${v.rotaCidades || 'N/D'}</span></div></div>
+                    <div class="ex-row"><span class="badge bg-gray-200 text-gray-600">META: ${meta} KM</span></div>
+                    <div class="ex-row bg-gray-50 p-2 rounded-lg mt-2 mb-2"><div><span class="metric-lbl">KM INI</span><br><span class="text-sm font-bold">${v.kmInicio}</span></div><div><span class="metric-lbl">KM FIM</span><br><span class="text-sm font-bold">${isE?'-':v.kmFim}</span></div><div><span class="metric-lbl">TOTAL</span><br><span class="text-sm font-bold">${isE?'-':kmT}</span></div><div><span class="metric-lbl">DIF</span><br><span class="text-sm font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':(diff>0?'+'+diff:diff)}</span></div></div>
+                    <div class="flex gap-2 justify-end mt-1">${btnShare}${v.fotoInicio ? `<button onclick="verFoto('${v.fotoInicio}')" class="action-btn text-gray-600">FOTO INI</button>` : ''}${v.fotoFim ? `<button onclick="verFoto('${v.fotoFim}')" class="action-btn text-gray-600">FOTO FIM</button>` : ''}</div>
+                </div>`; 
+            }).join('') + '</div>'; lucide.createIcons(); 
+        }
+        function compartilharExtrato(id) { const v = dadosExtrato.find(x => x.id === id); if(v) window.enviarZap(v); }
+        function exportarExtratoPessoal() { const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = d.toISOString().split('T')[0]; return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim||0) - v.kmInicio), "Meta": Math.round(v.metaKm||0) })); const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Extrato"); 
+        const nomeArquivo = `Extrato_${filtrados[0]?.placa}_${ini||'ini'}_${fim||'fim'}.xlsx`;
+        XLSX.writeFile(wb, nomeArquivo); }
+        function abrirModalDash() { el('modal-dash').classList.add('active'); const hj = new Date(); const inicioMes = new Date(hj.getFullYear(), hj.getMonth(), 1); if(!el('filtro-dash-ini').value) { el('filtro-dash-ini').value = inicioMes.toISOString().split('T')[0]; el('filtro-dash-fim').value = hj.toISOString().split('T')[0]; } const select = el('filtro-dash-placa'); const valorAtual = select.value; select.innerHTML = '<option value="">FROTA TODA</option>'; const placasUnicas = [...new Set(todasViagens.map(v => v.placa))].sort(); placasUnicas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; select.appendChild(opt); }); select.value = valorAtual; carregarDash(); }
+        
+        // DASHBOARD COMPACTO (2x2)
         function carregarDash() { 
-            const ini = el('filtro-dash-ini').value;
-            const fim = el('filtro-dash-fim').value;
-            const placaFiltro = el('filtro-dash-placa').value;
-            
-            // FILTRAGEM DE DADOS
-            let dados = todasViagens.filter(v => { 
-                const d = safeDate(v.dataInicio)?.toISOString().split('T')[0]; 
-                return (!ini || d >= ini) && (!fim || d <= fim); 
-            });
-
+            const ini = el('filtro-dash-ini').value; const fim = el('filtro-dash-fim').value; const placaFiltro = el('filtro-dash-placa').value;
+            let dados = todasViagens.filter(v => { const d = safeDate(v.dataInicio)?.toISOString().split('T')[0]; return (!ini || d >= ini) && (!fim || d <= fim); });
             if (placaFiltro) dados = dados.filter(v => v.placa === placaFiltro);
-
-            // ELEMENTOS DO DOM
-            const kpiContainer = el('dash-kpi-container');
-            const finContainer = el('dash-finance-container');
-            const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-
-            // === CÁLCULOS FINANCEIROS E OPERACIONAIS ===
-            let totalViagens = dados.length;
-            let totalMetaKm = 0;
-            let totalRealKm = 0;
             
-            let finMeta = 0; // $ Orçado (Todas as viagens filtradas)
-            let finReal = 0; // $ Realizado (Apenas viagens finalizadas)
-            let finMetaDasFinalizadas = 0; // Para calcular o desvio justo
-
-            dados.forEach(v => {
-                // Busca preço baseado no perfil do veículo (ou Padrão se não tiver)
-                const perfil = v.perfilVeiculo ? v.perfilVeiculo.toUpperCase() : "PADRÃO";
-                const preco = tabelaPrecos[perfil] || precosPadrao["PADRÃO"];
-                const metaTrip = Number(v.metaKm) || 0;
-
-                // Acumula Meta KM e $ Meta (Frete + KM Meta)
-                totalMetaKm += metaTrip;
-                finMeta += preco.frete + (metaTrip * preco.km);
-
-                if (v.status === 'finalizada') {
-                    const kmRodado = (v.kmFim || 0) - v.kmInicio;
-                    totalRealKm += kmRodado;
-                    
-                    // $ Real (Frete + KM Real)
-                    const custoViagem = preco.frete + (kmRodado * preco.km);
-                    finReal += custoViagem;
-                    
-                    // $ Meta Proporcional (para cálculo de desvio)
-                    finMetaDasFinalizadas += preco.frete + (metaTrip * preco.km);
-                }
-            });
-
-            // Desvio: Diferença entre o que custou e o que deveria custar (apenas das finalizadas)
-            const totalDispKm = totalRealKm - (dados.filter(x=>x.status==='finalizada').reduce((acc,v)=>acc+(v.metaKm||0),0));
-            const finDesvio = finReal - finMetaDasFinalizadas;
-
-            // === RENDERIZAÇÃO KPIs OPERACIONAIS (LINHA 1) ===
-            // Se tiver placa selecionada, mostra layout focado em totais
-            if (placaFiltro) {
-                kpiContainer.innerHTML = `
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Viagens</p><h3 class="text-lg font-bold text-purple-600">${totalViagens}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Meta KM</p><h3 class="text-lg font-bold text-gray-600 dark:text-gray-300">${Math.round(totalMetaKm)}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Real KM</p><h3 class="text-lg font-bold text-blue-500">${Math.round(totalRealKm)}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Dispersão KM</p><h3 class="text-lg font-bold ${totalDispKm > 0 ? 'text-red-500' : 'text-emerald-500'}">${totalDispKm > 0 ? '+' : ''}${Math.round(totalDispKm)}</h3></div>
-                `;
-                kpiContainer.style.gridTemplateColumns = "repeat(4, 1fr)";
-            } else {
-                // Layout Frota (com contadores de status)
-                const emRota = dados.filter(x => x.status === 'em_curso').length;
-                const finalizadasQtd = dados.filter(x => x.status === 'finalizada').length;
-                kpiContainer.innerHTML = `
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Total</p><h3 class="text-lg font-bold dark:text-white">${totalViagens}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Rota</p><h3 class="text-lg font-bold text-amber-500">${emRota}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Final</p><h3 class="text-lg font-bold text-emerald-500">${finalizadasQtd}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Meta KM</p><h3 class="text-lg font-bold text-gray-600 dark:text-gray-300">${Math.round(totalMetaKm)}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Real KM</p><h3 class="text-lg font-bold text-blue-500">${Math.round(totalRealKm)}</h3></div>
-                    <div class="bg-white dark:bg-zinc-900 p-2 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm"><p class="text-[9px] text-gray-400 uppercase font-bold">Disp KM</p><h3 class="text-lg font-bold ${totalDispKm > 0 ? 'text-red-500' : 'text-emerald-500'}">${totalDispKm > 0 ? '+' : ''}${Math.round(totalDispKm)}</h3></div>
-                `;
-                kpiContainer.style.gridTemplateColumns = "repeat(6, 1fr)";
-                if(window.innerWidth < 768) kpiContainer.style.gridTemplateColumns = "1fr 1fr";
-            }
-
-            // === RENDERIZAÇÃO KPIs FINANCEIROS (LINHA 2 - NOVO) ===
-            finContainer.innerHTML = `
-                <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
-                    <div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Orçado (Meta)</p><h3 class="text-xl font-bold text-gray-700 dark:text-gray-200">${fmtBRL(finMeta)}</h3></div>
-                    <div class="p-2 bg-gray-50 dark:bg-zinc-800 rounded-lg text-gray-400"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-                </div>
-                <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
-                    <div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Realizado</p><h3 class="text-xl font-bold text-blue-600">${fmtBRL(finReal)}</h3></div>
-                    <div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-500"><i data-lucide="wallet" class="w-5 h-5"></i></div>
-                </div>
-                <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm flex items-center justify-between border-l-4 ${finDesvio > 0 ? 'border-l-red-500' : 'border-l-emerald-500'}">
-                    <div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Desvio Valor</p><h3 class="text-xl font-bold ${finDesvio > 0 ? 'text-red-500' : 'text-emerald-500'}">${finDesvio > 0 ? '+' : ''}${fmtBRL(finDesvio)}</h3></div>
-                    <div class="p-2 ${finDesvio > 0 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'} rounded-lg"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
-                </div>
+            const kpi = el('dash-kpi-container'); const fin = el('dash-finance-container');
+            const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+            
+            let totalViagens = dados.length; let totalMetaKm = 0; let totalRealKm = 0; let finMeta = 0; let finReal = 0; let finMetaFinalizadas = 0;
+            dados.forEach(v => { const p = tabelaPrecos[v.perfilVeiculo?.toUpperCase()] || precosPadrao["PADRÃO"]; const m = Number(v.metaKm) || 0; totalMetaKm += m; finMeta += p.frete + (m * p.km); if (v.status === 'finalizada') { const k = (v.kmFim || 0) - v.kmInicio; totalRealKm += k; finReal += p.frete + (k * p.km); finMetaFinalizadas += p.frete + (m * p.km); } });
+            
+            const emRota = dados.filter(x => x.status === 'em_curso').length;
+            const finalizadas = dados.filter(x => x.status === 'finalizada');
+            const totalFinalizadas = finalizadas.length;
+            const totalDispKm = totalRealKm - (finalizadas.reduce((acc, v) => acc + (v.metaKm || 0), 0));
+            const desvioValor = finReal - finMetaFinalizadas;
+            
+            // KPI ROW
+            kpi.innerHTML = `
+                <div class="kpi-card"><span class="kpi-lbl">VIAGENS</span><h3 class="kpi-val text-blue-600">${totalViagens}</h3></div>
+                <div class="kpi-card"><span class="kpi-lbl">ROTA</span><h3 class="kpi-val text-orange-500">${emRota}</h3></div>
+                <div class="kpi-card"><span class="kpi-lbl">FIM</span><h3 class="kpi-val text-green-500">${totalFinalizadas}</h3></div>
+                <div class="kpi-card"><span class="kpi-lbl">META KM</span><h3 class="kpi-val">${Math.round(totalMetaKm)}</h3></div>
+                <div class="kpi-card"><span class="kpi-lbl">REAL KM</span><h3 class="kpi-val text-blue-600">${Math.round(totalRealKm)}</h3></div>
+                <div class="kpi-card border border-red-100 bg-red-50"><span class="kpi-lbl text-red-500">DISP KM</span><h3 class="kpi-val text-red-600">${totalDispKm > 0 ? '+' : ''}${Math.round(totalDispKm)}</h3></div>
+            `;
+            
+            // FINANCIAL ROW
+            fin.innerHTML = `
+                <div class="kpi-card flex-row justify-between px-4 items-center"><div class="text-left"><span class="kpi-lbl">ORÇADO</span><h3 class="kpi-val text-gray-700">${fmtBRL(finMeta)}</h3></div><i data-lucide="file-text" class="text-gray-300"></i></div>
+                <div class="kpi-card flex-row justify-between px-4 items-center"><div class="text-left"><span class="kpi-lbl">REALIZADO</span><h3 class="kpi-val text-blue-600">${fmtBRL(finReal)}</h3></div><i data-lucide="wallet" class="text-blue-300"></i></div>
+                <div class="kpi-card flex-row justify-between px-4 items-center border-l-4 ${desvioValor > 0 ? 'border-l-red-500' : 'border-l-green-500'}"><div class="text-left"><span class="kpi-lbl">DESVIO</span><h3 class="kpi-val ${desvioValor > 0 ? 'text-red-500' : 'text-green-500'}">${desvioValor > 0 ? '+' : ''}${fmtBRL(desvioValor)}</h3></div><i data-lucide="trending-up" class="${desvioValor > 0 ? 'text-red-300' : 'text-green-300'}"></i></div>
             `;
 
-            // === GRÁFICOS (MANTIDOS V40) ===
-            const finalizadas = dados.filter(x => x.status === 'finalizada');
+            const mapDisp = {};
+            finalizadas.forEach(v => { const diff = ((v.kmFim||0) - v.kmInicio) - (v.metaKm||0); if(diff > 0) mapDisp[v.placa] = (mapDisp[v.placa] || 0) + diff; });
+            const ranking = Object.entries(mapDisp).sort((a,b) => b[1] - a[1]).slice(0, 7);
+            if(charts['chart-main']) charts['chart-main'].destroy(); 
+            charts['chart-main'] = new Chart(el('chart-main'), { type: 'bar', data: { labels: ranking.map(x => x[0]), datasets: [{ data: ranking.map(x => x[1]), backgroundColor: '#ef4444', borderRadius: 4 }] }, options: chartOpts });
 
-            if (placaFiltro) {
-                // Gráficos Individuais
-                el('lbl-chart-1').innerText = "Meta vs Real (Por Viagem)";
-                const labelsDia = finalizadas.map(v => fmtData(safeDate(v.dataInicio)).slice(0,5));
-                const dataMeta = finalizadas.map(v => v.metaKm || 0);
-                const dataReal = finalizadas.map(v => (v.kmFim||0) - v.kmInicio);
+            const mapDate = {};
+            finalizadas.forEach(v => { const d = fmtData(safeDate(v.dataInicio)).slice(0,5); const diff = ((v.kmFim||0) - v.kmInicio) - (v.metaKm||0); mapDate[d] = (mapDate[d] || 0) + (diff > 0 ? diff : 0); });
+            const datesSorted = Object.keys(mapDate).sort((a,b) => { const [d1,m1]=a.split('/'); const [d2,m2]=b.split('/'); return (m1*31+d1)-(m2*31+d2); });
+            if(charts['chart-secondary']) charts['chart-secondary'].destroy();
+            charts['chart-secondary'] = new Chart(el('chart-secondary'), { type: 'line', data: { labels: datesSorted, datasets: [{ data: datesSorted.map(d => mapDate[d]), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.4, pointRadius: 3 }] }, options: chartOpts });
 
-                if(charts['chart-main']) charts['chart-main'].destroy();
-                charts['chart-main'] = new Chart(el('chart-main'), {
-                    type: 'bar',
-                    data: { labels: labelsDia, datasets: [{ label: 'Meta', data: dataMeta, backgroundColor: '#e2e8f0', borderRadius: 4 }, { label: 'Real', data: dataReal, backgroundColor: '#3b82f6', borderRadius: 4 }] },
-                    options: { ...chartOpts, plugins: { legend: { display: true, position: 'top' } } }
-                });
-
-                el('lbl-chart-2').innerText = "Dispersão Acumulada";
-                let acc = 0;
-                const dataDispAcc = finalizadas.map(v => { acc += ((v.kmFim||0) - v.kmInicio) - (v.metaKm||0); return acc; });
-                if(charts['chart-secondary']) charts['chart-secondary'].destroy();
-                charts['chart-secondary'] = new Chart(el('chart-secondary'), {
-                    type: 'line',
-                    data: { labels: labelsDia, datasets: [{ label: 'Saldo KM', data: dataDispAcc, borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4 }] },
-                    options: chartOpts
-                });
-            } else {
-                // Gráficos Frota
-                el('lbl-chart-1').innerText = "Ranking Dispersão (Total por Placa)";
-                const mapDisp = {};
-                finalizadas.forEach(v => {
-                    const diff = ((v.kmFim||0) - v.kmInicio) - (v.metaKm||0);
-                    if(diff > 0) mapDisp[v.placa] = (mapDisp[v.placa] || 0) + diff;
-                });
-                const ranking = Object.entries(mapDisp).sort((a,b) => b[1] - a[1]).slice(0, 7);
-                
-                if(charts['chart-main']) charts['chart-main'].destroy();
-                charts['chart-main'] = new Chart(el('chart-main'), {
-                    type: 'bar',
-                    data: { labels: ranking.map(x => x[0]), datasets: [{ label: 'KM Excedente', data: ranking.map(x => x[1]), backgroundColor: '#ef4444', borderRadius: 4 }] },
-                    options: chartOpts
-                });
-
-                el('lbl-chart-2').innerText = "Dispersão da Frota (Dia a Dia)";
-                const mapDate = {};
-                finalizadas.forEach(v => {
-                    const d = fmtData(safeDate(v.dataInicio)).slice(0,5);
-                    const diff = ((v.kmFim||0) - v.kmInicio) - (v.metaKm||0);
-                    mapDate[d] = (mapDate[d] || 0) + diff;
-                });
-                const datesSorted = Object.keys(mapDate).sort((a,b) => { const [d1,m1]=a.split('/'); const [d2,m2]=b.split('/'); return (m1*31+d1)-(m2*31+d2); });
-                
-                if(charts['chart-secondary']) charts['chart-secondary'].destroy();
-                charts['chart-secondary'] = new Chart(el('chart-secondary'), {
-                    type: 'line',
-                    data: { labels: datesSorted, datasets: [{ label: 'Dispersão Diária', data: datesSorted.map(d => mapDate[d]), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.3 }] },
-                    options: chartOpts
-                });
-            }
-
-            // Gráficos Comuns
-            const progresso = totalViagens > 0 ? (dados.filter(x=>x.status==='finalizada').length / totalViagens) * 100 : 0;
-            el('gauge-text').innerText = progresso.toFixed(0) + "%";
-            if(charts['chart-gauge']) charts['chart-gauge'].destroy();
-            charts['chart-gauge'] = new Chart(el('chart-gauge'), { type: 'doughnut', data: { labels: ['Concluído', 'Pendente'], datasets: [{ data: [progresso, 100-progresso], backgroundColor: ['#10b981', '#e2e8f0'], borderWidth: 0 }] }, options: { rotation: -90, circumference: 180, cutout: '75%', maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            const prog = totalViagens > 0 ? (totalFinalizadas / totalViagens) * 100 : 0; el('gauge-text').innerText = prog.toFixed(0) + "%";
+            if(charts['chart-gauge']) charts['chart-gauge'].destroy(); 
+            charts['chart-gauge'] = new Chart(el('chart-gauge'), { type: 'doughnut', data: { datasets: [{ data: [prog, 100-prog], backgroundColor: ['#10b981', '#f1f5f9'], border:0 }] }, options: { rotation: -90, circumference: 180, cutout: '75%', maintainAspectRatio: false } });
 
             const pMap = {}; dados.forEach(v => { const k = v.perfilVeiculo || 'S/P'; pMap[k] = (pMap[k]||0) + 1; });
-            if(charts['chart-perfil']) charts['chart-perfil'].destroy();
-            charts['chart-perfil'] = new Chart(el('chart-perfil'), { type: 'pie', data: { labels: Object.keys(pMap), datasets: [{ data: Object.values(pMap), backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'], borderWidth: 1 }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } } } } });
-            
-            lucide.createIcons();
+            if(charts['chart-perfil']) charts['chart-perfil'].destroy(); 
+            charts['chart-perfil'] = new Chart(el('chart-perfil'), { type: 'pie', data: { labels: Object.keys(pMap), datasets: [{ data: Object.values(pMap), backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899'] }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size:8} } } } } });
         }
 
         function verFoto(b64) { if(b64 && b64.length > 50) { el('img-viewer').src = b64; el('popup-foto').classList.add('active'); } else alert("Sem foto"); }
         function verGps(c) { if(c) { el('iframe-gps').src = `https://maps.google.com/maps?q=${c}&z=15&output=embed`; el('popup-gps').classList.add('active'); } else alert("Sem GPS"); }
         function getGPS() { return new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r(`${p.coords.latitude},${p.coords.longitude}`), () => r(null)) : r(null)); }
-        function handleFileSelect(inp, divId) { const f = inp.files[0]; if(f) { try { const r = new FileReader(); r.onload = e => { const i = new Image(); i.src = e.target.result; i.onload = () => { const maxWidth = 600; const scale = maxWidth / i.width; const newWidth = maxWidth; const newHeight = i.height * scale; const c = document.createElement('canvas'); const ctx = c.getContext('2d'); c.width = newWidth; c.height = newHeight; ctx.drawImage(i, 0, 0, c.width, c.height); const b64 = c.toDataURL('image/jpeg', 0.5); if(divId.includes('ini')) fotoInicioBase64 = b64; else fotoFimBase64 = b64; el(divId).classList.add('has-file'); el(divId).querySelector('span').innerText = 'FOTO OK'; lucide.createIcons(); } }; r.readAsDataURL(f); } catch(err) { alert("Erro ao processar foto."); } } }
-        
+        function handleFileSelect(inp, divId) { const f = inp.files[0]; if(f) { try { const r = new FileReader(); r.onload = e => { const i = new Image(); i.src = e.target.result; i.onload = () => { const maxWidth = 600; const scale = maxWidth / i.width; const newWidth = maxWidth; const newHeight = i.height * scale; const c = document.createElement('canvas'); const ctx = c.getContext('2d'); c.width = newWidth; c.height = newHeight; ctx.drawImage(i, 0, 0, c.width, c.height); const b64 = c.toDataURL('image/jpeg', 0.5); if(divId.includes('ini')) fotoInicioBase64 = b64; else fotoFimBase64 = b64; 
+        if(divId.includes('ini')) localStorage.setItem('temp_foto_ini_b64', b64); else localStorage.setItem('temp_foto_fim_b64', b64);
+        el(divId).classList.add('has-file'); el(divId).querySelector('div span').innerText = 'FOTO OK'; lucide.createIcons(); } }; r.readAsDataURL(f); } catch(err) { alert("Erro ao processar foto."); } } }
+        function handleModalFile(inp, idHidden) { const f = inp.files[0]; if(f) { const r = new FileReader(); r.onload = e => { const i = new Image(); i.src = e.target.result; i.onload = () => { const c = document.createElement('canvas'); const ctx = c.getContext('2d'); c.width=600; c.height = i.height*(600/i.width); ctx.drawImage(i,0,0,c.width,c.height); el(idHidden).value = c.toDataURL('image/jpeg', 0.5); alert("Foto atualizada no formulário (Clique em Salvar para confirmar)."); } }; r.readAsDataURL(f); } }
+
         function renderizarAdmin() {
             const cont = el('lista-viagens'); cont.innerHTML = ''; 
-            const termo = el('busca-admin').value.toLowerCase().trim(); 
-            const ini = el('filtro-data-ini').value; const fim = el('filtro-data-fim').value;
-            const modoEdicao = el('toggle-view-mode').checked;
-            
-            const dados = todasViagens.filter(v => { 
-                const d=safeDate(v.dataInicio); if(!d) return false; const dStr=d.toISOString().split('T')[0];
-                const matchBusca = ((v.placa||'').toLowerCase().includes(termo) || (v.nome||'').toLowerCase().includes(termo));
-                return (!ini || dStr>=ini) && (!fim || dStr<=fim) && (filtroAdminAtual==='todos' || v.status===filtroAdminAtual) && matchBusca; 
-            });
-            
+            const termo = el('busca-admin').value.toLowerCase().trim(); const ini = el('filtro-data-ini').value; const fim = el('filtro-data-fim').value; const modoEdicao = el('toggle-view-mode').checked;
+            const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio); if(!d) return false; const dStr=d.toISOString().split('T')[0]; const matchBusca = ((v.placa||'').toLowerCase().includes(termo) || (v.nome||'').toLowerCase().includes(termo)); return (!ini || dStr>=ini) && (!fim || dStr<=fim) && (filtroAdminAtual==='todos' || v.status===filtroAdminAtual) && matchBusca; });
             dados.forEach(v => {
                 const isE = v.status === 'em_curso'; const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim);
-                const kmT = Math.round((v.kmFim||0) - v.kmInicio); 
-                const meta = Math.round(v.metaKm||0); 
-                const diff = kmT - meta;
+                const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta;
                 const stClass = isE ? 'st-rota' : (v.status==='cancelada'?'st-cancel':'st-fim');
-                const pr = tabelaPrecos[v.perfilVeiculo?.toUpperCase()] || precosPadrao["PADRÃO"]; 
-                const custoMeta = pr.frete + (meta * pr.km);
-                const custoReal = pr.frete + (kmT * pr.km);
-                
+                const badgeServico = getBadgeServico(v.tipoServico);
                 const isApp = v.origem === 'APP';
-                const sourceBadge = isApp 
-                    ? `<span class="ml-2 text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 flex items-center gap-1"><i data-lucide="smartphone" class="w-3 h-3"></i>APP</span>`
-                    : `<span class="ml-2 text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i>WEB</span>`;
+                const badgeOrigem = isApp ? `<span class="badge badge-app"><i data-lucide="smartphone" class="w-3 h-3"></i> APP</span>` : `<span class="badge badge-web"><i data-lucide="globe" class="w-3 h-3"></i> WEB</span>`;
+                const pr = tabelaPrecos[v.perfilVeiculo?.toUpperCase()] || precosPadrao["PADRÃO"];
+                const custoMeta = pr.frete + (meta * pr.km); const custoReal = pr.frete + (kmT * pr.km);
 
                 const card = document.createElement('div'); card.className = `coss-card ${stClass}`;
                 card.innerHTML = `
-                    <div class="card-glow-top" style="background: ${isE?'#f59e0b':(v.status==='cancelada'?'#ef4444':'#10b981')};"></div>
                     <div class="card-content">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center">
-                                <div>
-                                    <span class="block font-bold text-zinc-800 dark:text-white text-lg tracking-tight leading-tight">${v.placa}</span>
-                                    <span class="text-[10px] text-gray-400 font-bold uppercase">${v.perfilVeiculo}</span>
-                                </div>
-                                ${sourceBadge}
-                            </div>
-                            <span class="status-badge ${stClass}">${isE?'EM ROTA':v.status}</span>
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-2"><h3 class="text-xl font-bold text-gray-800 dark:text-white">${v.placa}</h3>${badgeOrigem}</div>
+                            <span class="badge" style="background:${isE?'#f59e0b':(v.status==='cancelada'?'#ef4444':'#10b981')};color:white;">${isE?'EM ROTA':v.status}</span>
                         </div>
-                        <div><h3 class="font-bold text-sm text-gray-700 dark:text-gray-200 truncate">${v.nome}</h3><p class="text-xs text-gray-500 dark:text-gray-400 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${v.rotaCidades || 'Sem rota'}</p></div>
-                        <div class="timeline-row"><div class="text-left"><span class="block text-[9px] font-bold uppercase">Início</span><span>${fmtData(dIni)} ${fmtHora(dIni)}</span></div><div class="text-right"><span class="block text-[9px] font-bold uppercase">Fim</span><span>${isE ? '--/--' : fmtData(dFim)} ${isE ? '--:--' : fmtHora(dFim)}</span></div></div>
-                        ${isE ? `<div class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 p-2 rounded-lg text-center font-mono font-bold text-xs realtime-timer" data-start="${dIni.getTime()}">00:00:00</div>` : ''}
-                        
-                        <div class="metrics-grid">
-                             <div class="metric-pill"><span class="metric-lbl">Meta</span><span class="metric-val">${meta}</span></div>
-                             <div class="metric-pill"><span class="metric-lbl">Real</span><span class="metric-val ${isE ? 'text-gray-300' : ''}">${isE ? '-' : kmT}</span></div>
-                             <div class="metric-pill"><span class="metric-lbl">Dif</span><span class="metric-val ${isE ? 'text-gray-300' : (diff>0?'text-red-500':'text-emerald-500')}">${isE ? '-' : (diff>0?'+':'')+diff}</span></div>
-                         </div>
-                         
-                         <div class="btn-grid-soft"><button class="btn-soft" onclick="verFoto('${v.fotoInicio}')"><i data-lucide="image" class="w-3 h-3"></i>INI</button><button class="btn-soft" onclick="verFoto('${v.fotoFim}')"><i data-lucide="image" class="w-3 h-3"></i>FIM</button><button class="btn-soft" onclick="verGps('${v.locInicio}')"><i data-lucide="map-pin" class="w-3 h-3"></i>INI</button><button class="btn-soft" onclick="verGps('${v.locFim}')"><i data-lucide="map-pin" class="w-3 h-3"></i>FIM</button></div>
-                         <div class="flex justify-between items-start text-xs mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                            <div class="flex flex-col"><span class="font-bold text-gray-400 uppercase text-[9px]">META</span><span class="font-bold text-gray-600 dark:text-gray-300">${fmtBRL(custoMeta)}</span><span class="text-[8px] text-gray-400">(F ${Math.round(pr.frete)} + K ${Math.round(meta*pr.km)})</span></div>
-                            <div class="flex flex-col text-right"><span class="font-bold text-gray-400 uppercase text-[9px]">REALIZADO</span><span class="font-bold ${isE ? 'text-gray-300' : 'text-blue-500'}">${isE ? '-' : fmtBRL(custoReal)}</span><span class="text-[8px] text-gray-400">${isE ? '-' : `(F ${Math.round(pr.frete)} + K ${Math.round(kmT*pr.km)})`}</span></div>
-                         </div>
+                        <div class="flex gap-2"><span class="badge badge-servico border border-gray-200">${v.perfilVeiculo}</span>${badgeServico}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 font-bold flex items-center gap-1"><i data-lucide="user" class="w-3 h-3 text-gray-400"></i> ${v.nome}</div>
+                        <div class="text-xs text-gray-500 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> ${v.rotaCidades || 'Sem rota'}</div>
+                        <div class="timeline-box"><div><span class="block font-bold text-gray-400">INÍCIO</span>${fmtData(dIni)} ${fmtHora(dIni)}</div><div class="text-right"><span class="block font-bold text-gray-400">FIM</span>${isE ? '--' : fmtData(dFim)} ${isE ? '--' : fmtHora(dFim)}</div></div>
+                        ${isE ? `<div class="bg-blue-50 text-blue-600 p-2 rounded-lg text-center font-mono font-bold text-xs realtime-timer border border-blue-100" data-start="${dIni.getTime()}">00:00:00</div>` : ''}
+                        <div class="metrics-grid"><div class="metric-pill"><span class="metric-lbl">META</span><br><span class="metric-val">${meta}</span></div><div class="metric-pill"><span class="metric-lbl">REAL</span><br><span class="metric-val">${isE?'-':kmT}</span></div><div class="metric-pill"><span class="metric-lbl">DIF</span><br><span class="metric-val ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':(diff>0?'+'+diff:diff)}</span></div></div>
+                        <div class="finance-row"><div class="fin-item"><span class="fin-lbl">R$ META</span><span class="fin-val text-gray-500">${fmtBRL(custoMeta)}</span></div><div class="fin-item text-right"><span class="fin-lbl">R$ REAL</span><span class="fin-val ${isE?'text-gray-300':'text-blue-600'}">${isE?'-':fmtBRL(custoReal)}</span></div></div>
+                        <div class="btn-grid-soft"><button class="btn-soft" onclick="verFoto('${v.fotoInicio}')"><i data-lucide="image" class="w-3 h-3"></i> FOTO INI</button><button class="btn-soft" onclick="verFoto('${v.fotoFim}')"><i data-lucide="image" class="w-3 h-3"></i> FOTO FIM</button><button class="btn-soft" onclick="verGps('${v.locInicio}')"><i data-lucide="map-pin" class="w-3 h-3"></i> GPS INI</button><button class="btn-soft" onclick="verGps('${v.locFim}')"><i data-lucide="map-pin" class="w-3 h-3"></i> GPS FIM</button></div>
                     </div>
-                    
                     <div class="card-actions-bar">
-                        <div class="flex gap-2">
-                             <button onclick="verObsAdmin('${v.id}')" class="action-btn"><i data-lucide="clipboard-list" class="w-3 h-3"></i> Obs</button>
-                             <button onclick='enviarZap(${JSON.stringify(v)})' class="action-btn whatsapp"><i data-lucide="message-circle" class="w-3 h-3"></i> Zap</button>
-                             <button onclick="abrirRastreioAdmin('${v.id}')" class="action-btn sat"><i data-lucide="satellite" class="w-3 h-3"></i> ${isE ? 'Live' : 'Rota'}</button>
-                        </div>
-                        ${modoEdicao ? `
-                        <div class="flex gap-2">
-                            <button onclick="abrirEdicao('${v.id}')" class="action-btn"><i data-lucide="settings" class="w-3 h-3"></i> Edit</button>
-                            <button onclick="excluirViagemAdmin('${v.id}')" class="action-btn danger"><i data-lucide="trash" class="w-3 h-3"></i></button>
-                        </div>` : ''}
-                    </div>
-                `;
+                        <div class="flex gap-2"><button onclick="verObsAdmin('${v.id}')" class="action-btn"><i data-lucide="clipboard-list" class="w-4 h-4"></i> OBS</button><button onclick='enviarZap(${JSON.stringify(v)})' class="action-btn"><i data-lucide="message-circle" class="w-4 h-4 text-green-500"></i> ZAP</button><button onclick="abrirRastreioAdmin('${v.id}')" class="action-btn text-blue-600 font-bold bg-blue-50 border-blue-100"><i data-lucide="satellite" class="w-4 h-4"></i> ${isE?'LIVE':'ROTA'}</button></div>
+                        ${modoEdicao ? `<div class="flex gap-2"><button onclick="abrirEdicao('${v.id}')" class="action-btn text-orange-500"><i data-lucide="settings" class="w-4 h-4"></i></button><button onclick="excluirViagemAdmin('${v.id}')" class="action-btn text-red-500 hover:bg-red-50"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : ''}
+                    </div>`;
                 cont.appendChild(card);
             });
             lucide.createIcons();
@@ -1003,76 +785,48 @@
         async function recuperarViagem() { const p = prompt("Digite a Placa:"); if(!p) return; const placaFmt = formatarPlaca(p); const senha = prompt(`Digite a senha para ${placaFmt}:`); if(!senha) return; const docRef = db.collection("credenciais").doc(placaFmt); const docSnap = await docRef.get(); if(docSnap.exists && docSnap.data().senha === senha) { const s = await db.collection("viagens").where("placa","==",placaFmt).where("status","==","em_curso").get(); if(!s.empty) { localStorage.setItem('v_id',s.docs[0].id); location.reload(); } else { alert("Nenhuma viagem ativa encontrada."); } } else { alert("Senha incorreta."); } }
         function gerarTextoZap(v) { const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim) || new Date(); const dur = new Date(dFim - dIni).toISOString().substr(11, 8); const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const diff = kmT - (v.metaKm || 0); return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm||0)} km\n📊 Dif: ${diff>0?'+':''}${diff.toFixed(1)} km\n🏙️ Rota: ${v.rotaCidades||'N/D'}`; }
         function enviarZap(viagem) { window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoZap(viagem))}`, '_blank'); }
-        function acessoAdmin() { setTimeout(() => { if(prompt("Senha:")==="60010774"){ el('view-motorista').style.display='none'; el('view-admin').style.display='flex'; const h=new Date().toISOString().split('T')[0]; el('filtro-data-ini').value=h; el('filtro-data-fim').value=h; renderizarAdmin(); } else alert("Negado"); }, 50); }
+        function acessoAdmin() { setTimeout(() => { if(prompt("Senha:")==="60010774"){ el('view-motorista').style.display='none'; el('view-admin').style.display='block'; const h=new Date().toISOString().split('T')[0]; el('filtro-data-ini').value=h; el('filtro-data-fim').value=h; renderizarAdmin(); } else alert("Negado"); }, 50); }
         function sairAdmin() { el('view-admin').style.display='none'; el('view-motorista').style.display='flex'; }
         function mudarTelaMotorista(t) { document.querySelectorAll('#view-motorista main').forEach(m=>m.classList.add('hidden')); el('tela-'+t).classList.remove('hidden'); lucide.createIcons(); }
-        function filtrarStatus(s) { filtroAdminAtual=s; document.querySelectorAll('aside button').forEach(b=>b.classList.remove('text-white','bg-zinc-800')); if(el('side-'+(s==='todos'?'todos':(s==='em_curso'?'rota':'fim')))) el('side-'+(s==='todos'?'todos':(s==='em_curso'?'rota':'fim'))).classList.add('text-white','bg-zinc-800'); renderizarAdmin(); }
-        function processarImportacao(inp) { const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=async(e)=>{ const dtInput=el('data-importacao').value; if(!dtInput) return alert("Selecione uma data para a previsão"); const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const sheet = wb.Sheets[wb.SheetNames[0]]; const cellI5 = sheet['I5']; if(cellI5) { let excelDateStr = ""; if(cellI5.t === 'n') { const dateObj = XLSX.SSF.parse_date_code(cellI5.v); excelDateStr = `${dateObj.y}-${String(dateObj.m).padStart(2,'0')}-${String(dateObj.d).padStart(2,'0')}`; } else { excelDateStr = String(cellI5.v); } if(excelDateStr.includes('-') && excelDateStr !== dtInput) { const confirmacao = confirm(`⚠️ ATENÇÃO: Conflito de Datas!\n\nData na Planilha (I5): ${excelDateStr}\nData Selecionada: ${dtInput}\n\nDeseja continuar importando com a data SELECIONADA (${dtInput})?`); if(!confirmacao) { el('modal-importacao').classList.remove('active'); return; } } } const rows=XLSX.utils.sheet_to_json(sheet,{header:1}); let c=0; let logPreview = "RESUMO DA IMPORTAÇÃO:\n----------------------\n"; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(!r||r.length<15) continue; const pl=formatarPlaca(r[3]); if(pl&&pl.length>5) { const rotaFixa = r[9] ? r[9] : "Rota Extra"; const perfilFixa = r[4] ? r[4] : "PADRÃO"; const metaFixa = r[14] ? Number(r[14]) : 0; logPreview += `🚗 ${pl} | Meta: ${metaFixa}km | Rota: ${rotaFixa.substring(0,20)}...\n`; await garantirSenha(pl); await db.collection("previsoes").doc(`${pl}_${dtInput}`).set({ placa:pl, data:dtInput, perfil: perfilFixa, rota: rotaFixa, meta: metaFixa }); const v=todasViagens.find(x=>x.placa===pl && safeDate(x.dataInicio)?.toISOString().split('T')[0]===dtInput); if(v){ await db.collection("viagens").doc(v.id).update({ metaKm: metaFixa, perfilVeiculo: perfilFixa, rotaCidades: rotaFixa }); c++; } } } alert(`✅ Importação Concluída!\n${c} viagens ativas atualizadas.\n\n${logPreview}`); el('modal-importacao').classList.remove('active'); }; r.readAsArrayBuffer(f); }
+        function filtrarStatus(s) { filtroAdminAtual=s; renderizarAdmin(); }
+        function processarImportacao(inp) { const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=async(e)=>{ const dtInput=el('data-importacao').value; if(!dtInput) return alert("Selecione uma data para a previsão"); const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const sheet = wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet,{header:1}); let c=0; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(!r||r.length<15) continue; const pl=formatarPlaca(r[3]); if(pl&&pl.length>5) { const rotaFixa = r[9] ? r[9] : "Rota Extra"; const perfilFixa = r[4] ? r[4] : "PADRÃO"; const metaFixa = r[14] ? Number(r[14]) : 0; await garantirSenha(pl); await db.collection("previsoes").doc(`${pl}_${dtInput}`).set({ placa:pl, data:dtInput, perfil: perfilFixa, rota: rotaFixa, meta: metaFixa }); const v=todasViagens.find(x=>x.placa===pl && safeDate(x.dataInicio)?.toISOString().split('T')[0]===dtInput); if(v){ await db.collection("viagens").doc(v.id).update({ metaKm: metaFixa, perfilVeiculo: perfilFixa, rotaCidades: rotaFixa }); c++; } } } alert(`✅ Importação Concluída!\n${c} viagens atualizadas.`); el('modal-importacao').classList.remove('active'); }; r.readAsArrayBuffer(f); }
 
         async function iniciarViagem() { 
             const n=el('motorista').value; const p=formatarPlaca(el('placa').value); const k=el('km-inicio').value; 
             if(!fotoInicioBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Por favor, tire a foto do painel para iniciar."); 
             if(!n||!p||!k) return alert("Erro: Preencha todos os campos."); 
             if(p.length !== 7) return alert("A placa deve ter exatamente 7 caracteres (Ex: ABC1234)"); 
-            el('main-loader').style.display='flex'; 
+            el('main-loader').classList.remove('hidden'); 
             const gps=await getGPS(); const hj = getDataLocal(); let ex={rotaCidades:"Aguardando...", perfilVeiculo:"PADRÃO", metaKm:0}; 
             try{ 
                 await garantirSenha(p); 
                 const s=await db.collection("previsoes").doc(`${p}_${hj}`).get(); 
                 if(s.exists) { const d = s.data(); ex = { rotaCidades: d.rota || "Rota não definida", perfilVeiculo: d.perfil || "PADRÃO", metaKm: d.meta || 0 }; } 
-                
-                const isApp = (window.AndroidInterface && window.AndroidInterface.startTracking) ? true : false;
-                const origem = isApp ? 'APP' : 'WEB';
-                
-                const r = await db.collection("viagens").add({ 
-                    nome:n, 
-                    placa:p, 
-                    kmInicio:Number(k), 
-                    ...ex, 
-                    tipoServico:el('tipo-servico').value, 
-                    status:'em_curso', 
-                    dataInicio:firebase.firestore.FieldValue.serverTimestamp(), 
-                    locInicio:gps, 
-                    locAtual: gps, 
-                    fotoInicio:fotoInicioBase64, 
-                    rotaReal: [gps], 
-                    origem: origem 
-                }); 
-                localStorage.setItem('v_id',r.id); 
-                viagemAtualId=r.id; 
-                
-                if(isApp) {
-                    window.AndroidInterface.startTracking(r.id.toString());
-                    console.log("Comando enviado ao Android: " + r.id);
-                }
-
+                const isApp = (window.AndroidInterface && window.AndroidInterface.startTracking) ? true : false; const origem = isApp ? 'APP' : 'WEB';
+                const r = await db.collection("viagens").add({ nome:n, placa:p, kmInicio:Number(k), ...ex, tipoServico:el('tipo-servico').value, status:'em_curso', dataInicio:firebase.firestore.FieldValue.serverTimestamp(), locInicio:gps, locAtual: gps, fotoInicio:fotoInicioBase64, rotaReal: [gps], origem: origem }); 
+                localStorage.setItem('v_id',r.id); viagemAtualId=r.id; 
+                localStorage.removeItem('temp_servico'); localStorage.removeItem('temp_motorista'); localStorage.removeItem('temp_placa'); localStorage.removeItem('temp_km_ini'); localStorage.removeItem('temp_foto_ini_b64');
+                if(isApp) window.AndroidInterface.startTracking(r.id.toString());
                 iniciarRastreamentoReal(r.id); monitorarViagemUnica(r.id); 
-            }catch(e){ alert("Erro ao criar viagem: " + e.message); } el('main-loader').style.display='none'; 
+            }catch(e){ alert("Erro ao criar viagem: " + e.message); } el('main-loader').classList.add('hidden'); 
         }
 
         async function encerrarViagem() { 
             if(!fotoFimBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Por favor, tire a foto final do painel para encerrar."); 
             const k=el('km-fim').value; if(!k) return alert("KM?"); 
-            el('main-loader').style.display='flex'; ignorarSnapshot = true; pararRastreamentoReal(); 
+            el('main-loader').classList.remove('hidden'); ignorarSnapshot = true; pararRastreamentoReal(); 
             const g=await getGPS(); 
             await db.collection("viagens").doc(viagemAtualId).update({kmFim:Number(k),status:'finalizada',dataFim:firebase.firestore.FieldValue.serverTimestamp(),locFim:g,fotoFim:fotoFimBase64}); 
-            
-            if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
-                window.AndroidInterface.stopTracking();
-            }
-
-            const snap = await db.collection("viagens").doc(viagemAtualId).get(); const vData = {id:snap.id, ...snap.data()}; el('btn-zap-motorista').onclick = () => window.enviarZap(vData); localStorage.removeItem('v_id'); el('main-loader').style.display='none'; mudarTelaMotorista('sucesso'); setTimeout(() => { ignorarSnapshot = false; viagemAtualId = null; }, 2000); 
+            localStorage.removeItem('temp_km_fim'); localStorage.removeItem('temp_foto_fim_b64');
+            if(window.AndroidInterface && window.AndroidInterface.stopTracking) window.AndroidInterface.stopTracking();
+            const snap = await db.collection("viagens").doc(viagemAtualId).get(); const vData = {id:snap.id, ...snap.data()}; el('btn-zap-motorista').onclick = () => window.enviarZap(vData); localStorage.removeItem('v_id'); el('main-loader').classList.add('hidden'); mudarTelaMotorista('sucesso'); setTimeout(() => { ignorarSnapshot = false; viagemAtualId = null; }, 2000); 
         }
         
         async function cancelarViagemMotorista() { 
             if(confirm("Cancelar?")) { 
                 pararRastreamentoReal(); 
                 await db.collection("viagens").doc(viagemAtualId).update({status:'cancelada',dataFim:firebase.firestore.FieldValue.serverTimestamp()}); 
-                
-                if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
-                    window.AndroidInterface.stopTracking();
-                }
-
+                if(window.AndroidInterface && window.AndroidInterface.stopTracking) window.AndroidInterface.stopTracking();
                 localStorage.removeItem('v_id'); location.reload(); 
             }
         }
@@ -1081,19 +835,15 @@
         function abrirEdicao(id) { const v = todasViagens.find(x => x.id === id); el('edit-id').value = id; el('edit-placa').value = v.placa; el('edit-motorista').value = v.nome; el('edit-meta').value = v.metaKm||0; el('edit-km-ini').value = v.kmInicio; el('edit-km-fim').value = v.kmFim||''; el('edit-foto-ini-b64').value = v.fotoInicio||''; el('edit-foto-fim-b64').value = v.fotoFim||''; v.status === 'em_curso' ? el('area-finalizar-admin').classList.remove('hidden') : el('area-finalizar-admin').classList.add('hidden'); el('modal-editar-admin').classList.add('active'); }
         async function salvarEdicaoCompleta() { const p=formatarPlaca(el('edit-placa').value); await db.collection("viagens").doc(el('edit-id').value).update({ placa: p, nome: el('edit-motorista').value, metaKm: Number(el('edit-meta').value), kmInicio: Number(el('edit-km-ini').value), kmFim: Number(el('edit-km-fim').value), fotoInicio: el('edit-foto-ini-b64').value, fotoFim: el('edit-foto-fim-b64').value }); el('modal-editar-admin').classList.remove('active'); alert("Salvo"); }
         async function finalizarPeloAdmin() { const k = el('edit-km-fim').value; const f = el('edit-foto-fim-b64').value; if(!k || !f) return alert("Dados incompletos"); await db.collection("viagens").doc(el('edit-id').value).update({ kmFim: Number(k), fotoFim: f, status: 'finalizada', dataFim: firebase.firestore.FieldValue.serverTimestamp() }); el('modal-editar-admin').classList.remove('active'); alert("Finalizado"); }
-        async function excluirViagemAdmin(id) { if(confirm("Apagar?")) await db.collection("viagens").doc(id).delete(); }
+        async function excluirViagemAdmin(id) { if(confirm("Tem certeza que deseja APAGAR esta viagem?")) await db.collection("viagens").doc(id).delete(); }
 
-        // MONITORAMENTO EM TEMPO REAL (AGORA COM LIMITE 1000)
         db.collection("viagens").orderBy("dataInicio", "desc").limit(1000).onSnapshot((snap) => {
             todasViagens = snap.docs.map(d => ({id: d.id, ...d.data()}));
-            if(el('view-admin').style.display === 'flex') renderizarAdmin();
+            if(el('view-admin').style.display === 'block') renderizarAdmin();
             if(el('modal-mapa').classList.contains('active')) carregarMapa();
-            
-            el('main-loader').style.display='none';
-            setTimeout(() => lucide.createIcons(), 500);
+            el('main-loader').classList.add('hidden'); setTimeout(() => lucide.createIcons(), 500);
         });
 
-        // VERIFICAR SESSÃO ATIVA
         if (!viagemAtualId && el('tela-sucesso').classList.contains('hidden')) { mudarTelaMotorista('inicio'); }
         if (viagemAtualId) { monitorarViagemUnica(viagemAtualId); }
 
@@ -1105,30 +855,14 @@
                     if (v.status === 'em_curso') {
                         const dStart = safeDate(v.dataInicio);
                         if(dStart) el('cronometro-motorista').dataset.start = dStart.getTime();
-
                         if(!gpsWatchId) iniciarRastreamentoReal(id);
-
-                        const rota = v.rotaCidades || 'Aguardando...';
-                        const perfil = v.perfilVeiculo || 'Padrão';
-                        el('info-viagem-corrente').innerHTML = `<div class="iv-grid"><div><span class="iv-label">PLACA</span><span class="iv-val">${v.placa}</span></div><div><span class="iv-label">MOTORISTA</span><span class="iv-val">${v.nome}</span></div><div><span class="iv-label">ROTA</span><span class="iv-val">${rota}</span></div><div><span class="iv-label">PERFIL</span><span class="iv-val">${perfil}</span></div></div>`;
-
+                        const rota = v.rotaCidades || 'Aguardando...'; const perfil = v.perfilVeiculo || 'Padrão';
+                        el('info-viagem-corrente').innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div><span style="font-weight:bold;color:#94a3b8;">PLACA</span><br><b>${v.placa}</b></div><div><span style="font-weight:bold;color:#94a3b8;">MOTORISTA</span><br><b>${v.nome}</b></div></div>`;
                         mudarTelaMotorista('em-curso');
                     } else {
-                        if(el('tela-sucesso').classList.contains('hidden')) {
-                            localStorage.removeItem('v_id');
-                            viagemAtualId = null;
-                            pararRastreamentoReal();
-                            mudarTelaMotorista('inicio');
-                        }
+                        if(el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; pararRastreamentoReal(); mudarTelaMotorista('inicio'); }
                     }
-                } else {
-                    localStorage.removeItem('v_id');
-                    viagemAtualId = null;
-                    pararRastreamentoReal();
-                    mudarTelaMotorista('inicio');
-                }
-            }, (error) => {
-                console.log("Monitorando...", error);
+                } else { localStorage.removeItem('v_id'); viagemAtualId = null; pararRastreamentoReal(); mudarTelaMotorista('inicio'); }
             });
         }
     </script>
