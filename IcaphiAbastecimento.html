@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IcaphiAbastecimento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --primary: #3b82f6; 
+            --primary-hover: #2563eb;
+            --bg-color: #f3f4f6; 
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --input-bg: #f9fafb;
+            --sidebar-bg: #111827;
+            --success: #10b981;
+        }
+        
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .hidden { display: none !important; }
+
+        /* HEADER MOBILE */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--bg-color); }
+        .app-header .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
+        .logo-text h1 { margin: 0; font-size: 18px; color: var(--text-main); }
+        .logo-text span { font-size: 11px; color: var(--text-muted); }
+        .header-actions button { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; padding: 5px; }
+
+        /* CONTAINER MOBILE */
+        .mobile-container { max-width: 500px; margin: 0 auto; padding: 0 15px 30px; width: 100%; }
+        
+        /* CARD PRINCIPAL COM NOVA ANIMAÇÃO LÍQUIDA */
+        .card { background: var(--card-bg); border-radius: 12px; border: 2px solid var(--primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .card-padding { padding: 25px 20px; position: relative; z-index: 2; }
+        
+        .liquid-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .liquid-fill { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #bfdbfe; transition: height 1.5s ease-in-out; }
+        
+        .liquid-wave { position: absolute; bottom: 100%; left: 0; width: 200%; height: 40px; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 40" xmlns="http://www.w3.org/2000/svg"><path d="M0 20 Q 100 40 200 20 T 400 20 T 600 20 T 800 20 L 800 40 L 0 40 Z" fill="%23bfdbfe"/></svg>') repeat-x; animation: wave 3s linear infinite; }
+        .liquid-wave:nth-child(2) { bottom: 100%; opacity: 0.5; animation: wave 4s linear infinite reverse; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 40" xmlns="http://www.w3.org/2000/svg"><path d="M0 20 Q 100 0 200 20 T 400 20 T 600 20 T 800 20 L 800 40 L 0 40 Z" fill="%2393c5fd"/></svg>') repeat-x; }
+        
+        @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        .card-title { font-size: 20px; font-weight: 600; margin-top: 0; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .card-title::before { content: '▶'; color: var(--primary); font-size: 14px; }
+
+        /* FORMULÁRIOS */
+        .form-group { margin-bottom: 20px; }
+        .row { display: flex; gap: 15px; }
+        .col { flex: 1; }
+        label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background-color: rgba(249, 250, 251, 0.9); font-size: 14px; color: var(--text-main); outline: none; transition: border 0.2s; position: relative; z-index: 2; }
+        input:focus, select:focus { border-color: var(--primary); }
+        
+        /* BOTÕES */
+        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 600; font-size: 15px; cursor: pointer; transition: 0.2s; text-align: center; position: relative; z-index: 2;}
+        .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: #e5e7eb; color: var(--text-main); }
+        .btn-secondary:hover { background-color: #d1d5db; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+
+        /* ÁREA DE CAPTURA DE FOTO */
+        .photo-area { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; background-color: rgba(248, 250, 252, 0.9); position: relative; z-index: 2;}
+        .photo-area canvas { width: 100%; border-radius: 8px; margin-top: 10px; }
+        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        
+        /* ASSINATURAS */
+        .signature-pad { border: 1px solid var(--border-color); background: #fff; width: 100%; height: 200px; border-radius: 8px; touch-action: none; margin-bottom: 10px; }
+
+        /* ADMIN DASHBOARD */
+        .admin-layout { display: flex; min-height: 100vh; background-color: var(--bg-color); position: relative;}
+        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; z-index: 1000; }
+        .sidebar-brand { padding: 0 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
+        .sidebar-brand h2 { margin: 0; color: #fff; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .nav-item { padding: 15px 20px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; border-left: 3px solid transparent; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { color: #fff; background-color: rgba(255,255,255,0.05); border-left-color: var(--primary); }
+        .admin-content { flex: 1; padding: 30px; overflow-y: auto; width: 100%; }
+        
+        /* BARRA DO TANQUE SUPERIOR ANIMADA NO ADMIN */
+        .tank-bar-wrapper { background: #e5e7eb; border-radius: 10px; overflow: hidden; position: relative; height: 70px; display: flex; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .tank-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #1e3a8a, #3b82f6); transition: width 1s ease-in-out; z-index: 1; }
+        .tank-bar-content { position: relative; z-index: 2; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: color 0.3s; }
+        .tank-bar-content h3 { margin: 0; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;}
+        .tank-bar-content .tank-value { font-size: 20px; font-weight: 700; }
+
+        .admin-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
+        .info-text { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; background: rgba(239, 246, 255, 0.9); padding: 10px; border-radius: 6px; border-left: 3px solid var(--primary); position: relative; z-index: 2;}
+        
+        /* TABELA ADMIN */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; min-width: 900px; }
+        .admin-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); color: var(--text-muted); background: #f9fafb; }
+        .admin-table td { padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+        .admin-table button.link-btn { background: none; border: none; color: var(--primary); font-weight: 500; cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; margin-right: 5px; }
+        .btn-delete { color: #ef4444 !important; }
+        
+        /* LISTA DE PLACAS */
+        .plate-list { list-style: none; padding: 0; margin: 0; }
+        .plate-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
+        .plate-item:last-child { border-bottom: none; }
+        .plate-item button { background: none; border: none; color: #ef4444; font-weight: bold; cursor: pointer; font-size: 16px; }
+
+        /* MODAL E OVERLAY */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; text-align: center; overflow-y: auto; }
+        .modal-content img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        .modal-close { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-main); margin-right: 10px; padding: 0;}
+        .sidebar-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998; display:none; }
+
+        /* RESPONSIVIDADE ADMIN SIDEBAR */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -250px; top: 0; height: 100%; transition: left 0.3s ease; box-shadow: 2px 0 5px rgba(0,0,0,0.5); }
+            .sidebar.open { left: 0; }
+            .menu-toggle { display: inline-block; }
+            .sidebar-overlay.open { display: block; }
+            .admin-content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="image-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 id="modal-title" style="margin-top: 0;">Visualização</h3>
+        <div id="modal-images-container"></div>
+        <button class="modal-close" onclick="fecharModal()">Fechar</button>
+    </div>
+</div>
+
+<div id="app-header" class="app-header">
+    <div class="logo-area">
+        <div class="logo-icon">I</div>
+        <div class="logo-text">
+            <h1>IcaphiAbastecimento</h1>
+            <span>By: Matheus Julio</span>
+        </div>
+    </div>
+    <div class="header-actions">
+        <button id="btnOpenAdminLogin" title="Acesso Admin">🛡️</button>
+    </div>
+</div>
+
+<div class="mobile-container">
+    <div id="main-screen">
+        <div class="card">
+            <div class="liquid-container">
+                <div class="liquid-fill" id="liquidFillLevel" style="height: 0%;">
+                    <div class="liquid-wave"></div>
+                    <div class="liquid-wave"></div>
+                </div>
+            </div>
+
+            <div class="card-padding">
+                <h2 class="card-title">Novo Abastecimento</h2>
+                
+                <div class="row form-group">
+                    <div class="col"><label>Data</label><input type="date" id="dataAbastecimento"></div>
+                </div>
+                
+                <div class="row form-group">
+                    <div class="col">
+                        <label>Placa</label>
+                        <select id="placaVeiculo"><option value="">Carregando...</option></select>
+                    </div>
+                    <div class="col"><label>KM</label><input type="number" id="kmVeiculo" placeholder="Opcional"></div>
+                </div>
+
+                <div class="form-group"><label>Condutor</label><input type="text" id="nomeMotorista" required></div>
+                <div class="form-group"><label>Responsável Pista</label><input type="text" id="nomeFuncionario" required></div>
+                <div class="form-group"><label>Litros (Apenas Números)</label><input type="number" id="qtdLitros" required></div>
+
+                <div class="photo-area">
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+                    <button id="btnCapturePhoto" class="btn-camera" type="button"><span style="font-size: 24px;">📷</span>Tirar foto da Bomba (OBRIGATÓRIO)</button>
+                    <canvas id="photo-canvas" class="hidden"></canvas>
+                    <p id="photo-status" style="color: var(--success); font-size: 12px; margin-top: 10px;"></p>
+                </div>
+
+                <div class="form-group"><label>Observações</label><input type="text" id="obsAbastecimento" placeholder="Opcional"></div>
+
+                <div class="info-text">
+                    <strong>Combustível:</strong> Diesel S10<br>
+                    <strong>Valor Previsto:</strong> R$ <span id="displayValorTotal">0.00</span>
+                </div>
+
+                <button id="btnProsseguirAssinaturas" class="btn btn-primary">INICIAR AGORA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="signature-driver-screen" class="hidden">
+        <div class="card card-padding">
+            <h2 class="card-title">Assinatura Motorista</h2>
+            <canvas id="canvasMotorista" class="signature-pad"></canvas>
+            <div class="row">
+                <button id="btnClearDriver" class="btn btn-secondary col">Limpar</button>
+                <button id="btnNextFuncionario" class="btn btn-primary col">Avançar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="signature-emp-screen" class="hidden">
+        <div class="card card-padding">
+            <h2 class="card-title">Assinatura Responsável</h2>
+            <canvas id="canvasFuncionario" class="signature-pad"></canvas>
+            <div class="row">
+                <button id="btnClearEmp" class="btn btn-secondary col">Limpar</button>
+                <button id="btnFinalizeRecord" class="btn btn-primary col">Finalizar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="whatsapp-screen" class="hidden">
+        <div class="card card-padding" style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">✅</div>
+            <h2 class="card-title" style="justify-content: center;">Registro Salvo!</h2>
+            <div class="form-group" style="text-align: left;"><label>WhatsApp do Condutor</label><input type="number" id="whatsappNumber" placeholder="Ex: 21999999999"></div>
+            <button id="btnShareWhatsApp" class="btn btn-primary" style="margin-bottom: 10px; background-color: #25D366;">Enviar via WhatsApp</button>
+            <button id="btnNewRecord" class="btn btn-secondary">Novo Abastecimento</button>
+        </div>
+    </div>
+
+    <div id="admin-login-screen" class="hidden">
+        <div class="card card-padding">
+            <h2 class="card-title">Área Restrita</h2>
+            <div class="form-group"><label>Senha de Acesso</label><input type="password" id="adminPassword" required></div>
+            <button id="btnAdminLogin" class="btn btn-primary" style="margin-bottom: 10px;">Acessar</button>
+            <button id="btnBackToMain" class="btn btn-secondary">Voltar</button>
+        </div>
+    </div>
+</div>
+
+<div id="admin-panel" class="admin-layout hidden">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="sidebar" id="adminSidebar">
+        <div class="sidebar-brand">
+            <h2>IcaphiAdmin</h2>
+            <button class="menu-toggle" style="color: white; margin: 0;" onclick="toggleSidebar()">✖</button>
+        </div>
+        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">📋 Histórico (Relatórios)</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('frota')">🚚 Frota (Placas)</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('exportar')">📥 Exportar Planilha</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('precos')">💲 Preço do Litro</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('tanque')">🛢️ Controle do Tanque</div>
+        <div style="flex-grow: 1;"></div>
+        <div class="nav-item" id="btnExitAdmin" style="color: #ef4444;">Sair do Painel</div>
+    </div>
+    
+    <div class="admin-content">
+        <div class="tank-bar-wrapper">
+            <div class="tank-bar-fill" id="adminTankFill" style="width: 0%;"></div>
+            <div class="tank-bar-content" id="tankBarContent">
+                <h3>
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button> 
+                    🛢️ Estoque do Tanque
+                </h3>
+                <div class="tank-value">
+                    <span id="displayTankLitersAdmin">0</span> / <span id="displayTankCapAdmin">0</span> L
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-historico" class="admin-aba">
+            <div class="admin-header">
+                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="date" id="filtroDataAdmin" style="width: 140px; padding: 8px;">
+                    <input type="text" id="filtroPlacaAdmin" placeholder="Filtrar Placa" style="width: 140px; padding: 8px; text-transform: uppercase;">
+                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltrosAdmin()">Filtrar</button>
+                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="limparFiltrosAdmin()">Limpar</button>
+                </div>
+            </div>
+            <div class="card card-padding">
+                <div id="admin-table-container" class="table-responsive">
+                    <p style="color: var(--text-muted); font-size: 14px;">Carregando dados do banco...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-frota" class="admin-aba hidden">
+            <h2 style="margin-top:0;">Gestão de Frota (Placas)</h2>
+            <div class="card card-padding" style="max-width: 500px; margin-bottom: 20px;">
+                <h3 style="margin-top:0; font-size: 16px;">Adicionar Manualmente</h3>
+                <div class="row" style="margin-bottom: 20px;">
+                    <div class="col"><input type="text" id="novaPlacaInput" placeholder="Ex: ABC1D23" style="text-transform: uppercase;"></div>
+                    <button class="btn btn-primary" style="width: auto;" onclick="adicionarPlaca()">Adicionar</button>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                
+                <h3 style="margin-top:0; font-size: 16px;">Importar via Planilha (Excel/CSV)</h3>
+                <p style="font-size: 12px; color: var(--text-muted);">A planilha deve conter as placas na <strong>Coluna A</strong>.</p>
+                <input type="file" id="importPlacasExcel" accept=".xlsx, .xls, .csv" style="margin-bottom: 15px;">
+            </div>
+
+            <div class="card card-padding" style="max-width: 500px;">
+                <h3 style="margin-top:0; font-size: 16px;">Placas Cadastradas</h3>
+                <ul class="plate-list" id="listaPlacasAdmin"></ul>
+            </div>
+        </div>
+
+        <div id="aba-exportar" class="admin-aba hidden">
+            <h2 style="margin-top:0;">Exportar Dados para Excel</h2>
+            <div class="card card-padding" style="max-width: 500px;">
+                <div class="info-text">Selecione o período de abastecimentos que deseja baixar para o seu computador.</div>
+                <div class="row form-group">
+                    <div class="col"><label>Data Inicial</label><input type="date" id="exportDataInicio"></div>
+                    <div class="col"><label>Data Final</label><input type="date" id="exportDataFim"></div>
+                </div>
+                <button class="btn btn-success" onclick="exportarPlanilha()">📥 Baixar Planilha (.xlsx)</button>
+            </div>
+        </div>
+
+        <div id="aba-precos" class="admin-aba hidden">
+            <h2 style="margin-top:0;">Configuração de Preço</h2>
+            <div class="card card-padding" style="max-width: 500px;">
+                <label>Valor Atual do Litro de Diesel S10 (R$)</label>
+                <input type="number" id="precoDieselAdmin" step="0.01" style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="salvarPreco()">Salvar Novo Preço</button>
+            </div>
+        </div>
+
+        <div id="aba-tanque" class="admin-aba hidden">
+            <h2 style="margin-top:0;">Gestão do Tanque Principal</h2>
+            <div class="card card-padding" style="max-width: 500px;">
+                <div class="info-text">Configure a capacidade total do tanque para a barra de progresso e defina o estoque atual.</div>
+                <label>Capacidade Total Máxima (Litros)</label>
+                <input type="number" id="capacidadeTanqueAdmin" style="margin-bottom: 15px;" placeholder="Ex: 10000">
+                
+                <label>Estoque Atual do Tanque (Litros)</label>
+                <input type="number" id="estoqueTanqueAdmin" style="margin-bottom: 15px;">
+                
+                <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Estoque e Capacidade</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
+        authDomain: "gestao-abastecimento.firebaseapp.com",
+        projectId: "gestao-abastecimento",
+        storageBucket: "gestao-abastecimento.firebasestorage.app",
+        messagingSenderId: "462798250454",
+        appId: "1:462798250454:web:f56cf50bd2c0223459c477"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let configGerais = { precoDiesel: 5.90, estoqueTanque: 0, capacidadeTanque: 10000, placas: ['LOE5G45', 'KZT4G75'] };
+    let currentRecordData = {};
+    let photoDataUrl = null;
+    window.dadosRelatorio = []; 
+
+    window.toggleSidebar = function() {
+        document.getElementById('adminSidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('open');
+    };
+
+    const switchScreen = (screenId) => {
+        ['main-screen', 'signature-driver-screen', 'signature-emp-screen', 'whatsapp-screen', 'admin-login-screen'].forEach(id => {
+            const el = document.getElementById(id); if(el) el.classList.add('hidden');
+        });
+        if(screenId === 'admin-panel') {
+            document.querySelector('.mobile-container').classList.add('hidden');
+            document.getElementById('app-header').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            carregarRelatoriosAdmin(); atualizarInputsAdmin();
+        } else {
+            document.querySelector('.mobile-container').classList.remove('hidden');
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        document.getElementById('dataAbastecimento').valueAsDate = new Date();
+        await carregarConfiguracoesIniciais();
+        renderizarSelectPlacas();
+    });
+
+    document.getElementById('btnCapturePhoto').addEventListener('click', () => { document.getElementById('camera-input').click(); });
+
+    document.getElementById('camera-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('photo-canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width; canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    photoDataUrl = canvas.toDataURL('image/jpeg', 0.5); 
+                    canvas.classList.remove('hidden');
+                    document.getElementById('photo-status').innerText = "✅ Foto capturada com sucesso!";
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('qtdLitros').addEventListener('input', (e) => {
+        let val = e.target.value.replace(/[^0-9.]/g, ''); e.target.value = val;
+        const litros = parseFloat(val) || 0;
+        document.getElementById('displayValorTotal').innerText = (litros * configGerais.precoDiesel).toFixed(2);
+    });
+
+    function atualizarVisorTanque() {
+        document.getElementById('displayTankLitersAdmin').innerText = configGerais.estoqueTanque.toFixed(2);
+        if(document.getElementById('displayTankCapAdmin')) {
+            document.getElementById('displayTankCapAdmin').innerText = configGerais.capacidadeTanque;
+        }
+        
+        let pct = 0;
+        if(configGerais.capacidadeTanque > 0) {
+            pct = (configGerais.estoqueTanque / configGerais.capacidadeTanque) * 100;
+            if(pct > 100) pct = 100;
+            if(pct < 0) pct = 0;
+        }
+
+        // Animação Card (Líquido subindo)
+        const fillEl = document.getElementById('liquidFillLevel');
+        if(fillEl) fillEl.style.height = `${pct}%`;
+
+        // Barra Tanque Admin
+        const adminFill = document.getElementById('adminTankFill');
+        if(adminFill) adminFill.style.width = `${pct}%`;
+
+        // Ajuste de cor se o progresso for muito baixo para dar leitura
+        const tankContent = document.getElementById('tankBarContent');
+        if(tankContent) {
+             if(pct < 30) {
+                 tankContent.style.color = '#1f2937';
+                 tankContent.style.textShadow = 'none';
+                 // O menu hambúrguer precisa ficar escuro também se a barra estiver vazia
+                 const menuToggleBtn = tankContent.querySelector('.menu-toggle');
+                 if(menuToggleBtn) menuToggleBtn.style.color = '#1f2937';
+             } else {
+                 tankContent.style.color = '#fff';
+                 tankContent.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+                 const menuToggleBtn = tankContent.querySelector('.menu-toggle');
+                 if(menuToggleBtn) menuToggleBtn.style.color = '#fff';
+             }
+        }
+    }
+
+    async function carregarConfiguracoesIniciais() {
+        try {
+            const docSnap = await getDoc(doc(db, "configuracoes", "gerais"));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                configGerais.precoDiesel = data.precoDiesel || 5.90;
+                configGerais.estoqueTanque = data.estoqueTanque || 0;
+                configGerais.capacidadeTanque = data.capacidadeTanque || 10000;
+                configGerais.placas = data.placas || ['LOE5G45', 'KZT4G75'];
+            } else { await setDoc(doc(db, "configuracoes", "gerais"), configGerais); }
+            atualizarVisorTanque();
+        } catch (e) { console.log("Erro ao ler configurações."); }
+    }
+
+    async function salvarConfiguracoesNoBanco() {
+        try {
+            await setDoc(doc(db, "configuracoes", "gerais"), configGerais, {merge: true});
+            atualizarVisorTanque();
+        } catch(e) { alert("Erro ao salvar configuração no banco!"); }
+    }
+
+    function renderizarSelectPlacas() {
+        const select = document.getElementById('placaVeiculo');
+        select.innerHTML = '<option value="">Selecione a Placa...</option>';
+        configGerais.placas.sort().forEach(placa => { select.innerHTML += `<option value="${placa}">${placa}</option>`; });
+    }
+
+    function setupCanvas(canvasId) {
+        const canvas = document.getElementById(canvasId); const ctx = canvas.getContext('2d'); let isDrawing = false;
+        const resizeCanvas = () => { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width - 40; };
+        setTimeout(resizeCanvas, 100);
+        const startDraw = (e) => { isDrawing = true; draw(e); };
+        const endDraw = () => { isDrawing = false; ctx.beginPath(); };
+        const draw = (e) => {
+            if (!isDrawing) return; e.preventDefault(); 
+            ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            ctx.lineTo(clientX - rect.left, clientY - rect.top); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(clientX - rect.left, clientY - rect.top);
+        };
+        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mouseup', endDraw); canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startDraw, {passive: false}); canvas.addEventListener('touchend', endDraw); canvas.addEventListener('touchmove', draw, {passive: false});
+    }
+
+    document.getElementById('btnClearDriver').addEventListener('click', () => { const c = document.getElementById('canvasMotorista'); c.getContext('2d').clearRect(0, 0, c.width, c.height); });
+    document.getElementById('btnClearEmp').addEventListener('click', () => { const c = document.getElementById('canvasFuncionario'); c.getContext('2d').clearRect(0, 0, c.width, c.height); });
+
+    document.getElementById('btnProsseguirAssinaturas').addEventListener('click', () => {
+        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !document.getElementById('placaVeiculo').value) {
+            alert("Preencha todos os campos obrigatórios e tire a foto da bomba."); return;
+        }
+        currentRecordData = {
+            data: document.getElementById('dataAbastecimento').value, placa: document.getElementById('placaVeiculo').value, km: document.getElementById('kmVeiculo').value || "", motorista: document.getElementById('nomeMotorista').value, funcionario: document.getElementById('nomeFuncionario').value, litros: document.getElementById('qtdLitros').value, valorUnitario: configGerais.precoDiesel, valorTotal: (document.getElementById('qtdLitros').value * configGerais.precoDiesel).toFixed(2), obs: document.getElementById('obsAbastecimento').value || "", timestamp: new Date().toISOString()
+        };
+        switchScreen('signature-driver-screen'); setupCanvas('canvasMotorista');
+    });
+
+    document.getElementById('btnNextFuncionario').addEventListener('click', () => { switchScreen('signature-emp-screen'); setupCanvas('canvasFuncionario'); });
+
+    document.getElementById('btnFinalizeRecord').addEventListener('click', async () => {
+        const btn = document.getElementById('btnFinalizeRecord');
+        btn.innerText = "Enviando Dados..."; btn.disabled = true;
+
+        const assMotoristaBase64 = document.getElementById('canvasMotorista').toDataURL('image/jpeg', 0.5);
+        const assFuncBase64 = document.getElementById('canvasFuncionario').toDataURL('image/jpeg', 0.5);
+
+        try {
+            currentRecordData.fotoBombaBase64 = photoDataUrl;
+            currentRecordData.assMotoristaBase64 = assMotoristaBase64;
+            currentRecordData.assFuncionarioBase64 = assFuncBase64;
+            await addDoc(collection(db, "abastecimentos"), currentRecordData);
+
+            const litrosAbastecidos = parseFloat(currentRecordData.litros);
+            configGerais.estoqueTanque = configGerais.estoqueTanque - litrosAbastecidos;
+            await salvarConfiguracoesNoBanco();
+            switchScreen('whatsapp-screen');
+        } catch (error) { console.error(error); alert("Erro ao salvar."); } finally { btn.innerText = "Finalizar"; btn.disabled = false; }
+    });
+
+    document.getElementById('btnShareWhatsApp').addEventListener('click', () => {
+        const phone = document.getElementById('whatsappNumber').value;
+        const texto = `*IcaphiAbastecimento*\nData: ${currentRecordData.data}\nPlaca: ${currentRecordData.placa}\nLitros: ${currentRecordData.litros}L\nValor Total: R$ ${currentRecordData.valorTotal}`;
+        const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+        window.open(url, '_blank');
+    });
+
+    document.getElementById('btnNewRecord').addEventListener('click', () => { window.location.reload(); });
+
+    // ADMIN
+    document.getElementById('btnOpenAdminLogin').addEventListener('click', () => switchScreen('admin-login-screen'));
+    document.getElementById('btnBackToMain').addEventListener('click', () => switchScreen('main-screen'));
+    
+    document.getElementById('btnAdminLogin').addEventListener('click', () => {
+        if(document.getElementById('adminPassword').value === "60010774") { switchScreen('admin-panel'); } else { alert("Senha Incorreta!"); }
+    });
+    document.getElementById('btnExitAdmin').addEventListener('click', () => { document.getElementById('adminPassword').value = ""; switchScreen('main-screen'); });
+
+    window.mudarAbaAdmin = function(aba) {
+        document.querySelectorAll('.admin-aba').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(`aba-${aba}`).classList.remove('hidden');
+        event.currentTarget.classList.add('active');
+        if(aba === 'frota') renderizarListaPlacasAdmin();
+        if(window.innerWidth <= 768) toggleSidebar();
+    }
+
+    window.abrirModalImagem = function(titulo, htmlConteudo) {
+        document.getElementById('modal-title').innerText = titulo;
+        document.getElementById('modal-images-container').innerHTML = htmlConteudo;
+        document.getElementById('image-modal').classList.remove('hidden');
+    }
+    window.fecharModal = function() { document.getElementById('image-modal').classList.add('hidden'); }
+
+    window.abrirFotoBomba = function(index) {
+        const d = window.dadosRelatorio[index];
+        abrirModalImagem('Foto da Bomba', `<img src="${d.fotoBombaBase64}">`);
+    }
+    window.abrirAssinaturas = function(index) {
+        const d = window.dadosRelatorio[index];
+        abrirModalImagem('Assinaturas', `<p><strong>Condutor:</strong></p><img src="${d.assMotoristaBase64}"><p><strong>Responsável:</strong></p><img src="${d.assFuncionarioBase64}">`);
+    }
+
+    function atualizarInputsAdmin() {
+        document.getElementById('precoDieselAdmin').value = configGerais.precoDiesel;
+        document.getElementById('estoqueTanqueAdmin').value = configGerais.estoqueTanque;
+        document.getElementById('capacidadeTanqueAdmin').value = configGerais.capacidadeTanque;
+    }
+
+    window.salvarPreco = async function() {
+        const val = parseFloat(document.getElementById('precoDieselAdmin').value);
+        if(val > 0) { configGerais.precoDiesel = val; await salvarConfiguracoesNoBanco(); alert("Preço atualizado!"); }
+    }
+    window.salvarEstoqueTanque = async function() {
+        const est = parseFloat(document.getElementById('estoqueTanqueAdmin').value);
+        const cap = parseFloat(document.getElementById('capacidadeTanqueAdmin').value);
+        if(!isNaN(est) && !isNaN(cap) && cap > 0) { 
+            configGerais.estoqueTanque = est; 
+            configGerais.capacidadeTanque = cap;
+            await salvarConfiguracoesNoBanco(); 
+            alert("Estoque e Capacidade atualizados!"); 
+        } else {
+            alert("Verifique os valores informados.");
+        }
+    }
+
+    window.adicionarPlaca = async function() {
+        const input = document.getElementById('novaPlacaInput');
+        const novaPlaca = input.value.trim().toUpperCase();
+        if(novaPlaca && !configGerais.placas.includes(novaPlaca)) {
+            configGerais.placas.push(novaPlaca);
+            await salvarConfiguracoesNoBanco(); input.value = ""; renderizarListaPlacasAdmin(); renderizarSelectPlacas();
+        }
+    }
+    window.removerPlaca = async function(placa) {
+        if(confirm(`Remover a placa ${placa}?`)) {
+            configGerais.placas = configGerais.placas.filter(p => p !== placa);
+            await salvarConfiguracoesNoBanco(); renderizarListaPlacasAdmin(); renderizarSelectPlacas();
+        }
+    }
+    function renderizarListaPlacasAdmin() {
+        const ul = document.getElementById('listaPlacasAdmin'); ul.innerHTML = "";
+        configGerais.placas.sort().forEach(placa => { ul.innerHTML += `<li class="plate-item"><span>${placa}</span><button onclick="removerPlaca('${placa}')">✖</button></li>`; });
+    }
+
+    document.getElementById('importPlacasExcel').addEventListener('change', (e) => {
+        const file = e.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const primeiraAba = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[primeiraAba];
+            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
+            let novasPlacas = 0;
+            json.forEach(linha => {
+                if(linha[0]) {
+                    const placaLida = String(linha[0]).trim().toUpperCase();
+                    if(placaLida && !configGerais.placas.includes(placaLida)) {
+                        configGerais.placas.push(placaLida); novasPlacas++;
+                    }
+                }
+            });
+            if(novasPlacas > 0) {
+                await salvarConfiguracoesNoBanco();
+                renderizarListaPlacasAdmin(); renderizarSelectPlacas();
+                alert(`${novasPlacas} placas importadas com sucesso!`);
+            } else { alert('Nenhuma placa nova encontrada. Verifique se estão na Coluna A.'); }
+            e.target.value = ''; 
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    window.apagarRegistro = async function(id) {
+        if(confirm("Tem certeza que deseja apagar este registro permanentemente?")) {
+            try {
+                await deleteDoc(doc(db, "abastecimentos", id));
+                alert("Registro apagado com sucesso!");
+                carregarRelatoriosAdmin(); 
+            } catch(e) { console.error(e); alert("Erro ao apagar registro."); }
+        }
+    }
+
+    async function carregarRelatoriosAdmin() {
+        const container = document.getElementById('admin-table-container');
+        try {
+            const q = query(collection(db, "abastecimentos"));
+            const querySnapshot = await getDocs(q);
+            window.dadosRelatorio = [];
+            querySnapshot.forEach(doc => { window.dadosRelatorio.push({ id: doc.id, ...doc.data() }); });
+            window.dadosRelatorio.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
+            desenharTabelaAdmin(window.dadosRelatorio);
+        } catch(e) { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; }
+    }
+
+    window.aplicarFiltrosAdmin = function() {
+        const fData = document.getElementById('filtroDataAdmin').value;
+        const fPlaca = document.getElementById('filtroPlacaAdmin').value.trim().toUpperCase();
+        let dadosFiltrados = window.dadosRelatorio;
+        if (fData) { dadosFiltrados = dadosFiltrados.filter(d => d.data === fData); }
+        if (fPlaca) { dadosFiltrados = dadosFiltrados.filter(d => d.placa.includes(fPlaca)); }
+        desenharTabelaAdmin(dadosFiltrados);
+    }
+
+    window.limparFiltrosAdmin = function() {
+        document.getElementById('filtroDataAdmin').value = ""; document.getElementById('filtroPlacaAdmin').value = "";
+        desenharTabelaAdmin(window.dadosRelatorio);
+    }
+
+    function desenharTabelaAdmin(dados) {
+        const container = document.getElementById('admin-table-container');
+        if (dados.length === 0) { container.innerHTML = "<p>Nenhum abastecimento encontrado.</p>"; return; }
+
+        let html = `<table class="admin-table"><tr><th>Data</th><th>Placa</th><th>KM</th><th>Motorista</th><th>Responsável</th><th>Litros</th><th>Val. Unit</th><th>Total</th><th>Anexos</th><th>Ações</th></tr>`;
+        
+        dados.forEach((d, index) => {
+            html += `<tr>
+                <td>${d.data}</td>
+                <td><strong>${d.placa}</strong></td>
+                <td>${d.km || '-'}</td>
+                <td>${d.motorista}</td>
+                <td>${d.funcionario}</td>
+                <td>${d.litros}L</td>
+                <td>R$ ${d.valorUnitario || '-'}</td>
+                <td>R$ ${d.valorTotal}</td>
+                <td style="min-width: 140px;">
+                    <button class="link-btn" onclick="abrirFotoBomba(${index})">📷 Bomba</button>
+                    <button class="link-btn" onclick="abrirAssinaturas(${index})">✍️ Ass.</button>
+                </td>
+                <td>
+                    <button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')">🗑️ Apagar</button>
+                </td>
+            </tr>`;
+        });
+        html += "</table>"; container.innerHTML = html;
+    }
+
+    window.exportarPlanilha = function() {
+        const dataInicio = document.getElementById('exportDataInicio').value;
+        const dataFim = document.getElementById('exportDataFim').value;
+        if(!dataInicio || !dataFim) { alert('Por favor, selecione as datas de início e fim.'); return; }
+        const filtrados = window.dadosRelatorio.filter(d => d.data >= dataInicio && d.data <= dataFim);
+        if(filtrados.length === 0) { alert('Nenhum abastecimento encontrado nesse período.'); return; }
+
+        const dadosExcel = filtrados.map(d => ({
+            "Data": d.data, "Placa": d.placa, "KM": d.km || "", "Motorista": d.motorista, "Responsável": d.funcionario,
+            "Litros": parseFloat(d.litros), "Valor Unitário (R$)": parseFloat(d.valorUnitario), "Valor Total (R$)": parseFloat(d.valorTotal), "Observações": d.obs || ""
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Abastecimentos");
+        XLSX.writeFile(workbook, `Icaphi_Abastecimentos_${dataInicio}_a_${dataFim}.xlsx`);
+    }
+</script>
+</body>
+</html>
