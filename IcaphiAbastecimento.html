@@ -52,8 +52,8 @@
 
         /* FORMULÁRIOS */
         .form-group { margin-bottom: 20px; }
-        .row { display: flex; gap: 15px; }
-        .col { flex: 1; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 140px; }
         label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
         input, select { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background-color: rgba(249, 250, 251, 0.9); font-size: 14px; color: var(--text-main); outline: none; transition: border 0.2s; position: relative; z-index: 2; }
         input:focus, select:focus { border-color: var(--primary); }
@@ -70,7 +70,7 @@
         /* ÁREA DE CAPTURA DE FOTO */
         .photo-area { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; background-color: rgba(248, 250, 252, 0.9); position: relative; z-index: 2;}
         .photo-area canvas { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; margin: -10px;}
+        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
         
         /* ASSINATURAS */
         .signature-pad { border: 1px solid var(--border-color); background: #fff; width: 100%; height: 200px; border-radius: 8px; touch-action: none; margin-bottom: 10px; }
@@ -181,7 +181,7 @@
 
                 <div class="photo-area">
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
-                    <button id="btnCapturePhoto" class="btn-camera" type="button"><span style="font-size: 24px;">📷</span>Tirar foto da Bomba (OBRIGATÓRIO)</button>
+                    <button id="btnCapturePhoto" class="btn-camera" type="button"><span style="font-size: 24px;">📷</span>ABRIR CÂMERA (OBRIGATÓRIO)</button>
                     <canvas id="photo-canvas" class="hidden"></canvas>
                     <p id="photo-status" style="color: var(--success); font-size: 12px; margin-top: 10px;"></p>
                 </div>
@@ -248,9 +248,10 @@
             <h2>IcaphiAdmin</h2>
             <button class="menu-toggle" style="color: white; margin: 0;" onclick="toggleSidebar()">✖</button>
         </div>
-        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">📋 Histórico (Relatórios)</div>
+        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">📋 Histórico (Abastecimento)</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('recebimento')">📥 Controle de Recebimento</div>
         <div class="nav-item" onclick="mudarAbaAdmin('frota')">🚚 Frota (Placas)</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('exportar')">📥 Exportar Planilha</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('exportar')">📤 Exportar Planilhas</div>
         <div class="nav-item" onclick="mudarAbaAdmin('precos')">💲 Preço do Litro</div>
         <div class="nav-item" onclick="mudarAbaAdmin('tanque')">🛢️ Controle do Tanque</div>
         <div style="flex-grow: 1;"></div>
@@ -273,7 +274,7 @@
 
         <div id="aba-historico" class="admin-aba">
             <div class="admin-header">
-                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos</div>
+                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos (Saída)</div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="date" id="filtroDataAdmin" style="width: 140px; padding: 8px;">
                     <input type="text" id="filtroPlacaAdmin" placeholder="Filtrar Placa" style="width: 140px; padding: 8px; text-transform: uppercase;">
@@ -284,6 +285,47 @@
             <div class="card card-padding">
                 <div id="admin-table-container" class="table-responsive">
                     <p style="color: var(--text-muted); font-size: 14px;">Carregando dados do banco...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-recebimento" class="admin-aba hidden">
+            <h2 style="margin-top:0;">Controle de Recebimento de Combustível</h2>
+            
+            <div class="card card-padding" style="margin-bottom: 20px;" id="formRecebimentoContainer">
+                <h3 style="margin-top:0;" id="tituloFormRecebimento">Registrar Nova Entrada</h3>
+                <div class="row form-group">
+                    <div class="col"><label>Data de Chegada</label><input type="date" id="recDataChegada"></div>
+                    <div class="col"><label>Horário</label><input type="time" id="recHorario"></div>
+                    <div class="col"><label>Fornecedor</label><input type="text" id="recFornecedor" placeholder="Nome da empresa"></div>
+                </div>
+                <div class="row form-group">
+                    <div class="col"><label>Quantidade (Litros)</label><input type="number" id="recLitros" placeholder="Ex: 5000" oninput="calcularTotalRecebimento()"></div>
+                    <div class="col"><label>Valor do Litro (R$)</label><input type="number" id="recValorLitro" step="0.01" placeholder="Ex: 4.50" oninput="calcularTotalRecebimento()"></div>
+                    <div class="col"><label>Total a Pagar (R$)</label><input type="text" id="recTotalPagar" readonly style="background-color: #e5e7eb; font-weight: bold;"></div>
+                </div>
+                <div class="row form-group">
+                    <div class="col"><label>Vencimento da Duplicata</label><input type="date" id="recVencimento"></div>
+                    <div class="col"><label>Responsável pelo Recebimento</label><input type="text" id="recResponsavel" placeholder="Quem assinou a nota"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-primary" id="btnSalvarRecebimento" onclick="salvarRecebimento()">Salvar Recebimento</button></div>
+                    <div class="col"><button class="btn btn-secondary hidden" id="btnCancelarEdicaoRec" onclick="cancelarEdicaoRecebimento()">Cancelar Edição</button></div>
+                </div>
+            </div>
+
+            <div class="admin-header" style="margin-top: 30px;">
+                <div style="font-size: 18px; font-weight: 600;">Histórico de Recebimentos</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="date" id="filtroDataRecInicio" style="width: 140px; padding: 8px;" title="Data Início">
+                    <input type="date" id="filtroDataRecFim" style="width: 140px; padding: 8px;" title="Data Fim">
+                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltroRecebimento()">Filtrar</button>
+                    <button class="btn btn-success" style="width: auto; padding: 8px 15px;" onclick="exportarRecebimentos()">📥 Exportar Excel</button>
+                </div>
+            </div>
+            <div class="card card-padding">
+                <div id="recebimentos-table-container" class="table-responsive">
+                    <p style="color: var(--text-muted); font-size: 14px;">Carregando recebimentos...</p>
                 </div>
             </div>
         </div>
@@ -310,9 +352,9 @@
         </div>
 
         <div id="aba-exportar" class="admin-aba hidden">
-            <h2 style="margin-top:0;">Exportar Dados para Excel</h2>
+            <h2 style="margin-top:0;">Exportar Abastecimentos (Saídas)</h2>
             <div class="card card-padding" style="max-width: 500px;">
-                <div class="info-text">Selecione o período de abastecimentos que deseja baixar para o seu computador.</div>
+                <div class="info-text">Selecione o período de abastecimentos de frota que deseja baixar para o seu computador.</div>
                 <div class="row form-group">
                     <div class="col"><label>Data Inicial</label><input type="date" id="exportDataInicio"></div>
                     <div class="col"><label>Data Final</label><input type="date" id="exportDataFim"></div>
@@ -322,9 +364,9 @@
         </div>
 
         <div id="aba-precos" class="admin-aba hidden">
-            <h2 style="margin-top:0;">Configuração de Preço</h2>
+            <h2 style="margin-top:0;">Configuração de Preço (Saída)</h2>
             <div class="card card-padding" style="max-width: 500px;">
-                <label>Valor Atual do Litro de Diesel S10 (R$)</label>
+                <label>Valor Atual do Litro de Diesel S10 para a Frota (R$)</label>
                 <input type="number" id="precoDieselAdmin" step="0.01" style="margin-bottom: 15px;">
                 <button class="btn btn-primary" onclick="salvarPreco()">Salvar Novo Preço</button>
             </div>
@@ -333,14 +375,14 @@
         <div id="aba-tanque" class="admin-aba hidden">
             <h2 style="margin-top:0;">Gestão do Tanque Principal</h2>
             <div class="card card-padding" style="max-width: 500px;">
-                <div class="info-text">Configure a capacidade total do tanque para a barra de progresso e defina o estoque atual.</div>
+                <div class="info-text">Configure a capacidade total do tanque para a barra de progresso e defina o estoque atual. (O estoque atualiza automaticamente nas guias de Recebimento e Abastecimento).</div>
                 <label>Capacidade Total Máxima (Litros)</label>
                 <input type="number" id="capacidadeTanqueAdmin" style="margin-bottom: 15px;" placeholder="Ex: 10000">
                 
                 <label>Estoque Atual do Tanque (Litros)</label>
                 <input type="number" id="estoqueTanqueAdmin" style="margin-bottom: 15px;">
                 
-                <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Estoque e Capacidade</button>
+                <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Manualmente</button>
             </div>
         </div>
     </div>
@@ -348,7 +390,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
@@ -366,6 +408,11 @@
     let currentRecordData = {};
     let photoDataUrl = null;
     window.dadosRelatorio = []; 
+    window.dadosRecebimentosLista = []; 
+    
+    // Variáveis de controle de edição do Recebimento
+    let editandoRecebimentoId = null;
+    let litrosAntigosRecebimento = 0;
 
     window.toggleSidebar = function() {
         document.getElementById('adminSidebar').classList.toggle('open');
@@ -380,7 +427,7 @@
             document.querySelector('.mobile-container').classList.add('hidden');
             document.getElementById('app-header').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
-            carregarRelatoriosAdmin(); atualizarInputsAdmin();
+            carregarRelatoriosAdmin(); atualizarInputsAdmin(); carregarRecebimentosBanco();
         } else {
             document.querySelector('.mobile-container').classList.remove('hidden');
             document.getElementById('app-header').classList.remove('hidden');
@@ -391,6 +438,7 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById('dataAbastecimento').valueAsDate = new Date();
+        document.getElementById('recDataChegada').valueAsDate = new Date(); 
         await carregarConfiguracoesIniciais();
         renderizarSelectPlacas();
     });
@@ -437,21 +485,17 @@
             if(pct < 0) pct = 0;
         }
 
-        // Animação Card (Líquido subindo)
         const fillEl = document.getElementById('liquidFillLevel');
         if(fillEl) fillEl.style.height = `${pct}%`;
 
-        // Barra Tanque Admin
         const adminFill = document.getElementById('adminTankFill');
         if(adminFill) adminFill.style.width = `${pct}%`;
 
-        // Ajuste de cor se o progresso for muito baixo para dar leitura
         const tankContent = document.getElementById('tankBarContent');
         if(tankContent) {
              if(pct < 30) {
                  tankContent.style.color = '#1f2937';
                  tankContent.style.textShadow = 'none';
-                 // O menu hambúrguer precisa ficar escuro também se a barra estiver vazia
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
                  if(menuToggleBtn) menuToggleBtn.style.color = '#1f2937';
              } else {
@@ -537,7 +581,7 @@
             await addDoc(collection(db, "abastecimentos"), currentRecordData);
 
             const litrosAbastecidos = parseFloat(currentRecordData.litros);
-            configGerais.estoqueTanque = configGerais.estoqueTanque - litrosAbastecidos;
+            configGerais.estoqueTanque -= litrosAbastecidos;
             await salvarConfiguracoesNoBanco();
             switchScreen('whatsapp-screen');
         } catch (error) { console.error(error); alert("Erro ao salvar."); } finally { btn.innerText = "Finalizar"; btn.disabled = false; }
@@ -567,6 +611,7 @@
         document.getElementById(`aba-${aba}`).classList.remove('hidden');
         event.currentTarget.classList.add('active');
         if(aba === 'frota') renderizarListaPlacasAdmin();
+        if(aba === 'recebimento') carregarRecebimentosBanco();
         if(window.innerWidth <= 768) toggleSidebar();
     }
 
@@ -609,6 +654,192 @@
         }
     }
 
+    // LÓGICA CONTROLE DE RECEBIMENTO (COM EDIÇÃO E EXCLUSÃO)
+    window.calcularTotalRecebimento = function() {
+        const litros = parseFloat(document.getElementById('recLitros').value) || 0;
+        const valorLitro = parseFloat(document.getElementById('recValorLitro').value) || 0;
+        document.getElementById('recTotalPagar').value = (litros * valorLitro).toFixed(2);
+    }
+
+    window.salvarRecebimento = async function() {
+        const dataChegada = document.getElementById('recDataChegada').value;
+        const horario = document.getElementById('recHorario').value;
+        const fornecedor = document.getElementById('recFornecedor').value;
+        const litros = parseFloat(document.getElementById('recLitros').value);
+        const valorLitro = parseFloat(document.getElementById('recValorLitro').value);
+        const vencimento = document.getElementById('recVencimento').value;
+        const responsavel = document.getElementById('recResponsavel').value;
+        const total = document.getElementById('recTotalPagar').value;
+
+        if(!dataChegada || !fornecedor || !litros || !valorLitro || !responsavel) {
+            alert("Por favor, preencha todos os campos obrigatórios do recebimento."); return;
+        }
+
+        const recebimentoData = {
+            dataChegada, horario, fornecedor, litros, valorLitro, vencimento, responsavel, total, timestamp: editandoRecebimentoId ? undefined : new Date().toISOString()
+        };
+
+        try {
+            if (editandoRecebimentoId) {
+                // Modo Edição
+                await updateDoc(doc(db, "recebimentos", editandoRecebimentoId), recebimentoData);
+                
+                // Ajusta a diferença no estoque do tanque
+                const diferencaLitros = litros - litrosAntigosRecebimento;
+                configGerais.estoqueTanque += diferencaLitros;
+                await salvarConfiguracoesNoBanco();
+                
+                alert("Recebimento atualizado com sucesso!");
+                cancelarEdicaoRecebimento(); // Limpa e restaura o form
+            } else {
+                // Novo Cadastro
+                await addDoc(collection(db, "recebimentos"), recebimentoData);
+                configGerais.estoqueTanque += litros;
+                await salvarConfiguracoesNoBanco();
+                alert("Recebimento registrado com sucesso! Estoque atualizado.");
+                limparFormularioRecebimento();
+            }
+            carregarRecebimentosBanco();
+        } catch (error) {
+            console.error(error); alert("Erro ao salvar recebimento.");
+        }
+    }
+
+    window.editarRecebimento = function(id) {
+        const rec = window.dadosRecebimentosLista.find(r => r.id === id);
+        if(!rec) return;
+
+        // Preenche o formulário com os dados
+        document.getElementById('recDataChegada').value = rec.dataChegada;
+        document.getElementById('recHorario').value = rec.horario || "";
+        document.getElementById('recFornecedor').value = rec.fornecedor;
+        document.getElementById('recLitros').value = rec.litros;
+        document.getElementById('recValorLitro').value = rec.valorLitro;
+        document.getElementById('recVencimento').value = rec.vencimento || "";
+        document.getElementById('recResponsavel').value = rec.responsavel;
+        document.getElementById('recTotalPagar').value = rec.total;
+
+        // Ativa modo edição
+        editandoRecebimentoId = id;
+        litrosAntigosRecebimento = parseFloat(rec.litros);
+        
+        document.getElementById('tituloFormRecebimento').innerText = "✏️ Editar Recebimento";
+        document.getElementById('btnSalvarRecebimento').innerText = "Atualizar Recebimento";
+        document.getElementById('btnCancelarEdicaoRec').classList.remove('hidden');
+
+        // Rola a tela suavemente para o formulário
+        document.getElementById('formRecebimentoContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.cancelarEdicaoRecebimento = function() {
+        editandoRecebimentoId = null;
+        litrosAntigosRecebimento = 0;
+        document.getElementById('tituloFormRecebimento').innerText = "Registrar Nova Entrada";
+        document.getElementById('btnSalvarRecebimento').innerText = "Salvar Recebimento";
+        document.getElementById('btnCancelarEdicaoRec').classList.add('hidden');
+        limparFormularioRecebimento();
+    }
+
+    window.apagarRecebimento = async function(id) {
+        const rec = window.dadosRecebimentosLista.find(r => r.id === id);
+        if(!rec) return;
+
+        if(confirm(`Tem certeza que deseja apagar o recebimento de ${rec.litros}L do fornecedor ${rec.fornecedor}? Isso também removerá os litros do estoque do tanque.`)) {
+            try {
+                await deleteDoc(doc(db, "recebimentos", id));
+                
+                // Remove do estoque atual
+                configGerais.estoqueTanque -= parseFloat(rec.litros);
+                await salvarConfiguracoesNoBanco();
+
+                alert("Recebimento apagado e estoque corrigido com sucesso!");
+                carregarRecebimentosBanco();
+            } catch(e) { console.error(e); alert("Erro ao apagar recebimento."); }
+        }
+    }
+
+    function limparFormularioRecebimento() {
+        document.getElementById('recDataChegada').valueAsDate = new Date();
+        document.getElementById('recHorario').value = "";
+        document.getElementById('recFornecedor').value = "";
+        document.getElementById('recLitros').value = "";
+        document.getElementById('recValorLitro').value = "";
+        document.getElementById('recVencimento').value = "";
+        document.getElementById('recResponsavel').value = "";
+        document.getElementById('recTotalPagar').value = "";
+    }
+
+    async function carregarRecebimentosBanco() {
+        const container = document.getElementById('recebimentos-table-container');
+        try {
+            const q = query(collection(db, "recebimentos"));
+            const querySnapshot = await getDocs(q);
+            window.dadosRecebimentosLista = [];
+            querySnapshot.forEach(doc => { window.dadosRecebimentosLista.push({ id: doc.id, ...doc.data() }); });
+            window.dadosRecebimentosLista.sort((a,b) => new Date(b.timestamp || b.dataChegada) - new Date(a.timestamp || a.dataChegada));
+            desenharTabelaRecebimentos(window.dadosRecebimentosLista);
+        } catch(e) { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; }
+    }
+
+    window.aplicarFiltroRecebimento = function() {
+        const fInicio = document.getElementById('filtroDataRecInicio').value;
+        const fFim = document.getElementById('filtroDataRecFim').value;
+        let filtrados = window.dadosRecebimentosLista;
+        
+        if (fInicio) { filtrados = filtrados.filter(d => d.dataChegada >= fInicio); }
+        if (fFim) { filtrados = filtrados.filter(d => d.dataChegada <= fFim); }
+        
+        desenharTabelaRecebimentos(filtrados);
+    }
+
+    function desenharTabelaRecebimentos(dados) {
+        const container = document.getElementById('recebimentos-table-container');
+        if (dados.length === 0) { container.innerHTML = "<p>Nenhum recebimento encontrado.</p>"; return; }
+
+        let html = `<table class="admin-table"><tr><th>Data</th><th>Horário</th><th>Fornecedor</th><th>Qtd Litros</th><th>Val. Litro</th><th>Total a Pagar</th><th>Venc. Duplicata</th><th>Responsável</th><th>Ações</th></tr>`;
+        
+        dados.forEach((d) => {
+            html += `<tr>
+                <td>${d.dataChegada}</td>
+                <td>${d.horario || '-'}</td>
+                <td><strong>${d.fornecedor}</strong></td>
+                <td style="color: var(--success); font-weight: bold;">+${d.litros}L</td>
+                <td>R$ ${parseFloat(d.valorLitro).toFixed(2)}</td>
+                <td>R$ ${d.total}</td>
+                <td>${d.vencimento || '-'}</td>
+                <td>${d.responsavel}</td>
+                <td style="min-width: 140px;">
+                    <button class="link-btn" onclick="editarRecebimento('${d.id}')">✏️ Editar</button>
+                    <button class="link-btn btn-delete" onclick="apagarRecebimento('${d.id}')">🗑️ Apagar</button>
+                </td>
+            </tr>`;
+        });
+        html += "</table>"; container.innerHTML = html;
+    }
+
+    window.exportarRecebimentos = function() {
+        const fInicio = document.getElementById('filtroDataRecInicio').value;
+        const fFim = document.getElementById('filtroDataRecFim').value;
+        
+        let filtrados = window.dadosRecebimentosLista;
+        if (fInicio) { filtrados = filtrados.filter(d => d.dataChegada >= fInicio); }
+        if (fFim) { filtrados = filtrados.filter(d => d.dataChegada <= fFim); }
+
+        if(filtrados.length === 0) { alert('Nenhum recebimento encontrado para exportar.'); return; }
+
+        const dadosExcel = filtrados.map(d => ({
+            "Data Chegada": d.dataChegada, "Horário": d.horario || "", "Fornecedor": d.fornecedor, 
+            "Qtd Litros": parseFloat(d.litros), "Valor do Litro (R$)": parseFloat(d.valorLitro), 
+            "Total a Pagar (R$)": parseFloat(d.total), "Venc. Duplicata": d.vencimento || "", "Responsável": d.responsavel
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Recebimentos");
+        XLSX.writeFile(workbook, `Icaphi_Recebimentos.xlsx`);
+    }
+
+    // LÓGICA DE PLACAS
     window.adicionarPlaca = async function() {
         const input = document.getElementById('novaPlacaInput');
         const novaPlaca = input.value.trim().toUpperCase();
@@ -657,10 +888,15 @@
     });
 
     window.apagarRegistro = async function(id) {
-        if(confirm("Tem certeza que deseja apagar este registro permanentemente?")) {
+        const d = window.dadosRelatorio.find(r => r.id === id);
+        if(!d) return;
+
+        if(confirm("Tem certeza que deseja apagar esta saída permanentemente? Isso devolverá os litros ao tanque.")) {
             try {
                 await deleteDoc(doc(db, "abastecimentos", id));
-                alert("Registro apagado com sucesso!");
+                configGerais.estoqueTanque += parseFloat(d.litros); // Devolve o combustível apagado ao tanque
+                await salvarConfiguracoesNoBanco();
+                alert("Registro apagado e estoque corrigido com sucesso!");
                 carregarRelatoriosAdmin(); 
             } catch(e) { console.error(e); alert("Erro ao apagar registro."); }
         }
@@ -705,7 +941,7 @@
                 <td>${d.km || '-'}</td>
                 <td>${d.motorista}</td>
                 <td>${d.funcionario}</td>
-                <td>${d.litros}L</td>
+                <td style="color: #ef4444; font-weight: bold;">-${d.litros}L</td>
                 <td>R$ ${d.valorUnitario || '-'}</td>
                 <td>R$ ${d.valorTotal}</td>
                 <td style="min-width: 140px;">
@@ -739,5 +975,4 @@
     }
 </script>
 </body>
-
 </html>
