@@ -68,9 +68,9 @@
         .btn-success:hover { background-color: #059669; }
 
         /* ÁREA DE CAPTURA DE FOTO */
-        .photo-area { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; background-color: rgba(248, 250, 252, 0.9); position: relative; z-index: 2;}
+        .photo-area { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; background-color: rgba(248, 250, 252, 0.9); position: relative; z-index: 2; transition: all 0.3s;}
         .photo-area canvas { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; border-radius: 8px; padding: 10px; transition: all 0.3s;}
         
         /* ASSINATURAS */
         .signature-pad { border: 1px solid var(--border-color); background: #fff; width: 100%; height: 200px; border-radius: 8px; touch-action: none; margin-bottom: 10px; }
@@ -110,9 +110,12 @@
 
         /* MODAL E OVERLAY */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; text-align: center; overflow-y: auto; }
-        .modal-content img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
-        .modal-close { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 10px; max-width: 90%; width: auto; max-height: 90vh; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Ajuste do tamanho da imagem no Admin para não ficar enorme */
+        .modal-content img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        
+        .modal-close { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;}
 
         .menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-main); margin-right: 10px; padding: 0;}
         .sidebar-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998; display:none; }
@@ -131,8 +134,8 @@
 
 <div id="image-modal" class="modal-overlay hidden">
     <div class="modal-content">
-        <h3 id="modal-title" style="margin-top: 0;">Visualização</h3>
-        <div id="modal-images-container"></div>
+        <h3 id="modal-title" style="margin-top: 0; align-self: flex-start;">Visualização</h3>
+        <div id="modal-images-container" style="width: 100%;"></div>
         <button class="modal-close" onclick="fecharModal()">Fechar</button>
     </div>
 </div>
@@ -165,6 +168,7 @@
                 
                 <div class="row form-group">
                     <div class="col"><label>Data</label><input type="date" id="dataAbastecimento"></div>
+                    <div class="col"><label>Horário</label><input type="time" id="horarioAbastecimento"></div>
                 </div>
                 
                 <div class="row form-group">
@@ -179,11 +183,13 @@
                 <div class="form-group"><label>Responsável Pista</label><input type="text" id="nomeFuncionario" required></div>
                 <div class="form-group"><label>Litros (Apenas Números)</label><input type="number" id="qtdLitros" required></div>
 
-                <div class="photo-area">
+                <div class="photo-area" id="photoAreaContainer">
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
-                    <button id="btnCapturePhoto" class="btn-camera" type="button"><span style="font-size: 24px;">📷</span>ABRIR CÂMERA (OBRIGATÓRIO)</button>
-                    <canvas id="photo-canvas" class="hidden"></canvas>
-                    <p id="photo-status" style="color: var(--success); font-size: 12px; margin-top: 10px;"></p>
+                    <button id="btnCapturePhoto" class="btn-camera" type="button">
+                        <span id="cameraIcon" style="font-size: 24px;">📷</span>
+                        <span id="cameraText">ABRIR CÂMERA (OBRIGATÓRIO)</span>
+                    </button>
+                    <canvas id="photo-canvas" class="hidden"></canvas> 
                 </div>
 
                 <div class="form-group"><label>Observações</label><input type="text" id="obsAbastecimento" placeholder="Opcional"></div>
@@ -433,12 +439,27 @@
             document.getElementById('app-header').classList.remove('hidden');
             document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
+            
+            // Se for pra tela inicial, reseta o botão da câmera e a hora
+            if(screenId === 'main-screen') {
+                const now = new Date();
+                document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
+                
+                document.getElementById('cameraIcon').innerText = "📷";
+                document.getElementById('cameraText').innerText = "ABRIR CÂMERA (OBRIGATÓRIO)";
+                document.getElementById('btnCapturePhoto').style.backgroundColor = "";
+                document.getElementById('btnCapturePhoto').style.color = "var(--primary)";
+                photoDataUrl = null;
+            }
         }
     };
 
     document.addEventListener("DOMContentLoaded", async () => {
-        document.getElementById('dataAbastecimento').valueAsDate = new Date();
-        document.getElementById('recDataChegada').valueAsDate = new Date(); 
+        const now = new Date();
+        document.getElementById('dataAbastecimento').valueAsDate = now;
+        document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
+        document.getElementById('recDataChegada').valueAsDate = now; 
+        
         await carregarConfiguracoesIniciais();
         renderizarSelectPlacas();
     });
@@ -454,11 +475,35 @@
                 img.onload = function() {
                     const canvas = document.getElementById('photo-canvas');
                     const ctx = canvas.getContext('2d');
-                    canvas.width = img.width; canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    photoDataUrl = canvas.toDataURL('image/jpeg', 0.5); 
-                    canvas.classList.remove('hidden');
-                    document.getElementById('photo-status').innerText = "✅ Foto capturada com sucesso!";
+                    
+                    // LÓGICA DE REDUÇÃO DA IMAGEM PARA EVITAR ERRO DE LIMITE DO BANCO
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_WIDTH) {
+                            width *= MAX_WIDTH / height;
+                            height = MAX_WIDTH;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    photoDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    // Atualiza o visual do botão (esconde a foto, mostra só o texto verdinho)
+                    document.getElementById('cameraIcon').innerText = "✅";
+                    document.getElementById('cameraText').innerText = "FOTO ANEXADA!";
+                    document.getElementById('btnCapturePhoto').style.backgroundColor = "#d1fae5";
+                    document.getElementById('btnCapturePhoto').style.color = "#065f46";
                 }
                 img.src = event.target.result;
             }
@@ -556,11 +601,21 @@
     document.getElementById('btnClearEmp').addEventListener('click', () => { const c = document.getElementById('canvasFuncionario'); c.getContext('2d').clearRect(0, 0, c.width, c.height); });
 
     document.getElementById('btnProsseguirAssinaturas').addEventListener('click', () => {
-        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !document.getElementById('placaVeiculo').value) {
+        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !document.getElementById('placaVeiculo').value || !document.getElementById('horarioAbastecimento').value) {
             alert("Preencha todos os campos obrigatórios e tire a foto da bomba."); return;
         }
         currentRecordData = {
-            data: document.getElementById('dataAbastecimento').value, placa: document.getElementById('placaVeiculo').value, km: document.getElementById('kmVeiculo').value || "", motorista: document.getElementById('nomeMotorista').value, funcionario: document.getElementById('nomeFuncionario').value, litros: document.getElementById('qtdLitros').value, valorUnitario: configGerais.precoDiesel, valorTotal: (document.getElementById('qtdLitros').value * configGerais.precoDiesel).toFixed(2), obs: document.getElementById('obsAbastecimento').value || "", timestamp: new Date().toISOString()
+            data: document.getElementById('dataAbastecimento').value, 
+            horario: document.getElementById('horarioAbastecimento').value,
+            placa: document.getElementById('placaVeiculo').value, 
+            km: document.getElementById('kmVeiculo').value || "", 
+            motorista: document.getElementById('nomeMotorista').value, 
+            funcionario: document.getElementById('nomeFuncionario').value, 
+            litros: document.getElementById('qtdLitros').value, 
+            valorUnitario: configGerais.precoDiesel, 
+            valorTotal: (document.getElementById('qtdLitros').value * configGerais.precoDiesel).toFixed(2), 
+            obs: document.getElementById('obsAbastecimento').value || "", 
+            timestamp: new Date().toISOString()
         };
         switchScreen('signature-driver-screen'); setupCanvas('canvasMotorista');
     });
@@ -578,23 +633,38 @@
             currentRecordData.fotoBombaBase64 = photoDataUrl;
             currentRecordData.assMotoristaBase64 = assMotoristaBase64;
             currentRecordData.assFuncionarioBase64 = assFuncBase64;
+            
             await addDoc(collection(db, "abastecimentos"), currentRecordData);
 
             const litrosAbastecidos = parseFloat(currentRecordData.litros);
             configGerais.estoqueTanque -= litrosAbastecidos;
             await salvarConfiguracoesNoBanco();
+            
+            // Reseta formulário após sucesso
+            document.getElementById('kmVeiculo').value = "";
+            document.getElementById('nomeMotorista').value = "";
+            document.getElementById('qtdLitros').value = "";
+            document.getElementById('obsAbastecimento').value = "";
+            const now = new Date();
+            document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
+            
             switchScreen('whatsapp-screen');
-        } catch (error) { console.error(error); alert("Erro ao salvar."); } finally { btn.innerText = "Finalizar"; btn.disabled = false; }
+        } catch (error) { 
+            console.error(error); 
+            alert("Erro ao salvar. Verifique sua conexão com a internet ou feche e abra o aplicativo novamente."); 
+        } finally { 
+            btn.innerText = "Finalizar"; btn.disabled = false; 
+        }
     });
 
     document.getElementById('btnShareWhatsApp').addEventListener('click', () => {
         const phone = document.getElementById('whatsappNumber').value;
-        const texto = `*IcaphiAbastecimento*\nData: ${currentRecordData.data}\nPlaca: ${currentRecordData.placa}\nLitros: ${currentRecordData.litros}L\nValor Total: R$ ${currentRecordData.valorTotal}`;
+        const texto = `*IcaphiAbastecimento*\nData: ${currentRecordData.data} às ${currentRecordData.horario}\nPlaca: ${currentRecordData.placa}\nLitros: ${currentRecordData.litros}L\nValor Total: R$ ${currentRecordData.valorTotal}`;
         const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`;
         window.open(url, '_blank');
     });
 
-    document.getElementById('btnNewRecord').addEventListener('click', () => { window.location.reload(); });
+    document.getElementById('btnNewRecord').addEventListener('click', () => { switchScreen('main-screen'); });
 
     // ADMIN
     document.getElementById('btnOpenAdminLogin').addEventListener('click', () => switchScreen('admin-login-screen'));
@@ -628,7 +698,7 @@
     }
     window.abrirAssinaturas = function(index) {
         const d = window.dadosRelatorio[index];
-        abrirModalImagem('Assinaturas', `<p><strong>Condutor:</strong></p><img src="${d.assMotoristaBase64}"><p><strong>Responsável:</strong></p><img src="${d.assFuncionarioBase64}">`);
+        abrirModalImagem('Assinaturas', `<p style="text-align: left;"><strong>Condutor:</strong></p><img src="${d.assMotoristaBase64}"><p style="text-align: left;"><strong>Responsável:</strong></p><img src="${d.assFuncionarioBase64}">`);
     }
 
     function atualizarInputsAdmin() {
@@ -681,18 +751,13 @@
 
         try {
             if (editandoRecebimentoId) {
-                // Modo Edição
                 await updateDoc(doc(db, "recebimentos", editandoRecebimentoId), recebimentoData);
-                
-                // Ajusta a diferença no estoque do tanque
                 const diferencaLitros = litros - litrosAntigosRecebimento;
                 configGerais.estoqueTanque += diferencaLitros;
                 await salvarConfiguracoesNoBanco();
-                
                 alert("Recebimento atualizado com sucesso!");
-                cancelarEdicaoRecebimento(); // Limpa e restaura o form
+                cancelarEdicaoRecebimento(); 
             } else {
-                // Novo Cadastro
                 await addDoc(collection(db, "recebimentos"), recebimentoData);
                 configGerais.estoqueTanque += litros;
                 await salvarConfiguracoesNoBanco();
@@ -709,7 +774,6 @@
         const rec = window.dadosRecebimentosLista.find(r => r.id === id);
         if(!rec) return;
 
-        // Preenche o formulário com os dados
         document.getElementById('recDataChegada').value = rec.dataChegada;
         document.getElementById('recHorario').value = rec.horario || "";
         document.getElementById('recFornecedor').value = rec.fornecedor;
@@ -719,7 +783,6 @@
         document.getElementById('recResponsavel').value = rec.responsavel;
         document.getElementById('recTotalPagar').value = rec.total;
 
-        // Ativa modo edição
         editandoRecebimentoId = id;
         litrosAntigosRecebimento = parseFloat(rec.litros);
         
@@ -727,7 +790,6 @@
         document.getElementById('btnSalvarRecebimento').innerText = "Atualizar Recebimento";
         document.getElementById('btnCancelarEdicaoRec').classList.remove('hidden');
 
-        // Rola a tela suavemente para o formulário
         document.getElementById('formRecebimentoContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -747,11 +809,8 @@
         if(confirm(`Tem certeza que deseja apagar o recebimento de ${rec.litros}L do fornecedor ${rec.fornecedor}? Isso também removerá os litros do estoque do tanque.`)) {
             try {
                 await deleteDoc(doc(db, "recebimentos", id));
-                
-                // Remove do estoque atual
                 configGerais.estoqueTanque -= parseFloat(rec.litros);
                 await salvarConfiguracoesNoBanco();
-
                 alert("Recebimento apagado e estoque corrigido com sucesso!");
                 carregarRecebimentosBanco();
             } catch(e) { console.error(e); alert("Erro ao apagar recebimento."); }
@@ -932,11 +991,12 @@
         const container = document.getElementById('admin-table-container');
         if (dados.length === 0) { container.innerHTML = "<p>Nenhum abastecimento encontrado.</p>"; return; }
 
-        let html = `<table class="admin-table"><tr><th>Data</th><th>Placa</th><th>KM</th><th>Motorista</th><th>Responsável</th><th>Litros</th><th>Val. Unit</th><th>Total</th><th>Anexos</th><th>Ações</th></tr>`;
+        let html = `<table class="admin-table"><tr><th>Data</th><th>Horário</th><th>Placa</th><th>KM</th><th>Motorista</th><th>Responsável</th><th>Litros</th><th>Val. Unit</th><th>Total</th><th>Anexos</th><th>Ações</th></tr>`;
         
         dados.forEach((d, index) => {
             html += `<tr>
                 <td>${d.data}</td>
+                <td>${d.horario || '-'}</td>
                 <td><strong>${d.placa}</strong></td>
                 <td>${d.km || '-'}</td>
                 <td>${d.motorista}</td>
@@ -964,7 +1024,7 @@
         if(filtrados.length === 0) { alert('Nenhum abastecimento encontrado nesse período.'); return; }
 
         const dadosExcel = filtrados.map(d => ({
-            "Data": d.data, "Placa": d.placa, "KM": d.km || "", "Motorista": d.motorista, "Responsável": d.funcionario,
+            "Data": d.data, "Horário": d.horario || "", "Placa": d.placa, "KM": d.km || "", "Motorista": d.motorista, "Responsável": d.funcionario,
             "Litros": parseFloat(d.litros), "Valor Unitário (R$)": parseFloat(d.valorUnitario), "Valor Total (R$)": parseFloat(d.valorTotal), "Observações": d.obs || ""
         }));
 
