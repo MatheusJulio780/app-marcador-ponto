@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IcaphiAbastecimento</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -112,8 +112,7 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .modal-content { background: #fff; padding: 20px; border-radius: 10px; max-width: 90%; width: auto; max-height: 90vh; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
         
-        /* Ajuste do tamanho da imagem no Admin para não ficar enorme */
-        .modal-content img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        .modal-content img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; background-color: #fff; }
         
         .modal-close { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;}
 
@@ -168,7 +167,6 @@
                 
                 <div class="row form-group">
                     <div class="col"><label>Data</label><input type="date" id="dataAbastecimento"></div>
-                    <div class="col"><label>Horário</label><input type="time" id="horarioAbastecimento"></div>
                 </div>
                 
                 <div class="row form-group">
@@ -440,11 +438,8 @@
             document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
             
-            // Se for pra tela inicial, reseta o botão da câmera e a hora
+            // Se for pra tela inicial, reseta o botão da câmera
             if(screenId === 'main-screen') {
-                const now = new Date();
-                document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
-                
                 document.getElementById('cameraIcon').innerText = "📷";
                 document.getElementById('cameraText').innerText = "ABRIR CÂMERA (OBRIGATÓRIO)";
                 document.getElementById('btnCapturePhoto').style.backgroundColor = "";
@@ -457,7 +452,6 @@
     document.addEventListener("DOMContentLoaded", async () => {
         const now = new Date();
         document.getElementById('dataAbastecimento').valueAsDate = now;
-        document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
         document.getElementById('recDataChegada').valueAsDate = now; 
         
         await carregarConfiguracoesIniciais();
@@ -476,21 +470,14 @@
                     const canvas = document.getElementById('photo-canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // LÓGICA DE REDUÇÃO DA IMAGEM PARA EVITAR ERRO DE LIMITE DO BANCO
                     const MAX_WIDTH = 800;
                     let width = img.width;
                     let height = img.height;
 
                     if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                     } else {
-                        if (height > MAX_WIDTH) {
-                            width *= MAX_WIDTH / height;
-                            height = MAX_WIDTH;
-                        }
+                        if (height > MAX_WIDTH) { width *= MAX_WIDTH / height; height = MAX_WIDTH; }
                     }
 
                     canvas.width = width;
@@ -499,7 +486,6 @@
 
                     photoDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
                     
-                    // Atualiza o visual do botão (esconde a foto, mostra só o texto verdinho)
                     document.getElementById('cameraIcon').innerText = "✅";
                     document.getElementById('cameraText').innerText = "FOTO ANEXADA!";
                     document.getElementById('btnCapturePhoto').style.backgroundColor = "#d1fae5";
@@ -581,7 +567,13 @@
 
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId); const ctx = canvas.getContext('2d'); let isDrawing = false;
-        const resizeCanvas = () => { const rect = canvas.parentElement.getBoundingClientRect(); canvas.width = rect.width - 40; };
+        const resizeCanvas = () => { 
+            const rect = canvas.parentElement.getBoundingClientRect(); 
+            canvas.width = rect.width - 40; 
+            // PREENCHE COM BRANCO PARA NÃO FICAR PRETO NO BANCO
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        };
         setTimeout(resizeCanvas, 100);
         const startDraw = (e) => { isDrawing = true; draw(e); };
         const endDraw = () => { isDrawing = false; ctx.beginPath(); };
@@ -597,16 +589,31 @@
         canvas.addEventListener('touchstart', startDraw, {passive: false}); canvas.addEventListener('touchend', endDraw); canvas.addEventListener('touchmove', draw, {passive: false});
     }
 
-    document.getElementById('btnClearDriver').addEventListener('click', () => { const c = document.getElementById('canvasMotorista'); c.getContext('2d').clearRect(0, 0, c.width, c.height); });
-    document.getElementById('btnClearEmp').addEventListener('click', () => { const c = document.getElementById('canvasFuncionario'); c.getContext('2d').clearRect(0, 0, c.width, c.height); });
+    document.getElementById('btnClearDriver').addEventListener('click', () => { 
+        const c = document.getElementById('canvasMotorista'); 
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, c.width, c.height);
+    });
+    document.getElementById('btnClearEmp').addEventListener('click', () => { 
+        const c = document.getElementById('canvasFuncionario'); 
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, c.width, c.height);
+    });
 
     document.getElementById('btnProsseguirAssinaturas').addEventListener('click', () => {
-        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !document.getElementById('placaVeiculo').value || !document.getElementById('horarioAbastecimento').value) {
+        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !document.getElementById('placaVeiculo').value) {
             alert("Preencha todos os campos obrigatórios e tire a foto da bomba."); return;
         }
+        
+        // Captura a hora EXATAMENTE neste momento de forma automática e invisível
+        const momentoAtual = new Date();
+        const horaAutomatica = momentoAtual.toTimeString().substring(0,5);
+
         currentRecordData = {
             data: document.getElementById('dataAbastecimento').value, 
-            horario: document.getElementById('horarioAbastecimento').value,
+            horario: horaAutomatica, // <- Relógio Automático
             placa: document.getElementById('placaVeiculo').value, 
             km: document.getElementById('kmVeiculo').value || "", 
             motorista: document.getElementById('nomeMotorista').value, 
@@ -615,7 +622,7 @@
             valorUnitario: configGerais.precoDiesel, 
             valorTotal: (document.getElementById('qtdLitros').value * configGerais.precoDiesel).toFixed(2), 
             obs: document.getElementById('obsAbastecimento').value || "", 
-            timestamp: new Date().toISOString()
+            timestamp: momentoAtual.toISOString()
         };
         switchScreen('signature-driver-screen'); setupCanvas('canvasMotorista');
     });
@@ -645,8 +652,6 @@
             document.getElementById('nomeMotorista').value = "";
             document.getElementById('qtdLitros').value = "";
             document.getElementById('obsAbastecimento').value = "";
-            const now = new Date();
-            document.getElementById('horarioAbastecimento').value = now.toTimeString().substring(0,5);
             
             switchScreen('whatsapp-screen');
         } catch (error) { 
