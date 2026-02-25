@@ -98,7 +98,7 @@
         .admin-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
         .info-text-admin { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; background: rgba(239, 246, 255, 0.9); padding: 10px; border-radius: 6px; border-left: 3px solid var(--primary); position: relative; z-index: 2;}
         
-        /* CSS NOVO DO DASHBOARD */
+        /* CSS DO DASHBOARD */
         .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .dash-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
         .dash-card h4 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
@@ -175,7 +175,9 @@
                     </div>
                     <div class="form-group">
                         <label>Placa</label>
-                        <select id="placaVeiculo"><option value="">Selecione...</option></select>
+                        <select id="placaVeiculo">
+                            <option value="">Selecione...</option>
+                        </select>
                     </div>
                     
                     <div class="form-group full-width">
@@ -194,7 +196,8 @@
 
                     <div class="form-group">
                         <label>Resp. Pista</label>
-                        <input type="text" id="nomeFuncionario" required> </div>
+                        <input type="text" id="nomeFuncionario" required>
+                    </div>
                     <div class="form-group">
                         <label>Observações</label>
                         <input type="text" id="obsAbastecimento" placeholder="Opcional">
@@ -275,8 +278,8 @@
             <h2>IcaphiAdmin</h2>
             <button class="menu-toggle" style="color: white; margin: 0;" onclick="toggleSidebar()">✖</button>
         </div>
-        <div class="nav-item active" onclick="mudarAbaAdmin('dashboard')">📊 Dashboard</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('historico')">📋 Histórico (Abastecimento)</div>
+        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">📋 Histórico (Abastecimento)</div>
+        <div class="nav-item" onclick="mudarAbaAdmin('dashboard')">📊 Dashboard</div>
         <div class="nav-item" onclick="mudarAbaAdmin('recebimento')">📥 Controle de Recebimento</div>
         <div class="nav-item" onclick="mudarAbaAdmin('frota')">🚚 Frota (Placas)</div>
         <div class="nav-item" onclick="mudarAbaAdmin('exportar')">📤 Exportar Planilhas</div>
@@ -300,7 +303,24 @@
             </div>
         </div>
 
-        <div id="aba-dashboard" class="admin-aba">
+        <div id="aba-historico" class="admin-aba">
+            <div class="admin-header">
+                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos (Saída)</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="date" id="filtroDataAdmin" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                    <input type="text" id="filtroPlacaAdmin" placeholder="Filtrar Placa" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd; text-transform: uppercase;">
+                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltrosAdmin()">Filtrar</button>
+                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="limparFiltrosAdmin()">Limpar</button>
+                </div>
+            </div>
+            <div class="card card-padding" style="border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div id="admin-table-container" class="table-responsive">
+                    <p style="color: var(--text-muted); font-size: 14px;">Carregando dados do banco...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="aba-dashboard" class="admin-aba hidden">
             <h2 style="margin-top:0; font-size: 22px; margin-bottom: 20px;">Visão Geral do Mês (Tempo Real)</h2>
             
             <div class="dash-grid">
@@ -331,41 +351,48 @@
             </div>
         </div>
 
-        <div id="aba-historico" class="admin-aba hidden">
-            <div class="admin-header">
-                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos (Saída)</div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <input type="date" id="filtroDataAdmin" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
-                    <input type="text" id="filtroPlacaAdmin" placeholder="Filtrar Placa" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd; text-transform: uppercase;">
-                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltrosAdmin()">Filtrar</button>
-                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="limparFiltrosAdmin()">Limpar</button>
-                </div>
-            </div>
-            <div class="card card-padding" style="border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <div id="admin-table-container" class="table-responsive">
-                    <p style="color: var(--text-muted); font-size: 14px;">Carregando dados do banco...</p>
-                </div>
-            </div>
-        </div>
-
         <div id="aba-recebimento" class="admin-aba hidden">
             <h2 style="margin-top:0;">Controle de Recebimento de Combustível</h2>
             
             <div class="card card-padding" style="margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" id="formRecebimentoContainer">
                 <h3 style="margin-top:0;" id="tituloFormRecebimento">Registrar Nova Entrada</h3>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
-                    <div style="flex:1; min-width: 140px;"><label>Data</label><input type="date" id="recDataChegada" style="padding:10px;"></div>
-                    <div style="flex:1; min-width: 140px;"><label>Horário</label><input type="time" id="recHorario" style="padding:10px;"></div>
-                    <div style="flex:2; min-width: 200px;"><label>Fornecedor</label><input type="text" id="recFornecedor" placeholder="Nome da empresa" style="padding:10px;"></div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Data</label>
+                        <input type="date" id="recDataChegada" style="padding:10px;">
+                    </div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Horário</label>
+                        <input type="time" id="recHorario" style="padding:10px;">
+                    </div>
+                    <div style="flex:2; min-width: 200px;">
+                        <label>Fornecedor</label>
+                        <input type="text" id="recFornecedor" placeholder="Nome da empresa" style="padding:10px;">
+                    </div>
                 </div>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
-                    <div style="flex:1; min-width: 140px;"><label>Qtd (Litros)</label><input type="number" id="recLitros" placeholder="Ex: 5000" oninput="calcularTotalRecebimento()" style="padding:10px;"></div>
-                    <div style="flex:1; min-width: 140px;"><label>Valor Litro (R$)</label><input type="number" id="recValorLitro" step="0.01" placeholder="Ex: 4.50" oninput="calcularTotalRecebimento()" style="padding:10px;"></div>
-                    <div style="flex:1; min-width: 140px;"><label>Total (R$)</label><input type="text" id="recTotalPagar" readonly style="background-color: #f3f4f6; font-weight: bold; padding:10px;"></div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Qtd (Litros)</label>
+                        <input type="number" id="recLitros" placeholder="Ex: 5000" oninput="calcularTotalRecebimento()" style="padding:10px;">
+                    </div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Valor Litro (R$)</label>
+                        <input type="number" id="recValorLitro" step="0.01" placeholder="Ex: 4.50" oninput="calcularTotalRecebimento()" style="padding:10px;">
+                    </div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Total (R$)</label>
+                        <input type="text" id="recTotalPagar" readonly style="background-color: #f3f4f6; font-weight: bold; padding:10px;">
+                    </div>
                 </div>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <div style="flex:1; min-width: 140px;"><label>Vencimento</label><input type="date" id="recVencimento" style="padding:10px;"></div>
-                    <div style="flex:2; min-width: 200px;"><label>Responsável</label><input type="text" id="recResponsavel" placeholder="Quem assinou a nota" style="padding:10px;"></div>
+                    <div style="flex:1; min-width: 140px;">
+                        <label>Vencimento</label>
+                        <input type="date" id="recVencimento" style="padding:10px;">
+                    </div>
+                    <div style="flex:2; min-width: 200px;">
+                        <label>Responsável</label>
+                        <input type="text" id="recResponsavel" placeholder="Quem assinou a nota" style="padding:10px;">
+                    </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-primary" id="btnSalvarRecebimento" onclick="salvarRecebimento()" style="width: auto; padding: 10px 20px;">Salvar Recebimento</button>
@@ -415,8 +442,14 @@
             <div class="card card-padding" style="max-width: 500px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                 <div class="info-text-admin" style="text-align: left;">Selecione o período de abastecimentos de frota que deseja baixar para o seu computador.</div>
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div style="flex:1;"><label>Data Inicial</label><input type="date" id="exportDataInicio" style="padding:10px;"></div>
-                    <div style="flex:1;"><label>Data Final</label><input type="date" id="exportDataFim" style="padding:10px;"></div>
+                    <div style="flex:1;">
+                        <label>Data Inicial</label>
+                        <input type="date" id="exportDataInicio" style="padding:10px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Data Final</label>
+                        <input type="date" id="exportDataFim" style="padding:10px;">
+                    </div>
                 </div>
                 <button class="btn btn-success" onclick="exportarPlanilha()">📥 Baixar Planilha (.xlsx)</button>
             </div>
@@ -433,15 +466,29 @@
 
         <div id="aba-tanque" class="admin-aba hidden">
             <h2 style="margin-top:0;">Gestão do Tanque Principal</h2>
-            <div class="card card-padding" style="max-width: 500px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <div class="info-text-admin" style="text-align: left;">Configure a capacidade total do tanque para a barra de progresso e defina o estoque atual.</div>
+            <div class="card card-padding" style="max-width: 550px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div class="info-text-admin" style="text-align: left;">
+                    Insira a medição da régua em CM para calcular automaticamente, ou digite o valor em Litros diretamente.
+                </div>
+                
                 <label>Capacidade Total Máxima (Litros)</label>
-                <input type="number" id="capacidadeTanqueAdmin" style="margin-bottom: 15px; padding:10px;" placeholder="Ex: 10000">
+                <input type="number" id="capacidadeTanqueAdmin" style="margin-bottom: 20px; padding:10px;" placeholder="Ex: 10000">
                 
-                <label>Estoque Atual do Tanque (Litros)</label>
-                <input type="number" id="estoqueTanqueAdmin" style="margin-bottom: 15px; padding:10px;">
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Medição em Régua (CM)</label>
+                        <input type="number" id="estoqueTanqueCM" step="0.5" placeholder="Ex: 40.5" oninput="converterCMLitros()" style="padding:10px;">
+                        <div style="font-size: 11px; color: var(--primary); margin-top: 5px; font-weight: 600;">Puxa os litros pela tabela</div>
+                    </div>
+                    
+                    <div style="flex: 1; min-width: 150px;">
+                        <label>Estoque Atual (Litros)</label>
+                        <input type="number" id="estoqueTanqueAdmin" style="padding:10px;">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Pode digitar manualmente</div>
+                    </div>
+                </div>
                 
-                <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Manualmente</button>
+                <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Estoque</button>
             </div>
         </div>
     </div>
@@ -463,7 +510,28 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let configGerais = { precoDiesel: 5.90, estoqueTanque: 0, capacidadeTanque: 10000, placas: ['LOE5G45', 'KZT4G75'] };
+    // TABELA EXATA ENVIADA POR VOCÊ (CM -> LITROS)
+    const tabelaReguaTanque = {
+        "1.00": 6.70, "1.50": 12.29, "2.00": 18.91, "2.50": 26.41, "3.00": 34.69, "3.50": 43.68, "4.00": 53.33, "4.50": 63.58, "5.00": 74.41, "5.50": 85.77, "6.00": 37.60, "6.50": 110.02, "7.00": 122.86, "7.50": 136.14, "8.00": 149.86, "8.50": 163.99, "9.00": 178.53, "9.50": 193.45, "10.00": 208.75, "10.50": 224.42, "11.00": 240.44, "11.50": 256.81, "12.00": 273.51, "12.50": 290.54, "13.00": 307.89, "13.50": 325.56, "14.00": 343.53, "14.50": 361.79, "15.00": 380.35, "15.50": 399.19, "16.00": 418.31, "16.50": 437.71, "17.00": 457.37, "17.50": 477.29, "18.00": 497.48, "18.50": 517.91, "19.00": 538.59, "19.50": 559.52, "20.00": 580.68, "20.50": 602.08, "21.00": 623.71, "21.50": 645.57, "22.00": 667.65, "22.50": 689.95, "23.00": 712.46, "23.50": 735.19, "24.00": 758.13, "24.50": 781.27, "25.00": 804.61, "25.50": 828.15, "26.00": 851.89, "26.50": 875.82, "27.00": 899.94, "27.50": 924.25, "28.00": 948.74, "28.50": 973.41, "29.00": 998.26, "29.50": 1023.29, "30.00": 1048.49, "30.50": 1073.89, "31.00": 1099.41, "31.50": 1125.12, "32.00": 1150.99, "32.50": 1177.02, "33.00": 1203.22, "33.50": 1229.57, "34.00": 1256.07, "34.50": 1282.73, "35.00": 1309.54, "35.50": 1336.50, "36.00": 1363.60, "36.50": 1390.85, "37.00": 1418.24, "37.50": 1445.78, "38.00": 1473.45, "38.50": 1501.25, "39.00": 1529.20, "39.50": 1557.27, "40.00": 1585.80, "40.50": 1612.82, "41.00": 1642.28, "41.50": 1670.88, "42.00": 1699.59, "42.50": 1728.43, "43.00": 1757.39, "43.50": 1786.47, "44.00": 1815.66, "44.50": 1844.98, "45.00": 1874.40, "45.50": 1903.94, "46.00": 1933.59, "46.50": 1963.36, "47.00": 1993.23, "47.50": 2023.20, "48.00": 2053.28, "48.50": 2083.47, "49.00": 2113.76, "49.50": 2144.15, "50.00": 2174.64, "50.50": 2205.22, "51.00": 2235.91, "51.50": 2266.69, "52.00": 2297.56, "52.50": 2328.52, "53.00": 2359.58, "53.50": 2390.73, "54.00": 2421.96, "54.50": 2453.29, "55.00": 2484.70, "55.50": 2516.19, "56.00": 2547.77, "56.50": 2579.43, "57.00": 2611.17, "57.50": 2642.99, "58.00": 2674.88, "58.50": 2706.86, "59.00": 2738.91, "59.50": 2771.04, "60.00": 2803.24, "60.50": 2835.51, "61.00": 2867.85, "61.50": 2900.26, "62.00": 2932.75, "62.50": 2965.29, "63.00": 2997.91, "63.50": 3030.59, "64.00": 3063.34, "64.50": 3096.14, "65.00": 3129.02, "65.50": 3161.95, "66.00": 3194.94, "66.50": 3194.94, "67.00": 3261.09, "67.50": 3294.25, "68.00": 3327.47, "68.50": 3360.74, "69.00": 3394.07, "69.50": 3427.45, "70.00": 3160.87, "70.50": 3494.35, "71.00": 3527.88, "71.50": 3561.45, "72.00": 3595.07, "72.50": 3628.74, "73.00": 3662.45, "73.50": 3696.20, "74.00": 3730.00, "74.50": 3763.84, "75.00": 3797.71, "75.50": 3831.63
+    };
+
+    window.converterCMLitros = function() {
+        let cmStr = document.getElementById('estoqueTanqueCM').value.replace(',', '.');
+        if(cmStr) {
+            let cmFormatado = parseFloat(cmStr).toFixed(2);
+            if(tabelaReguaTanque[cmFormatado] !== undefined) {
+                document.getElementById('estoqueTanqueAdmin').value = tabelaReguaTanque[cmFormatado];
+            }
+        }
+    };
+
+    let configGerais = { 
+        precoDiesel: 5.90, 
+        estoqueTanque: 0, 
+        capacidadeTanque: 10000, 
+        placas: [] 
+    };
+    
     let currentRecordData = {};
     let photoDataUrl = null;
     window.dadosRelatorio = []; 
@@ -486,7 +554,10 @@
 
     const switchScreen = (screenId) => {
         ['main-screen', 'signature-driver-screen', 'signature-emp-screen', 'whatsapp-screen', 'admin-login-screen'].forEach(id => {
-            const el = document.getElementById(id); if(el) el.classList.add('hidden');
+            const el = document.getElementById(id); 
+            if(el) {
+                el.classList.add('hidden');
+            }
         });
         
         if(screenId === 'admin-panel') {
@@ -539,9 +610,15 @@
                     let height = img.height;
 
                     if (width > height) {
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        if (width > MAX_WIDTH) { 
+                            height *= MAX_WIDTH / width; 
+                            width = MAX_WIDTH; 
+                        }
                     } else {
-                        if (height > MAX_WIDTH) { width *= MAX_WIDTH / height; height = MAX_WIDTH; }
+                        if (height > MAX_WIDTH) { 
+                            width *= MAX_WIDTH / height; 
+                            height = MAX_WIDTH; 
+                        }
                     }
 
                     canvas.width = width;
@@ -582,12 +659,16 @@
             if(pct > 100) pct = 100;
             if(pct < 0) pct = 0;
         }
-
+        
         const fillEl = document.getElementById('liquidFillLevel');
-        if(fillEl) fillEl.style.height = `${pct}%`;
-
+        if(fillEl) {
+            fillEl.style.height = `${pct}%`;
+        }
+        
         const adminFill = document.getElementById('adminTankFill');
-        if(adminFill) adminFill.style.width = `${pct}%`;
+        if(adminFill) {
+            adminFill.style.width = `${pct}%`;
+        }
 
         const tankContent = document.getElementById('tankBarContent');
         if(tankContent) {
@@ -595,12 +676,16 @@
                  tankContent.style.color = '#1f2937';
                  tankContent.style.textShadow = 'none';
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
-                 if(menuToggleBtn) menuToggleBtn.style.color = '#1f2937';
+                 if(menuToggleBtn) {
+                     menuToggleBtn.style.color = '#1f2937';
+                 }
              } else {
                  tankContent.style.color = '#fff';
                  tankContent.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
-                 if(menuToggleBtn) menuToggleBtn.style.color = '#fff';
+                 if(menuToggleBtn) {
+                     menuToggleBtn.style.color = '#fff';
+                 }
              }
         }
     }
@@ -614,7 +699,7 @@
                 configGerais.precoDiesel = data.precoDiesel || 5.90;
                 configGerais.estoqueTanque = data.estoqueTanque || 0;
                 configGerais.capacidadeTanque = data.capacidadeTanque || 10000;
-                configGerais.placas = data.placas || ['LOE5G45', 'KZT4G75'];
+                configGerais.placas = data.placas || [];
                 
                 atualizarVisorTanque();
                 
@@ -634,11 +719,11 @@
         });
     }
 
-    async function salvarConfiguracoesNoBanco() {
+    async function atualizarConfigFirebase(dadosParciais) {
         try { 
-            await setDoc(doc(db, "configuracoes", "gerais"), configGerais, {merge: true}); 
+            await setDoc(doc(db, "configuracoes", "gerais"), dadosParciais, {merge: true}); 
         } catch(e) { 
-            alert("Erro ao salvar configuração no banco!"); 
+            console.error("Erro ao atualizar configurações:", e); 
         }
     }
 
@@ -659,17 +744,25 @@
         canvas.width = rect.width - 40; 
         preencherFundoBranco(canvasId);
 
-        const startDraw = (e) => { isDrawing = true; draw(e); };
-        const endDraw = () => { isDrawing = false; ctx.beginPath(); };
+        const startDraw = (e) => { 
+            isDrawing = true; 
+            draw(e); 
+        };
+        const endDraw = () => { 
+            isDrawing = false; 
+            ctx.beginPath(); 
+        };
         const draw = (e) => {
             if (!isDrawing) return; 
             e.preventDefault(); 
             ctx.lineWidth = 2.5; 
             ctx.lineCap = 'round'; 
             ctx.strokeStyle = '#000';
+            
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
             ctx.lineTo(clientX - rect.left, clientY - rect.top); 
             ctx.stroke();
             ctx.beginPath(); 
@@ -687,7 +780,6 @@
     document.getElementById('btnClearDriver').addEventListener('click', () => { 
         preencherFundoBranco('canvasMotorista'); 
     });
-    
     document.getElementById('btnClearEmp').addEventListener('click', () => { 
         preencherFundoBranco('canvasFuncionario'); 
     });
@@ -730,7 +822,7 @@
         document.getElementById('whatsappNumber').value = "";
         document.getElementById('displayValorTotal').innerText = "0.00";
         document.getElementById('dataAbastecimento').valueAsDate = new Date();
-        document.getElementById('nomeFuncionario').value = ""; // Modificado para ficar vazio
+        document.getElementById('nomeFuncionario').value = "";
 
         document.getElementById('cameraIcon').innerText = "📷";
         document.getElementById('cameraText').innerText = "FOTO DO PAINEL / BOMBA (OBRIGATÓRIO)";
@@ -760,11 +852,12 @@
 
             const litrosAbastecidos = parseFloat(currentRecordData.litros);
             configGerais.estoqueTanque -= litrosAbastecidos;
-            await salvarConfiguracoesNoBanco();
+            
+            await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque });
             
             resetarFormulario();
-            
             switchScreen('whatsapp-screen');
+            
         } catch (error) { 
             console.error(error); 
             alert("Erro ao salvar. Verifique sua conexão com a internet."); 
@@ -784,10 +877,14 @@
     document.getElementById('btnNewRecord').addEventListener('click', () => { 
         switchScreen('main-screen'); 
     });
-
-    // SISTEMA ADMIN
-    document.getElementById('btnOpenAdminLogin').addEventListener('click', () => switchScreen('admin-login-screen'));
-    document.getElementById('btnBackToMain').addEventListener('click', () => switchScreen('main-screen'));
+    
+    document.getElementById('btnOpenAdminLogin').addEventListener('click', () => { 
+        switchScreen('admin-login-screen'); 
+    });
+    
+    document.getElementById('btnBackToMain').addEventListener('click', () => { 
+        switchScreen('main-screen'); 
+    });
     
     document.getElementById('btnAdminLogin').addEventListener('click', () => {
         if(document.getElementById('adminPassword').value === "60010774") { 
@@ -808,8 +905,13 @@
         document.getElementById(`aba-${aba}`).classList.remove('hidden');
         event.currentTarget.classList.add('active');
         
-        if(aba === 'frota') renderizarListaPlacasAdmin();
-        if(window.innerWidth <= 768) toggleSidebar();
+        if(aba === 'frota') {
+            renderizarListaPlacasAdmin();
+        }
+        
+        if(window.innerWidth <= 768) {
+            toggleSidebar();
+        }
     }
 
     window.abrirModalImagem = function(titulo, htmlConteudo) {
@@ -829,20 +931,32 @@
     
     window.abrirAssinaturas = function(index) {
         const d = window.dadosRelatorio[index];
-        abrirModalImagem('Assinaturas', `<p style="text-align: left; font-size: 14px;"><strong>Condutor:</strong></p><img src="${d.assMotoristaBase64}"><p style="text-align: left; font-size: 14px;"><strong>Responsável:</strong></p><img src="${d.assFuncionarioBase64}">`);
+        abrirModalImagem(
+            'Assinaturas', 
+            `<p style="text-align: left; font-size: 14px;"><strong>Condutor:</strong></p>
+             <img src="${d.assMotoristaBase64}">
+             <p style="text-align: left; font-size: 14px;"><strong>Responsável:</strong></p>
+             <img src="${d.assFuncionarioBase64}">`
+        );
     }
 
     function atualizarInputsAdmin() {
-        if(document.activeElement.id !== 'precoDieselAdmin') document.getElementById('precoDieselAdmin').value = configGerais.precoDiesel;
-        if(document.activeElement.id !== 'estoqueTanqueAdmin') document.getElementById('estoqueTanqueAdmin').value = configGerais.estoqueTanque;
-        if(document.activeElement.id !== 'capacidadeTanqueAdmin') document.getElementById('capacidadeTanqueAdmin').value = configGerais.capacidadeTanque;
+        if(document.activeElement.id !== 'precoDieselAdmin') {
+            document.getElementById('precoDieselAdmin').value = configGerais.precoDiesel;
+        }
+        if(document.activeElement.id !== 'estoqueTanqueAdmin') {
+            document.getElementById('estoqueTanqueAdmin').value = configGerais.estoqueTanque;
+        }
+        if(document.activeElement.id !== 'capacidadeTanqueAdmin') {
+            document.getElementById('capacidadeTanqueAdmin').value = configGerais.capacidadeTanque;
+        }
     }
 
     window.salvarPreco = async function() {
         const val = parseFloat(document.getElementById('precoDieselAdmin').value);
         if(val > 0) { 
             configGerais.precoDiesel = val; 
-            await salvarConfiguracoesNoBanco(); 
+            await atualizarConfigFirebase({ precoDiesel: configGerais.precoDiesel }); 
             alert("Preço atualizado!"); 
         }
     }
@@ -850,41 +964,47 @@
     window.salvarEstoqueTanque = async function() {
         const est = parseFloat(document.getElementById('estoqueTanqueAdmin').value);
         const cap = parseFloat(document.getElementById('capacidadeTanqueAdmin').value);
+        
         if(!isNaN(est) && !isNaN(cap) && cap > 0) { 
             configGerais.estoqueTanque = est; 
             configGerais.capacidadeTanque = cap;
-            await salvarConfiguracoesNoBanco(); 
+            await atualizarConfigFirebase({ 
+                estoqueTanque: configGerais.estoqueTanque, 
+                capacidadeTanque: configGerais.capacidadeTanque 
+            }); 
             alert("Estoque e Capacidade atualizados!"); 
+            
+            // Limpa o campo de CM após salvar para não confundir
+            document.getElementById('estoqueTanqueCM').value = "";
         } else { 
             alert("Verifique os valores informados."); 
         }
     }
 
-    // --- NOVA FUNÇÃO: ATUALIZAR DASHBOARD ---
     function atualizarDashboard() {
         const hoje = new Date();
         const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
         const anoAtual = String(hoje.getFullYear());
-        const prefixoData = `${anoAtual}-${mesAtual}`; // Padrão 'YYYY-MM'
+        const prefixoData = `${anoAtual}-${mesAtual}`; 
 
-        let litrosSaida = 0;
-        let custoSaida = 0;
+        let litrosSaida = 0; 
+        let custoSaida = 0; 
         let consumoPorPlaca = {};
 
-        // Filtra Relatórios do mês atual
         window.dadosRelatorio.forEach(d => {
             if (d.data && d.data.startsWith(prefixoData)) {
-                let l = parseFloat(d.litros) || 0;
+                let l = parseFloat(d.litros) || 0; 
                 let v = parseFloat(d.valorTotal) || 0;
-                litrosSaida += l;
+                litrosSaida += l; 
                 custoSaida += v;
                 
-                if (!consumoPorPlaca[d.placa]) consumoPorPlaca[d.placa] = 0;
+                if (!consumoPorPlaca[d.placa]) {
+                    consumoPorPlaca[d.placa] = 0;
+                }
                 consumoPorPlaca[d.placa] += l;
             }
         });
 
-        // Filtra Entradas do mês atual
         let litrosEntrada = 0;
         window.dadosRecebimentosLista.forEach(d => {
             if (d.dataChegada && d.dataChegada.startsWith(prefixoData)) {
@@ -892,12 +1012,10 @@
             }
         });
 
-        // Atualiza os Cards Superiores
         document.getElementById('dashSaidasLitros').innerText = litrosSaida.toFixed(2) + " L";
         document.getElementById('dashCustoMensal').innerText = "R$ " + custoSaida.toFixed(2).replace('.', ',');
         document.getElementById('dashEntradasLitros').innerText = litrosEntrada.toFixed(2) + " L";
 
-        // Calcula o Top 5 Placas
         let topPlacas = Object.keys(consumoPorPlaca)
             .map(p => ({placa: p, litros: consumoPorPlaca[p]}))
             .sort((a,b) => b.litros - a.litros)
@@ -923,7 +1041,6 @@
                 </li>`;
             });
         }
-        
         document.getElementById('dashTopVeiculos').innerHTML = htmlTop;
     }
 
@@ -940,11 +1057,10 @@
             });
             window.dadosRelatorio.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
             
-            // Chama a atualização do Dashboard sempre que os dados mudarem
             atualizarDashboard();
-
-            if (!document.getElementById('aba-historico').classList.contains('hidden')) {
-                aplicarFiltrosAdmin();
+            
+            if (!document.getElementById('aba-historico').classList.contains('hidden')) { 
+                aplicarFiltrosAdmin(); 
             }
         }, (e) => { 
             console.error(e); 
@@ -965,11 +1081,10 @@
             });
             window.dadosRecebimentosLista.sort((a,b) => new Date(b.timestamp || b.dataChegada) - new Date(a.timestamp || a.dataChegada));
             
-            // Chama a atualização do Dashboard sempre que os dados mudarem
             atualizarDashboard();
-
-            if (!document.getElementById('aba-recebimento').classList.contains('hidden')) {
-                aplicarFiltroRecebimento();
+            
+            if (!document.getElementById('aba-recebimento').classList.contains('hidden')) { 
+                aplicarFiltroRecebimento(); 
             }
         }, (e) => { 
             console.error(e); 
@@ -984,13 +1099,13 @@
     }
 
     window.salvarRecebimento = async function() {
-        const dataChegada = document.getElementById('recDataChegada').value;
-        const horario = document.getElementById('recHorario').value;
-        const fornecedor = document.getElementById('recFornecedor').value;
-        const litros = parseFloat(document.getElementById('recLitros').value);
-        const valorLitro = parseFloat(document.getElementById('recValorLitro').value);
-        const vencimento = document.getElementById('recVencimento').value;
-        const responsavel = document.getElementById('recResponsavel').value;
+        const dataChegada = document.getElementById('recDataChegada').value; 
+        const horario = document.getElementById('recHorario').value; 
+        const fornecedor = document.getElementById('recFornecedor').value; 
+        const litros = parseFloat(document.getElementById('recLitros').value); 
+        const valorLitro = parseFloat(document.getElementById('recValorLitro').value); 
+        const vencimento = document.getElementById('recVencimento').value; 
+        const responsavel = document.getElementById('recResponsavel').value; 
         const total = document.getElementById('recTotalPagar').value;
 
         if(!dataChegada || !fornecedor || !litros || !valorLitro || !responsavel) { 
@@ -998,31 +1113,35 @@
             return; 
         }
 
-        const recebimentoData = {
-            dataChegada, horario, fornecedor, litros, valorLitro, vencimento, responsavel, total, timestamp: editandoRecebimentoId ? undefined : new Date().toISOString()
+        const recebimentoData = { 
+            dataChegada, 
+            horario, 
+            fornecedor, 
+            litros, 
+            valorLitro, 
+            vencimento, 
+            responsavel, 
+            total, 
+            timestamp: editandoRecebimentoId ? undefined : new Date().toISOString() 
         };
 
         try {
             if (editandoRecebimentoId) {
                 await updateDoc(doc(db, "recebimentos", editandoRecebimentoId), recebimentoData);
                 configGerais.estoqueTanque += (litros - litrosAntigosRecebimento);
-                await salvarConfiguracoesNoBanco();
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Recebimento atualizado!");
                 cancelarEdicaoRecebimento(); 
             } else {
                 await addDoc(collection(db, "recebimentos"), recebimentoData);
                 configGerais.estoqueTanque += litros;
-                await salvarConfiguracoesNoBanco();
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Recebimento registrado! Estoque atualizado.");
                 
                 document.getElementById('recDataChegada').valueAsDate = new Date();
-                document.getElementById('recHorario').value = ""; 
-                document.getElementById('recFornecedor').value = "";
-                document.getElementById('recLitros').value = ""; 
-                document.getElementById('recValorLitro').value = "";
-                document.getElementById('recVencimento').value = ""; 
-                document.getElementById('recResponsavel').value = "";
-                document.getElementById('recTotalPagar').value = "";
+                ['recHorario','recFornecedor','recLitros','recValorLitro','recVencimento','recResponsavel','recTotalPagar'].forEach(id => { 
+                    document.getElementById(id).value = ""; 
+                });
             }
         } catch (error) { 
             console.error(error); 
@@ -1031,24 +1150,24 @@
     }
 
     window.editarRecebimento = function(id) {
-        const rec = window.dadosRecebimentosLista.find(r => r.id === id);
+        const rec = window.dadosRecebimentosLista.find(r => r.id === id); 
         if(!rec) return;
-
-        document.getElementById('recDataChegada').value = rec.dataChegada;
-        document.getElementById('recHorario').value = rec.horario || "";
-        document.getElementById('recFornecedor').value = rec.fornecedor;
-        document.getElementById('recLitros').value = rec.litros;
-        document.getElementById('recValorLitro').value = rec.valorLitro;
-        document.getElementById('recVencimento').value = rec.vencimento || "";
-        document.getElementById('recResponsavel').value = rec.responsavel;
+        
+        document.getElementById('recDataChegada').value = rec.dataChegada; 
+        document.getElementById('recHorario').value = rec.horario || ""; 
+        document.getElementById('recFornecedor').value = rec.fornecedor; 
+        document.getElementById('recLitros').value = rec.litros; 
+        document.getElementById('recValorLitro').value = rec.valorLitro; 
+        document.getElementById('recVencimento').value = rec.vencimento || ""; 
+        document.getElementById('recResponsavel').value = rec.responsavel; 
         document.getElementById('recTotalPagar').value = rec.total;
-
+        
         editandoRecebimentoId = id; 
         litrosAntigosRecebimento = parseFloat(rec.litros);
         
-        document.getElementById('tituloFormRecebimento').innerText = "✏️ Editar Recebimento";
-        document.getElementById('btnSalvarRecebimento').innerText = "Atualizar Recebimento";
-        document.getElementById('btnCancelarEdicaoRec').classList.remove('hidden');
+        document.getElementById('tituloFormRecebimento').innerText = "✏️ Editar Recebimento"; 
+        document.getElementById('btnSalvarRecebimento').innerText = "Atualizar Recebimento"; 
+        document.getElementById('btnCancelarEdicaoRec').classList.remove('hidden'); 
         document.getElementById('formRecebimentoContainer').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1056,25 +1175,25 @@
         editandoRecebimentoId = null; 
         litrosAntigosRecebimento = 0;
         
-        document.getElementById('tituloFormRecebimento').innerText = "Registrar Nova Entrada";
-        document.getElementById('btnSalvarRecebimento').innerText = "Salvar Recebimento";
+        document.getElementById('tituloFormRecebimento').innerText = "Registrar Nova Entrada"; 
+        document.getElementById('btnSalvarRecebimento').innerText = "Salvar Recebimento"; 
         document.getElementById('btnCancelarEdicaoRec').classList.add('hidden');
         
         document.getElementById('recDataChegada').valueAsDate = new Date();
-        ['recHorario','recFornecedor','recLitros','recValorLitro','recVencimento','recResponsavel','recTotalPagar'].forEach(id => {
-            document.getElementById(id).value = "";
+        ['recHorario','recFornecedor','recLitros','recValorLitro','recVencimento','recResponsavel','recTotalPagar'].forEach(id => { 
+            document.getElementById(id).value = ""; 
         });
     }
 
     window.apagarRecebimento = async function(id) {
-        const rec = window.dadosRecebimentosLista.find(r => r.id === id);
+        const rec = window.dadosRecebimentosLista.find(r => r.id === id); 
         if(!rec) return;
-
+        
         if(confirm(`Tem certeza que deseja apagar o recebimento de ${rec.litros}L? Isso removerá os litros do estoque.`)) {
             try {
                 await deleteDoc(doc(db, "recebimentos", id));
                 configGerais.estoqueTanque -= parseFloat(rec.litros);
-                await salvarConfiguracoesNoBanco();
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Recebimento apagado e estoque corrigido!");
             } catch(e) { 
                 console.error(e); 
@@ -1084,12 +1203,16 @@
     }
 
     window.aplicarFiltroRecebimento = function() {
-        const fInicio = document.getElementById('filtroDataRecInicio').value;
+        const fInicio = document.getElementById('filtroDataRecInicio').value; 
         const fFim = document.getElementById('filtroDataRecFim').value;
         let filtrados = window.dadosRecebimentosLista;
         
-        if (fInicio) filtrados = filtrados.filter(d => d.dataChegada >= fInicio);
-        if (fFim) filtrados = filtrados.filter(d => d.dataChegada <= fFim);
+        if (fInicio) {
+            filtrados = filtrados.filter(d => d.dataChegada >= fInicio);
+        }
+        if (fFim) {
+            filtrados = filtrados.filter(d => d.dataChegada <= fFim);
+        }
         
         desenharTabelaRecebimentos(filtrados);
     }
@@ -1100,9 +1223,21 @@
             container.innerHTML = "<p style='padding:15px;'>Nenhum recebimento encontrado.</p>"; 
             return; 
         }
-
-        let html = `<table class="admin-table"><tr><th>Data</th><th>Horário</th><th>Fornecedor</th><th>Qtd Litros</th><th>Val. Litro</th><th>Total a Pagar</th><th>Venc. Duplicata</th><th>Responsável</th><th>Ações</th></tr>`;
-        dados.forEach((d) => {
+        
+        let html = `<table class="admin-table">
+            <tr>
+                <th>Data</th>
+                <th>Horário</th>
+                <th>Fornecedor</th>
+                <th>Qtd Litros</th>
+                <th>Val. Litro</th>
+                <th>Total a Pagar</th>
+                <th>Venc. Duplicata</th>
+                <th>Responsável</th>
+                <th>Ações</th>
+            </tr>`;
+            
+        dados.forEach((d) => { 
             html += `<tr>
                 <td>${d.dataChegada}</td>
                 <td>${d.horario || '-'}</td>
@@ -1116,7 +1251,7 @@
                     <button class="link-btn" onclick="editarRecebimento('${d.id}')">✏️ Editar</button>
                     <button class="link-btn btn-delete" onclick="apagarRecebimento('${d.id}')">🗑️ Apagar</button>
                 </td>
-            </tr>`;
+            </tr>`; 
         });
         html += "</table>"; 
         container.innerHTML = html;
@@ -1124,10 +1259,10 @@
 
     window.exportarRecebimentos = function() {
         const fInicio = document.getElementById('filtroDataRecInicio').value; 
-        const fFim = document.getElementById('filtroDataRecFim').value;
+        const fFim = document.getElementById('filtroDataRecFim').value; 
         let filtrados = window.dadosRecebimentosLista;
         
-        if (fInicio) filtrados = filtrados.filter(d => d.dataChegada >= fInicio);
+        if (fInicio) filtrados = filtrados.filter(d => d.dataChegada >= fInicio); 
         if (fFim) filtrados = filtrados.filter(d => d.dataChegada <= fFim);
         
         if(filtrados.length === 0) { 
@@ -1135,7 +1270,7 @@
             return; 
         }
         
-        const dadosExcel = filtrados.map(d => ({
+        const dadosExcel = filtrados.map(d => ({ 
             "Data Chegada": d.dataChegada, 
             "Horário": d.horario || "", 
             "Fornecedor": d.fornecedor, 
@@ -1143,7 +1278,7 @@
             "Valor do Litro (R$)": parseFloat(d.valorLitro), 
             "Total a Pagar (R$)": parseFloat(d.total), 
             "Venc. Duplicata": d.vencimento || "", 
-            "Responsável": d.responsavel
+            "Responsável": d.responsavel 
         }));
         
         const worksheet = XLSX.utils.json_to_sheet(dadosExcel); 
@@ -1155,9 +1290,10 @@
     window.adicionarPlaca = async function() {
         const input = document.getElementById('novaPlacaInput'); 
         const novaPlaca = input.value.trim().toUpperCase();
+        
         if(novaPlaca && !configGerais.placas.includes(novaPlaca)) { 
             configGerais.placas.push(novaPlaca); 
-            await salvarConfiguracoesNoBanco(); 
+            await atualizarConfigFirebase({ placas: configGerais.placas }); 
             input.value = ""; 
         }
     }
@@ -1165,15 +1301,19 @@
     window.removerPlaca = async function(placa) {
         if(confirm(`Remover a placa ${placa}?`)) { 
             configGerais.placas = configGerais.placas.filter(p => p !== placa); 
-            await salvarConfiguracoesNoBanco(); 
+            await atualizarConfigFirebase({ placas: configGerais.placas }); 
         }
     }
     
     function renderizarListaPlacasAdmin() {
         const ul = document.getElementById('listaPlacasAdmin'); 
         ul.innerHTML = "";
+        
         configGerais.placas.sort().forEach(placa => { 
-            ul.innerHTML += `<li class="plate-item"><span>${placa}</span><button onclick="removerPlaca('${placa}')">✖</button></li>`; 
+            ul.innerHTML += `<li class="plate-item">
+                <span>${placa}</span>
+                <button onclick="removerPlaca('${placa}')">✖</button>
+            </li>`; 
         });
     }
 
@@ -1200,7 +1340,7 @@
             });
             
             if(novasPlacas > 0) { 
-                await salvarConfiguracoesNoBanco(); 
+                await atualizarConfigFirebase({ placas: configGerais.placas }); 
                 alert(`${novasPlacas} placas importadas com sucesso!`); 
             } else { 
                 alert('Nenhuma placa nova encontrada na Coluna A.'); 
@@ -1218,7 +1358,7 @@
             try {
                 await deleteDoc(doc(db, "abastecimentos", id));
                 configGerais.estoqueTanque += parseFloat(d.litros); 
-                await salvarConfiguracoesNoBanco();
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Registro apagado e estoque corrigido com sucesso!");
             } catch(e) { 
                 console.error(e); 
@@ -1232,8 +1372,12 @@
         const fPlaca = document.getElementById('filtroPlacaAdmin').value.trim().toUpperCase();
         let dadosFiltrados = window.dadosRelatorio;
         
-        if (fData) dadosFiltrados = dadosFiltrados.filter(d => d.data === fData);
-        if (fPlaca) dadosFiltrados = dadosFiltrados.filter(d => d.placa.includes(fPlaca));
+        if (fData) {
+            dadosFiltrados = dadosFiltrados.filter(d => d.data === fData);
+        }
+        if (fPlaca) {
+            dadosFiltrados = dadosFiltrados.filter(d => d.placa.includes(fPlaca));
+        }
         
         desenharTabelaAdmin(dadosFiltrados);
     }
@@ -1250,9 +1394,29 @@
             container.innerHTML = "<p style='padding:15px;'>Nenhum abastecimento encontrado.</p>"; 
             return; 
         }
-
-        let html = `<table class="admin-table"><tr><th>Data</th><th>Horário</th><th>Placa</th><th>KM</th><th>Motorista</th><th>Responsável</th><th>Litros</th><th>Val. Unit</th><th>Total</th><th>Anexos</th><th>Ações</th></tr>`;
-        dados.forEach((d, index) => {
+        
+        let totalLitros = 0;
+        let totalValor = 0;
+        
+        let html = `<table class="admin-table">
+            <tr>
+                <th>Data</th>
+                <th>Horário</th>
+                <th>Placa</th>
+                <th>KM</th>
+                <th>Motorista</th>
+                <th>Responsável</th>
+                <th>Litros</th>
+                <th>Val. Unit</th>
+                <th>Total</th>
+                <th>Anexos</th>
+                <th>Ações</th>
+            </tr>`;
+            
+        dados.forEach((d, index) => { 
+            totalLitros += parseFloat(d.litros) || 0;
+            totalValor += parseFloat(d.valorTotal) || 0;
+            
             html += `<tr>
                 <td>${d.data}</td>
                 <td>${d.horario || '-'}</td>
@@ -1270,8 +1434,20 @@
                 <td>
                     <button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')">🗑️ Apagar</button>
                 </td>
-            </tr>`;
+            </tr>`; 
         });
+        
+        // Linha de Subtotal Automático
+        html += `<tfoot>
+            <tr style="background-color: #f3f4f6; font-weight: bold; border-top: 2px solid var(--border-color);">
+                <td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL (Tabela Atual):</td>
+                <td style="color: #ef4444; font-size: 15px;">${totalLitros.toFixed(2)}L</td>
+                <td>-</td>
+                <td style="color: var(--text-main); font-size: 15px;">R$ ${totalValor.toFixed(2)}</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>`;
+        
         html += "</table>"; 
         container.innerHTML = html;
     }
@@ -1286,12 +1462,13 @@
         }
         
         const filtrados = window.dadosRelatorio.filter(d => d.data >= dataInicio && d.data <= dataFim);
+        
         if(filtrados.length === 0) { 
             alert('Nenhum abastecimento encontrado nesse período.'); 
             return; 
         }
         
-        const dadosExcel = filtrados.map(d => ({
+        const dadosExcel = filtrados.map(d => ({ 
             "Data": d.data, 
             "Horário": d.horario || "", 
             "Placa": d.placa, 
@@ -1301,7 +1478,7 @@
             "Litros": parseFloat(d.litros), 
             "Valor Unitário (R$)": parseFloat(d.valorUnitario), 
             "Valor Total (R$)": parseFloat(d.valorTotal), 
-            "Observações": d.obs || ""
+            "Observações": d.obs || "" 
         }));
         
         const worksheet = XLSX.utils.json_to_sheet(dadosExcel); 
