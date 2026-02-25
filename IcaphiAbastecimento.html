@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IcaphiAbastecimento</title>
+    <link rel="manifest" href='data:application/manifest+json,{"name":"IcaphiAbastecimento","short_name":"IcaphiApp","display":"standalone","background_color":"#f4f7f6","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3063/3063822.png","sizes":"512x512","type":"image/png"}]}'>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
         :root { 
             --primary: #3b82f6; 
             --primary-hover: #2563eb;
@@ -18,6 +20,7 @@
             --input-bg: #ffffff;
             --sidebar-bg: #111827;
             --success: #10b981;
+            --danger: #ef4444;
         }
         
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -39,11 +42,11 @@
         .card { background: var(--card-bg); border-radius: 12px; border: 2px solid var(--primary); box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1); position: relative; overflow: hidden; }
         .card-padding { padding: 20px 20px; position: relative; z-index: 2; }
         
-        /* ANIMAÇÃO DA ÁGUA ATRÁS DA TELA PRINCIPAL */
+        /* ANIMAÇÃO DA ÁGUA ATRÁS DA TELA PRINCIPAL (VERTICAL) */
         .liquid-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .liquid-fill { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #bfdbfe; transition: height 1.5s ease-in-out; }
-        .liquid-wave { position: absolute; bottom: 100%; left: 0; width: 200%; height: 30px; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 30 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%23bfdbfe"/></svg>') repeat-x; animation: wave 4s linear infinite; }
-        .liquid-wave:nth-child(2) { bottom: 100%; opacity: 0.5; animation: wave 5s linear infinite reverse; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 0 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%2393c5fd"/></svg>') repeat-x; }
+        .liquid-fill { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #bfdbfe; transition: height 1.5s ease-in-out, background-color 0.5s ease; }
+        .liquid-wave { position: absolute; bottom: 100%; left: 0; width: 200%; height: 30px; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 30 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%23bfdbfe"/></svg>') repeat-x; animation: wave 4s linear infinite; transition: background 0.5s ease;}
+        .liquid-wave:nth-child(2) { bottom: 100%; opacity: 0.5; animation: wave 5s linear infinite reverse; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 0 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%2393c5fd"/></svg>') repeat-x; transition: background 0.5s ease;}
         @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         /* TÍTULO DA CARTA */
@@ -75,22 +78,79 @@
         .signature-pad { border: 2px solid var(--border-color); background: #ffffff; width: 100%; height: 220px; border-radius: 10px; touch-action: none; margin-bottom: 15px; position: relative; z-index: 2;}
 
         /* MODAIS E OVERLAYS BÁSICOS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 12px; max-width: 90%; width: auto; max-height: 90vh; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px); }
+        .modal-content { background: #fff; padding: 25px; border-radius: 12px; max-width: 90%; width: auto; max-height: 90vh; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         .modal-content img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; background-color: #ffffff !important; }
         .modal-close { background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%;}
 
-        /* ADMIN DASHBOARD */
+        /* ADMIN DASHBOARD - COM MENU EXPANDING HOVER */
         .admin-layout { display: flex; min-height: 100vh; background-color: var(--bg-color); position: relative;}
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; z-index: 1000; }
-        .sidebar-brand { padding: 0 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
-        .sidebar-brand h2 { margin: 0; color: #fff; font-size: 20px; display: flex; align-items: center; gap: 10px; }
-        .nav-item { padding: 15px 20px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; border-left: 3px solid transparent; transition: 0.2s; }
-        .nav-item:hover, .nav-item.active { color: #fff; background-color: rgba(255,255,255,0.05); border-left-color: var(--primary); }
-        .admin-content { flex: 1; padding: 30px; overflow-y: auto; width: 100%; }
         
+        @media (min-width: 769px) {
+            .sidebar { 
+                width: 75px; 
+                background-color: var(--sidebar-bg); 
+                color: white; 
+                display: flex; 
+                flex-direction: column; 
+                padding: 20px 0; 
+                z-index: 1000;
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+                overflow-x: hidden; 
+                white-space: nowrap;
+                position: fixed;
+                height: 100vh;
+            }
+            .sidebar:hover { 
+                width: 260px; 
+            }
+            .nav-text, .brand-text {
+                opacity: 0;
+                transition: opacity 0.2s 0.1s; 
+            }
+            .sidebar:hover .nav-text, .sidebar:hover .brand-text {
+                opacity: 1;
+            }
+            .admin-content { 
+                flex: 1; 
+                padding: 30px; 
+                overflow-y: auto; 
+                width: 100%; 
+                margin-left: 75px; 
+            }
+        }
+        
+        .sidebar-brand { padding: 0 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
+        .sidebar-brand h2 { margin: 0; color: #fff; font-size: 20px; display: flex; align-items: center; }
+        
+        .nav-item { padding: 15px 20px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; cursor: pointer; border-left: 3px solid transparent; transition: background-color 0.2s, border-color 0.2s; }
+        .nav-item:hover, .nav-item.active { color: #fff; background-color: rgba(255,255,255,0.05); border-left-color: var(--primary); }
+        .nav-icon { min-width: 32px; text-align: center; font-size: 18px; display: inline-block;}
+        .nav-text { font-size: 14px; font-weight: 500; }
+        
+        /* ANIMAÇÃO DA BARRA DE TANQUE NO ADMIN (NOVO LÍQUIDO HORIZONTAL) */
         .tank-bar-wrapper { background: #e5e7eb; border-radius: 10px; overflow: hidden; position: relative; height: 70px; display: flex; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .tank-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #1e3a8a, #3b82f6); transition: width 1s ease-in-out; z-index: 1; }
+        
+        .tank-bar-fill { 
+            position: absolute; left: 0; top: 0; height: 100%; 
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6); 
+            transition: width 1s ease-in-out, background 0.5s ease; 
+            z-index: 1; 
+            overflow: hidden;
+        }
+        
+        /* Ondas animadas dentro da barra do Admin */
+        .tank-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 20px, transparent 20px, transparent 40px);
+            background-size: 200% 100%;
+            animation: moveLiquidAdmin 20s linear infinite;
+            opacity: 0.6;
+        }
+        @keyframes moveLiquidAdmin { 0% { background-position: 0 0; } 100% { background-position: 100% 0; } }
+
         .tank-bar-content { position: relative; z-index: 2; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: color 0.3s; }
         .tank-bar-content h3 { margin: 0; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;}
         .tank-bar-content .tank-value { font-size: 20px; font-weight: 700; }
@@ -98,7 +158,16 @@
         .admin-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
         .info-text-admin { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; background: rgba(239, 246, 255, 0.9); padding: 10px; border-radius: 6px; border-left: 3px solid var(--primary); position: relative; z-index: 2;}
         
-        /* CSS DO DASHBOARD */
+        /* TRANSIÇÃO SUAVE (FADE-IN & SLIDE) PARA AS ABAS DO ADMIN */
+        @keyframes tabFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .admin-aba:not(.hidden) {
+            animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* CSS DO DASHBOARD E GRÁFICOS */
         .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .dash-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
         .dash-card h4 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
@@ -107,6 +176,9 @@
         .dash-list li { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
         .dash-list li:last-child { border-bottom: none; }
         .dash-list .plate { font-weight: 700; color: var(--primary); font-size: 15px;}
+        
+        /* ÁREA DOS GRÁFICOS */
+        .chart-container { position: relative; height: 300px; width: 100%; }
         
         .table-responsive { width: 100%; overflow-x: auto; }
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; min-width: 900px; }
@@ -124,11 +196,12 @@
         .sidebar-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998; display:none; }
         
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -250px; top: 0; height: 100%; transition: left 0.3s ease; box-shadow: 2px 0 5px rgba(0,0,0,0.5); }
+            .sidebar { position: fixed; width: 250px; left: -250px; top: 0; height: 100%; transition: left 0.3s ease; box-shadow: 2px 0 5px rgba(0,0,0,0.5); background-color: var(--sidebar-bg); z-index: 1000; padding: 20px 0;}
             .sidebar.open { left: 0; }
+            .nav-text, .brand-text { opacity: 1; } /* No mobile o texto sempre aparece */
             .menu-toggle { display: inline-block; }
             .sidebar-overlay.open { display: block; }
-            .admin-content { padding: 15px; }
+            .admin-content { padding: 15px; flex: 1; width: 100%; margin-left: 0; }
         }
     </style>
 </head>
@@ -139,6 +212,21 @@
         <h3 id="modal-title" style="margin-top: 0; align-self: flex-start; margin-bottom: 15px;">Visualização</h3>
         <div id="modal-images-container" style="width: 100%;"></div>
         <button class="modal-close" onclick="fecharModal()">Fechar</button>
+    </div>
+</div>
+
+<div id="admin-login-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 350px; width: 100%;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🛡️</div>
+        <h2 class="card-title" style="justify-content: center; margin-bottom: 25px;">Acesso Restrito</h2>
+        
+        <div class="form-group full-width" style="margin-bottom: 20px; text-align: left; width: 100%;">
+            <label>Senha do Painel</label>
+            <input type="password" id="adminPassword" required placeholder="Digite a senha..." style="text-align: center; letter-spacing: 3px; font-size: 18px;">
+        </div>
+        
+        <button id="btnAdminLogin" class="btn btn-primary" style="margin-bottom: 12px;">Entrar no Painel</button>
+        <button id="btnBackToMain" class="btn btn-secondary">Cancelar</button>
     </div>
 </div>
 
@@ -156,6 +244,10 @@
 </div>
 
 <div class="mobile-container">
+    <div id="offlineIndicator" class="hidden" style="background: #fef08a; color: #854d0e; padding: 10px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px;">
+        ⚠️ Você está sem internet. O sistema salvará os dados e enviará automaticamente quando a conexão voltar!
+    </div>
+
     <div id="main-screen">
         <div class="card">
             <div class="liquid-container">
@@ -166,6 +258,15 @@
             </div>
 
             <div class="card-padding">
+                
+                <div id="alertaEstoqueCriticoFuncionario" class="hidden" style="background: rgba(254, 226, 226, 0.95); border-left: 5px solid var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); flex-wrap: wrap; gap: 10px; position: relative; z-index: 2;">
+                    <div>
+                        <h3 style="margin: 0; color: #991b1b; font-size: 14px; display: flex; align-items: center; gap: 8px;">🚨 ESTOQUE CRÍTICO!</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #7f1d1d;">Tanque no nível de segurança. Avise o setor de compras.</p>
+                    </div>
+                    <button type="button" onclick="enviarAlertaWhatsApp()" class="btn btn-primary" style="background: var(--danger); width: auto; padding: 8px 15px; font-size: 13px; box-shadow: none;">Avisar Compras 📱</button>
+                </div>
+
                 <h2 class="card-title"><span class="play-icon">▶</span> Novo Abastecimento</h2>
                 
                 <div class="grid-form">
@@ -256,18 +357,6 @@
             <button id="btnNewRecord" class="btn btn-secondary">Novo Abastecimento</button>
         </div>
     </div>
-
-    <div id="admin-login-screen" class="hidden">
-        <div class="card card-padding">
-            <h2 class="card-title"><span class="play-icon">▶</span> Área Restrita</h2>
-            <div class="form-group full-width" style="margin-bottom: 20px;">
-                <label>Senha de Acesso</label>
-                <input type="password" id="adminPassword" required>
-            </div>
-            <button id="btnAdminLogin" class="btn btn-primary" style="margin-bottom: 12px;">Acessar</button>
-            <button id="btnBackToMain" class="btn btn-secondary">Voltar</button>
-        </div>
-    </div>
 </div>
 
 <div id="admin-panel" class="admin-layout hidden">
@@ -275,21 +364,46 @@
     
     <div class="sidebar" id="adminSidebar">
         <div class="sidebar-brand">
-            <h2>IcaphiAdmin</h2>
+            <h2><span class="nav-icon" style="font-weight: 900; color: var(--primary); background: white; border-radius: 6px; font-size: 16px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 5px;">I</span> <span class="brand-text">IcaphiAdmin</span></h2>
             <button class="menu-toggle" style="color: white; margin: 0;" onclick="toggleSidebar()">✖</button>
         </div>
-        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">📋 Histórico (Abastecimento)</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('dashboard')">📊 Dashboard</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('recebimento')">📥 Controle de Recebimento</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('frota')">🚚 Frota (Placas)</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('exportar')">📤 Exportar Planilhas</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('precos')">💲 Preço do Litro</div>
-        <div class="nav-item" onclick="mudarAbaAdmin('tanque')">🛢️ Controle do Tanque</div>
+        <div class="nav-item active" onclick="mudarAbaAdmin('historico')">
+            <span class="nav-icon">📋</span> <span class="nav-text">Histórico</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('dashboard')">
+            <span class="nav-icon">📊</span> <span class="nav-text">Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('recebimento')">
+            <span class="nav-icon">📥</span> <span class="nav-text">Recebimentos</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('frota')">
+            <span class="nav-icon">🚚</span> <span class="nav-text">Frota de Placas</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('exportar')">
+            <span class="nav-icon">📤</span> <span class="nav-text">Exportar Excel</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('precos')">
+            <span class="nav-icon">💲</span> <span class="nav-text">Preço do Litro</span>
+        </div>
+        <div class="nav-item" onclick="mudarAbaAdmin('tanque')">
+            <span class="nav-icon">🛢️</span> <span class="nav-text">Gestão do Tanque</span>
+        </div>
         <div style="flex-grow: 1;"></div>
-        <div class="nav-item" id="btnExitAdmin" style="color: #ef4444;">Sair do Painel</div>
+        <div class="nav-item" id="btnExitAdmin" style="color: #ef4444;">
+            <span class="nav-icon">🚪</span> <span class="nav-text">Sair do Painel</span>
+        </div>
     </div>
     
     <div class="admin-content">
+
+        <div id="alertaEstoqueCritico" class="hidden" style="background: #fee2e2; border-left: 5px solid var(--danger); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="margin: 0; color: #991b1b; font-size: 16px; display: flex; align-items: center; gap: 8px;">🚨 ATENÇÃO: ESTOQUE CRÍTICO!</h3>
+                <p style="margin: 5px 0 0 0; font-size: 13px; color: #7f1d1d;">O tanque atingiu o ponto de pedido mínimo.</p>
+            </div>
+            <button onclick="enviarAlertaWhatsApp()" class="btn btn-primary" style="background: var(--danger); width: auto; padding: 10px 20px; font-size: 14px; box-shadow: none;">Enviar Alerta Compras 📱</button>
+        </div>
+
         <div class="tank-bar-wrapper">
             <div class="tank-bar-fill" id="adminTankFill" style="width: 0%;"></div>
             <div class="tank-bar-content" id="tankBarContent">
@@ -337,16 +451,22 @@
                 <div class="dash-card" style="border-left: 4px solid var(--success);">
                     <h4>Entradas este mês</h4>
                     <div class="value" id="dashEntradasLitros">0.00 L</div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total de combustível recebido dos fornecedores</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total recebido dos fornecedores</div>
                 </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+            <div class="dash-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div class="dash-card">
-                    <h4 style="margin-bottom: 15px; font-size: 16px;">🏆 Ranking: Top 5 Veículos (Consumo no Mês)</h4>
-                    <ul class="dash-list" id="dashTopVeiculos">
-                        <p style="color: var(--text-muted); font-size: 14px;">Carregando ranking...</p>
-                    </ul>
+                    <h4 style="margin-bottom: 15px; font-size: 16px;">📈 Consumo Diário (Mês Atual)</h4>
+                    <div class="chart-container">
+                        <canvas id="graficoConsumoDiario"></canvas>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <h4 style="margin-bottom: 15px; font-size: 16px;">🏆 Distribuição Top Veículos</h4>
+                    <div class="chart-container">
+                        <canvas id="graficoTopPlacas"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -466,7 +586,7 @@
 
         <div id="aba-tanque" class="admin-aba hidden">
             <h2 style="margin-top:0;">Gestão do Tanque Principal</h2>
-            <div class="card card-padding" style="max-width: 550px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div class="card card-padding" style="max-width: 550px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;">
                 <div class="info-text-admin" style="text-align: left;">
                     Insira a medição da régua em CM para calcular automaticamente, ou digite o valor em Litros diretamente.
                 </div>
@@ -490,13 +610,24 @@
                 
                 <button class="btn btn-primary" onclick="salvarEstoqueTanque()">Atualizar Estoque</button>
             </div>
+
+            <div class="card card-padding" style="max-width: 550px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="margin-top:0; font-size: 16px;">Configuração de Alerta (Ponto de Pedido)</h3>
+                <div class="info-text-admin" style="text-align: left;">
+                    Defina em qual nível de litros o sistema deve gerar um Alerta Vermelho avisando que o combustível está acabando.
+                </div>
+                <label>Avisar Compras quando o estoque chegar em (Litros):</label>
+                <input type="number" id="pontoPedidoAdmin" style="margin-bottom: 15px; padding:10px;" placeholder="Ex: 2000">
+                <button class="btn btn-secondary" onclick="salvarPontoPedido()" style="border: 1px solid var(--border-color);">Salvar Limite de Alerta</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script type="module">
+    // IMPORTAÇÕES FIREBASE V10: AGORA COM LOCALCACHE (MODO OFFLINE ATIVADO!)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
@@ -508,7 +639,16 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    
+    // ATIVANDO O MODO OFFLINE PROFUNDO PARA PWA
+    const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+    });
+
+    // CONTROLE DE INTERNET PARA O FRENTISTA
+    window.addEventListener('online', () => document.getElementById('offlineIndicator').classList.add('hidden'));
+    window.addEventListener('offline', () => document.getElementById('offlineIndicator').classList.remove('hidden'));
+    if(!navigator.onLine) document.getElementById('offlineIndicator').classList.remove('hidden');
 
     // TABELA EXATA ENVIADA POR VOCÊ (CM -> LITROS)
     const tabelaReguaTanque = {
@@ -529,6 +669,7 @@
         precoDiesel: 5.90, 
         estoqueTanque: 0, 
         capacidadeTanque: 10000, 
+        pontoPedido: 2000, /* NOVO PONTO DE PEDIDO */
         placas: [] 
     };
     
@@ -538,6 +679,10 @@
     window.dadosRecebimentosLista = []; 
     let editandoRecebimentoId = null;
     let litrosAntigosRecebimento = 0;
+    
+    // VARIÁVEIS DOS GRÁFICOS
+    let chartConsumoDiarioInstance = null;
+    let chartTopPlacasInstance = null;
 
     window.toggleSidebar = function() {
         document.getElementById('adminSidebar').classList.toggle('open');
@@ -553,7 +698,7 @@
     }
 
     const switchScreen = (screenId) => {
-        ['main-screen', 'signature-driver-screen', 'signature-emp-screen', 'whatsapp-screen', 'admin-login-screen'].forEach(id => {
+        ['main-screen', 'signature-driver-screen', 'signature-emp-screen', 'whatsapp-screen'].forEach(id => {
             const el = document.getElementById(id); 
             if(el) {
                 el.classList.add('hidden');
@@ -661,33 +806,63 @@
         }
         
         const fillEl = document.getElementById('liquidFillLevel');
+        const adminFill = document.getElementById('adminTankFill');
+        const tankContent = document.getElementById('tankBarContent');
+        const alertaCriticoAdmin = document.getElementById('alertaEstoqueCritico');
+        const alertaCriticoFunc = document.getElementById('alertaEstoqueCriticoFuncionario');
+        
+        // LÓGICA DO PONTO DE PEDIDO (NÍVEL CRÍTICO)
+        let isCritico = configGerais.estoqueTanque <= configGerais.pontoPedido;
+
         if(fillEl) {
             fillEl.style.height = `${pct}%`;
+            // Se o nível estiver crítico, a água principal também pode ficar avermelhada
+            if(isCritico && configGerais.pontoPedido > 0) {
+                fillEl.style.backgroundColor = '#fca5a5';
+            } else {
+                fillEl.style.backgroundColor = '#bfdbfe';
+            }
         }
         
-        const adminFill = document.getElementById('adminTankFill');
         if(adminFill) {
             adminFill.style.width = `${pct}%`;
+            // Se estiver crítico, a barra do tanque animada fica vermelha!
+            if(isCritico && configGerais.pontoPedido > 0) {
+                adminFill.style.background = "linear-gradient(90deg, #991b1b, #ef4444)";
+            } else {
+                adminFill.style.background = "linear-gradient(90deg, #1e3a8a, #3b82f6)";
+            }
         }
 
-        const tankContent = document.getElementById('tankBarContent');
+        // Exibe a fita de alerta no painel Admin E no app do Frentista
+        if(isCritico && configGerais.pontoPedido > 0) {
+            if(alertaCriticoAdmin) alertaCriticoAdmin.classList.remove('hidden');
+            if(alertaCriticoFunc) alertaCriticoFunc.classList.remove('hidden');
+        } else {
+            if(alertaCriticoAdmin) alertaCriticoAdmin.classList.add('hidden');
+            if(alertaCriticoFunc) alertaCriticoFunc.classList.add('hidden');
+        }
+
         if(tankContent) {
-             if(pct < 30) {
+             if(pct < 30 && !isCritico) {
                  tankContent.style.color = '#1f2937';
                  tankContent.style.textShadow = 'none';
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
-                 if(menuToggleBtn) {
-                     menuToggleBtn.style.color = '#1f2937';
-                 }
+                 if(menuToggleBtn) menuToggleBtn.style.color = '#1f2937';
              } else {
                  tankContent.style.color = '#fff';
                  tankContent.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
-                 if(menuToggleBtn) {
-                     menuToggleBtn.style.color = '#fff';
-                 }
+                 if(menuToggleBtn) menuToggleBtn.style.color = '#fff';
              }
         }
+    }
+
+    // BOTÃO DO WHATSAPP DO ALERTA CRÍTICO
+    window.enviarAlertaWhatsApp = function() {
+        const texto = `🚨 *URGENTE - COMPRAS ICAPHI* 🚨\n\nO tanque principal de Diesel atingiu o nível crítico!\n\n*Estoque Atual:* ${configGerais.estoqueTanque.toFixed(2)} Litros\n*Limite Mínimo:* ${configGerais.pontoPedido} Litros\n\nPor favor, providenciar nova compra urgente com o fornecedor.`;
+        const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+        window.open(url, '_blank');
     }
 
     let unsubConfig = null;
@@ -699,6 +874,7 @@
                 configGerais.precoDiesel = data.precoDiesel || 5.90;
                 configGerais.estoqueTanque = data.estoqueTanque || 0;
                 configGerais.capacidadeTanque = data.capacidadeTanque || 10000;
+                configGerais.pontoPedido = data.pontoPedido || 2000;
                 configGerais.placas = data.placas || [];
                 
                 atualizarVisorTanque();
@@ -723,7 +899,7 @@
         try { 
             await setDoc(doc(db, "configuracoes", "gerais"), dadosParciais, {merge: true}); 
         } catch(e) { 
-            console.error("Erro ao atualizar configurações:", e); 
+            console.error("Erro ao atualizar:", e); 
         }
     }
 
@@ -758,11 +934,9 @@
             ctx.lineWidth = 2.5; 
             ctx.lineCap = 'round'; 
             ctx.strokeStyle = '#000';
-            
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
             ctx.lineTo(clientX - rect.left, clientY - rect.top); 
             ctx.stroke();
             ctx.beginPath(); 
@@ -780,6 +954,7 @@
     document.getElementById('btnClearDriver').addEventListener('click', () => { 
         preencherFundoBranco('canvasMotorista'); 
     });
+    
     document.getElementById('btnClearEmp').addEventListener('click', () => { 
         preencherFundoBranco('canvasFuncionario'); 
     });
@@ -857,7 +1032,6 @@
             
             resetarFormulario();
             switchScreen('whatsapp-screen');
-            
         } catch (error) { 
             console.error(error); 
             alert("Erro ao salvar. Verifique sua conexão com a internet."); 
@@ -879,15 +1053,18 @@
     });
     
     document.getElementById('btnOpenAdminLogin').addEventListener('click', () => { 
-        switchScreen('admin-login-screen'); 
+        document.getElementById('admin-login-modal').classList.remove('hidden'); 
     });
     
     document.getElementById('btnBackToMain').addEventListener('click', () => { 
-        switchScreen('main-screen'); 
+        document.getElementById('admin-login-modal').classList.add('hidden');
+        document.getElementById('adminPassword').value = "";
     });
     
     document.getElementById('btnAdminLogin').addEventListener('click', () => {
         if(document.getElementById('adminPassword').value === "60010774") { 
+            document.getElementById('admin-login-modal').classList.add('hidden');
+            document.getElementById('adminPassword').value = "";
             switchScreen('admin-panel'); 
         } else { 
             alert("Senha Incorreta!"); 
@@ -895,7 +1072,6 @@
     });
     
     document.getElementById('btnExitAdmin').addEventListener('click', () => { 
-        document.getElementById('adminPassword').value = ""; 
         switchScreen('main-screen'); 
     });
 
@@ -907,6 +1083,9 @@
         
         if(aba === 'frota') {
             renderizarListaPlacasAdmin();
+        }
+        if(aba === 'dashboard') {
+            atualizarDashboard(); 
         }
         
         if(window.innerWidth <= 768) {
@@ -950,6 +1129,9 @@
         if(document.activeElement.id !== 'capacidadeTanqueAdmin') {
             document.getElementById('capacidadeTanqueAdmin').value = configGerais.capacidadeTanque;
         }
+        if(document.activeElement.id !== 'pontoPedidoAdmin') {
+            document.getElementById('pontoPedidoAdmin').value = configGerais.pontoPedido;
+        }
     }
 
     window.salvarPreco = async function() {
@@ -964,7 +1146,6 @@
     window.salvarEstoqueTanque = async function() {
         const est = parseFloat(document.getElementById('estoqueTanqueAdmin').value);
         const cap = parseFloat(document.getElementById('capacidadeTanqueAdmin').value);
-        
         if(!isNaN(est) && !isNaN(cap) && cap > 0) { 
             configGerais.estoqueTanque = est; 
             configGerais.capacidadeTanque = cap;
@@ -973,11 +1154,21 @@
                 capacidadeTanque: configGerais.capacidadeTanque 
             }); 
             alert("Estoque e Capacidade atualizados!"); 
-            
-            // Limpa o campo de CM após salvar para não confundir
             document.getElementById('estoqueTanqueCM').value = "";
         } else { 
             alert("Verifique os valores informados."); 
+        }
+    }
+
+    window.salvarPontoPedido = async function() {
+        const pt = parseFloat(document.getElementById('pontoPedidoAdmin').value);
+        if(!isNaN(pt) && pt >= 0) {
+            configGerais.pontoPedido = pt;
+            await atualizarConfigFirebase({ pontoPedido: configGerais.pontoPedido });
+            alert("Ponto de pedido salvo! O alerta disparará em " + pt + " Litros.");
+            atualizarVisorTanque();
+        } else { 
+            alert("Valor inválido."); 
         }
     }
 
@@ -990,6 +1181,7 @@
         let litrosSaida = 0; 
         let custoSaida = 0; 
         let consumoPorPlaca = {};
+        let consumoDiario = {}; 
 
         window.dadosRelatorio.forEach(d => {
             if (d.data && d.data.startsWith(prefixoData)) {
@@ -1002,6 +1194,12 @@
                     consumoPorPlaca[d.placa] = 0;
                 }
                 consumoPorPlaca[d.placa] += l;
+                
+                let dia = d.data.split('-')[2];
+                if(!consumoDiario[dia]) {
+                    consumoDiario[dia] = 0;
+                }
+                consumoDiario[dia] += l;
             }
         });
 
@@ -1016,32 +1214,68 @@
         document.getElementById('dashCustoMensal').innerText = "R$ " + custoSaida.toFixed(2).replace('.', ',');
         document.getElementById('dashEntradasLitros').innerText = litrosEntrada.toFixed(2) + " L";
 
+        // DESENHAR GRÁFICO 1: CONSUMO DIÁRIO (LINHA)
+        const ctxDiario = document.getElementById('graficoConsumoDiario');
+        if(ctxDiario) {
+            if(chartConsumoDiarioInstance) {
+                chartConsumoDiarioInstance.destroy();
+            }
+            
+            let diasOrdenados = Object.keys(consumoDiario).sort();
+            let valoresDias = diasOrdenados.map(dia => consumoDiario[dia]);
+            
+            chartConsumoDiarioInstance = new Chart(ctxDiario, {
+                type: 'line',
+                data: {
+                    labels: diasOrdenados,
+                    datasets: [{
+                        label: 'Litros Consumidos',
+                        data: valoresDias,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false } 
+                    } 
+                }
+            });
+        }
+
+        // DESENHAR GRÁFICO 2: TOP PLACAS (PIZZA/ROSCA)
         let topPlacas = Object.keys(consumoPorPlaca)
             .map(p => ({placa: p, litros: consumoPorPlaca[p]}))
             .sort((a,b) => b.litros - a.litros)
             .slice(0, 5);
 
-        let htmlTop = "";
-        let maxL = topPlacas.length > 0 ? topPlacas[0].litros : 1; 
-        
-        if (topPlacas.length === 0) {
-            htmlTop = "<p style='color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 10px;'>Nenhum abastecimento registrado este mês.</p>";
-        } else {
-            topPlacas.forEach((item, index) => {
-                let pct = (item.litros / maxL) * 100;
-                htmlTop += `
-                <li>
-                    <div style="display:flex; justify-content: space-between; width: 100%; margin-bottom: 8px;">
-                        <span class="plate">${index + 1}º &nbsp; ${item.placa}</span>
-                        <span style="font-weight: 700; color: var(--text-main); font-size: 15px;">${item.litros.toFixed(2)} L</span>
-                    </div>
-                    <div style="width: 100%; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="width: ${pct}%; background: var(--primary); height: 100%; border-radius: 4px;"></div>
-                    </div>
-                </li>`;
+        const ctxTop = document.getElementById('graficoTopPlacas');
+        if(ctxTop) {
+            if(chartTopPlacasInstance) {
+                chartTopPlacasInstance.destroy();
+            }
+            
+            chartTopPlacasInstance = new Chart(ctxTop, {
+                type: 'doughnut',
+                data: {
+                    labels: topPlacas.map(t => t.placa),
+                    datasets: [{
+                        data: topPlacas.map(t => t.litros),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false 
+                }
             });
         }
-        document.getElementById('dashTopVeiculos').innerHTML = htmlTop;
     }
 
     let unsubRelatorio = null;
@@ -1109,10 +1343,10 @@
         const total = document.getElementById('recTotalPagar').value;
 
         if(!dataChegada || !fornecedor || !litros || !valorLitro || !responsavel) { 
-            alert("Preencha todos os campos obrigatórios do recebimento."); 
+            alert("Preencha todos os campos obrigatórios."); 
             return; 
         }
-
+        
         const recebimentoData = { 
             dataChegada, 
             horario, 
@@ -1124,28 +1358,28 @@
             total, 
             timestamp: editandoRecebimentoId ? undefined : new Date().toISOString() 
         };
-
+        
         try {
             if (editandoRecebimentoId) {
                 await updateDoc(doc(db, "recebimentos", editandoRecebimentoId), recebimentoData);
-                configGerais.estoqueTanque += (litros - litrosAntigosRecebimento);
+                configGerais.estoqueTanque += (litros - litrosAntigosRecebimento); 
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
-                alert("Recebimento atualizado!");
+                alert("Recebimento atualizado!"); 
                 cancelarEdicaoRecebimento(); 
             } else {
                 await addDoc(collection(db, "recebimentos"), recebimentoData);
-                configGerais.estoqueTanque += litros;
+                configGerais.estoqueTanque += litros; 
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
-                alert("Recebimento registrado! Estoque atualizado.");
+                alert("Recebimento registrado!");
                 
-                document.getElementById('recDataChegada').valueAsDate = new Date();
+                document.getElementById('recDataChegada').valueAsDate = new Date(); 
                 ['recHorario','recFornecedor','recLitros','recValorLitro','recVencimento','recResponsavel','recTotalPagar'].forEach(id => { 
                     document.getElementById(id).value = ""; 
                 });
             }
         } catch (error) { 
             console.error(error); 
-            alert("Erro ao salvar recebimento."); 
+            alert("Erro ao salvar."); 
         }
     }
 
@@ -1173,13 +1407,12 @@
 
     window.cancelarEdicaoRecebimento = function() {
         editandoRecebimentoId = null; 
-        litrosAntigosRecebimento = 0;
-        
+        litrosAntigosRecebimento = 0; 
         document.getElementById('tituloFormRecebimento').innerText = "Registrar Nova Entrada"; 
         document.getElementById('btnSalvarRecebimento').innerText = "Salvar Recebimento"; 
         document.getElementById('btnCancelarEdicaoRec').classList.add('hidden');
         
-        document.getElementById('recDataChegada').valueAsDate = new Date();
+        document.getElementById('recDataChegada').valueAsDate = new Date(); 
         ['recHorario','recFornecedor','recLitros','recValorLitro','recVencimento','recResponsavel','recTotalPagar'].forEach(id => { 
             document.getElementById(id).value = ""; 
         });
@@ -1189,15 +1422,14 @@
         const rec = window.dadosRecebimentosLista.find(r => r.id === id); 
         if(!rec) return;
         
-        if(confirm(`Tem certeza que deseja apagar o recebimento de ${rec.litros}L? Isso removerá os litros do estoque.`)) {
-            try {
-                await deleteDoc(doc(db, "recebimentos", id));
-                configGerais.estoqueTanque -= parseFloat(rec.litros);
+        if(confirm(`Apagar o recebimento de ${rec.litros}L? Isso removerá do estoque.`)) {
+            try { 
+                await deleteDoc(doc(db, "recebimentos", id)); 
+                configGerais.estoqueTanque -= parseFloat(rec.litros); 
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
-                alert("Recebimento apagado e estoque corrigido!");
+                alert("Apagado!"); 
             } catch(e) { 
                 console.error(e); 
-                alert("Erro ao apagar recebimento."); 
             }
         }
     }
@@ -1213,14 +1445,13 @@
         if (fFim) {
             filtrados = filtrados.filter(d => d.dataChegada <= fFim);
         }
-        
         desenharTabelaRecebimentos(filtrados);
     }
 
     function desenharTabelaRecebimentos(dados) {
         const container = document.getElementById('recebimentos-table-container');
         if (dados.length === 0) { 
-            container.innerHTML = "<p style='padding:15px;'>Nenhum recebimento encontrado.</p>"; 
+            container.innerHTML = "<p style='padding:15px;'>Nenhum dado.</p>"; 
             return; 
         }
         
@@ -1248,8 +1479,8 @@
                 <td>${d.vencimento || '-'}</td>
                 <td>${d.responsavel}</td>
                 <td style="min-width: 140px;">
-                    <button class="link-btn" onclick="editarRecebimento('${d.id}')">✏️ Editar</button>
-                    <button class="link-btn btn-delete" onclick="apagarRecebimento('${d.id}')">🗑️ Apagar</button>
+                    <button class="link-btn" onclick="editarRecebimento('${d.id}')">✏️</button>
+                    <button class="link-btn btn-delete" onclick="apagarRecebimento('${d.id}')">🗑️</button>
                 </td>
             </tr>`; 
         });
@@ -1265,10 +1496,7 @@
         if (fInicio) filtrados = filtrados.filter(d => d.dataChegada >= fInicio); 
         if (fFim) filtrados = filtrados.filter(d => d.dataChegada <= fFim);
         
-        if(filtrados.length === 0) { 
-            alert('Nenhum dado encontrado para exportar.'); 
-            return; 
-        }
+        if(filtrados.length === 0) return alert('Sem dados.');
         
         const dadosExcel = filtrados.map(d => ({ 
             "Data Chegada": d.dataChegada, 
@@ -1338,12 +1566,9 @@
                     }
                 }
             });
-            
             if(novasPlacas > 0) { 
                 await atualizarConfigFirebase({ placas: configGerais.placas }); 
-                alert(`${novasPlacas} placas importadas com sucesso!`); 
-            } else { 
-                alert('Nenhuma placa nova encontrada na Coluna A.'); 
+                alert(`${novasPlacas} importadas!`); 
             }
             e.target.value = ''; 
         };
@@ -1354,15 +1579,14 @@
         const d = window.dadosRelatorio.find(r => r.id === id); 
         if(!d) return;
         
-        if(confirm("Tem certeza que deseja apagar esta saída permanentemente? Isso devolverá os litros ao tanque.")) {
-            try {
-                await deleteDoc(doc(db, "abastecimentos", id));
+        if(confirm("Apagar permanentemente? Devolverá os litros ao tanque.")) {
+            try { 
+                await deleteDoc(doc(db, "abastecimentos", id)); 
                 configGerais.estoqueTanque += parseFloat(d.litros); 
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
-                alert("Registro apagado e estoque corrigido com sucesso!");
+                alert("Apagado e devolvido!"); 
             } catch(e) { 
                 console.error(e); 
-                alert("Erro ao apagar registro."); 
             }
         }
     }
@@ -1378,14 +1602,13 @@
         if (fPlaca) {
             dadosFiltrados = dadosFiltrados.filter(d => d.placa.includes(fPlaca));
         }
-        
         desenharTabelaAdmin(dadosFiltrados);
     }
 
-    window.limparFiltrosAdmin = function() {
+    window.limparFiltrosAdmin = function() { 
         document.getElementById('filtroDataAdmin').value = ""; 
-        document.getElementById('filtroPlacaAdmin').value = "";
-        desenharTabelaAdmin(window.dadosRelatorio);
+        document.getElementById('filtroPlacaAdmin').value = ""; 
+        desenharTabelaAdmin(window.dadosRelatorio); 
     }
 
     function desenharTabelaAdmin(dados) {
@@ -1395,7 +1618,7 @@
             return; 
         }
         
-        let totalLitros = 0;
+        let totalLitros = 0; 
         let totalValor = 0;
         
         let html = `<table class="admin-table">
@@ -1414,7 +1637,7 @@
             </tr>`;
             
         dados.forEach((d, index) => { 
-            totalLitros += parseFloat(d.litros) || 0;
+            totalLitros += parseFloat(d.litros) || 0; 
             totalValor += parseFloat(d.valorTotal) || 0;
             
             html += `<tr>
@@ -1428,27 +1651,25 @@
                 <td>R$ ${d.valorUnitario || '-'}</td>
                 <td>R$ ${d.valorTotal}</td>
                 <td style="min-width: 140px;">
-                    <button class="link-btn" onclick="abrirFotoBomba(${index})">📷 Bomba</button>
-                    <button class="link-btn" onclick="abrirAssinaturas(${index})">✍️ Ass.</button>
+                    <button class="link-btn" onclick="abrirFotoBomba(${index})">📷</button>
+                    <button class="link-btn" onclick="abrirAssinaturas(${index})">✍️</button>
                 </td>
                 <td>
-                    <button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')">🗑️ Apagar</button>
+                    <button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')">🗑️</button>
                 </td>
             </tr>`; 
         });
         
-        // Linha de Subtotal Automático
         html += `<tfoot>
             <tr style="background-color: #f3f4f6; font-weight: bold; border-top: 2px solid var(--border-color);">
-                <td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL (Tabela Atual):</td>
+                <td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL:</td>
                 <td style="color: #ef4444; font-size: 15px;">${totalLitros.toFixed(2)}L</td>
                 <td>-</td>
                 <td style="color: var(--text-main); font-size: 15px;">R$ ${totalValor.toFixed(2)}</td>
                 <td colspan="2"></td>
             </tr>
-        </tfoot>`;
+        </tfoot></table>`; 
         
-        html += "</table>"; 
         container.innerHTML = html;
     }
 
@@ -1456,16 +1677,13 @@
         const dataInicio = document.getElementById('exportDataInicio').value; 
         const dataFim = document.getElementById('exportDataFim').value;
         
-        if(!dataInicio || !dataFim) { 
-            alert('Por favor, selecione as datas de início e fim.'); 
-            return; 
+        if(!dataInicio || !dataFim) {
+            return alert('Selecione as datas.'); 
         }
         
         const filtrados = window.dadosRelatorio.filter(d => d.data >= dataInicio && d.data <= dataFim);
-        
-        if(filtrados.length === 0) { 
-            alert('Nenhum abastecimento encontrado nesse período.'); 
-            return; 
+        if(filtrados.length === 0) {
+            return alert('Nenhum abastecimento encontrado.'); 
         }
         
         const dadosExcel = filtrados.map(d => ({ 
@@ -1484,7 +1702,7 @@
         const worksheet = XLSX.utils.json_to_sheet(dadosExcel); 
         const workbook = XLSX.utils.book_new(); 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Abastecimentos"); 
-        XLSX.writeFile(workbook, `Icaphi_Abastecimentos_${dataInicio}_a_${dataFim}.xlsx`);
+        XLSX.writeFile(workbook, `Icaphi_Abastecimentos.xlsx`);
     }
 </script>
 </body>
