@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IcaphiDrive V69</title>
+    <title>IcaphiDrive</title>
     
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/5488/5488613.png" type="image/png">
     
@@ -140,7 +140,7 @@
         <header class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-40 flex justify-between items-center">
             <div class="flex items-center gap-3 font-bold text-lg text-zinc-800 dark:text-zinc-100">
                 <div class="bg-blue-600 text-white p-2 rounded-lg"><i data-lucide="box" class="w-5 h-5"></i></div>
-                <div>IcaphiDrive<span class="block text-[9px] font-medium text-gray-400">Motorista App</span></div>
+                <div>IcaphiDrive<span class="block text-[9px] font-medium text-gray-400">By: Matheus Julio V6</span></div>
             </div>
             <div class="flex gap-2">
                 <button onclick="verNotificacoesDriver()" class="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg text-gray-500 relative" id="btn-bell-driver"><i data-lucide="bell" class="w-5 h-5"></i><div class="bell-dot" id="bell-dot-driver"></div></button>
@@ -222,7 +222,7 @@
             <button onclick="toggleSidebar()" class="absolute top-4 right-4 md:hidden text-zinc-400 hover:text-white"><i data-lucide="x"></i></button>
             <div class="p-6 border-b border-zinc-800">
                 <h1 class="text-lg font-bold flex items-center gap-2 text-zinc-100"><i data-lucide="box" class="text-blue-500 w-5 h-5"></i> IcaphiDrive</h1>
-                <p class="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest pl-7">Painel Gestor</p>
+                <p class="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest pl-7">By: Matheus Julio V6</p>
             </div>
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
                 <button onclick="window.filtrarStatus('todos'); toggleSidebar()" class="flex items-center gap-3 w-full p-2.5 rounded-lg hover:bg-zinc-800 text-zinc-300 text-xs font-medium"><i data-lucide="list" class="w-4 h-4"></i> Todas as Viagens</button>
@@ -358,7 +358,7 @@
         <div class="modal-box">
             <button class="modal-close-btn" onclick="el('modal-importacao').classList.remove('active')"><i data-lucide="x" class="w-4 h-4"></i></button>
             <h3 class="font-bold mb-4 flex gap-2 dark:text-zinc-100 text-lg"><i data-lucide="upload-cloud" class="text-blue-500"></i> Importar Previsões</h3>
-            <p class="text-xs text-gray-500 dark:text-zinc-400 mb-4">O sistema lê de cima para baixo. Placas repetidas terão a primeira aparição salva.</p>
+            <p class="text-xs text-gray-500 dark:text-zinc-400 mb-4">O sistema irá ler as colunas exatas: D (Placa), E (Perfil), J (Rota), O (Meta).</p>
             <input type="date" id="data-importacao" class="coss-input mb-4">
             <div class="file-upload mb-4">
                 <input type="file" id="file-import" onchange="processarImportacao(this)" class="hidden">
@@ -516,7 +516,7 @@
             <button onclick="el('modal-rastreio').classList.remove('active'); pararRastreioAdmin();" class="absolute top-4 right-4 z-[1000] bg-white dark:bg-zinc-800 p-2 rounded-lg text-red-500 border border-gray-100"><i data-lucide="x" class="w-4 h-4"></i></button>
             <div class="absolute top-4 left-4 z-[1000] bg-white dark:bg-zinc-900 px-4 py-3 rounded-lg border border-gray-200">
                 <h3 class="font-bold text-sm text-gray-800 dark:text-zinc-100" id="rastreio-placa">...</h3>
-                <p class="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest font-bold mt-0.5" id="rastreio-status">...</p>
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 uppercase tracking-widest font-bold mt-0.5 flex items-center gap-1" id="rastreio-status">...</p>
                 <div class="flex gap-2 mt-3"><button onclick="atualizarRastreioIndividual()" class="bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-md">ATUALIZAR</button><button onclick="resetRastreioZoom()" class="bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-md">CENTRALIZAR</button></div>
             </div>
             <div id="mapa-rastreio" class="w-full h-full z-0 bg-gray-100 dark:bg-zinc-900"></div>
@@ -537,7 +537,7 @@
 
     ```
 
-Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os scripts consertados) direto na próxima mensagem. Respira fundo, falta muito pouco!
+Manda o "OK" pra eu te mandar o resto e a gente encerrar isso!
 <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
@@ -578,13 +578,62 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
         function autoSaveFim() { localStorage.setItem('temp_km_fim', el('km-fim').value); }
         function mudarTelaMotorista(t) { document.querySelectorAll('#view-motorista main').forEach(m=>m.classList.add('hidden')); el('tela-'+t).classList.remove('hidden'); lucide.createIcons(); }
 
-        // [CORREÇÃO] Função para pegar a data local blindada contra fuso UTC
+        function safeDate(ts) { 
+            if(!ts) return null; 
+            let d = null;
+            if(ts instanceof Date) d = ts; 
+            else if(ts.seconds) d = new Date(ts.seconds * 1000); 
+            else if(typeof ts === 'string') d = new Date(ts); 
+            else d = new Date(ts); 
+            if (d && isNaN(d.getTime())) return null; 
+            return d;
+        }
+        
         function getLocalYMD(d) {
-            if(!d) return '';
+            if(!d || isNaN(d.getTime())) return '';
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        window.atualizarPosicaoReal = function(lat, lng) {
+            if(!viagemAtualId) return;
+            const locAtual = `${lat},${lng}`;
+            const locComTempo = `${lat},${lng},${Date.now()}`;
+            
+            db.collection('viagens').doc(viagemAtualId).get().then(doc => {
+                if(doc.exists) {
+                    const v = doc.data();
+                    if(v.status !== 'em_curso') return;
+                    let rota = v.rotaReal || [];
+                    if(rota.length > 0) {
+                        const ultimo = rota[rota.length - 1].split(',');
+                        if(ultimo[0] == lat && ultimo[1] == lng) return; 
+                    }
+                    rota.push(locComTempo);
+                    db.collection('viagens').doc(viagemAtualId).update({ locAtual: locAtual, rotaReal: rota });
+                }
+            }).catch(e => console.warn("Erro ao salvar rota:", e));
+        };
+
+        window.atualizarLocalizacao = window.atualizarPosicaoReal;
+        window.atualizarCoordenadas = window.atualizarPosicaoReal;
+        window.setLocalizacao = window.atualizarPosicaoReal;
+        window.updateLocation = window.atualizarPosicaoReal;
+        window.enviarLocalizacao = window.atualizarPosicaoReal;
+
+        function iniciarRastreamentoWeb() {
+            if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+            if(navigator.geolocation) {
+                gpsWatchId = navigator.geolocation.watchPosition(pos => {
+                    if(viagemAtualId) window.atualizarPosicaoReal(pos.coords.latitude, pos.coords.longitude);
+                }, err => console.warn("GPS Web Erro:", err), { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
+            }
+        }
+
+        function pararRastreamentoWeb() {
+            if(gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
         }
 
         window.addEventListener('load', () => {
@@ -594,6 +643,12 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                     if (idPendente && idPendente.trim() !== "") { viagemAtualId = idPendente; localStorage.setItem('v_id', viagemAtualId); }
                 } catch (err) { console.error("Erro AndroidInterface:", err); }
             }
+
+            // Recuperação automática de memória (Evita erros em Androids com pouca RAM ao abrir a câmera)
+            const pIniB64 = localStorage.getItem('temp_foto_ini_b64');
+            if(pIniB64) { fotoInicioBase64 = pIniB64; }
+            const pFimB64 = localStorage.getItem('temp_foto_fim_b64');
+            if(pFimB64) { fotoFimBase64 = pFimB64; }
 
             if (!viagemAtualId) {
                 if(localStorage.getItem('temp_servico')) el('tipo-servico').value = localStorage.getItem('temp_servico');
@@ -605,6 +660,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                  if(localStorage.getItem('temp_km_fim')) el('km-fim').value = localStorage.getItem('temp_km_fim');
                  mudarTelaMotorista('em-curso'); 
                  monitorarViagemUnicaDb(viagemAtualId);
+                 iniciarRastreamentoWeb(); 
             }
 
             carregarViagensDb();
@@ -635,32 +691,64 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             if(unsubViagemAtual) unsubViagemAtual();
             unsubViagemAtual = db.collection('viagens').doc(id).onSnapshot(doc => {
                 if(ignorarSnapshot) return;
-                if(!doc.exists) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); return; }
+                if(!doc.exists) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); return; }
                 const v = doc.data();
                 if(v.status === 'em_curso') {
                     const dStart = safeDate(v.dataInicio);
                     if(dStart) el('cronometro-motorista').dataset.start = dStart.getTime();
-                    el('info-viagem-corrente').innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div><span style="font-weight:bold;color:#94a3b8;">PLACA</span><br><b>${v.placa}</b></div><div><span style="font-weight:bold;color:#94a3b8;">MOTORISTA</span><br><b>${v.nome}</b></div></div>`;
+                    
+                    // Atualizado com mais informações (Rota, Perfil, Meta KM)
+                    el('info-viagem-corrente').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">PLACA</span><br><b style="font-size:14px;">${v.placa}</b></div>
+                        <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">MOTORISTA</span><br><b style="font-size:14px;">${v.nome}</b></div>
+                        <div style="grid-column: span 2;"><span style="font-size:10px;font-weight:bold;color:#94a3b8;">ROTA</span><br><b style="font-size:12px;">${v.rotaCidades || 'N/D'}</b></div>
+                        <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">PERFIL</span><br><b style="font-size:12px;">${v.perfilVeiculo || 'N/D'}</b></div>
+                        <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">META KM</span><br><b style="font-size:12px;">${v.metaKm || 0}</b></div>
+                    </div>`;
+
                     if(!el('tela-inicio').classList.contains('hidden')) mudarTelaMotorista('em-curso');
                 } else {
-                    if(el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); }
+                    if(el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); }
                 }
             });
         }
 
         function carregarNotificacoesDb() {
             db.collection('notificacoes').orderBy('data', 'desc').onSnapshot(snapshot => {
+                let isFirstLoad = listaNotificacoes.length === 0;
+                let novasNotifs = false;
+
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === "added" && !isFirstLoad) {
+                        novasNotifs = true;
+                        if(window.AndroidInterface && window.AndroidInterface.mostrarNotificacaoPush) {
+                            window.AndroidInterface.mostrarNotificacaoPush(change.doc.data().titulo, change.doc.data().corpo);
+                        }
+                    }
+                });
+
                 listaNotificacoes = [];
                 snapshot.forEach(doc => { const d = doc.data(); d.id = doc.id; listaNotificacoes.push(d); });
+                
                 if(el('modal-notificacoes-admin').classList.contains('active')) renderizarNotificacoesAdmin();
                 if(el('modal-notificacoes-driver').classList.contains('active')) renderizarNotificacoesDriver();
-                if(listaNotificacoes.length > 0 && localStorage.getItem('last_read_notif') !== listaNotificacoes[0].id) { el('bell-dot-driver').classList.add('active'); }
+                
+                if(listaNotificacoes.length > 0 && localStorage.getItem('last_read_notif') !== listaNotificacoes[0].id) { 
+                    el('bell-dot-driver').classList.add('active'); 
+                }
+
+                if(novasNotifs && !el('view-motorista').classList.contains('hidden')) {
+                    try {
+                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                        audio.play().catch(e => console.log("Erro de som bloqueado pelo navegador", e));
+                    } catch(e){}
+                }
             });
         }
 
         function toggleSidebar() { el('sidebar-admin').classList.toggle('active'); }
         function formatarPlaca(p) { return p ? p.toUpperCase().replace(/[^A-Z0-9]/g, '').trim() : ''; }
-        function safeDate(ts) { if(!ts) return null; if(ts instanceof Date) return ts; if(ts.seconds) return new Date(ts.seconds * 1000); if(typeof ts === 'string') return new Date(ts); return new Date(ts); }
         function fmtData(d) { return d ? d.toLocaleDateString('pt-BR') : '--/--'; }
         function fmtHora(d) { return d ? d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '--:--'; }
         function fmtBRL(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -698,7 +786,11 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 return true;
             });
 
-            filtrados.sort((a,b) => safeDate(b.dataInicio) - safeDate(a.dataInicio));
+            filtrados.sort((a,b) => {
+                const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
+                const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
+                return timeB - timeA;
+            });
 
             const total = filtrados.length;
             const totalPags = Math.ceil(total / itensPorPaginaAdmin) || 1;
@@ -749,15 +841,29 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 bgSt = '#ef4444';
             }
 
+            let origemTag = '';
+            if (v.origem === 'APP') {
+                origemTag = `<span class="border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="smartphone" class="w-3 h-3"></i> APP</span>`;
+            } else {
+                origemTag = `<span class="border border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> WEB</span>`;
+            }
+
+            let btnMapa = '';
+            if (st === 'em_curso') {
+                btnMapa = `<button onclick="abrirRastreioAdmin('${v.id}')" class="ml-auto px-4 py-2 border border-orange-200 dark:border-orange-900/50 rounded text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 font-bold text-xs flex items-center gap-2 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition"><i data-lucide="radio" class="w-4 h-4 animate-pulse"></i> LIVE</button>`;
+            } else {
+                btnMapa = `<button onclick="abrirRastreioAdmin('${v.id}')" class="ml-auto px-4 py-2 border border-blue-200 dark:border-blue-900/50 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 font-bold text-xs flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition"><i data-lucide="navigation" class="w-4 h-4"></i> ROTA</button>`;
+            }
+
             const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase();
             const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || {km: 1.00, frete: 0};
             
-            const meta = Number((v.metaKm || 0).toFixed(2));
-            const kIni = v.kmInicio || 0;
-            const kFim = v.kmFim || 0;
+            const meta = Math.round(v.metaKm || 0);
+            const kIni = Math.round(v.kmInicio || 0);
+            const kFim = Math.round(v.kmFim || 0);
             
-            const realKm = st === 'em_curso' ? 0 : Number((kFim - kIni).toFixed(2));
-            const diff = st === 'em_curso' ? 0 : Number((realKm - meta).toFixed(2));
+            const realKm = st === 'em_curso' ? 0 : Math.round(kFim - kIni);
+            const diff = st === 'em_curso' ? 0 : Math.round(realKm - meta);
             
             const valMeta = (meta * precos.km) + precos.frete;
             const valReal = (realKm * precos.km) + precos.frete;
@@ -783,20 +889,33 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 <div class="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 p-3 flex gap-2 items-center">
                     <button onclick="verObsAdmin('${v.id}')" class="p-2 border border-gray-200 dark:border-zinc-700 rounded text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition"><i data-lucide="clipboard-list" class="w-4 h-4"></i></button>
                     <button onclick="window.enviarZap(todasViagens.find(x=>x.id==='${v.id}'))" class="p-2 border border-green-200 dark:border-green-900/50 rounded text-green-600 dark:text-green-500 bg-white dark:bg-zinc-800 hover:bg-green-50 dark:hover:bg-green-900/20 transition"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
-                    <button onclick="abrirRastreioAdmin('${v.id}')" class="ml-auto px-4 py-2 border border-blue-200 dark:border-blue-900/50 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 font-bold text-xs flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition"><i data-lucide="navigation" class="w-4 h-4"></i> ROTA</button>
+                    ${btnMapa}
                 </div>`;
             }
 
             const dataIniStr = dIni ? fmtData(dIni) + ' ' + fmtHora(dIni) : '--/-- --:--';
             const dataFimStr = dFim ? fmtData(dFim) + ' ' + fmtHora(dFim) : '--/-- --:--';
 
+            let tempoStr = '--:--:--';
+            let timerAttr = '';
+            
+            if (st === 'finalizada' && dIni && dFim) {
+                const diffMs = dFim - dIni;
+                const h = Math.floor(diffMs / 3600000);
+                const m = Math.floor((diffMs % 3600000) / 60000);
+                tempoStr = `${h}h ${m}m`;
+            } else if (st === 'em_curso' && dIni) {
+                timerAttr = `data-start="${dIni.getTime()}" class="live-timer text-orange-500 font-mono font-bold text-xs"`;
+                tempoStr = '00:00:00';
+            }
+
             return `
-            <div class="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl border-t-[4px] ${stColorClass} flex flex-col overflow-hidden shadow-sm">
+            <div class="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl border-t-[4px] ${stColorClass} flex flex-col overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                 <div class="p-4 flex flex-col gap-3">
                     <div class="flex justify-between items-start">
                         <div class="flex items-center gap-2">
                             <h3 class="text-xl font-bold text-gray-800 dark:text-zinc-100 uppercase tracking-wide">${v.placa}</h3>
-                            ${v.origem === 'WEB' ? `<span class="border border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> WEB</span>` : ''}
+                            ${origemTag}
                         </div>
                         <span class="text-[10px] font-bold px-2 py-1 rounded text-white tracking-wider" style="background:${bgSt};">${stText}</span>
                     </div>
@@ -807,14 +926,15 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                     </div>
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 font-semibold mt-1">
-                        <i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${v.nome}
+                        <i data-lucide="user" class="w-4 h-4 text-gray-400"></i> ${v.nome || 'Sem Nome'}
                     </div>
                     <div class="flex items-center gap-2 text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
                         <i data-lucide="map-pin" class="w-3 h-3 text-gray-400"></i> ${v.rotaCidades || 'N/D'}
                     </div>
 
-                    <div class="border border-gray-200 dark:border-zinc-800 rounded-lg p-2.5 text-[10px] flex justify-between bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 mt-1">
+                    <div class="grid grid-cols-3 gap-2 border border-gray-200 dark:border-zinc-800 rounded-lg p-2.5 text-[10px] bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 mt-1">
                         <div><span class="block font-bold uppercase tracking-widest mb-1 opacity-70">Início</span>${dataIniStr}</div>
+                        <div class="text-center"><span class="block font-bold uppercase tracking-widest mb-1 opacity-70">Tempo</span><span ${timerAttr}>${tempoStr}</span></div>
                         <div class="text-right"><span class="block font-bold uppercase tracking-widest mb-1 opacity-70">Fim</span>${st === 'em_curso' ? '-' : dataFimStr}</div>
                     </div>
 
@@ -889,8 +1009,8 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             let perfis = {};
 
             finalizadas.forEach(v => {
-                const real = (v.kmFim || 0) - (v.kmInicio || 0);
-                const meta = v.metaKm || 0;
+                const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
+                const meta = Math.round(v.metaKm || 0);
                 const disp = real - meta;
                 
                 kRodado += real;
@@ -1016,43 +1136,6 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 </div>`; 
             } 
         }
-        
-        function processarImportacao(inp) { 
-            const file = inp.files[0]; if(!file) return;
-            const dataData = el('data-importacao').value; if(!dataData) return alert("Selecione a data para a escala.");
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    let importados = 0; previsoesImportadas = {}; 
-                    
-                    json.forEach(row => {
-                        const placa = formatarPlaca(row['Placa'] || row['PLACA'] || row['placa'] || '');
-                        if(placa) {
-                            if(!previsoesImportadas[placa]) {
-                                previsoesImportadas[placa] = { 
-                                    nome: row['Motorista'] || row['MOTORISTA'] || '', 
-                                    metaKm: parseFloat(row['KM DA ESCALA'] || row['Meta'] || row['META'] || 0), 
-                                    rota: row['Cidade'] || row['CIDADE'] || row['ROTA'] || '', 
-                                    perfil: row['Perfil'] || row['PERFIL'] || 'PADRÃO', 
-                                    dataEscala: dataData 
-                                };
-                                importados++;
-                            }
-                        }
-                    });
-                    localStorage.setItem('previsoes_temp', JSON.stringify(previsoesImportadas)); 
-                    alert(`Sucesso! ${importados} placas únicas importadas da escala.`); 
-                    el('modal-importacao').classList.remove('active');
-                } catch(err) { alert("Erro ao ler planilha: " + err.message); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
 
         function confirmarExportacao() {
             const ini = el('data-export-ini').value; const fim = el('data-export-fim').value; 
@@ -1062,7 +1145,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             const dataRows = filtrados.map(v => {
                 const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim); let totalHoras = "";
                 if(dIni && dFim) { const diffMs = dFim - dIni; const h = Math.floor(diffMs / 3600000); const m = Math.floor((diffMs % 3600000) / 60000); totalHoras = `${h}:${m.toString().padStart(2, '0')}`; }
-                const kmIni = v.kmInicio || 0; const kmFim = v.kmFim || 0; const totalKm = kmFim - kmIni; const meta = v.metaKm || 0; const dispEscala = totalKm - meta; const kmRealCalc = meta * 1.1111; const dispReal = totalKm - kmRealCalc;
+                const kmIni = Math.round(v.kmInicio || 0); const kmFim = Math.round(v.kmFim || 0); const totalKm = kmFim - kmIni; const meta = Math.round(v.metaKm || 0); const dispEscala = totalKm - meta; const kmRealCalc = meta * 1.1111; const dispReal = totalKm - kmRealCalc;
                 return [ v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2)) ];
             });
             const ws_data = [header, ...dataRows]; const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -1112,7 +1195,11 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 if(placa && v.placa !== placa) return false; 
                 return true; 
             });
-            dados.sort((a,b) => (safeDate(a.dataInicio) - safeDate(b.dataInicio)));
+            dados.sort((a,b) => {
+                const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
+                const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
+                return timeA - timeB;
+            });
 
             let htmlTabela = `<div class="fin-table-wrapper"><table class="fin-table"><thead><tr>`;
             if(tipo === 'escalado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ESCALADO</th><th class="text-right">R$ KM</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; } 
@@ -1126,8 +1213,8 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 const d = safeDate(v.dataInicio); 
                 const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase(); 
                 const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || {km: 1.00, frete: 0};
-                const meta = v.metaKm || 0; 
-                const real = (v.kmFim || 0) - (v.kmInicio || 0); 
+                const meta = Math.round(v.metaKm || 0); 
+                const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0)); 
                 const diffKm = real - meta;
                 const custoKmEsc = meta * precos.km; 
                 const totalEsc = custoKmEsc + precos.frete;
@@ -1137,9 +1224,9 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
 
                 sumKmEsc += meta; sumKmRod += real; sumValEsc += totalEsc; sumValReal += totalReal; sumQtd++;
                 
-                if(tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${Math.round(meta)}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; } 
-                else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${Math.round(real)}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; } 
-                else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-blue-600">${Math.round(meta)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${Math.round(real)}</td><td class="text-right font-bold ${diffKm>0?'text-red-500':'text-green-500'}">${diffKm>0?'+'+Math.round(diffKm):Math.round(diffKm)}</td><td class="text-right text-blue-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs>0?'text-red-500':'text-green-500'} rounded">${diffRs>0?'+'+fmtBRL(diffRs):fmtBRL(diffRs)}</td></tr>`; }
+                if(tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${meta}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; } 
+                else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${real}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; } 
+                else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-blue-600">${meta}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${real}</td><td class="text-right font-bold ${diffKm>0?'text-red-500':'text-green-500'}">${diffKm>0?'+'+diffKm:diffKm}</td><td class="text-right text-blue-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs>0?'text-red-500':'text-green-500'} rounded">${diffRs>0?'+'+fmtBRL(diffRs):fmtBRL(diffRs)}</td></tr>`; }
             });
             
             htmlTabela += `</tbody><tfoot><tr>`;
@@ -1229,7 +1316,18 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             return rotaLimpa;
         }
 
-        window.resetRastreioZoom = function() { rastreioFocado = false; if(polylineRastreio) mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding:[50,50]}); }
+        window.resetRastreioZoom = function() { 
+            rastreioFocado = false; 
+            if(polylineRastreio) {
+                mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding:[50,50]}); 
+            } else if (markerRastreio) {
+                mapaRastreio.setView(markerRastreio.getLatLng(), 15);
+            }
+        }
+        
+        window.atualizarRastreioIndividual = function() { 
+            if(currentRastreioId) window.abrirRastreioAdmin(currentRastreioId); 
+        }
         
         window.abrirRastreioAdmin = function(idViagem) {
             currentRastreioId = idViagem; 
@@ -1238,7 +1336,13 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             
             el('modal-rastreio').classList.add('active'); 
             el('rastreio-placa').innerText = v.placa + " - " + v.nome; 
-            el('rastreio-status').innerText = v.status === 'em_curso' ? 'AO VIVO' : 'FINALIZADA';
+            
+            if (v.status === 'em_curso') {
+                el('rastreio-status').innerHTML = '<i data-lucide="radio" class="w-3 h-3 text-orange-500 animate-pulse"></i> <span class="text-orange-500">EM ROTA (AO VIVO)</span>';
+            } else {
+                el('rastreio-status').innerHTML = '<i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i> FINALIZADA';
+            }
+            lucide.createIcons();
             
             if(!mapaRastreio) { 
                 mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12); 
@@ -1270,7 +1374,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 if (v.rotaReal && v.rotaReal.length > 0) desenharRota(v.rotaReal); 
                 if(v.locAtual) { 
                     const parts = v.locAtual.split(','); const lat = parseFloat(parts[0]); const lng = parseFloat(parts[1]); 
-                    const iconCar = L.divIcon({className:'custom', html:`<div style="background:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #3b82f6;"></div>`}); 
+                    const iconCar = L.divIcon({className:'custom', html:`<div style="background:#f97316;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #f97316;"></div>`}); 
                     markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio); 
                 } 
             } else { 
@@ -1283,8 +1387,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 } 
             }
         }
-        
-        window.atualizarRastreioIndividual = function() { if(currentRastreioId) window.abrirRastreioAdmin(currentRastreioId); }
+
         window.pararRastreioAdmin = function() { markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null; currentRastreioId = null; }
         
         function abrirModalMapa() { 
@@ -1308,7 +1411,14 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             if(!mapaLeaflet) return; 
             mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
             const ini=el('filtro-mapa-ini').value, fim=el('filtro-mapa-fim').value; 
-            const dados = todasViagens.filter(v => { const d=safeDate(v.dataInicio); if(!d) return false; const dStr=getLocalYMD(d); return (!ini || dStr>=ini) && (!fim || dStr<=fim); }); 
+            
+            const dados = todasViagens.filter(v => { 
+                if(v.status === 'em_curso') return true;
+                const d=safeDate(v.dataInicio); if(!d) return false; 
+                const dStr=getLocalYMD(d); 
+                return (!ini || dStr>=ini) && (!fim || dStr<=fim); 
+            }); 
+            
             const bounds = []; 
             
             dados.forEach(v => { 
@@ -1415,24 +1525,79 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             const placas = [...new Set(todasViagens.map(v => v.placa))].sort(); 
             sel.innerHTML = '<option value="">Selecione a Placa...</option>'; 
             placas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; sel.appendChild(opt); }); 
-            el('senha-input-manual').value = '---'; 
+            el('senha-input-manual').value = ''; 
+            
+            sel.onchange = window.carregarSenhaPlaca;
+        }
+
+        window.carregarSenhaPlaca = async function() {
+            const p = el('placa-senha-select').value;
+            if(!p) {
+                el('senha-input-manual').value = '';
+                return;
+            }
+            try {
+                const doc = await db.collection('senhas').doc(p).get();
+                if(doc.exists && doc.data().senha) {
+                    el('senha-input-manual').value = doc.data().senha;
+                } else {
+                    const novaSenha = Math.floor(1000 + Math.random() * 9000).toString();
+                    await db.collection('senhas').doc(p).set({ senha: novaSenha }, { merge: true });
+                    el('senha-input-manual').value = novaSenha;
+                }
+            } catch(e) {
+                console.error("Erro ao carregar senha:", e);
+                alert("Erro ao conectar com o banco de senhas.");
+            }
         }
         
-        window.salvarSenhaPlaca = async function() { alert("Para salvar a senha, é necessário criar uma collection 'senhas' no seu Firebase e rodar o set/update."); }
+        window.salvarSenhaPlaca = function() { 
+            const p = el('placa-senha-select').value;
+            const s = el('senha-input-manual').value;
+            if(!p || !s) return alert("Por favor, selecione a placa e digite a senha!");
+            
+            db.collection('senhas').doc(p).set({ senha: s }, { merge: true })
+            .then(() => alert("Senha da placa " + p + " salva/atualizada com sucesso no banco de dados!"))
+            .catch(e => {
+                console.error("Erro ao salvar senha:", e);
+                alert("Erro ao salvar a senha.");
+            });
+        }
         
         function abrirLoginExtrato() { el('login-placa').value = ''; el('login-senha').value = ''; el('modal-login-extrato').classList.add('active'); }
         
         window.acessarExtrato = async function() { 
-            const p = formatarPlaca(el('login-placa').value); const s = el('login-senha').value; 
-            if(!p || !s) return alert("Preencha campos"); 
+            const p = formatarPlaca(el('login-placa').value); 
+            const s = el('login-senha').value; 
+            if(!p || !s) return alert("Preencha todos os campos."); 
+
             el('main-loader').classList.remove('hidden'); 
-            setTimeout(() => { 
-                dadosExtrato = todasViagens.filter(v => v.placa === p).sort((a,b) => safeDate(b.dataInicio) - safeDate(a.dataInicio)); 
-                el('modal-login-extrato').classList.remove('active'); 
-                el('modal-view-extrato').classList.add('active'); 
-                window.renderizarExtrato(); 
-                el('main-loader').classList.add('hidden'); 
-            }, 500); 
+
+            try {
+                const docSenha = await db.collection('senhas').doc(p).get();
+                
+                if (!docSenha.exists || docSenha.data().senha !== s) {
+                    el('main-loader').classList.add('hidden');
+                    return alert("Senha incorreta ou não cadastrada para esta placa!");
+                }
+
+                setTimeout(() => { 
+                    dadosExtrato = todasViagens.filter(v => v.placa === p).sort((a,b) => {
+                        const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
+                        const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
+                        return timeB - timeA;
+                    });
+                    el('modal-login-extrato').classList.remove('active'); 
+                    el('modal-view-extrato').classList.add('active'); 
+                    window.renderizarExtrato(); 
+                    el('main-loader').classList.add('hidden'); 
+                }, 500); 
+
+            } catch(e) {
+                console.error("Erro no login do extrato:", e);
+                el('main-loader').classList.add('hidden');
+                return alert("Erro ao validar senha no servidor.");
+            }
         }
         
         window.renderizarExtrato = function() { 
@@ -1440,33 +1605,36 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); 
             if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-gray-500 mt-10 p-5">Nenhum registro encontrado.</p>'; return; } 
             
-            cont.innerHTML = '<div class="extrato-list">' + filtrados.map(v => { 
+            cont.innerHTML = '<div class="extrato-list flex flex-col gap-4">' + filtrados.map(v => { 
                 const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; 
                 const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; 
                 const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); 
-                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="action-btn text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`; 
+                
+                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-blue-200 transition"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`; 
+                const btnFotoI = v.fotoInicio ? `<button onclick="window.verFoto('${v.fotoInicio}')" class="flex-1 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-blue-500"></i> FOTO INI</button>` : '';
+                const btnFotoF = v.fotoFim ? `<button onclick="window.verFoto('${v.fotoFim}')" class="flex-1 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-blue-500"></i> FOTO FIM</button>` : '';
                 
                 return `
-                <div class="extrato-item border-l-[4px]" style="border-left-color: ${stColor}">
-                    <div class="ex-row">
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">DATA</span><br><span class="text-sm font-bold dark:text-zinc-100">${fmtData(dIni)}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">HORA</span><br><span class="text-sm font-bold dark:text-zinc-100">${fmtHora(dIni)}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">STATUS</span><br><span class="badge" style="background:${stColor};color:white;">${v.status}</span></div>
+                <div class="extrato-item bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm border-l-[4px]" style="border-left-color: ${stColor}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">DATA / HORA</span><br><span class="text-sm font-bold dark:text-zinc-100">${fmtData(dIni)} às ${fmtHora(dIni)}</span></div>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded text-white tracking-wider" style="background:${stColor};">${v.status.toUpperCase()}</span>
                     </div>
-                    <div class="ex-row">
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">ROTA</span><br><span class="text-xs text-gray-500 dark:text-zinc-400">${v.rotaCidades || 'N/D'}</span></div>
+                    <div class="mb-3">
+                        <span class="text-[9px] font-bold text-gray-500 uppercase">ROTA</span><br>
+                        <span class="text-xs text-gray-700 dark:text-zinc-300 font-medium">${v.rotaCidades || 'N/D'}</span>
                     </div>
-                    <div class="ex-row"><span class="badge bg-gray-200 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300">META: ${meta} KM</span></div>
-                    <div class="ex-row bg-gray-50 dark:bg-zinc-900/50 p-2 rounded-lg mt-2 mb-2 border border-gray-100 dark:border-zinc-800">
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">KM INI</span><br><span class="text-sm font-bold dark:text-zinc-100">${v.kmInicio}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">KM FIM</span><br><span class="text-sm font-bold dark:text-zinc-100">${isE?'-':v.kmFim}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">TOTAL</span><br><span class="text-sm font-bold dark:text-zinc-100">${isE?'-':kmT}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase">DIF</span><br><span class="text-sm font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':(diff>0?'+'+diff:diff)}</span></div>
+                    <div class="grid grid-cols-5 gap-2 bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg border border-gray-100 dark:border-zinc-800 text-center">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">META</span><span class="text-xs font-bold text-blue-600">${meta}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM INI</span><span class="text-xs font-bold dark:text-zinc-100">${Math.round(v.kmInicio)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM FIM</span><span class="text-xs font-bold dark:text-zinc-100">${isE?'-':Math.round(v.kmFim)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">TOTAL</span><span class="text-xs font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':kmT}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">DISP</span><span class="text-xs font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':(diff>0?'+'+diff:diff)}</span></div>
                     </div>
-                    <div class="flex gap-2 justify-end mt-1">
+                    <div class="flex gap-2 justify-between mt-3 border-t border-gray-100 dark:border-zinc-800 pt-3">
                         ${btnShare}
-                        ${v.fotoInicio ? `<button onclick="window.verFoto('${v.fotoInicio}')" class="action-btn text-gray-600">FOTO INI</button>` : ''}
-                        ${v.fotoFim ? `<button onclick="window.verFoto('${v.fotoFim}')" class="action-btn text-gray-600">FOTO FIM</button>` : ''}
+                        ${btnFotoI}
+                        ${btnFotoF}
                     </div>
                 </div>`; 
             }).join('') + '</div>'; 
@@ -1541,16 +1709,33 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
             const driverTimer = el('cronometro-motorista'); 
             if(driverTimer && driverTimer.dataset.start && el('view-motorista').style.display !== 'none') { 
                 const startTs = parseInt(driverTimer.dataset.start); 
-                if(startTs) driverTimer.innerText = new Date(new Date() - new Date(startTs)).toISOString().substr(11, 8); 
+                if(startTs) driverTimer.innerText = new Date(Date.now() - startTs).toISOString().substr(11, 8); 
             } 
+
+            document.querySelectorAll('.live-timer').forEach(span => {
+                const startTs = parseInt(span.dataset.start);
+                if(startTs) {
+                    const diff = Date.now() - startTs;
+                    span.innerText = new Date(diff).toISOString().substr(11, 8);
+                }
+            });
         }, 1000);
 
         window.recuperarViagem = async function() { 
             const p = prompt("Digite a Placa do veículo em rota:"); if(!p) return; 
             const placaFmt = formatarPlaca(p); 
+            
+            const s = prompt("Digite a Senha da placa para autenticar:"); if(!s) return; 
+
             try { 
+                const docSenha = await db.collection('senhas').doc(placaFmt).get();
+                if (!docSenha.exists || docSenha.data().senha !== s) {
+                    return alert("Senha incorreta ou não cadastrada!");
+                }
+
                 const snapshot = await db.collection('viagens').where('placa', '==', placaFmt).where('status', '==', 'em_curso').get(); 
                 if(snapshot.empty) { alert("Nenhuma viagem ativa encontrada para esta placa."); return; } 
+                
                 const doc = snapshot.docs[0]; localStorage.setItem('v_id', doc.id); viagemAtualId = doc.id; location.reload(); 
             } catch(e) { console.error(e); alert("Erro ao buscar no banco de dados."); } 
         }
@@ -1558,8 +1743,8 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
         function gerarTextoZap(v) { 
             const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim) || new Date(); 
             const dur = new Date(dFim - dIni).toISOString().substr(11, 8); 
-            const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const diff = kmT - (v.metaKm || 0); 
-            return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm||0)} km\n📊 Dif: ${diff>0?'+':''}${diff.toFixed(1)} km\n🏙️ Rota: ${v.rotaCidades||'N/D'}`; 
+            const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const diff = kmT - Math.round(v.metaKm || 0); 
+            return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm||0)} km\n📊 Dif: ${diff>0?'+':''}${diff} km\n🏙️ Rota: ${v.rotaCidades||'N/D'}`; 
         }
         
         window.enviarZap = function(viagem) { window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoZap(viagem))}`, '_blank'); }
@@ -1578,10 +1763,6 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
         window.filtrarStatus = function(s) { filtroAdminAtual=s; paginaAtualAdmin=1; renderizarAdmin(); }
         window.atualizarPreco = function(veiculo, campo, valor) { if(!tabelaPrecos[veiculo]) return; tabelaPrecos[veiculo][campo] = parseFloat(valor); }
         window.salvarPrecos = function() { localStorage.setItem('tabelaPrecos', JSON.stringify(tabelaPrecos)); alert("Preços atualizados com sucesso!"); el('modal-precos').classList.remove('active'); }
-
-        // ==========================================
-        // FUNÇÕES GLOBAIS PARA O ANDROID E CRIAÇÃO
-        // ==========================================
 
         window.iniciarViagem = function() {
             const n=el('motorista').value; const p=formatarPlaca(el('placa').value); const k=el('km-inicio').value;
@@ -1610,7 +1791,9 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 localStorage.setItem('v_id', docRef.id); viagemAtualId = docRef.id;
                 localStorage.removeItem('temp_servico'); localStorage.removeItem('temp_motorista'); 
                 localStorage.removeItem('temp_placa'); localStorage.removeItem('temp_km_ini'); localStorage.removeItem('temp_foto_ini_b64');
-                mudarTelaMotorista('em-curso'); monitorarViagemUnicaDb(viagemAtualId);
+                mudarTelaMotorista('em-curso'); 
+                monitorarViagemUnicaDb(viagemAtualId);
+                iniciarRastreamentoWeb();
                 el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
             }).catch(e => { 
                 console.error(e); alert("Erro ao salvar. Verificando internet."); 
@@ -1630,6 +1813,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 });
             }).then(() => {
                 localStorage.removeItem('temp_km_fim'); localStorage.removeItem('temp_foto_fim_b64'); 
+                pararRastreamentoWeb();
                 return db.collection('viagens').doc(viagemAtualId).get();
             }).then(docSnap => {
                 el('btn-zap-motorista').onclick = () => window.enviarZap(docSnap.data());
@@ -1645,7 +1829,7 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
         window.cancelarViagemMotorista = function() { 
             if(confirm("Deseja cancelar esta viagem?")) { 
                 db.collection('viagens').doc(viagemAtualId).update({ status: 'cancelada', dataFim: new Date().toISOString() })
-                .then(() => { localStorage.removeItem('v_id'); viagemAtualId = null; location.reload(); }).catch(e => console.error(e)); 
+                .then(() => { pararRastreamentoWeb(); localStorage.removeItem('v_id'); viagemAtualId = null; location.reload(); }).catch(e => console.error(e)); 
             } 
         };
         
@@ -1671,6 +1855,93 @@ Dá um "OK" aqui que eu já mando o restinho do arquivo (a **Parte 2**, com os s
                 db.collection('viagens').doc(id).delete().catch(e => { console.error(e); alert("Erro ao excluir."); }); 
             } 
         };
+
+        window.processarImportacao = function(inp) {
+            const file = inp.files[0]; if(!file) return;
+            const dataData = el('data-importacao').value;
+            if(!dataData) return alert("⚠️ Selecione a data da escala antes de importar!");
+
+            el('main-loader').classList.remove('hidden');
+            el('main-loader').classList.remove('opacity-0');
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    let previsoesImportadas = {};
+                    let importados = 0;
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+                        
+                        json.forEach(row => {
+                            const placaRaw = String(row['D'] || '').trim();
+                            const placa = formatarPlaca(placaRaw);
+                            
+                            if(placa && placa.length === 7) {
+                                const kmMetaRaw = parseFloat(row['O']);
+                                if(!isNaN(kmMetaRaw)) {
+                                    previsoesImportadas[placa] = {
+                                        nome: String(row['G'] || ''),
+                                        metaKm: kmMetaRaw,
+                                        rota: String(row['J'] || ''),
+                                        perfil: String(row['E'] || 'PADRÃO').toUpperCase(),
+                                        dataEscala: dataData
+                                    };
+                                }
+                            }
+                        });
+                    });
+
+                    importados = Object.keys(previsoesImportadas).length;
+
+                    if(importados === 0) {
+                        el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
+                        return alert("❌ Nenhuma placa com KM na coluna 'O' foi encontrada. Tem certeza que é essa planilha?");
+                    }
+
+                    localStorage.setItem('previsoes_temp', JSON.stringify(previsoesImportadas));
+
+                    let promessas = [];
+                    let viagensAtualizadas = 0;
+
+                    todasViagens.forEach(v => {
+                        const dObj = safeDate(v.dataInicio);
+                        const dStr = dObj ? getLocalYMD(dObj) : '';
+                        
+                        if (dStr === dataData && previsoesImportadas[v.placa]) {
+                            const dadosExcel = previsoesImportadas[v.placa];
+                            let updates = {
+                                metaKm: dadosExcel.metaKm,
+                                rotaCidades: dadosExcel.rota,
+                                perfilVeiculo: dadosExcel.perfil
+                            };
+                            if(!v.nome || v.nome.trim() === '') {
+                                updates.nome = dadosExcel.nome;
+                            }
+                            
+                            promessas.push(db.collection('viagens').doc(v.id).update(updates));
+                            viagensAtualizadas++;
+                        }
+                    });
+
+                    await Promise.all(promessas);
+
+                    el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
+                    
+                    alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas lidas da planilha.\n${viagensAtualizadas} cards existentes na tela foram atualizados AGORA MESMO.`);
+                    el('modal-importacao').classList.remove('active');
+
+                } catch(err) {
+                    el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
+                    alert("Erro ao ler planilha: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
     </script>
 </body>
 </html>
