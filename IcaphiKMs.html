@@ -558,7 +558,7 @@
             class="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 p-4 sticky top-0 z-40 flex justify-between items-center">
             <div class="flex items-center gap-3 font-bold text-lg text-zinc-800 dark:text-zinc-100">
                 <div class="bg-blue-600 text-white p-2 rounded-lg"><i data-lucide="box" class="w-5 h-5"></i></div>
-                <div>IcaphiDrive<span class="block text-[9px] font-medium text-gray-400">By: Matheus Julio V6</span>
+                <div>IcaphiDrive<span class="block text-[9px] font-medium text-gray-400">By: Matheus Julio V7</span>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -683,7 +683,7 @@
             <div class="p-6 border-b border-zinc-800">
                 <h1 class="text-lg font-bold flex items-center gap-2 text-zinc-100"><i data-lucide="box"
                         class="text-blue-500 w-5 h-5"></i> IcaphiDrive</h1>
-                <p class="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest pl-7">By: Matheus Julio V6</p>
+                <p class="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest pl-7">By: Matheus Julio V7</p>
             </div>
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
                 <button onclick="window.filtrarStatus('todos'); toggleSidebar()"
@@ -1181,71 +1181,66 @@
             appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
             measurementId: "G-W1QEJTCS1B"
         };
-
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        db.enablePersistence({ synchronizeTabs: true }).catch(function (err) {
-            console.warn("Erro de persistência controlado:", err.code);
+        db.enablePersistence({ synchronizeTabs: true }).catch(function(err) { 
+            console.warn("Erro de persistência controlado:", err.code); 
         });
-
-        let todasViagens = [];
-        let listaNotificacoes = [];
+        
+        let todasViagens = []; 
+        let listaNotificacoes = []; 
         let tabelaPrecos = JSON.parse(localStorage.getItem('tabelaPrecos')) || { "FIORINO": { km: 1.12, frete: 268 }, "VAN": { km: 1.28, frete: 407 }, "VUC": { km: 1.35, frete: 440 }, "LEVE 3/4": { km: 1.54, frete: 528 }, "LEVE 3/4 ESPECIAL": { km: 1.60, frete: 545 }, "TOCO": { km: 1.67, frete: 880 }, "TRUCK": { km: 1.87, frete: 1012 }, "PADRÃO": { km: 1.00, frete: 0 } };
         let previsoesImportadas = JSON.parse(localStorage.getItem('previsoes_temp')) || {};
 
-        let viagemAtualId = localStorage.getItem('v_id');
-        let filtroAdminAtual = 'todos';
+        let viagemAtualId = localStorage.getItem('v_id'); 
+        let filtroAdminAtual = 'todos'; 
         let fotoInicioBase64 = null; let fotoFimBase64 = null;
         let mapaLeaflet = null; let mapaRastreio = null; let markerRastreio = null; let polylineRastreio = null; let markerIni = null; let markerFim = null; let currentRastreioId = null; let rastreioFocado = false;
-
-        let charts = { main: null, sec: null, gauge: null, perfil: null };
-
+        
+        let charts = { main: null, sec: null, gauge: null, perfil: null }; 
+        
         let dadosExtrato = []; let obsViagem = []; let gpsWatchId = null; let ignorarSnapshot = false; let mapaFocado = false;
         let unsubViagemAtual = null;
         let paginaAtualAdmin = 1; let itensPorPaginaAdmin = 20;
-
+        
         function el(id) { return document.getElementById(id); }
 
         function autoSave() { localStorage.setItem('temp_servico', el('tipo-servico').value); localStorage.setItem('temp_motorista', el('motorista').value); localStorage.setItem('temp_placa', el('placa').value); localStorage.setItem('temp_km_ini', el('km-inicio').value); }
         function autoSaveFim() { localStorage.setItem('temp_km_fim', el('km-fim').value); }
-        function mudarTelaMotorista(t) { document.querySelectorAll('#view-motorista main').forEach(m => m.classList.add('hidden')); el('tela-' + t).classList.remove('hidden'); lucide.createIcons(); }
+        function mudarTelaMotorista(t) { document.querySelectorAll('#view-motorista main').forEach(m=>m.classList.add('hidden')); el('tela-'+t).classList.remove('hidden'); lucide.createIcons(); }
 
-        function safeDate(ts) {
-            if (!ts) return null;
+        function safeDate(ts) { 
+            if(!ts) return null; 
             let d = null;
-            if (ts instanceof Date) d = ts;
-            else if (ts.seconds) d = new Date(ts.seconds * 1000);
-            else if (typeof ts === 'string') d = new Date(ts);
-            else d = new Date(ts);
-            if (d && isNaN(d.getTime())) return null;
+            if(ts instanceof Date) d = ts; 
+            else if(ts.seconds) d = new Date(ts.seconds * 1000); 
+            else if(typeof ts === 'string') d = new Date(ts); 
+            else d = new Date(ts); 
+            if (d && isNaN(d.getTime())) return null; 
             return d;
         }
-
+        
         function getLocalYMD(d) {
-            if (!d || isNaN(d.getTime())) return '';
+            if(!d || isNaN(d.getTime())) return '';
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
 
-        // ==========================================
-        // SISTEMA DE GPS E RASTREIO - CORRIGIDO E OTIMIZADO
-        // ==========================================
         let lastLocTime = 0;
-        window.atualizarPosicaoReal = function (lat, lng) {
-            if (!viagemAtualId) return;
+        window.atualizarPosicaoReal = function(lat, lng) {
+            if(!viagemAtualId) return;
             const agora = Date.now();
-
-            // Filtro de tempo: Atualiza o banco no máximo a cada 5 segundos para evitar engasgos
-            if (agora - lastLocTime < 5000) return;
+            
+            if (agora - lastLocTime < 5000) return; 
             lastLocTime = agora;
 
             const locAtual = `${lat},${lng}`;
             const locComTempo = `${lat},${lng},${agora}`;
 
-            // Usa o arrayUnion para concatenar o trajeto sem apagar o histórico anterior
             db.collection('viagens').doc(viagemAtualId).update({
                 locAtual: locAtual,
                 rotaReal: firebase.firestore.FieldValue.arrayUnion(locComTempo)
@@ -1259,16 +1254,16 @@
         window.enviarLocalizacao = window.atualizarPosicaoReal;
 
         function iniciarRastreamentoWeb() {
-            if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
-            if (navigator.geolocation) {
+            if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+            if(navigator.geolocation) {
                 gpsWatchId = navigator.geolocation.watchPosition(pos => {
-                    if (viagemAtualId) window.atualizarPosicaoReal(pos.coords.latitude, pos.coords.longitude);
+                    if(viagemAtualId) window.atualizarPosicaoReal(pos.coords.latitude, pos.coords.longitude);
                 }, err => console.warn("GPS Web Erro:", err), { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
             }
         }
 
         function pararRastreamentoWeb() {
-            if (gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+            if(gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
         }
 
         window.addEventListener('load', () => {
@@ -1279,23 +1274,22 @@
                 } catch (err) { console.error("Erro AndroidInterface:", err); }
             }
 
-            // Recuperação automática de memória
             const pIniB64 = localStorage.getItem('temp_foto_ini_b64');
-            if (pIniB64) { fotoInicioBase64 = pIniB64; }
+            if(pIniB64) { fotoInicioBase64 = pIniB64; }
             const pFimB64 = localStorage.getItem('temp_foto_fim_b64');
-            if (pFimB64) { fotoFimBase64 = pFimB64; }
+            if(pFimB64) { fotoFimBase64 = pFimB64; }
 
             if (!viagemAtualId) {
-                if (localStorage.getItem('temp_servico')) el('tipo-servico').value = localStorage.getItem('temp_servico');
-                if (localStorage.getItem('temp_motorista')) el('motorista').value = localStorage.getItem('temp_motorista');
-                if (localStorage.getItem('temp_placa')) el('placa').value = localStorage.getItem('temp_placa');
-                if (localStorage.getItem('temp_km_ini')) el('km-inicio').value = localStorage.getItem('temp_km_ini');
-                mudarTelaMotorista('inicio');
+                if(localStorage.getItem('temp_servico')) el('tipo-servico').value = localStorage.getItem('temp_servico');
+                if(localStorage.getItem('temp_motorista')) el('motorista').value = localStorage.getItem('temp_motorista');
+                if(localStorage.getItem('temp_placa')) el('placa').value = localStorage.getItem('temp_placa');
+                if(localStorage.getItem('temp_km_ini')) el('km-inicio').value = localStorage.getItem('temp_km_ini');
+                mudarTelaMotorista('inicio'); 
             } else {
-                if (localStorage.getItem('temp_km_fim')) el('km-fim').value = localStorage.getItem('temp_km_fim');
-                mudarTelaMotorista('em-curso');
-                monitorarViagemUnicaDb(viagemAtualId);
-                iniciarRastreamentoWeb();
+                 if(localStorage.getItem('temp_km_fim')) el('km-fim').value = localStorage.getItem('temp_km_fim');
+                 mudarTelaMotorista('em-curso'); 
+                 monitorarViagemUnicaDb(viagemAtualId);
+                 iniciarRastreamentoWeb(); 
             }
 
             carregarViagensDb();
@@ -1310,30 +1304,30 @@
 
         function carregarViagensDb() {
             db.collection('viagens').onSnapshot(snapshot => {
-                if (ignorarSnapshot) return;
+                if(ignorarSnapshot) return;
                 todasViagens = [];
                 snapshot.forEach(doc => { const data = doc.data(); data.id = doc.id; todasViagens.push(data); });
                 renderizarAdmin();
-                if (el('modal-dash').classList.contains('active')) carregarDash();
-                if (el('modal-mapa').classList.contains('active')) carregarMapa();
-                if (el('modal-view-extrato').classList.contains('active')) renderizarExtrato();
-                if (el('modal-suporte').classList.contains('active')) renderizarSuporte(null);
-
-                // Rastreio ao vivo atualizado em tempo real quando o snapshot dispara
-                if (el('modal-rastreio').classList.contains('active') && currentRastreioId) abrirRastreioAdmin(currentRastreioId);
+                if(el('modal-dash').classList.contains('active')) carregarDash();
+                if(el('modal-mapa').classList.contains('active')) carregarMapa();
+                if(el('modal-view-extrato').classList.contains('active')) renderizarExtrato();
+                if(el('modal-suporte').classList.contains('active')) renderizarSuporte(null);
+                
+                // Agora envia o parâmetro "true" para não piscar a tela e desenhar em tempo real
+                if(el('modal-rastreio').classList.contains('active') && currentRastreioId) abrirRastreioAdmin(currentRastreioId, true);
             }, err => { console.error("Erro ao ler viagens:", err); });
         }
 
         function monitorarViagemUnicaDb(id) {
-            if (unsubViagemAtual) unsubViagemAtual();
+            if(unsubViagemAtual) unsubViagemAtual();
             unsubViagemAtual = db.collection('viagens').doc(id).onSnapshot(doc => {
-                if (ignorarSnapshot) return;
-                if (!doc.exists) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); return; }
+                if(ignorarSnapshot) return;
+                if(!doc.exists) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); return; }
                 const v = doc.data();
-                if (v.status === 'em_curso') {
+                if(v.status === 'em_curso') {
                     const dStart = safeDate(v.dataInicio);
-                    if (dStart) el('cronometro-motorista').dataset.start = dStart.getTime();
-
+                    if(dStart) el('cronometro-motorista').dataset.start = dStart.getTime();
+                    
                     el('info-viagem-corrente').innerHTML = `
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                         <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">PLACA</span><br><b style="font-size:14px;">${v.placa}</b></div>
@@ -1343,9 +1337,9 @@
                         <div><span style="font-size:10px;font-weight:bold;color:#94a3b8;">META KM</span><br><b style="font-size:12px;">${v.metaKm || 0}</b></div>
                     </div>`;
 
-                    if (!el('tela-inicio').classList.contains('hidden')) mudarTelaMotorista('em-curso');
+                    if(!el('tela-inicio').classList.contains('hidden')) mudarTelaMotorista('em-curso');
                 } else {
-                    if (el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); }
+                    if(el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); }
                 }
             });
         }
@@ -1358,7 +1352,7 @@
                 snapshot.docChanges().forEach(change => {
                     if (change.type === "added" && !isFirstLoad) {
                         novasNotifs = true;
-                        if (window.AndroidInterface && window.AndroidInterface.mostrarNotificacaoPush) {
+                        if(window.AndroidInterface && window.AndroidInterface.mostrarNotificacaoPush) {
                             window.AndroidInterface.mostrarNotificacaoPush(change.doc.data().titulo, change.doc.data().corpo);
                         }
                     }
@@ -1366,19 +1360,19 @@
 
                 listaNotificacoes = [];
                 snapshot.forEach(doc => { const d = doc.data(); d.id = doc.id; listaNotificacoes.push(d); });
-
-                if (el('modal-notificacoes-admin').classList.contains('active')) renderizarNotificacoesAdmin();
-                if (el('modal-notificacoes-driver').classList.contains('active')) renderizarNotificacoesDriver();
-
-                if (listaNotificacoes.length > 0 && localStorage.getItem('last_read_notif') !== listaNotificacoes[0].id) {
-                    el('bell-dot-driver').classList.add('active');
+                
+                if(el('modal-notificacoes-admin').classList.contains('active')) renderizarNotificacoesAdmin();
+                if(el('modal-notificacoes-driver').classList.contains('active')) renderizarNotificacoesDriver();
+                
+                if(listaNotificacoes.length > 0 && localStorage.getItem('last_read_notif') !== listaNotificacoes[0].id) { 
+                    el('bell-dot-driver').classList.add('active'); 
                 }
 
-                if (novasNotifs && !el('view-motorista').classList.contains('hidden')) {
+                if(novasNotifs && !el('view-motorista').classList.contains('hidden')) {
                     try {
                         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                         audio.play().catch(e => console.log("Erro de som bloqueado pelo navegador", e));
-                    } catch (e) { }
+                    } catch(e){}
                 }
             });
         }
@@ -1386,22 +1380,22 @@
         function toggleSidebar() { el('sidebar-admin').classList.toggle('active'); }
         function formatarPlaca(p) { return p ? p.toUpperCase().replace(/[^A-Z0-9]/g, '').trim() : ''; }
         function fmtData(d) { return d ? d.toLocaleDateString('pt-BR') : '--/--'; }
-        function fmtHora(d) { return d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'; }
+        function fmtHora(d) { return d ? d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '--:--'; }
         function fmtBRL(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            const isDark = html.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            if (el('modal-dash').classList.contains('active')) carregarDash();
-            setTimeout(() => lucide.createIcons(), 100);
+        function toggleTheme() { 
+            const html = document.documentElement; 
+            html.classList.toggle('dark'); 
+            const isDark = html.classList.contains('dark'); 
+            localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
+            if(el('modal-dash').classList.contains('active')) carregarDash(); 
+            setTimeout(() => lucide.createIcons(), 100); 
         }
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+        if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
 
         function renderizarAdmin() {
             const lista = el('lista-viagens');
-            if (!lista) return;
+            if(!lista) return;
             lista.innerHTML = '';
             const busca = el('busca-admin').value.toLowerCase();
             const ini = el('filtro-data-ini').value;
@@ -1422,7 +1416,7 @@
                 return true;
             });
 
-            filtrados.sort((a, b) => {
+            filtrados.sort((a,b) => {
                 const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
                 const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
                 return timeB - timeA;
@@ -1435,24 +1429,24 @@
             const end = start + itensPorPaginaAdmin;
             const paginaCards = filtrados.slice(start, end);
 
-            if (paginaCards.length === 0) {
+            if(paginaCards.length === 0) {
                 lista.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10 font-bold">Nenhuma viagem encontrada para este filtro.</p>';
             } else {
                 paginaCards.forEach(v => lista.innerHTML += renderizarCardViagem(v, modoEdit));
             }
 
             const pagEl = el('controles-paginacao');
-            if (pagEl) {
+            if(pagEl) {
                 pagEl.classList.remove('hidden');
-                el('info-paginacao').innerText = `Mostrando ${start + (total > 0 ? 1 : 0)} a ${Math.min(end, total)} de ${total}`;
+                el('info-paginacao').innerText = `Mostrando ${start + (total>0?1:0)} a ${Math.min(end, total)} de ${total}`;
                 el('btn-pag-ant').disabled = paginaAtualAdmin === 1;
                 el('btn-pag-prox').disabled = paginaAtualAdmin === totalPags;
             }
             lucide.createIcons();
         }
 
-        window.abrirGps = function (loc) {
-            if (!loc) return;
+        window.abrirGps = function(loc) {
+            if(!loc) return;
             const [lat, lng] = loc.split(',');
             el('iframe-gps').src = `https://maps.google.com/maps?q=${lat},${lng}&hl=pt-BR;z=14&output=embed`;
             el('popup-gps').classList.add('active');
@@ -1462,11 +1456,11 @@
             const dIni = safeDate(v.dataInicio);
             const dFim = safeDate(v.dataFim);
             const st = v.status;
-
+            
             let stColorClass = 'border-t-[#f59e0b]';
             let stText = 'EM ROTA';
             let bgSt = '#f59e0b';
-
+            
             if (st === 'finalizada') {
                 stColorClass = 'border-t-[#10b981]';
                 stText = 'FINALIZADA';
@@ -1492,20 +1486,20 @@
             }
 
             const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase();
-            const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || { km: 1.00, frete: 0 };
-
+            const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || {km: 1.00, frete: 0};
+            
             const meta = Math.round(v.metaKm || 0);
             const kIni = Math.round(v.kmInicio || 0);
             const kFim = Math.round(v.kmFim || 0);
-
+            
             const realKm = st === 'em_curso' ? 0 : Math.round(kFim - kIni);
             const diff = st === 'em_curso' ? 0 : Math.round(realKm - meta);
-
+            
             const valMeta = (meta * precos.km) + precos.frete;
             const valReal = (realKm * precos.km) + precos.frete;
 
             let acoes = '';
-            if (modoEdit) {
+            if(modoEdit) {
                 acoes = `
                 <div class="p-3 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 flex flex-col gap-2">
                     <button onclick="abrirEdicao('${v.id}')" class="w-full py-2 bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-bold rounded text-xs flex items-center justify-center gap-2 transition hover:bg-orange-200"><i data-lucide="pencil" class="w-4 h-4"></i> EDITAR</button>
@@ -1534,7 +1528,7 @@
 
             let tempoStr = '--:--:--';
             let timerAttr = '';
-
+            
             if (st === 'finalizada' && dIni && dFim) {
                 const diffMs = dFim - dIni;
                 const h = Math.floor(diffMs / 3600000);
@@ -1585,7 +1579,7 @@
                         </div>
                         <div class="border border-gray-200 dark:border-zinc-800 rounded-lg py-2 text-center bg-white dark:bg-zinc-950">
                             <span class="text-[9px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">Dif</span>
-                            <span class="font-bold text-sm ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}">${st === 'em_curso' ? '-' : (diff > 0 ? '+' + diff : diff)}</span>
+                            <span class="font-bold text-sm ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}">${st === 'em_curso' ? '-' : (diff > 0 ? '+'+diff : diff)}</span>
                         </div>
                     </div>
 
@@ -1598,26 +1592,26 @@
             </div>`;
         }
 
-        window.mudarPagina = function (dir) { paginaAtualAdmin += dir; renderizarAdmin(); }
-        window.mudarItensPorPagina = function (val) { itensPorPaginaAdmin = parseInt(val); paginaAtualAdmin = 1; renderizarAdmin(); }
+        window.mudarPagina = function(dir) { paginaAtualAdmin += dir; renderizarAdmin(); }
+        window.mudarItensPorPagina = function(val) { itensPorPaginaAdmin = parseInt(val); paginaAtualAdmin = 1; renderizarAdmin(); }
 
-        window.abrirModalDash = function () {
-            el('modal-dash').classList.add('active');
-            const select = el('filtro-dash-placa');
-            select.innerHTML = '<option value="">Toda a Frota</option>';
-            const placas = [...new Set(todasViagens.map(v => v.placa))].sort();
-            placas.forEach(p => { const o = document.createElement('option'); o.value = p; o.innerText = p; select.appendChild(o); });
+        window.abrirModalDash = function() { 
+            el('modal-dash').classList.add('active'); 
+            const select = el('filtro-dash-placa'); 
+            select.innerHTML = '<option value="">Toda a Frota</option>'; 
+            const placas = [...new Set(todasViagens.map(v => v.placa))].sort(); 
+            placas.forEach(p => { const o = document.createElement('option'); o.value = p; o.innerText = p; select.appendChild(o); }); 
             const h = getLocalYMD(new Date());
-            if (!el('filtro-dash-ini').value) {
+            if(!el('filtro-dash-ini').value) {
                 el('filtro-dash-ini').value = h;
                 el('filtro-dash-fim').value = h;
             }
-            carregarDash();
+            carregarDash(); 
         }
 
-        window.carregarDash = function () {
+        window.carregarDash = function() {
             const kpiCont = el('dash-kpi-container');
-            if (!kpiCont) return;
+            if(!kpiCont) return;
             const ini = el('filtro-dash-ini').value;
             const fim = el('filtro-dash-fim').value;
             const placa = el('filtro-dash-placa').value;
@@ -1648,19 +1642,19 @@
                 const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
                 const meta = Math.round(v.metaKm || 0);
                 const disp = real - meta;
-
+                
                 kRodado += real;
                 kMeta += meta;
 
-                if (!rankingDisp[v.placa]) rankingDisp[v.placa] = 0;
+                if(!rankingDisp[v.placa]) rankingDisp[v.placa] = 0;
                 rankingDisp[v.placa] += disp;
 
                 const dStr = getLocalYMD(safeDate(v.dataInicio));
-                if (!dispDiaria[dStr]) dispDiaria[dStr] = 0;
+                if(!dispDiaria[dStr]) dispDiaria[dStr] = 0;
                 dispDiaria[dStr] += disp;
 
                 const p = v.perfilVeiculo || 'PADRÃO';
-                if (!perfis[p]) perfis[p] = 0;
+                if(!perfis[p]) perfis[p] = 0;
                 perfis[p]++;
             });
 
@@ -1671,19 +1665,19 @@
                 <div class="kpi-card"><p class="kpi-lbl">Concluídas</p><p class="kpi-val text-emerald-500">${tConcluidas}</p></div>
                 <div class="kpi-card"><p class="kpi-lbl">KM Real</p><p class="kpi-val text-gray-800 dark:text-zinc-100">${Math.round(kRodado)}</p></div>
                 <div class="kpi-card"><p class="kpi-lbl">KM Meta</p><p class="kpi-val text-purple-500">${Math.round(kMeta)}</p></div>
-                <div class="kpi-card"><p class="kpi-lbl">Dispersão</p><p class="kpi-val ${dispersaoGeral > 0 ? 'text-red-500' : 'text-green-500'}">${dispersaoGeral > 0 ? '+' + Math.round(dispersaoGeral) : Math.round(dispersaoGeral)}</p></div>
-                <div class="kpi-card"><p class="kpi-lbl">Eficiência</p><p class="kpi-val text-orange-500">${tViagens > 0 ? Math.round((tConcluidas / tViagens) * 100) : 0}%</p></div>
+                <div class="kpi-card"><p class="kpi-lbl">Dispersão</p><p class="kpi-val ${dispersaoGeral > 0 ? 'text-red-500' : 'text-green-500'}">${dispersaoGeral > 0 ? '+'+Math.round(dispersaoGeral) : Math.round(dispersaoGeral)}</p></div>
+                <div class="kpi-card"><p class="kpi-lbl">Eficiência</p><p class="kpi-val text-orange-500">${tViagens > 0 ? Math.round((tConcluidas/tViagens)*100) : 0}%</p></div>
             `;
-
+            
             Chart.defaults.color = txtColor;
             Chart.defaults.font.family = "'Inter', sans-serif";
 
-            if (charts.main) charts.main.destroy();
-            if (charts.sec) charts.sec.destroy();
-            if (charts.gauge) charts.gauge.destroy();
-            if (charts.perfil) charts.perfil.destroy();
+            if(charts.main) charts.main.destroy();
+            if(charts.sec) charts.sec.destroy();
+            if(charts.gauge) charts.gauge.destroy();
+            if(charts.perfil) charts.perfil.destroy();
 
-            const sortedRanking = Object.entries(rankingDisp).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const sortedRanking = Object.entries(rankingDisp).sort((a,b) => b[1] - a[1]).slice(0, 10);
             const ctxMain = el('chart-main').getContext('2d');
             charts.main = new Chart(ctxMain, {
                 type: 'bar',
@@ -1704,7 +1698,7 @@
             charts.sec = new Chart(ctxSec, {
                 type: 'line',
                 data: {
-                    labels: sortedDates.map(d => d.split('-')[2] + '/' + d.split('-')[1]),
+                    labels: sortedDates.map(d => d.split('-')[2]+'/'+d.split('-')[1]),
                     datasets: [{
                         label: 'Dispersão (KM)',
                         data: sortedDates.map(d => dispDiaria[d]),
@@ -1717,7 +1711,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: gridColor } }, x: { grid: { display: false } } } }
             });
 
-            let pct = tViagens > 0 ? Math.round((tConcluidas / tViagens) * 100) : 0;
+            let pct = tViagens > 0 ? Math.round((tConcluidas/tViagens)*100) : 0;
             el('gauge-text').innerText = pct + '%';
             const ctxGauge = el('chart-gauge').getContext('2d');
             charts.gauge = new Chart(ctxGauge, {
@@ -1750,12 +1744,12 @@
         }
 
         function abrirModalImportacao() { el('modal-importacao').classList.add('active'); }
-        function abrirModalExportacao() { el('modal-exportar').classList.add('active'); const h = getLocalYMD(new Date()); el('data-export-ini').value = h; el('data-export-fim').value = h; }
+        function abrirModalExportacao() { el('modal-exportar').classList.add('active'); const h = getLocalYMD(new Date()); el('data-export-ini').value=h; el('data-export-fim').value=h; }
         function abrirModalPrecos() { el('modal-precos').classList.add('active'); renderizarPrecos(); }
-
-        function renderizarPrecos() {
-            const lista = el('lista-precos'); lista.innerHTML = '';
-            for (const [veiculo, vals] of Object.entries(tabelaPrecos)) {
+        
+        function renderizarPrecos() { 
+            const lista = el('lista-precos'); lista.innerHTML = ''; 
+            for (const [veiculo, vals] of Object.entries(tabelaPrecos)) { 
                 lista.innerHTML += `
                 <div class="p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                     <p class="font-bold text-xs mb-2 dark:text-zinc-100">${veiculo}</p>
@@ -1769,33 +1763,33 @@
                             <input type="number" step="1" value="${vals.frete}" onchange="atualizarPreco('${veiculo}', 'frete', this.value)" class="w-full bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-md px-2 py-1.5 text-xs text-gray-700 dark:text-zinc-200 outline-none focus:border-emerald-500">
                         </div>
                     </div>
-                </div>`;
-            }
+                </div>`; 
+            } 
         }
 
         function confirmarExportacao() {
-            const ini = el('data-export-ini').value; const fim = el('data-export-fim').value;
+            const ini = el('data-export-ini').value; const fim = el('data-export-fim').value; 
             const filtrados = todasViagens.filter(v => { const d = safeDate(v.dataInicio); if (!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); });
             if (filtrados.length === 0) return alert("Nada para exportar");
-            const header = ["Placa", "Motorista", "Cidade", "Status", "Servico", "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem", "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA", "", "KM REAL PIFPAF", "DISPERSÃO REAL"];
+            const header = [ "Placa", "Motorista", "Cidade", "Status", "Servico", "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem", "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA", "", "KM REAL PIFPAF", "DISPERSÃO REAL" ];
             const dataRows = filtrados.map(v => {
                 const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim); let totalHoras = "";
-                if (dIni && dFim) { const diffMs = dFim - dIni; const h = Math.floor(diffMs / 3600000); const m = Math.floor((diffMs % 3600000) / 60000); totalHoras = `${h}:${m.toString().padStart(2, '0')}`; }
+                if(dIni && dFim) { const diffMs = dFim - dIni; const h = Math.floor(diffMs / 3600000); const m = Math.floor((diffMs % 3600000) / 60000); totalHoras = `${h}:${m.toString().padStart(2, '0')}`; }
                 const kmIni = Math.round(v.kmInicio || 0); const kmFim = Math.round(v.kmFim || 0); const totalKm = kmFim - kmIni; const meta = Math.round(v.metaKm || 0); const dispEscala = totalKm - meta; const kmRealCalc = meta * 1.1111; const dispReal = totalKm - kmRealCalc;
-                return [v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2))];
+                return [ v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2)) ];
             });
             const ws_data = [header, ...dataRows]; const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 15 }];
+            ws['!cols'] = [{wch:10}, {wch:20}, {wch:20}, {wch:10}, {wch:15}, {wch:12}, {wch:10}, {wch:12}, {wch:10}, {wch:15}, {wch:10}, {wch:10}, {wch:10}, {wch:10}, {wch:15}, {wch:5}, {wch:15}, {wch:15}];
             const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let R = range.s.r; R <= range.e.r; ++R) { for (let C = range.s.c; C <= range.e.c; ++C) { const cell_ref = XLSX.utils.encode_cell({ c: C, r: R }); if (!ws[cell_ref]) continue; if (R === 0) { ws[cell_ref].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } }, alignment: { horizontal: "center", vertical: "center" } }; } else { if (!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } }; if (C === 17) { const val = ws[cell_ref].v; if (typeof val === 'number' && val > 50) { ws[cell_ref].s = { fill: { fgColor: { rgb: "FFFF00" } }, font: { bold: true, color: { rgb: "000000" } }, alignment: { horizontal: "center" } }; } } } } }
+            for (let R = range.s.r; R <= range.e.r; ++R) { for (let C = range.s.c; C <= range.e.c; ++C) { const cell_ref = XLSX.utils.encode_cell({c: C, r: R}); if (!ws[cell_ref]) continue; if (R === 0) { ws[cell_ref].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } }, alignment: { horizontal: "center", vertical: "center" } }; } else { if(!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } }; if (C === 17) { const val = ws[cell_ref].v; if (typeof val === 'number' && val > 50) { ws[cell_ref].s = { fill: { fgColor: { rgb: "FFFF00" } }, font: { bold: true, color: { rgb: "000000" } }, alignment: { horizontal: "center" } }; } } } } }
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
             const nomeArquivo = `Relatorio_Geral_${ini || 'inicio'}_a_${fim || 'fim'}.xlsx`; XLSX.writeFile(wb, nomeArquivo); el('modal-exportar').classList.remove('active');
         }
-
-        window.aplicarFiltroData = function (tipo) {
+        
+        window.aplicarFiltroData = function(tipo) {
             const hj = new Date(); let ini = '', fim = getLocalYMD(hj);
-            if (tipo === 'hoje') { ini = fim; } else if (tipo === '7d') { const d = new Date(); d.setDate(d.getDate() - 7); ini = getLocalYMD(d); } else if (tipo === '30d') { const d = new Date(); d.setDate(d.getDate() - 30); ini = getLocalYMD(d); }
-            if (ini) { el('filtro-data-ini').value = ini; el('filtro-data-fim').value = fim; paginaAtualAdmin = 1; renderizarAdmin(); }
+            if(tipo === 'hoje') { ini = fim; } else if(tipo === '7d') { const d = new Date(); d.setDate(d.getDate() - 7); ini = getLocalYMD(d); } else if(tipo === '30d') { const d = new Date(); d.setDate(d.getDate() - 30); ini = getLocalYMD(d); } 
+            if(ini) { el('filtro-data-ini').value = ini; el('filtro-data-fim').value = fim; paginaAtualAdmin = 1; renderizarAdmin(); }
         }
 
         function abrirModalFinanceiro() {
@@ -1803,79 +1797,79 @@
             const select = el('fin-placa'); select.innerHTML = '<option value="">Selecionar Placa</option>';
             const placas = [...new Set(todasViagens.map(v => v.placa))].sort();
             placas.forEach(p => { const o = document.createElement('option'); o.value = p; o.innerText = p; select.appendChild(o); });
-            if (!el('fin-mes').value) { const d = new Date(); el('fin-mes').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+            if(!el('fin-mes').value) { const d = new Date(); el('fin-mes').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
             window.gerarRelatorioFinanceiro();
         }
 
-        window.gerarRelatorioFinanceiro = function () {
-            const tipo = el('fin-tipo').value; const placa = el('fin-placa').value; const mesAno = el('fin-mes').value; const quinzena = el('fin-quinzena').value;
-            if (!placa) {
+        window.gerarRelatorioFinanceiro = function() {
+            const tipo = el('fin-tipo').value; const placa = el('fin-placa').value; const mesAno = el('fin-mes').value; const quinzena = el('fin-quinzena').value; 
+            if(!placa) { 
                 el('fin-table-container').innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-zinc-950 rounded-xl border border-dashed border-gray-300 dark:border-zinc-800">
                     <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-full mb-4"><i data-lucide="search" class="w-8 h-8 text-green-500"></i></div>
                     <p class="font-bold text-gray-500 dark:text-zinc-400">Selecione uma placa no topo</p>
                     <p class="text-xs mt-1">Para gerar o relatório, você precisa filtrar uma placa específica.</p>
-                </div>`;
-                lucide.createIcons(); return;
+                </div>`; 
+                lucide.createIcons(); return; 
             }
-            if (!mesAno) return;
+            if(!mesAno) return;
             const [ano, mes] = mesAno.split('-'); const diaIni = quinzena === '1' ? 1 : 16; const diaFim = quinzena === '1' ? 15 : 31;
-
-            const dados = todasViagens.filter(v => {
-                if (v.status !== 'finalizada') return false;
-                const d = safeDate(v.dataInicio);
-                if (!d) return false;
-                if (d.getFullYear() != ano || (d.getMonth() + 1) != mes) return false;
-                const dia = d.getDate();
-                if (dia < diaIni || dia > diaFim) return false;
-                if (placa && v.placa !== placa) return false;
-                return true;
+            
+            const dados = todasViagens.filter(v => { 
+                if(v.status !== 'finalizada') return false; 
+                const d = safeDate(v.dataInicio); 
+                if(!d) return false; 
+                if(d.getFullYear() != ano || (d.getMonth() + 1) != mes) return false; 
+                const dia = d.getDate(); 
+                if(dia < diaIni || dia > diaFim) return false; 
+                if(placa && v.placa !== placa) return false; 
+                return true; 
             });
-            dados.sort((a, b) => {
+            dados.sort((a,b) => {
                 const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
                 const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
                 return timeA - timeB;
             });
 
             let htmlTabela = `<div class="fin-table-wrapper"><table class="fin-table"><thead><tr>`;
-            if (tipo === 'escalado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ESCALADO</th><th class="text-right">R$ KM</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
-            else if (tipo === 'rodado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ROD.</th><th class="text-right">R$ KM ROD.</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
+            if(tipo === 'escalado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ESCALADO</th><th class="text-right">R$ KM</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; } 
+            else if (tipo === 'rodado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ROD.</th><th class="text-right">R$ KM ROD.</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; } 
             else if (tipo === 'comparativo') { htmlTabela += `<th>DATA</th><th>PLACA</th><th class="text-right text-blue-600">KM ESC.</th><th class="text-right font-bold">KM REAL</th><th class="text-right">DIF KM</th><th class="text-right text-blue-600">R$ ESC.</th><th class="text-right font-bold">R$ REAL</th><th class="text-right">DIF R$</th>`; }
             htmlTabela += `</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-zinc-800">`;
 
             let sumQtd = 0; let sumValReal = 0; let sumValEsc = 0; let sumKmEsc = 0; let sumKmRod = 0;
-
+            
             dados.forEach(v => {
-                const d = safeDate(v.dataInicio);
-                const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase();
-                const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || { km: 1.00, frete: 0 };
-                const meta = Math.round(v.metaKm || 0);
-                const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
+                const d = safeDate(v.dataInicio); 
+                const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase(); 
+                const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || {km: 1.00, frete: 0};
+                const meta = Math.round(v.metaKm || 0); 
+                const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0)); 
                 const diffKm = real - meta;
-                const custoKmEsc = meta * precos.km;
+                const custoKmEsc = meta * precos.km; 
                 const totalEsc = custoKmEsc + precos.frete;
-                const custoKmRod = real * precos.km;
-                const totalReal = custoKmRod + precos.frete;
+                const custoKmRod = real * precos.km; 
+                const totalReal = custoKmRod + precos.frete; 
                 const diffRs = totalReal - totalEsc;
 
                 sumKmEsc += meta; sumKmRod += real; sumValEsc += totalEsc; sumValReal += totalReal; sumQtd++;
-
-                if (tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${meta}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; }
-                else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${real}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; }
-                else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-blue-600">${meta}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${real}</td><td class="text-right font-bold ${diffKm > 0 ? 'text-red-500' : 'text-green-500'}">${diffKm > 0 ? '+' + diffKm : diffKm}</td><td class="text-right text-blue-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs > 0 ? 'text-red-500' : 'text-green-500'} rounded">${diffRs > 0 ? '+' + fmtBRL(diffRs) : fmtBRL(diffRs)}</td></tr>`; }
+                
+                if(tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${meta}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; } 
+                else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${real}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; } 
+                else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-blue-600">${meta}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${real}</td><td class="text-right font-bold ${diffKm>0?'text-red-500':'text-green-500'}">${diffKm>0?'+'+diffKm:diffKm}</td><td class="text-right text-blue-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs>0?'text-red-500':'text-green-500'} rounded">${diffRs>0?'+'+fmtBRL(diffRs):fmtBRL(diffRs)}</td></tr>`; }
             });
-
+            
             htmlTabela += `</tbody><tfoot><tr>`;
-            if (tipo === 'escalado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmEsc)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValEsc)}</td>`; }
-            else if (tipo === 'rodado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValReal)}</td>`; }
-            else if (tipo === 'comparativo') { const globalDiffKm = sumKmRod - sumKmEsc; const globalDiffRs = sumValReal - sumValEsc; htmlTabela += `<td colspan="2" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right text-blue-600">${Math.round(sumKmEsc)}</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right ${globalDiffKm > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffKm > 0 ? '+' + Math.round(globalDiffKm) : Math.round(globalDiffKm)}</td><td class="text-right text-blue-600">${fmtBRL(sumValEsc)}</td><td class="text-right">${fmtBRL(sumValReal)}</td><td class="text-right ${globalDiffRs > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffRs > 0 ? '+' + fmtBRL(globalDiffRs) : fmtBRL(globalDiffRs)}</td>`; }
+            if(tipo === 'escalado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmEsc)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValEsc)}</td>`; } 
+            else if (tipo === 'rodado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValReal)}</td>`; } 
+            else if (tipo === 'comparativo') { const globalDiffKm = sumKmRod - sumKmEsc; const globalDiffRs = sumValReal - sumValEsc; htmlTabela += `<td colspan="2" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right text-blue-600">${Math.round(sumKmEsc)}</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right ${globalDiffKm>0?'text-red-500':'text-green-500'}">${globalDiffKm>0?'+'+Math.round(globalDiffKm):Math.round(globalDiffKm)}</td><td class="text-right text-blue-600">${fmtBRL(sumValEsc)}</td><td class="text-right">${fmtBRL(sumValReal)}</td><td class="text-right ${globalDiffRs>0?'text-red-500':'text-green-500'}">${globalDiffRs>0?'+'+fmtBRL(globalDiffRs):fmtBRL(globalDiffRs)}</td>`; }
             htmlTabela += `</tr></tfoot></table></div>`;
 
-            if (dados.length === 0) {
-                el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-zinc-950 rounded-xl border border-dashed border-gray-300 dark:border-zinc-800"><div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-full mb-4"><i data-lucide="inbox" class="w-8 h-8"></i></div><p class="font-bold text-gray-500 dark:text-zinc-400">Nenhum registro encontrado</p><p class="text-xs mt-1">Não há viagens finalizadas para este filtro.</p></div>`;
-            } else {
-                let primaryVal = (tipo === 'escalado' || tipo === 'comparativo') ? sumValEsc : sumValReal;
-                let primaryKm = (tipo === 'escalado' || tipo === 'comparativo') ? sumKmEsc : sumKmRod;
+            if(dados.length === 0) { 
+                el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-zinc-950 rounded-xl border border-dashed border-gray-300 dark:border-zinc-800"><div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-full mb-4"><i data-lucide="inbox" class="w-8 h-8"></i></div><p class="font-bold text-gray-500 dark:text-zinc-400">Nenhum registro encontrado</p><p class="text-xs mt-1">Não há viagens finalizadas para este filtro.</p></div>`; 
+            } else { 
+                let primaryVal = (tipo === 'escalado' || tipo === 'comparativo') ? sumValEsc : sumValReal; 
+                let primaryKm = (tipo === 'escalado' || tipo === 'comparativo') ? sumKmEsc : sumKmRod; 
                 let summaryHtml = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
@@ -1883,363 +1877,382 @@
                         <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i data-lucide="truck" class="w-6 h-6"></i></div>
                     </div>
                     <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">KM ${tipo === 'rodado' ? 'Rodado' : 'Escalado'}</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${Math.round(primaryKm)}</p></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">KM ${tipo==='rodado'?'Rodado':'Escalado'}</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${Math.round(primaryKm)}</p></div>
                         <div class="bg-orange-50 p-3 rounded-lg text-orange-500"><i data-lucide="map" class="w-6 h-6"></i></div>
                     </div>
                     <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border-l-4 border-l-green-500 border border-gray-200 shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">R$ ${tipo === 'rodado' ? 'Realizado' : 'Orçado (Meta)'}</p><p class="text-2xl font-black text-green-600 dark:text-green-500">${fmtBRL(primaryVal)}</p></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">R$ ${tipo==='rodado'?'Realizado':'Orçado (Meta)'}</p><p class="text-2xl font-black text-green-600 dark:text-green-500">${fmtBRL(primaryVal)}</p></div>
                         <div class="bg-green-50 p-3 rounded-lg text-green-600"><i data-lucide="wallet" class="w-6 h-6"></i></div>
                     </div>
-                </div>`;
-                el('fin-table-container').innerHTML = summaryHtml + htmlTabela;
+                </div>`; 
+                el('fin-table-container').innerHTML = summaryHtml + htmlTabela; 
             }
             lucide.createIcons();
         }
 
-        function abrirModalSuporte() {
-            el('modal-suporte').classList.add('active');
-            let cMeta = 0, cPerfil = 0, cApp = 0, cWeb = 0, cGpsI = 0, cGpsF = 0, cFotoI = 0, cFotoF = 0;
-            todasViagens.forEach(v => {
-                if (!v.metaKm) cMeta++; if (!v.perfilVeiculo) cPerfil++;
-                if (v.origem === 'APP') cApp++; else cWeb++;
-                if (!v.locInicio) cGpsI++; if (!v.fotoInicio) cFotoI++;
-                if (v.status === 'finalizada') { if (!v.locFim) cGpsF++; if (!v.fotoFim) cFotoF++; }
+        function abrirModalSuporte() { 
+            el('modal-suporte').classList.add('active'); 
+            let cMeta=0, cPerfil=0, cApp=0, cWeb=0, cGpsI=0, cGpsF=0, cFotoI=0, cFotoF=0;
+            todasViagens.forEach(v => { 
+                if(!v.metaKm) cMeta++; if(!v.perfilVeiculo) cPerfil++; 
+                if(v.origem === 'APP') cApp++; else cWeb++; 
+                if(!v.locInicio) cGpsI++; if(!v.fotoInicio) cFotoI++; 
+                if(v.status === 'finalizada') { if(!v.locFim) cGpsF++; if(!v.fotoFim) cFotoF++; } 
             });
             const updateBadge = (id, val) => { const b = el(id); b.innerText = val; b.style.display = val > 0 ? 'flex' : 'none'; };
             updateBadge('badge-meta', cMeta); updateBadge('badge-perfil', cPerfil); updateBadge('badge-app', cApp); updateBadge('badge-web', cWeb); updateBadge('badge-gps-ini', cGpsI); updateBadge('badge-gps-fim', cGpsF); updateBadge('badge-foto-ini', cFotoI); updateBadge('badge-foto-fim', cFotoF);
-            window.renderizarSuporte(null);
+            window.renderizarSuporte(null); 
         }
-
-        window.renderizarSuporte = function (tipo) {
+        
+        window.renderizarSuporte = function(tipo) {
             const lista = el('lista-suporte'); lista.innerHTML = ''; let itens = [];
-            if (tipo) {
-                if (tipo === 'meta') itens = todasViagens.filter(v => !v.metaKm);
-                else if (tipo === 'perfil') itens = todasViagens.filter(v => !v.perfilVeiculo);
-                else if (tipo === 'app') itens = todasViagens.filter(v => v.origem === 'APP');
-                else if (tipo === 'web') itens = todasViagens.filter(v => v.origem !== 'APP');
-                else if (tipo === 'gps_ini') itens = todasViagens.filter(v => !v.locInicio);
-                else if (tipo === 'foto_ini') itens = todasViagens.filter(v => !v.fotoInicio);
-                else if (tipo === 'gps_fim') itens = todasViagens.filter(v => v.status === 'finalizada' && !v.locFim);
-                else if (tipo === 'foto_fim') itens = todasViagens.filter(v => v.status === 'finalizada' && !v.fotoFim);
-
-                if (itens.length === 0) { lista.innerHTML = '<p class="text-center text-xs text-green-500 font-bold p-4">Nenhum problema encontrado nesta categoria.</p>'; return; }
-
-                itens.forEach(v => {
-                    const d = safeDate(v.dataInicio); const dataStr = d ? d.toLocaleDateString() : '??';
-                    lista.innerHTML += `<div class="sup-list-item"><div><span class="font-bold text-blue-600 dark:text-blue-400 block">${v.placa}</span><span class="text-[10px] text-gray-500 dark:text-zinc-400">${v.nome} • ${dataStr}</span></div><button onclick="abrirEdicao('${v.id}')" class="p-1.5 bg-gray-100 dark:bg-zinc-800 rounded text-gray-600 dark:text-zinc-300"><i data-lucide="pencil" class="w-3 h-3"></i></button></div>`;
-                });
+            if(tipo) {
+                if(tipo === 'meta') itens = todasViagens.filter(v => !v.metaKm); 
+                else if(tipo === 'perfil') itens = todasViagens.filter(v => !v.perfilVeiculo); 
+                else if(tipo === 'app') itens = todasViagens.filter(v => v.origem === 'APP'); 
+                else if(tipo === 'web') itens = todasViagens.filter(v => v.origem !== 'APP'); 
+                else if(tipo === 'gps_ini') itens = todasViagens.filter(v => !v.locInicio); 
+                else if(tipo === 'foto_ini') itens = todasViagens.filter(v => !v.fotoInicio); 
+                else if(tipo === 'gps_fim') itens = todasViagens.filter(v => v.status === 'finalizada' && !v.locFim); 
+                else if(tipo === 'foto_fim') itens = todasViagens.filter(v => v.status === 'finalizada' && !v.fotoFim);
+                
+                if(itens.length === 0) { lista.innerHTML = '<p class="text-center text-xs text-green-500 font-bold p-4">Nenhum problema encontrado nesta categoria.</p>'; return; }
+                
+                itens.forEach(v => { 
+                    const d = safeDate(v.dataInicio); const dataStr = d ? d.toLocaleDateString() : '??'; 
+                    lista.innerHTML += `<div class="sup-list-item"><div><span class="font-bold text-blue-600 dark:text-blue-400 block">${v.placa}</span><span class="text-[10px] text-gray-500 dark:text-zinc-400">${v.nome} • ${dataStr}</span></div><button onclick="abrirEdicao('${v.id}')" class="p-1.5 bg-gray-100 dark:bg-zinc-800 rounded text-gray-600 dark:text-zinc-300"><i data-lucide="pencil" class="w-3 h-3"></i></button></div>`; 
+                }); 
                 lucide.createIcons();
-            } else {
-                lista.innerHTML = '<p class="text-center text-xs text-gray-400 dark:text-zinc-500 p-4">Selecione uma categoria acima para auditar falhas.</p>';
+            } else { 
+                lista.innerHTML = '<p class="text-center text-xs text-gray-400 dark:text-zinc-500 p-4">Selecione uma categoria acima para auditar falhas.</p>'; 
             }
         }
 
         function filtrarRotaGps(rotaRaw) {
-            if (!rotaRaw || rotaRaw.length === 0) return [];
+            if (!rotaRaw || rotaRaw.length === 0) return []; 
             return rotaRaw.map(coordStr => {
                 const parts = coordStr.split(',');
-                return { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]) };
+                // Parseando a lat, lng e guardando o tempo de cada ponto também!
+                return { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]), ts: parts[2] ? parseInt(parts[2]) : null };
             });
         }
 
-        window.resetRastreioZoom = function () {
-            rastreioFocado = false;
-            if (polylineRastreio) {
-                mapaRastreio.fitBounds(polylineRastreio.getBounds(), { padding: [50, 50] });
+        window.resetRastreioZoom = function() { 
+            rastreioFocado = false; 
+            if(polylineRastreio) {
+                mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding:[50,50]}); 
             } else if (markerRastreio) {
                 mapaRastreio.setView(markerRastreio.getLatLng(), 15);
             }
         }
-
-        window.atualizarRastreioIndividual = function () {
-            if (currentRastreioId) window.abrirRastreioAdmin(currentRastreioId);
+        
+        window.atualizarRastreioIndividual = function() { 
+            if(currentRastreioId) window.abrirRastreioAdmin(currentRastreioId); 
         }
-
-        window.abrirRastreioAdmin = function (idViagem) {
-            currentRastreioId = idViagem;
-            const v = todasViagens.find(x => x.id === idViagem);
-            if (!v) return;
-
-            el('modal-rastreio').classList.add('active');
-            el('rastreio-placa').innerText = v.placa + " - " + v.nome;
-
+        
+        // Modal de rastreio totalmente reescrito para atualizar suavemente (isAutoUpdate)
+        window.abrirRastreioAdmin = function(idViagem, isAutoUpdate = false) {
+            currentRastreioId = idViagem; 
+            const v = todasViagens.find(x => x.id === idViagem); 
+            if(!v) return;
+            
+            if(!isAutoUpdate) {
+                el('modal-rastreio').classList.add('active'); 
+                el('rastreio-placa').innerText = v.placa + " - " + v.nome; 
+                rastreioFocado = false; 
+            }
+            
             if (v.status === 'em_curso') {
                 el('rastreio-status').innerHTML = '<i data-lucide="radio" class="w-3 h-3 text-orange-500 animate-pulse"></i> <span class="text-orange-500">EM ROTA (AO VIVO)</span>';
             } else {
                 el('rastreio-status').innerHTML = '<i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i> FINALIZADA';
             }
-            lucide.createIcons();
-
-            if (!mapaRastreio) {
-                mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaRastreio);
-                mapaRastreio.on('movestart', () => { rastreioFocado = true; });
-                mapaRastreio.on('zoomstart', () => { rastreioFocado = true; });
+            if(!isAutoUpdate) lucide.createIcons();
+            
+            if(!mapaRastreio) { 
+                mapaRastreio = L.map('mapa-rastreio').setView([-22.9, -43.2], 12); 
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapaRastreio); 
+                mapaRastreio.on('movestart', () => { rastreioFocado = true; }); 
+                mapaRastreio.on('zoomstart', () => { rastreioFocado = true; }); 
             }
+            
+            if(!isAutoUpdate) {
+                mapaRastreio.eachLayer((layer) => { if(layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) mapaRastreio.removeLayer(layer); }); 
+                markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null;
+                setTimeout(() => mapaRastreio.invalidateSize(), 300);
+            }
+            
+            const pontosFiltrados = filtrarRotaGps(v.rotaReal || []); 
+            const latlngs = pontosFiltrados.map(p => [p.lat, p.lng]); 
 
-            rastreioFocado = false;
-            mapaRastreio.eachLayer((layer) => { if (layer instanceof L.Marker || layer instanceof L.Polyline) mapaRastreio.removeLayer(layer); });
-            setTimeout(() => mapaRastreio.invalidateSize(), 300);
+            if (latlngs.length > 0) { 
+                if(!polylineRastreio) {
+                    polylineRastreio = L.polyline(latlngs, {color: '#10b981', weight: 4}).addTo(mapaRastreio); 
+                } else {
+                    polylineRastreio.setLatLngs(latlngs); // Atualiza esticando a linha sem apagar a tela!
+                }
+                
+                if (!rastreioFocado && !isAutoUpdate) {
+                    setTimeout(() => mapaRastreio.fitBounds(polylineRastreio.getBounds(), {padding: [50,50]}), 350); 
+                }
 
-            const desenharRota = (rotaCrua) => {
-                if (!rotaCrua) return;
-                const pontosFiltrados = filtrarRotaGps(rotaCrua);
-                const latlngs = pontosFiltrados.map(p => [p.lat, p.lng]);
-                if (latlngs.length > 0) {
-                    polylineRastreio = L.polyline(latlngs, { color: '#10b981', weight: 4 }).addTo(mapaRastreio);
-                    if (!rastreioFocado) mapaRastreio.fitBounds(polylineRastreio.getBounds(), { padding: [50, 50] });
-                    if (v.status === 'finalizada') {
-                        const pIni = latlngs[0]; const pFim = latlngs[latlngs.length - 1];
-                        markerIni = L.marker(pIni, { icon: L.divIcon({ className: 'custom', html: '<div style="background:#2563eb;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">I</div>' }) }).addTo(mapaRastreio);
-                        markerFim = L.marker(pFim, { icon: L.divIcon({ className: 'custom', html: '<div style="background:#dc2626;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">F</div>' }) }).addTo(mapaRastreio);
+                // Ferramenta Hover (Hora ao longo da linha)
+                // Limpa apenas os pontinhos fantasmas para redesenhá-los junto com a linha nova
+                mapaRastreio.eachLayer(l => { if(l instanceof L.CircleMarker) mapaRastreio.removeLayer(l); });
+                pontosFiltrados.forEach(p => {
+                    if (p.ts) {
+                        const dataHora = new Date(p.ts).toLocaleTimeString('pt-BR');
+                        // Cria bolinhas invisíveis grossinhas pra facilitar passar o mouse em cima
+                        L.circleMarker([p.lat, p.lng], { radius: 8, color: 'transparent', fillColor: '#10b981', fillOpacity: 0 })
+                         .addTo(mapaRastreio)
+                         .bindTooltip(`⏱️ ${dataHora}`, { direction: 'top', className: 'font-bold text-xs rounded shadow-lg' });
                     }
+                });
+            }
+            
+            if (v.status === 'em_curso' && v.locAtual) { 
+                const parts = v.locAtual.split(','); const lat = parseFloat(parts[0]); const lng = parseFloat(parts[1]); 
+                if(!markerRastreio) {
+                    const iconCar = L.divIcon({className:'custom', html:`<div style="background:#f97316;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #f97316;"></div>`}); 
+                    markerRastreio = L.marker([lat, lng], {icon: iconCar}).addTo(mapaRastreio); 
+                } else {
+                    markerRastreio.setLatLng([lat, lng]); // Move o carrinho suavemente sem recarregar o mapa
                 }
-            };
-
-            if (v.status === 'em_curso') {
-                if (v.rotaReal && v.rotaReal.length > 0) desenharRota(v.rotaReal);
-                if (v.locAtual) {
-                    const parts = v.locAtual.split(','); const lat = parseFloat(parts[0]); const lng = parseFloat(parts[1]);
-                    const iconCar = L.divIcon({ className: 'custom', html: `<div style="background:#f97316;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #f97316;"></div>` });
-                    markerRastreio = L.marker([lat, lng], { icon: iconCar }).addTo(mapaRastreio);
-                }
-            } else {
-                if (v.rotaReal && v.rotaReal.length > 1) {
-                    desenharRota(v.rotaReal);
-                } else if (v.locInicio && v.locFim) {
-                    const [lat1, lng1] = v.locInicio.split(',').map(Number); const [lat2, lng2] = v.locFim.split(',').map(Number);
-                    polylineRastreio = L.polyline([[lat1, lng1], [lat2, lng2]], { color: 'gray', dashArray: '5, 10' }).addTo(mapaRastreio);
-                    mapaRastreio.fitBounds(polylineRastreio.getBounds());
-                }
+            } else if (v.status === 'finalizada') { 
+                if (latlngs.length > 0) { 
+                    const pIni = latlngs[0]; const pFim = latlngs[latlngs.length - 1]; 
+                    if(!markerIni) markerIni = L.marker(pIni, {icon: L.divIcon({className:'custom', html:'<div style="background:#2563eb;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">I</div>'})}).addTo(mapaRastreio); 
+                    if(!markerFim) markerFim = L.marker(pFim, {icon: L.divIcon({className:'custom', html:'<div style="background:#dc2626;color:white;padding:2px;border-radius:4px;font-size:10px;font-weight:bold;">F</div>'})}).addTo(mapaRastreio); 
+                } 
             }
         }
 
-        window.pararRastreioAdmin = function () { markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null; currentRastreioId = null; }
-
-        function abrirModalMapa() {
-            el('modal-mapa').classList.add('active');
-            const h = getLocalYMD(new Date());
-            if (!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value = h; el('filtro-mapa-fim').value = h; }
-
-            if (!mapaLeaflet) {
-                mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet);
-                mapaLeaflet.on('movestart', () => { mapaFocado = true; });
-                mapaLeaflet.on('zoomstart', () => { mapaFocado = true; });
-            }
-            mapaFocado = false;
-            setTimeout(() => { mapaLeaflet.invalidateSize(); window.carregarMapa(); }, 300);
+        window.pararRastreioAdmin = function() { markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null; currentRastreioId = null; }
+        
+        function abrirModalMapa() { 
+            el('modal-mapa').classList.add('active'); 
+            const h = getLocalYMD(new Date()); 
+            if(!el('filtro-mapa-ini').value) { el('filtro-mapa-ini').value=h; el('filtro-mapa-fim').value=h; } 
+            
+            if(!mapaLeaflet) { 
+                mapaLeaflet = L.map('mapa-container').setView([-22.9, -43.2], 8); 
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapaLeaflet); 
+                mapaLeaflet.on('movestart', () => { mapaFocado = true; }); 
+                mapaLeaflet.on('zoomstart', () => { mapaFocado = true; }); 
+            } 
+            mapaFocado = false; 
+            setTimeout(()=> { mapaLeaflet.invalidateSize(); window.carregarMapa(); }, 300); 
         }
-
-        window.resetMapZoom = function () { mapaFocado = false; window.carregarMapa(); }
-
-        window.carregarMapa = function () {
-            if (!mapaLeaflet) return;
-            mapaLeaflet.eachLayer((l) => { if (l instanceof L.Marker) mapaLeaflet.removeLayer(l); });
-            const ini = el('filtro-mapa-ini').value, fim = el('filtro-mapa-fim').value;
-
-            const dados = todasViagens.filter(v => {
-                if (v.status === 'em_curso') return true;
-                const d = safeDate(v.dataInicio); if (!d) return false;
-                const dStr = getLocalYMD(d);
-                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
-            });
-
-            const bounds = [];
-
-            dados.forEach(v => {
-                let lat = null, lng = null, tipo = null;
-                if (v.status === 'em_curso') {
-                    const loc = v.locAtual || v.locInicio;
-                    if (loc) { const p = loc.split(','); lat = Number(p[0]); lng = Number(p[1]); tipo = 'vivo'; }
-                } else if (v.status === 'finalizada' && v.locFim) {
-                    const p = v.locFim.split(','); lat = Number(p[0]); lng = Number(p[1]); tipo = 'fim';
-                }
-                if (lat && lng) {
-                    const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981';
-                    const icon = L.divIcon({ className: 'custom-pin', html: `<div style="background:${cor};width:12px;height:12px;border-radius:50%;border:2px solid white;"></div>` });
-                    const mk = L.marker([lat, lng], { icon, zIndexOffset: tipo === 'vivo' ? 1000 : 1 }).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🟠 EM ROTA' : '🟢 FINALIZADO'}`);
-                    bounds.push([lat, lng]);
-                }
-            });
-            if (bounds.length && !mapaFocado) mapaLeaflet.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        
+        window.resetMapZoom = function() { mapaFocado = false; window.carregarMapa(); }
+        
+        window.carregarMapa = function() { 
+            if(!mapaLeaflet) return; 
+            mapaLeaflet.eachLayer((l) => { if(l instanceof L.Marker) mapaLeaflet.removeLayer(l); }); 
+            const ini=el('filtro-mapa-ini').value, fim=el('filtro-mapa-fim').value; 
+            
+            const dados = todasViagens.filter(v => { 
+                if(v.status === 'em_curso') return true;
+                const d=safeDate(v.dataInicio); if(!d) return false; 
+                const dStr=getLocalYMD(d); 
+                return (!ini || dStr>=ini) && (!fim || dStr<=fim); 
+            }); 
+            
+            const bounds = []; 
+            
+            dados.forEach(v => { 
+                let lat = null, lng = null, tipo = null; 
+                if (v.status === 'em_curso') { 
+                    const loc = v.locAtual || v.locInicio; 
+                    if(loc) { const p = loc.split(','); lat=Number(p[0]); lng=Number(p[1]); tipo = 'vivo'; } 
+                } else if (v.status === 'finalizada' && v.locFim) { 
+                    const p = v.locFim.split(','); lat=Number(p[0]); lng=Number(p[1]); tipo = 'fim'; 
+                } 
+                if (lat && lng) { 
+                    const cor = tipo === 'vivo' ? '#f59e0b' : '#10b981'; 
+                    const icon = L.divIcon({ className: 'custom-pin', html: `<div style="background:${cor};width:12px;height:12px;border-radius:50%;border:2px solid white;"></div>` }); 
+                    const mk = L.marker([lat, lng], {icon, zIndexOffset: tipo==='vivo'?1000:1}).addTo(mapaLeaflet).bindPopup(`<b>${v.placa}</b><br>${v.nome}<br>${tipo === 'vivo' ? '🟠 EM ROTA' : '🟢 FINALIZADO'}`); 
+                    bounds.push([lat, lng]); 
+                } 
+            }); 
+            if(bounds.length && !mapaFocado) mapaLeaflet.fitBounds(bounds, {padding:[50,50], maxZoom:14}); 
         }
-
+        
         function abrirModalNotificacoesAdmin() { el('modal-notificacoes-admin').classList.add('active'); renderizarNotificacoesAdmin(); }
         function verNotificacoesDriver() { el('modal-notificacoes-driver').classList.add('active'); renderizarNotificacoesDriver(); }
-
-        window.publicarNotificacao = async function () {
-            const t = el('notif-titulo').value; const c = el('notif-corpo').value;
-            if (!t || !c) return alert("Preencha título e mensagem");
-            try {
-                await db.collection('notificacoes').add({ titulo: t, corpo: c, data: new Date().toISOString() });
-                el('notif-titulo').value = ''; el('notif-corpo').value = '';
-            } catch (e) { console.error("Erro ao salvar", e); alert("Erro."); }
+        
+        window.publicarNotificacao = async function() { 
+            const t = el('notif-titulo').value; const c = el('notif-corpo').value; 
+            if(!t || !c) return alert("Preencha título e mensagem"); 
+            try { 
+                await db.collection('notificacoes').add({ titulo: t, corpo: c, data: new Date().toISOString() }); 
+                el('notif-titulo').value = ''; el('notif-corpo').value = ''; 
+            } catch(e) { console.error("Erro ao salvar", e); alert("Erro."); } 
         }
-
-        window.excluirNotificacao = async function (id) {
-            if (confirm("Excluir?")) { try { await db.collection('notificacoes').doc(id).delete(); } catch (e) { } }
+        
+        window.excluirNotificacao = async function(id) { 
+            if(confirm("Excluir?")) { try { await db.collection('notificacoes').doc(id).delete(); } catch(e) {} } 
         }
-
-        function renderizarNotificacoesAdmin() {
-            const l = el('lista-notificacoes-admin'); l.innerHTML = '';
-            listaNotificacoes.forEach(n => {
-                l.innerHTML += `<div class="bg-gray-100 dark:bg-zinc-800 p-2 rounded flex justify-between items-center text-xs"><div><b class="dark:text-zinc-100">${n.titulo}</b><p class="text-gray-600 dark:text-gray-400">${n.corpo}</p></div><button onclick="window.excluirNotificacao('${n.id}')" class="text-red-500"><i data-lucide="trash"></i></button></div>`;
-            });
-            lucide.createIcons();
+        
+        function renderizarNotificacoesAdmin() { 
+            const l = el('lista-notificacoes-admin'); l.innerHTML = ''; 
+            listaNotificacoes.forEach(n => { 
+                l.innerHTML += `<div class="bg-gray-100 dark:bg-zinc-800 p-2 rounded flex justify-between items-center text-xs"><div><b class="dark:text-zinc-100">${n.titulo}</b><p class="text-gray-600 dark:text-gray-400">${n.corpo}</p></div><button onclick="window.excluirNotificacao('${n.id}')" class="text-red-500"><i data-lucide="trash"></i></button></div>`; 
+            }); 
+            lucide.createIcons(); 
         }
-
-        function renderizarNotificacoesDriver() {
-            const l = el('lista-notificacoes-driver'); l.innerHTML = '';
-            localStorage.setItem('last_read_notif', listaNotificacoes.length > 0 ? listaNotificacoes[0].id : '');
-            el('bell-dot-driver').classList.remove('active');
-            if (listaNotificacoes.length === 0) { l.innerHTML = '<p class="text-center text-gray-400">Nenhum aviso.</p>'; return; }
-            listaNotificacoes.forEach(n => {
-                const d = safeDate(n.data);
-                l.innerHTML += `<div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 p-3 rounded-xl"><div class="flex justify-between mb-1"><b class="text-red-600 dark:text-red-400">${n.titulo}</b><span class="text-[10px] text-gray-400">${d ? d.toLocaleDateString() : ''}</span></div><p class="text-sm text-gray-700 dark:text-gray-300">${n.corpo}</p></div>`;
-            });
+        
+        function renderizarNotificacoesDriver() { 
+            const l = el('lista-notificacoes-driver'); l.innerHTML = ''; 
+            localStorage.setItem('last_read_notif', listaNotificacoes.length > 0 ? listaNotificacoes[0].id : ''); 
+            el('bell-dot-driver').classList.remove('active'); 
+            if(listaNotificacoes.length === 0) { l.innerHTML = '<p class="text-center text-gray-400">Nenhum aviso.</p>'; return; } 
+            listaNotificacoes.forEach(n => { 
+                const d = safeDate(n.data); 
+                l.innerHTML += `<div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 p-3 rounded-xl"><div class="flex justify-between mb-1"><b class="text-red-600 dark:text-red-400">${n.titulo}</b><span class="text-[10px] text-gray-400">${d ? d.toLocaleDateString() : ''}</span></div><p class="text-sm text-gray-700 dark:text-gray-300">${n.corpo}</p></div>`; 
+            }); 
         }
 
         function abrirObsMotorista() { el('modal-obs-motorista').classList.add('active'); renderizarObsDriver(); }
-
-        window.adicionarObs = async function () {
-            const assunto = el('obs-assunto').value; const texto = el('obs-texto').value;
-            if (!assunto || !texto) return alert("Preencha tudo");
-            const novaObs = { id: Date.now(), assunto, texto, data: new Date().toISOString() };
-            try {
-                const v = todasViagens.find(x => x.id === viagemAtualId);
-                const currentObs = v && v.obs ? v.obs : []; currentObs.push(novaObs);
-                await db.collection('viagens').doc(viagemAtualId).update({ obs: currentObs });
-                el('obs-assunto').value = ''; el('obs-texto').value = '';
-            } catch (e) { console.error(e); }
+        
+        window.adicionarObs = async function() { 
+            const assunto = el('obs-assunto').value; const texto = el('obs-texto').value; 
+            if(!assunto || !texto) return alert("Preencha tudo"); 
+            const novaObs = { id: Date.now(), assunto, texto, data: new Date().toISOString() }; 
+            try { 
+                const v = todasViagens.find(x => x.id === viagemAtualId); 
+                const currentObs = v && v.obs ? v.obs : []; currentObs.push(novaObs); 
+                await db.collection('viagens').doc(viagemAtualId).update({ obs: currentObs }); 
+                el('obs-assunto').value = ''; el('obs-texto').value = ''; 
+            } catch(e) { console.error(e); } 
         }
-
-        function renderizarObsDriver() {
-            const lista = el('lista-obs-motorista'); lista.innerHTML = '';
-            const v = todasViagens.find(x => x.id === viagemAtualId); const obs = v && v.obs ? v.obs : [];
-            obs.forEach(o => {
-                lista.innerHTML += `<div class="bg-gray-100 dark:bg-zinc-800 p-2 rounded text-sm relative group"><p class="font-bold text-gray-700 dark:text-zinc-200">${o.assunto}</p><p class="text-gray-500 dark:text-zinc-400">${o.texto}</p><button onclick="window.excluirObs(${o.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
-            });
-            lucide.createIcons();
+        
+        function renderizarObsDriver() { 
+            const lista = el('lista-obs-motorista'); lista.innerHTML = ''; 
+            const v = todasViagens.find(x => x.id === viagemAtualId); const obs = v && v.obs ? v.obs : []; 
+            obs.forEach(o => { 
+                lista.innerHTML += `<div class="bg-gray-100 dark:bg-zinc-800 p-2 rounded text-sm relative group"><p class="font-bold text-gray-700 dark:text-zinc-200">${o.assunto}</p><p class="text-gray-500 dark:text-zinc-400">${o.texto}</p><button onclick="window.excluirObs(${o.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; 
+            }); 
+            lucide.createIcons(); 
         }
-
-        window.excluirObs = async function (id) {
-            if (!confirm("Excluir?")) return;
-            try {
-                const v = todasViagens.find(x => x.id === viagemAtualId);
-                const currentObs = v && v.obs ? v.obs.filter(o => o.id !== id) : [];
-                await db.collection('viagens').doc(viagemAtualId).update({ obs: currentObs });
-            } catch (e) { console.error(e); }
+        
+        window.excluirObs = async function(id) { 
+            if(!confirm("Excluir?")) return; 
+            try { 
+                const v = todasViagens.find(x => x.id === viagemAtualId); 
+                const currentObs = v && v.obs ? v.obs.filter(o => o.id !== id) : []; 
+                await db.collection('viagens').doc(viagemAtualId).update({ obs: currentObs }); 
+            } catch(e) { console.error(e); } 
         }
-
-        window.verObsAdmin = function (idViagem) {
-            const v = todasViagens.find(x => x.id === idViagem);
-            const lista = el('lista-obs-admin'); lista.innerHTML = '';
-            el('modal-obs-admin').classList.add('active');
-            if (v && v.obs && v.obs.length > 0) {
-                v.obs.forEach(o => {
-                    lista.innerHTML += `<div class="bg-gray-50 dark:bg-zinc-800 p-3 rounded border border-gray-200 dark:border-zinc-700"><div class="flex justify-between"><span class="font-bold text-sm text-blue-600 dark:text-blue-400">${o.assunto}</span><span class="text-[10px] text-gray-400">${new Date(o.data).toLocaleTimeString()}</span></div><p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${o.texto}</p></div>`;
-                });
-            } else {
-                lista.innerHTML = '<p class="text-center text-gray-400 text-sm">Nenhuma observação.</p>';
-            }
+        
+        window.verObsAdmin = function(idViagem) { 
+            const v = todasViagens.find(x => x.id === idViagem); 
+            const lista = el('lista-obs-admin'); lista.innerHTML = ''; 
+            el('modal-obs-admin').classList.add('active'); 
+            if(v && v.obs && v.obs.length > 0) { 
+                v.obs.forEach(o => { 
+                    lista.innerHTML += `<div class="bg-gray-50 dark:bg-zinc-800 p-3 rounded border border-gray-200 dark:border-zinc-700"><div class="flex justify-between"><span class="font-bold text-sm text-blue-600 dark:text-blue-400">${o.assunto}</span><span class="text-[10px] text-gray-400">${new Date(o.data).toLocaleTimeString()}</span></div><p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${o.texto}</p></div>`; 
+                }); 
+            } else { 
+                lista.innerHTML = '<p class="text-center text-gray-400 text-sm">Nenhuma observação.</p>'; 
+            } 
         }
-
-        function abrirModalSenhas() {
-            el('modal-senhas').classList.add('active');
-            const sel = el('placa-senha-select');
-            const placas = [...new Set(todasViagens.map(v => v.placa))].sort();
-            sel.innerHTML = '<option value="">Selecione a Placa...</option>';
-            placas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; sel.appendChild(opt); });
-            el('senha-input-manual').value = '';
-
+        
+        function abrirModalSenhas() { 
+            el('modal-senhas').classList.add('active'); 
+            const sel = el('placa-senha-select'); 
+            const placas = [...new Set(todasViagens.map(v => v.placa))].sort(); 
+            sel.innerHTML = '<option value="">Selecione a Placa...</option>'; 
+            placas.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; sel.appendChild(opt); }); 
+            el('senha-input-manual').value = ''; 
+            
             sel.onchange = window.carregarSenhaPlaca;
         }
 
-        window.carregarSenhaPlaca = async function () {
+        window.carregarSenhaPlaca = async function() {
             const p = el('placa-senha-select').value;
-            if (!p) {
+            if(!p) {
                 el('senha-input-manual').value = '';
                 return;
             }
             try {
                 const doc = await db.collection('senhas').doc(p).get();
-                if (doc.exists && doc.data().senha) {
+                if(doc.exists && doc.data().senha) {
                     el('senha-input-manual').value = doc.data().senha;
                 } else {
                     const novaSenha = Math.floor(1000 + Math.random() * 9000).toString();
                     await db.collection('senhas').doc(p).set({ senha: novaSenha }, { merge: true });
                     el('senha-input-manual').value = novaSenha;
                 }
-            } catch (e) {
+            } catch(e) {
                 console.error("Erro ao carregar senha:", e);
                 alert("Erro ao conectar com o banco de senhas.");
             }
         }
-
-        window.salvarSenhaPlaca = function () {
+        
+        window.salvarSenhaPlaca = function() { 
             const p = el('placa-senha-select').value;
             const s = el('senha-input-manual').value;
-            if (!p || !s) return alert("Por favor, selecione a placa e digite a senha!");
-
+            if(!p || !s) return alert("Por favor, selecione a placa e digite a senha!");
+            
             db.collection('senhas').doc(p).set({ senha: s }, { merge: true })
-                .then(() => alert("Senha da placa " + p + " salva/atualizada com sucesso no banco de dados!"))
-                .catch(e => {
-                    console.error("Erro ao salvar senha:", e);
-                    alert("Erro ao salvar a senha.");
-                });
+            .then(() => alert("Senha da placa " + p + " salva/atualizada com sucesso no banco de dados!"))
+            .catch(e => {
+                console.error("Erro ao salvar senha:", e);
+                alert("Erro ao salvar a senha.");
+            });
         }
-
+        
         function abrirLoginExtrato() { el('login-placa').value = ''; el('login-senha').value = ''; el('modal-login-extrato').classList.add('active'); }
+        
+        window.acessarExtrato = async function() { 
+            const p = formatarPlaca(el('login-placa').value); 
+            const s = el('login-senha').value; 
+            if(!p || !s) return alert("Preencha todos os campos."); 
 
-        window.acessarExtrato = async function () {
-            const p = formatarPlaca(el('login-placa').value);
-            const s = el('login-senha').value;
-            if (!p || !s) return alert("Preencha todos os campos.");
-
-            el('main-loader').classList.remove('hidden');
+            el('main-loader').classList.remove('hidden'); 
 
             try {
                 const docSenha = await db.collection('senhas').doc(p).get();
-
+                
                 if (!docSenha.exists || docSenha.data().senha !== s) {
                     el('main-loader').classList.add('hidden');
                     return alert("Senha incorreta ou não cadastrada para esta placa!");
                 }
 
-                setTimeout(() => {
-                    dadosExtrato = todasViagens.filter(v => v.placa === p).sort((a, b) => {
+                setTimeout(() => { 
+                    dadosExtrato = todasViagens.filter(v => v.placa === p).sort((a,b) => {
                         const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
                         const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
                         return timeB - timeA;
                     });
-                    el('modal-login-extrato').classList.remove('active');
-                    el('modal-view-extrato').classList.add('active');
-                    window.renderizarExtrato();
-                    el('main-loader').classList.add('hidden');
-                }, 500);
+                    el('modal-login-extrato').classList.remove('active'); 
+                    el('modal-view-extrato').classList.add('active'); 
+                    window.renderizarExtrato(); 
+                    el('main-loader').classList.add('hidden'); 
+                }, 500); 
 
-            } catch (e) {
+            } catch(e) {
                 console.error("Erro no login do extrato:", e);
                 el('main-loader').classList.add('hidden');
                 return alert("Erro ao validar senha no servidor.");
             }
         }
-
-        window.renderizarExtrato = function () {
-            const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value;
-            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if (!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); });
-            if (filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-gray-500 mt-10 p-5">Nenhum registro encontrado.</p>'; return; }
-
-            cont.innerHTML = '<div class="extrato-list flex flex-col gap-4">' + filtrados.map(v => {
-                const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const meta = Math.round(v.metaKm || 0); const diff = kmT - meta;
-                const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso';
-                const stColor = isE ? '#f59e0b' : (v.status === 'cancelada' ? '#ef4444' : '#10b981');
-
-                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-blue-200 transition"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`;
+        
+        window.renderizarExtrato = function() { 
+            const cont = el('conteudo-extrato'); const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; 
+            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); 
+            if(filtrados.length === 0) { cont.innerHTML = '<p class="text-center text-gray-500 mt-10 p-5">Nenhum registro encontrado.</p>'; return; } 
+            
+            cont.innerHTML = '<div class="extrato-list flex flex-col gap-4">' + filtrados.map(v => { 
+                const kmT = Math.round((v.kmFim||0) - v.kmInicio); const meta = Math.round(v.metaKm||0); const diff = kmT - meta; 
+                const dIni = safeDate(v.dataInicio); const isE = v.status === 'em_curso'; 
+                const stColor = isE ? '#f59e0b' : (v.status==='cancelada'?'#ef4444':'#10b981'); 
+                
+                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="flex-1 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-blue-200 transition"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`; 
                 const btnFotoI = v.fotoInicio ? `<button onclick="window.verFoto('${v.fotoInicio}')" class="flex-1 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-blue-500"></i> FOTO INI</button>` : '';
                 const btnFotoF = v.fotoFim ? `<button onclick="window.verFoto('${v.fotoFim}')" class="flex-1 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-blue-500"></i> FOTO FIM</button>` : '';
-
+                
                 return `
                 <div class="extrato-item bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm border-l-[4px]" style="border-left-color: ${stColor}">
                     <div class="flex justify-between items-start mb-2">
@@ -2253,283 +2266,283 @@
                     <div class="grid grid-cols-5 gap-2 bg-gray-50 dark:bg-zinc-900/50 p-2.5 rounded-lg border border-gray-100 dark:border-zinc-800 text-center">
                         <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">META</span><span class="text-xs font-bold text-blue-600">${meta}</span></div>
                         <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM INI</span><span class="text-xs font-bold dark:text-zinc-100">${Math.round(v.kmInicio)}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM FIM</span><span class="text-xs font-bold dark:text-zinc-100">${isE ? '-' : Math.round(v.kmFim)}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">TOTAL</span><span class="text-xs font-bold ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : kmT}</span></div>
-                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">DISP</span><span class="text-xs font-bold ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : (diff > 0 ? '+' + diff : diff)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM FIM</span><span class="text-xs font-bold dark:text-zinc-100">${isE?'-':Math.round(v.kmFim)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">TOTAL</span><span class="text-xs font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':kmT}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">DISP</span><span class="text-xs font-bold ${diff>0?'text-red-500':'text-green-500'}">${isE?'-':(diff>0?'+'+diff:diff)}</span></div>
                     </div>
                     <div class="flex gap-2 justify-between mt-3 border-t border-gray-100 dark:border-zinc-800 pt-3">
                         ${btnShare}
                         ${btnFotoI}
                         ${btnFotoF}
                     </div>
-                </div>`;
-            }).join('') + '</div>';
-            lucide.createIcons();
+                </div>`; 
+            }).join('') + '</div>'; 
+            lucide.createIcons(); 
+        }
+        
+        window.compartilharExtrato = function(id) { const v = dadosExtrato.find(x => x.id === id); if(v) window.enviarZap(v); }
+        
+        window.exportarExtratoPessoal = function() { 
+            const ini = el('extrato-ini').value; const fim = el('extrato-fim').value; 
+            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if(!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); }); 
+            const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim||0) - v.kmInicio), "Meta": Math.round(v.metaKm||0) })); 
+            const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "Extrato"); 
+            const nomeArquivo = `Extrato_${filtrados[0]?.placa}_${ini||'ini'}_${fim||'fim'}.xlsx`; 
+            XLSX.writeFile(wb, nomeArquivo); 
         }
 
-        window.compartilharExtrato = function (id) { const v = dadosExtrato.find(x => x.id === id); if (v) window.enviarZap(v); }
-
-        window.exportarExtratoPessoal = function () {
-            const ini = el('extrato-ini').value; const fim = el('extrato-fim').value;
-            const filtrados = dadosExtrato.filter(v => { const d = safeDate(v.dataInicio); if (!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); });
-            const dadosExcel = filtrados.map(v => ({ "Data": fmtData(safeDate(v.dataInicio)), "Placa": v.placa, "KM Inicio": Math.round(v.kmInicio), "KM Fim": Math.round(v.kmFim), "Total KM": Math.round((v.kmFim || 0) - v.kmInicio), "Meta": Math.round(v.metaKm || 0) }));
-            const ws = XLSX.utils.json_to_sheet(dadosExcel); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Extrato");
-            const nomeArquivo = `Extrato_${filtrados[0]?.placa}_${ini || 'ini'}_${fim || 'fim'}.xlsx`;
-            XLSX.writeFile(wb, nomeArquivo);
+        window.verFoto = function(b64) { if(b64 && b64.length > 100) { el('img-viewer').src = b64; el('popup-foto').classList.add('active'); } else alert("Foto não disponível ou corrompida."); }
+        
+        function getGPS() { return new Promise(res => { if(!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res(null), {enableHighAccuracy:true, timeout:5000}); }); }
+        
+        window.handleFileSelect = function(inp, divId) { 
+            const f = inp.files[0]; if(!f) return; const reader = new FileReader(); 
+            reader.onload = e => { 
+                const img = new Image(); img.onload = () => { 
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); 
+                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height; 
+                    if(w > h) { if(w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if(h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } } 
+                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h); 
+                    const base64 = canvas.toDataURL('image/jpeg', 0.6); 
+                    if(inp.id === 'foto-inicio') { fotoInicioBase64 = base64; localStorage.setItem('temp_foto_ini_b64', base64); } 
+                    else if(inp.id === 'foto-fim') { fotoFimBase64 = base64; localStorage.setItem('temp_foto_fim_b64', base64); } 
+                    el(divId).classList.add('has-file'); 
+                }; 
+                img.src = e.target.result; 
+            }; 
+            reader.readAsDataURL(f); 
+        }
+        
+        window.handleModalFile = function(inp, idTarget) { 
+            const f = inp.files[0]; if(!f) return; const reader = new FileReader(); 
+            reader.onload = e => { 
+                const img = new Image(); img.onload = () => { 
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); 
+                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height; 
+                    if(w > h) { if(w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if(h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } } 
+                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h); 
+                    el(idTarget).value = canvas.toDataURL('image/jpeg', 0.6); 
+                    alert("Nova foto carregada na memória! Clique em SALVAR ALTERAÇÕES para aplicar."); 
+                }; 
+                img.src = e.target.result; 
+            }; 
+            reader.readAsDataURL(f); 
         }
 
-        window.verFoto = function (b64) { if (b64 && b64.length > 100) { el('img-viewer').src = b64; el('popup-foto').classList.add('active'); } else alert("Foto não disponível ou corrompida."); }
-
-        function getGPS() { return new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res(null), { enableHighAccuracy: true, timeout: 5000 }); }); }
-
-        window.handleFileSelect = function (inp, divId) {
-            const f = inp.files[0]; if (!f) return; const reader = new FileReader();
-            reader.onload = e => {
-                const img = new Image(); img.onload = () => {
-                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height;
-                    if (w > h) { if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if (h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } }
-                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
-                    if (inp.id === 'foto-inicio') { fotoInicioBase64 = base64; localStorage.setItem('temp_foto_ini_b64', base64); }
-                    else if (inp.id === 'foto-fim') { fotoFimBase64 = base64; localStorage.setItem('temp_foto_fim_b64', base64); }
-                    el(divId).classList.add('has-file');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(f);
+        window.abrirEdicao = function(id) { 
+            const v = todasViagens.find(x => x.id === id); if(!v) return; 
+            el('edit-id').value = id; el('edit-placa').value = v.placa; el('edit-motorista').value = v.nome; 
+            el('edit-meta').value = v.metaKm||0; el('edit-km-ini').value = v.kmInicio; el('edit-km-fim').value = v.kmFim||''; 
+            el('edit-foto-ini-b64').value = v.fotoInicio||''; el('edit-foto-fim-b64').value = v.fotoFim||''; 
+            
+            const selPerf = el('edit-perfil'); selPerf.innerHTML = ''; 
+            for(const k of Object.keys(tabelaPrecos)) { const opt = document.createElement('option'); opt.value = k; opt.innerText = k; selPerf.appendChild(opt); } 
+            selPerf.value = v.perfilVeiculo || "PADRÃO"; 
+            
+            v.status === 'em_curso' ? el('area-finalizar-admin').classList.remove('hidden') : el('area-finalizar-admin').classList.add('hidden'); 
+            el('modal-editar-admin').classList.add('active'); 
         }
 
-        window.handleModalFile = function (inp, idTarget) {
-            const f = inp.files[0]; if (!f) return; const reader = new FileReader();
-            reader.onload = e => {
-                const img = new Image(); img.onload = () => {
-                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height;
-                    if (w > h) { if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if (h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } }
-                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                    el(idTarget).value = canvas.toDataURL('image/jpeg', 0.6);
-                    alert("Nova foto carregada na memória! Clique em SALVAR ALTERAÇÕES para aplicar.");
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(f);
-        }
-
-        window.abrirEdicao = function (id) {
-            const v = todasViagens.find(x => x.id === id); if (!v) return;
-            el('edit-id').value = id; el('edit-placa').value = v.placa; el('edit-motorista').value = v.nome;
-            el('edit-meta').value = v.metaKm || 0; el('edit-km-ini').value = v.kmInicio; el('edit-km-fim').value = v.kmFim || '';
-            el('edit-foto-ini-b64').value = v.fotoInicio || ''; el('edit-foto-fim-b64').value = v.fotoFim || '';
-
-            const selPerf = el('edit-perfil'); selPerf.innerHTML = '';
-            for (const k of Object.keys(tabelaPrecos)) { const opt = document.createElement('option'); opt.value = k; opt.innerText = k; selPerf.appendChild(opt); }
-            selPerf.value = v.perfilVeiculo || "PADRÃO";
-
-            v.status === 'em_curso' ? el('area-finalizar-admin').classList.remove('hidden') : el('area-finalizar-admin').classList.add('hidden');
-            el('modal-editar-admin').classList.add('active');
-        }
-
-        setInterval(() => {
-            const driverTimer = el('cronometro-motorista');
-            if (driverTimer && driverTimer.dataset.start && el('view-motorista').style.display !== 'none') {
-                const startTs = parseInt(driverTimer.dataset.start);
-                if (startTs) driverTimer.innerText = new Date(Date.now() - startTs).toISOString().substr(11, 8);
-            }
+        setInterval(() => { 
+            const driverTimer = el('cronometro-motorista'); 
+            if(driverTimer && driverTimer.dataset.start && el('view-motorista').style.display !== 'none') { 
+                const startTs = parseInt(driverTimer.dataset.start); 
+                if(startTs) driverTimer.innerText = new Date(Date.now() - startTs).toISOString().substr(11, 8); 
+            } 
 
             document.querySelectorAll('.live-timer').forEach(span => {
                 const startTs = parseInt(span.dataset.start);
-                if (startTs) {
+                if(startTs) {
                     const diff = Date.now() - startTs;
                     span.innerText = new Date(diff).toISOString().substr(11, 8);
                 }
             });
         }, 1000);
 
-        window.recuperarViagem = async function () {
-            const p = prompt("Digite a Placa do veículo em rota:"); if (!p) return;
-            const placaFmt = formatarPlaca(p);
+        window.recuperarViagem = async function() { 
+            const p = prompt("Digite a Placa do veículo em rota:"); if(!p) return; 
+            const placaFmt = formatarPlaca(p); 
+            
+            const s = prompt("Digite a Senha da placa para autenticar:"); if(!s) return; 
 
-            const s = prompt("Digite a Senha da placa para autenticar:"); if (!s) return;
-
-            try {
+            try { 
                 const docSenha = await db.collection('senhas').doc(placaFmt).get();
                 if (!docSenha.exists || docSenha.data().senha !== s) {
                     return alert("Senha incorreta ou não cadastrada!");
                 }
 
-                const snapshot = await db.collection('viagens').where('placa', '==', placaFmt).where('status', '==', 'em_curso').get();
-                if (snapshot.empty) { alert("Nenhuma viagem ativa encontrada para esta placa."); return; }
-
-                const doc = snapshot.docs[0]; localStorage.setItem('v_id', doc.id); viagemAtualId = doc.id; location.reload();
-            } catch (e) { console.error(e); alert("Erro ao buscar no banco de dados."); }
+                const snapshot = await db.collection('viagens').where('placa', '==', placaFmt).where('status', '==', 'em_curso').get(); 
+                if(snapshot.empty) { alert("Nenhuma viagem ativa encontrada para esta placa."); return; } 
+                
+                const doc = snapshot.docs[0]; localStorage.setItem('v_id', doc.id); viagemAtualId = doc.id; location.reload(); 
+            } catch(e) { console.error(e); alert("Erro ao buscar no banco de dados."); } 
         }
 
-        function gerarTextoZap(v) {
-            const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim) || new Date();
-            const dur = new Date(dFim - dIni).toISOString().substr(11, 8);
-            const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const diff = kmT - Math.round(v.metaKm || 0);
-            return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm || 0)} km\n📊 Dif: ${diff > 0 ? '+' : ''}${diff} km\n🏙️ Rota: ${v.rotaCidades || 'N/D'}`;
+        function gerarTextoZap(v) { 
+            const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim) || new Date(); 
+            const dur = new Date(dFim - dIni).toISOString().substr(11, 8); 
+            const kmT = Math.round((v.kmFim || 0) - v.kmInicio); const diff = kmT - Math.round(v.metaKm || 0); 
+            return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm||0)} km\n📊 Dif: ${diff>0?'+':''}${diff} km\n🏙️ Rota: ${v.rotaCidades||'N/D'}`; 
         }
+        
+        window.enviarZap = function(viagem) { window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoZap(viagem))}`, '_blank'); }
 
-        window.enviarZap = function (viagem) { window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoZap(viagem))}`, '_blank'); }
-
-        window.acessoAdmin = function () {
-            setTimeout(() => {
-                if (prompt("Senha:") === "60010774") {
-                    el('view-motorista').style.display = 'none'; el('view-admin').style.display = 'block';
-                    const h = getLocalYMD(new Date()); el('filtro-data-ini').value = h; el('filtro-data-fim').value = h;
-                    renderizarAdmin();
-                } else alert("Negado");
-            }, 50);
+        window.acessoAdmin = function() { 
+            setTimeout(() => { 
+                if(prompt("Senha:")==="60010774"){ 
+                    el('view-motorista').style.display='none'; el('view-admin').style.display='block'; 
+                    const h = getLocalYMD(new Date()); el('filtro-data-ini').value=h; el('filtro-data-fim').value=h; 
+                    renderizarAdmin(); 
+                } else alert("Negado"); 
+            }, 50); 
         }
+        
+        window.sairAdmin = function() { el('view-admin').style.display='none'; el('view-motorista').style.display='flex'; }
+        window.filtrarStatus = function(s) { filtroAdminAtual=s; paginaAtualAdmin=1; renderizarAdmin(); }
+        window.atualizarPreco = function(veiculo, campo, valor) { if(!tabelaPrecos[veiculo]) return; tabelaPrecos[veiculo][campo] = parseFloat(valor); }
+        window.salvarPrecos = function() { localStorage.setItem('tabelaPrecos', JSON.stringify(tabelaPrecos)); alert("Preços atualizados com sucesso!"); el('modal-precos').classList.remove('active'); }
 
-        window.sairAdmin = function () { el('view-admin').style.display = 'none'; el('view-motorista').style.display = 'flex'; }
-        window.filtrarStatus = function (s) { filtroAdminAtual = s; paginaAtualAdmin = 1; renderizarAdmin(); }
-        window.atualizarPreco = function (veiculo, campo, valor) { if (!tabelaPrecos[veiculo]) return; tabelaPrecos[veiculo][campo] = parseFloat(valor); }
-        window.salvarPrecos = function () { localStorage.setItem('tabelaPrecos', JSON.stringify(tabelaPrecos)); alert("Preços atualizados com sucesso!"); el('modal-precos').classList.remove('active'); }
-
-        window.iniciarViagem = function () {
-            const n = el('motorista').value; const p = formatarPlaca(el('placa').value); const k = el('km-inicio').value;
-            if (!fotoInicioBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Tire a foto do painel.");
-            if (!n || !p || !k) return alert("Erro: Preencha todos os campos.");
-            if (p.length !== 7) return alert("Placa inválida.");
+        window.iniciarViagem = function() {
+            const n=el('motorista').value; const p=formatarPlaca(el('placa').value); const k=el('km-inicio').value;
+            if(!fotoInicioBase64) return alert("⚠️ FOTO OBRIGATÓRIA: Tire a foto do painel.");
+            if(!n||!p||!k) return alert("Erro: Preencha todos os campos.");
+            if(p.length !== 7) return alert("Placa inválida.");
 
             let metaKmAplicar = 0; let rotaAplicar = ""; let perfilAplicar = "PADRÃO";
-            if (previsoesImportadas && previsoesImportadas[p]) {
-                metaKmAplicar = previsoesImportadas[p].metaKm;
-                rotaAplicar = previsoesImportadas[p].rota;
-                perfilAplicar = previsoesImportadas[p].perfil;
+            if(previsoesImportadas && previsoesImportadas[p]) { 
+                metaKmAplicar = previsoesImportadas[p].metaKm; 
+                rotaAplicar = previsoesImportadas[p].rota; 
+                perfilAplicar = previsoesImportadas[p].perfil; 
             }
 
             el('main-loader').classList.remove('hidden'); el('main-loader').classList.remove('opacity-0');
 
-            // Adicionado o detector inteligente de Origem
-            const origemDefinida = (typeof AndroidInterface !== 'undefined') ? 'APP' : 'WEB';
+            const origemDefinida = (window.AndroidInterface) ? 'APP' : 'WEB';
 
             getGPS().then(loc => {
-                const vData = {
-                    nome: n, placa: p, kmInicio: Number(k), metaKm: metaKmAplicar, rotaCidades: rotaAplicar,
-                    perfilVeiculo: perfilAplicar, tipoServico: el('tipo-servico').value, status: 'em_curso',
-                    dataInicio: new Date().toISOString(), locInicio: loc, locAtual: loc,
-                    fotoInicio: fotoInicioBase64, rotaReal: [loc], origem: origemDefinida
+                const vData = { 
+                    nome: n, placa: p, kmInicio: Number(k), metaKm: metaKmAplicar, rotaCidades: rotaAplicar, 
+                    perfilVeiculo: perfilAplicar, tipoServico: el('tipo-servico').value, status: 'em_curso', 
+                    dataInicio: new Date().toISOString(), locInicio: loc, locAtual: loc, 
+                    fotoInicio: fotoInicioBase64, rotaReal: [loc], origem: origemDefinida 
                 };
                 return db.collection('viagens').add(vData);
             }).then(docRef => {
                 localStorage.setItem('v_id', docRef.id); viagemAtualId = docRef.id;
-                localStorage.removeItem('temp_servico'); localStorage.removeItem('temp_motorista');
+                localStorage.removeItem('temp_servico'); localStorage.removeItem('temp_motorista'); 
                 localStorage.removeItem('temp_placa'); localStorage.removeItem('temp_km_ini'); localStorage.removeItem('temp_foto_ini_b64');
-                mudarTelaMotorista('em-curso');
+                mudarTelaMotorista('em-curso'); 
                 monitorarViagemUnicaDb(viagemAtualId);
                 iniciarRastreamentoWeb();
-                if (window.AndroidInterface && window.AndroidInterface.startTracking) {
+                
+                if(window.AndroidInterface && window.AndroidInterface.startTracking) {
                     window.AndroidInterface.startTracking(viagemAtualId);
                 }
+
                 el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
-            }).catch(e => {
-                console.error(e); alert("Erro ao salvar. Verificando internet.");
-                el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
+            }).catch(e => { 
+                console.error(e); alert("Erro ao salvar. Verificando internet."); 
+                el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300); 
             });
         };
 
-        window.encerrarViagem = function () {
-            if (!fotoFimBase64) return alert("⚠️ FOTO OBRIGATÓRIA.");
-            const k = el('km-fim').value; if (!k) return alert("KM Fim não preenchido.");
+        window.encerrarViagem = function() {
+            if(!fotoFimBase64) return alert("⚠️ FOTO OBRIGATÓRIA.");
+            const k=el('km-fim').value; if(!k) return alert("KM Fim não preenchido.");
             el('main-loader').classList.remove('hidden'); el('main-loader').classList.remove('opacity-0'); ignorarSnapshot = true;
 
             getGPS().then(loc => {
-                return db.collection('viagens').doc(viagemAtualId).update({
-                    kmFim: Number(k), status: 'finalizada', dataFim: new Date().toISOString(),
-                    fotoFim: fotoFimBase64, locFim: loc
+                return db.collection('viagens').doc(viagemAtualId).update({ 
+                    kmFim: Number(k), status: 'finalizada', dataFim: new Date().toISOString(), 
+                    fotoFim: fotoFimBase64, locFim: loc 
                 });
             }).then(() => {
-                localStorage.removeItem('temp_km_fim'); localStorage.removeItem('temp_foto_fim_b64');
+                localStorage.removeItem('temp_km_fim'); localStorage.removeItem('temp_foto_fim_b64'); 
                 pararRastreamentoWeb();
-                if (window.AndroidInterface && window.AndroidInterface.stopTracking) {
+                
+                if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
                     window.AndroidInterface.stopTracking();
                 }
+
                 return db.collection('viagens').doc(viagemAtualId).get();
             }).then(docSnap => {
                 el('btn-zap-motorista').onclick = () => window.enviarZap(docSnap.data());
                 localStorage.removeItem('v_id'); mudarTelaMotorista('sucesso');
-                el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
+                el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300); 
                 setTimeout(() => { ignorarSnapshot = false; viagemAtualId = null; }, 2000);
-            }).catch(e => {
-                console.error(e); alert("Erro ao finalizar."); el('main-loader').classList.add('opacity-0');
-                setTimeout(() => el('main-loader').classList.add('hidden'), 300); ignorarSnapshot = false;
+            }).catch(e => { 
+                console.error(e); alert("Erro ao finalizar."); el('main-loader').classList.add('opacity-0'); 
+                setTimeout(() => el('main-loader').classList.add('hidden'), 300); ignorarSnapshot = false; 
             });
         };
 
-        window.cancelarViagemMotorista = function () {
-            if (confirm("Deseja cancelar esta viagem?")) {
+        window.cancelarViagemMotorista = function() { 
+            if(confirm("Deseja cancelar esta viagem?")) { 
                 db.collection('viagens').doc(viagemAtualId).update({ status: 'cancelada', dataFim: new Date().toISOString() })
-                    .then(() => {
-                        pararRastreamentoWeb();
+                .then(() => { 
+                    pararRastreamentoWeb(); 
+                    
+                    if(window.AndroidInterface && window.AndroidInterface.stopTracking) {
+                        window.AndroidInterface.stopTracking();
+                    }
 
-                        // Gatilho dentro do then, antes de limpar os dados e recarregar a tela
-                        if (window.AndroidInterface && window.AndroidInterface.stopTracking) {
-                            window.AndroidInterface.stopTracking();
-                        }
-
-                        localStorage.removeItem('v_id');
-                        viagemAtualId = null;
-                        location.reload();
-                    }).catch(e => console.error(e));
-            }
+                    localStorage.removeItem('v_id'); viagemAtualId = null; location.reload(); 
+                }).catch(e => console.error(e)); 
+            } 
+        };
+        
+        window.salvarEdicaoCompleta = function() { 
+            const id = el('edit-id').value; 
+            db.collection('viagens').doc(id).update({ 
+                placa: formatarPlaca(el('edit-placa').value), nome: el('edit-motorista').value, perfilVeiculo: el('edit-perfil').value, 
+                metaKm: Number(el('edit-meta').value), kmInicio: Number(el('edit-km-ini').value), kmFim: el('edit-km-fim').value ? Number(el('edit-km-fim').value) : null, 
+                fotoInicio: el('edit-foto-ini-b64').value, fotoFim: el('edit-foto-fim-b64').value 
+            }).then(() => { el('modal-editar-admin').classList.remove('active'); alert("Viagem atualizada com sucesso!"); }).catch(e => { console.error(e); alert("Erro ao salvar edição."); }); 
+        };
+        
+        window.finalizarPeloAdmin = function() { 
+            const id = el('edit-id').value; const k = el('edit-km-fim').value; const f = el('edit-foto-fim-b64').value; 
+            if(!k) return alert("Por favor, preencha o KM Final para finalizar."); 
+            db.collection('viagens').doc(id).update({ 
+                kmFim: Number(k), fotoFim: f, status: 'finalizada', dataFim: new Date().toISOString() 
+            }).then(() => { el('modal-editar-admin').classList.remove('active'); alert("Viagem finalizada manualmente."); }).catch(e => { console.error(e); alert("Erro ao finalizar."); }); 
+        };
+        
+        window.excluirViagemAdmin = function(id) { 
+            if(confirm("Tem certeza que deseja APAGAR definitivamente esta viagem?")) { 
+                db.collection('viagens').doc(id).delete().catch(e => { console.error(e); alert("Erro ao excluir."); }); 
+            } 
         };
 
-        window.salvarEdicaoCompleta = function () {
-            const id = el('edit-id').value;
-            db.collection('viagens').doc(id).update({
-                placa: formatarPlaca(el('edit-placa').value), nome: el('edit-motorista').value, perfilVeiculo: el('edit-perfil').value,
-                metaKm: Number(el('edit-meta').value), kmInicio: Number(el('edit-km-ini').value), kmFim: el('edit-km-fim').value ? Number(el('edit-km-fim').value) : null,
-                fotoInicio: el('edit-foto-ini-b64').value, fotoFim: el('edit-foto-fim-b64').value
-            }).then(() => { el('modal-editar-admin').classList.remove('active'); alert("Viagem atualizada com sucesso!"); }).catch(e => { console.error(e); alert("Erro ao salvar edição."); });
-        };
-
-        window.finalizarPeloAdmin = function () {
-            const id = el('edit-id').value; const k = el('edit-km-fim').value; const f = el('edit-foto-fim-b64').value;
-            if (!k) return alert("Por favor, preencha o KM Final para finalizar.");
-            db.collection('viagens').doc(id).update({
-                kmFim: Number(k), fotoFim: f, status: 'finalizada', dataFim: new Date().toISOString()
-            }).then(() => { el('modal-editar-admin').classList.remove('active'); alert("Viagem finalizada manualmente."); }).catch(e => { console.error(e); alert("Erro ao finalizar."); });
-        };
-
-        window.excluirViagemAdmin = function (id) {
-            if (confirm("Tem certeza que deseja APAGAR definitivamente esta viagem?")) {
-                db.collection('viagens').doc(id).delete().catch(e => { console.error(e); alert("Erro ao excluir."); });
-            }
-        };
-
-        window.processarImportacao = function (inp) {
-            const file = inp.files[0]; if (!file) return;
+        window.processarImportacao = function(inp) {
+            const file = inp.files[0]; if(!file) return;
             const dataData = el('data-importacao').value;
-            if (!dataData) return alert("⚠️ Selecione a data da escala antes de importar!");
+            if(!dataData) return alert("⚠️ Selecione a data da escala antes de importar!");
 
             el('main-loader').classList.remove('hidden');
             el('main-loader').classList.remove('opacity-0');
 
             const reader = new FileReader();
-            reader.onload = async function (e) {
+            reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
                     let previsoesImportadas = {};
                     let importados = 0;
 
                     workbook.SheetNames.forEach(sheetName => {
                         const worksheet = workbook.Sheets[sheetName];
                         const json = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
-
+                        
                         json.forEach(row => {
                             const placaRaw = String(row['D'] || '').trim();
                             const placa = formatarPlaca(placaRaw);
-
-                            if (placa && placa.length === 7) {
+                            
+                            if(placa && placa.length === 7) {
                                 const kmMetaRaw = parseFloat(row['O']);
-                                if (!isNaN(kmMetaRaw)) {
+                                if(!isNaN(kmMetaRaw)) {
                                     previsoesImportadas[placa] = {
                                         nome: String(row['G'] || ''),
                                         metaKm: kmMetaRaw,
@@ -2544,7 +2557,7 @@
 
                     importados = Object.keys(previsoesImportadas).length;
 
-                    if (importados === 0) {
+                    if(importados === 0) {
                         el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
                         return alert("❌ Nenhuma placa com KM na coluna 'O' foi encontrada. Tem certeza que é essa planilha?");
                     }
@@ -2557,7 +2570,7 @@
                     todasViagens.forEach(v => {
                         const dObj = safeDate(v.dataInicio);
                         const dStr = dObj ? getLocalYMD(dObj) : '';
-
+                        
                         if (dStr === dataData && previsoesImportadas[v.placa]) {
                             const dadosExcel = previsoesImportadas[v.placa];
                             let updates = {
@@ -2565,10 +2578,10 @@
                                 rotaCidades: dadosExcel.rota,
                                 perfilVeiculo: dadosExcel.perfil
                             };
-                            if (!v.nome || v.nome.trim() === '') {
+                            if(!v.nome || v.nome.trim() === '') {
                                 updates.nome = dadosExcel.nome;
                             }
-
+                            
                             promessas.push(db.collection('viagens').doc(v.id).update(updates));
                             viagensAtualizadas++;
                         }
@@ -2577,11 +2590,11 @@
                     await Promise.all(promessas);
 
                     el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
-
+                    
                     alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas lidas da planilha.\n${viagensAtualizadas} cards existentes na tela foram atualizados AGORA MESMO.`);
                     el('modal-importacao').classList.remove('active');
 
-                } catch (err) {
+                } catch(err) {
                     el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
                     alert("Erro ao ler planilha: " + err.message);
                 }
@@ -2590,5 +2603,4 @@
         }
     </script>
 </body>
-
 </html>
