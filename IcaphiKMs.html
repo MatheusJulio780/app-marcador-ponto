@@ -90,7 +90,7 @@
             left: 0;
             bottom: 0;
             width: 260px;
-            background: #09090b;
+            background: #0c1a33;
             border-right: 1px solid #27272a;
             z-index: 50;
             display: flex;
@@ -1799,7 +1799,7 @@
 
         function abrirModalFinanceiro() {
             el('modal-financeiro').classList.add('active');
-            const select = el('fin-placa'); select.innerHTML = '<option value="">Selecionar Placa</option>';
+            const select = el('fin-placa'); select.innerHTML = '<option value="">Toda a Frota</option>';
             const placas = [...new Set(todasViagens.map(v => v.placa))].sort();
             placas.forEach(p => { const o = document.createElement('option'); o.value = p; o.innerText = p; select.appendChild(o); });
             if(!el('fin-mes').value) { const d = new Date(); el('fin-mes').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -1808,15 +1808,6 @@
 
         window.gerarRelatorioFinanceiro = function() {
             const tipo = el('fin-tipo').value; const placa = el('fin-placa').value; const mesAno = el('fin-mes').value; const quinzena = el('fin-quinzena').value; 
-            if(!placa) { 
-                el('fin-table-container').innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-zinc-950 rounded-xl border border-dashed border-gray-300 dark:border-zinc-800">
-                    <div class="bg-gray-50 dark:bg-zinc-900 p-4 rounded-full mb-4"><i data-lucide="search" class="w-8 h-8 text-green-500"></i></div>
-                    <p class="font-bold text-gray-500 dark:text-zinc-400">Selecione uma placa no topo</p>
-                    <p class="text-xs mt-1">Para gerar o relatório, você precisa filtrar uma placa específica.</p>
-                </div>`; 
-                lucide.createIcons(); return; 
-            }
             if(!mesAno) return;
             const [ano, mes] = mesAno.split('-'); const diaIni = quinzena === '1' ? 1 : 16; const diaFim = quinzena === '1' ? 15 : 31;
             
@@ -1830,6 +1821,7 @@
                 if(placa && v.placa !== placa) return false; 
                 return true; 
             });
+            
             dados.sort((a,b) => {
                 const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
                 const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
@@ -2297,17 +2289,29 @@
         function getGPS() { return new Promise(res => { if(!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude},${p.coords.longitude}`), () => res(null), {enableHighAccuracy:true, timeout:5000}); }); }
         
         window.handleFileSelect = function(inp, divId) { 
-            const f = inp.files[0]; if(!f) return; const reader = new FileReader(); 
+            const f = inp.files[0]; if(!f) return; 
+            
+            if(el(divId)) el(divId).style.opacity = '0.5'; // Feedback visual de que a foto está carregando (importante para celulares lentos)
+            
+            const reader = new FileReader(); 
             reader.onload = e => { 
                 const img = new Image(); img.onload = () => { 
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); 
-                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height; 
+                    
+                    // Resolucão e qualidade reduzidas para evitar crash por falta de memória em Androids antigos
+                    const MAX_WIDTH = 600; const MAX_HEIGHT = 600; let w = img.width; let h = img.height; 
                     if(w > h) { if(w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if(h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } } 
+                    
                     canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h); 
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6); 
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5); 
+                    
                     if(inp.id === 'foto-inicio') { fotoInicioBase64 = base64; localStorage.setItem('temp_foto_ini_b64', base64); } 
                     else if(inp.id === 'foto-fim') { fotoFimBase64 = base64; localStorage.setItem('temp_foto_fim_b64', base64); } 
-                    el(divId).classList.add('has-file'); 
+                    
+                    if(el(divId)) {
+                        el(divId).style.opacity = '1';
+                        el(divId).classList.add('has-file'); 
+                    }
                 }; 
                 img.src = e.target.result; 
             }; 
@@ -2319,10 +2323,13 @@
             reader.onload = e => { 
                 const img = new Image(); img.onload = () => { 
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); 
-                    const MAX_WIDTH = 800; const MAX_HEIGHT = 800; let w = img.width; let h = img.height; 
+                    
+                    // Ajuste de memória também aplicado no modal administrativo
+                    const MAX_WIDTH = 600; const MAX_HEIGHT = 600; let w = img.width; let h = img.height; 
                     if(w > h) { if(w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; } } else { if(h > MAX_HEIGHT) { w *= MAX_HEIGHT / h; h = MAX_HEIGHT; } } 
+                    
                     canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h); 
-                    el(idTarget).value = canvas.toDataURL('image/jpeg', 0.6); 
+                    el(idTarget).value = canvas.toDataURL('image/jpeg', 0.5); 
                     alert("Nova foto carregada na memória! Clique em SALVAR ALTERAÇÕES para aplicar."); 
                 }; 
                 img.src = e.target.result; 
