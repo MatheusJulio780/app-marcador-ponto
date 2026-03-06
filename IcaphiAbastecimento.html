@@ -65,23 +65,20 @@
             overflow: hidden; /* Mantém a água contida nas bordas arredondadas */
         }
 
-        /* NOVA BASE LÍQUIDA (AZUL MAIS FORTE E VISÍVEL) */
+        /* ÁGUA DO TANQUE (CORES VIBRANTES E ALTURA DINÂMICA) */
         .liquid-container { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 36%; 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; 
             pointer-events: none; z-index: 0; 
         }
-        /* Cor sólida do fundo da água */
         .liquid-fill { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; 
-            background: #3f98fd; transition: background 0.5s ease; 
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            background: #69aefd; transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease; 
         }
-        /* Onda da frente */
         .liquid-wave { 
-            position: absolute; bottom: 99%; left: 0; width: 300%; height: 30px; 
-            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 30 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%235493f7"/></svg>') repeat-x; 
+            position: absolute; bottom: 99%; left: 0; width: 200%; height: 30px; 
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 30 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%2393c5fd"/></svg>') repeat-x; 
             animation: wave 5s linear infinite; transition: all 0.5s ease; 
         }
-        /* Onda de trás (um pouco mais escura para dar profundidade) */
         .liquid-wave:nth-child(2) { 
             bottom: 99%; opacity: 0.8; animation: wave 8s linear infinite reverse; 
             background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 0 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%2360a5fa"/></svg>') repeat-x; 
@@ -109,30 +106,32 @@
         
         input, select { 
             width: 100%; padding: 12px; border-radius: 10px; 
-            border: 1px solid var(--border-color); background-color: #ffffff; 
+            border: 1px solid var(--border-color); background-color: rgba(255, 255, 255, 0.95); 
             font-size: 13px; color: var(--text-main); outline: none; transition: all 0.2s ease; 
             height: 44px; font-weight: 600; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             -webkit-appearance: none;
         }
         input::placeholder { color: #94a3b8; font-weight: 500;}
-        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); transform: translateY(-1px);}
+        input:focus, select:focus { border-color: var(--primary); background-color: #ffffff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); transform: translateY(-1px);}
         
         /* BOTÃO DE CÂMERA */
         .photo-area { 
             border: 1px dashed var(--border-color); border-radius: 12px; padding: 12px; text-align: center; 
             background-color: rgba(255, 255, 255, 0.8); transition: all 0.3s; 
             display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         }
         .photo-area canvas { height: 35px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: auto; border: 1px solid var(--border-color);}
         .btn-camera { background: none; border: none; color: var(--primary); font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; outline: none; padding: 5px; flex-grow: 1; justify-content: center; }
 
         /* INFO TOTAL */
         .info-panel { 
-            background: #ffffff; border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border-color);
             border-radius: 12px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         }
         .info-panel span.label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;}
         .info-panel span.val { font-size: 16px; font-weight: 800; color: var(--primary); }
@@ -266,9 +265,10 @@
         <div class="card">
             
             <div class="liquid-container">
-                <div class="liquid-fill"></div>
-                <div class="liquid-wave"></div>
-                <div class="liquid-wave"></div>
+                <div class="liquid-fill" id="liquidFillLevel" style="height: 0%;">
+                    <div class="liquid-wave"></div>
+                    <div class="liquid-wave"></div>
+                </div>
             </div>
 
             <div class="card-content">
@@ -734,11 +734,17 @@
         }
         
         const liquidContainer = document.querySelector('.liquid-container');
+        const fillEl = document.getElementById('liquidFillLevel');
         const adminFill = document.getElementById('adminTankFill');
         const alertaCriticoAdmin = document.getElementById('alertaEstoqueCritico');
         const alertaCriticoFunc = document.getElementById('alertaEstoqueCriticoFuncionario');
         
         let isCritico = configGerais.estoqueTanque <= configGerais.pontoPedido;
+
+        // Atualiza a altura do líquido baseado no tanque
+        if (fillEl) {
+            fillEl.style.height = `${pct}%`;
+        }
 
         if(liquidContainer) {
             if(isCritico && configGerais.pontoPedido > 0) {
