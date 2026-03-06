@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IcaphiAbastecimento</title>
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/2311/2311296.png" type="image/png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" type="image/png">
     
     <link rel="manifest" href='data:application/manifest+json,{"name":"IcaphiAbastecimento","short_name":"IcaphiApp","display":"standalone","background_color":"#f4f7f6","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3063/3063822.png","sizes":"512x512","type":"image/png"}]}'>
     
@@ -13,181 +13,763 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
     <style>
         :root { 
-            --primary: #3b82f6; 
-            --primary-hover: #2563eb;
-            --bg-color: #f4f7f6; 
+            --primary: #2563eb; 
+            --primary-hover: #1d4ed8;
+            --bg-color: #e5e7eb; 
             --card-bg: #ffffff;
             --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border-color: #e5e7eb;
-            --input-bg: #ffffff;
+            --text-muted: #4b5563;
+            --border-color: #d1d5db;
+            --input-bg: rgba(255, 255, 255, 0.9);
             --sidebar-bg: #111827;
             --success: #10b981;
             --danger: #ef4444;
         }
         
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        /* BLOQUEIO DE ROLAGEM GERAL PARA O EFEITO NO-SCROLL */
         body { 
             background-color: var(--bg-color); 
             color: var(--text-main); 
             margin: 0; 
             display: flex; 
             flex-direction: column; 
-            min-height: 100vh; 
-            overscroll-behavior-y: none;
+            height: 100vh; 
+            overflow-x: hidden;
         }
-        .hidden { display: none !important; }
+        
+        .hidden { 
+            display: none !important; 
+        }
 
-        /* HEADER MOBILE SLEEK */
+        /* HEADER SUPER COMPACTO */
         .app-header { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            padding: 15px 20px; 
+            padding: 8px 15px; 
             background: #ffffff; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-            margin-bottom: 15px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08); 
+            z-index: 10;
         }
-        .app-header .logo-area { display: flex; align-items: center; gap: 10px; }
+        
+        .app-header .logo-area { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        
         .logo-icon { 
-            background: var(--primary); 
-            color: white; width: 36px; height: 36px; 
-            border-radius: 8px; display: flex; 
-            align-items: center; justify-content: center; 
-            font-weight: bold; font-size: 18px; 
+            background: linear-gradient(135deg, var(--primary), #60a5fa); 
+            color: white; 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 800; 
+            font-size: 16px; 
         }
-        .logo-text h1 { margin: 0; font-size: 16px; color: var(--text-main); font-weight: 700;}
-        .logo-text span { font-size: 11px; color: var(--text-muted); }
+        
+        .logo-text h1 { 
+            margin: 0; 
+            font-size: 14px; 
+            color: var(--text-main); 
+            font-weight: 800; 
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-text span { 
+            font-size: 10px; 
+            color: var(--text-muted); 
+        }
+        
         .header-actions button { 
-            background: none; border: none; font-size: 20px; 
-            color: var(--text-muted); cursor: pointer; padding: 5px; 
+            background: none; 
+            border: none; 
+            font-size: 18px; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            padding: 4px; 
         }
 
-        /* CONTAINER MOBILE */
-        .mobile-container { max-width: 500px; margin: 0 auto; padding: 0 15px 20px; width: 100%; }
+        /* CONTAINER MOBILE AJUSTADO PARA OCUPAR A TELA TODA */
+        .mobile-container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            padding: 10px; 
+            width: 100%; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+        }
         
-        /* CARD PRINCIPAL */
+        /* CARD PRINCIPAL - FULL HEIGHT NO MOBILE */
         .card { 
-            background: var(--card-bg); border-radius: 12px; 
-            border: 2px solid var(--primary); 
-            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1); 
-            position: relative; overflow: hidden; 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
+            position: relative; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
         }
-        .card-padding { padding: 20px 20px; position: relative; z-index: 2; }
         
-        /* ANIMAÇÃO DA ÁGUA ATRÁS DA TELA PRINCIPAL */
-        .liquid-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .liquid-fill { position: absolute; bottom: 0; left: 0; width: 100%; background-color: #bfdbfe; transition: height 1.5s ease-in-out, background-color 0.5s ease; }
-        .liquid-wave { position: absolute; bottom: 100%; left: 0; width: 200%; height: 30px; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 30 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%23bfdbfe"/></svg>') repeat-x; animation: wave 4s linear infinite; transition: background 0.5s ease;}
-        .liquid-wave:nth-child(2) { bottom: 100%; opacity: 0.5; animation: wave 5s linear infinite reverse; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 30" xmlns="http://www.w3.org/2000/svg"><path d="M0 15 Q 100 0 200 15 T 400 15 T 600 15 T 800 15 L 800 30 L 0 30 Z" fill="%2393c5fd"/></svg>') repeat-x; transition: background 0.5s ease;}
-        @keyframes wave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-        /* TÍTULO DA CARTA */
-        .card-title { font-size: 18px; font-weight: 700; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
-        .play-icon { color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 10px; padding-left: 2px;}
-
-        /* CONTAINER BRANCO PARA PROTEGER O FORMULÁRIO DA ÁGUA */
-        .form-glass-wrapper { background: rgba(255, 255, 255, 0.92); padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.03); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.5); }
-
-        /* FORMULÁRIO EM GRADE */
-        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .full-width { grid-column: span 2; }
-        .form-group { margin-bottom: 0; display: flex; flex-direction: column; }
+        .card-padding { 
+            padding: 12px 15px; 
+            position: relative; 
+            z-index: 2; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+        }
         
-        label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--input-bg); font-size: 14px; color: var(--text-main); outline: none; transition: border 0.2s; height: 46px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        /* ANIMAÇÃO DA ÁGUA (INOVADA: DEGRADÊ E ONDAS 3D) */
+        .liquid-container { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 0; 
+        }
         
-        /* ÁREA DA FOTO */
-        .photo-area { border: 2px dashed #93c5fd; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 15px; background-color: rgba(239, 246, 255, 0.95); transition: all 0.3s; position: relative; z-index: 5;}
-        .photo-area canvas { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .btn-camera { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; font-size: 12px; outline: none;}
+        .liquid-fill { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: linear-gradient(to top, rgba(30, 58, 138, 0.7), rgba(59, 130, 246, 0.4)); 
+            transition: height 1.5s ease-in-out, background 0.5s ease; 
+        }
+        
+        .liquid-wave { 
+            position: absolute; 
+            bottom: 100%; 
+            left: 0; 
+            width: 200%; 
+            height: 40px; 
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 40" xmlns="http://www.w3.org/2000/svg"><path d="M0 20 Q 100 40 200 20 T 400 20 T 600 20 T 800 20 L 800 40 L 0 40 Z" fill="rgba(59, 130, 246, 0.4)"/></svg>') repeat-x; 
+            animation: wave 3s linear infinite; 
+            transition: fill 0.5s ease;
+        }
+        
+        .liquid-wave:nth-child(2) { 
+            bottom: 100%; 
+            opacity: 0.7; 
+            animation: wave 4.5s linear infinite reverse; 
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 800 40" xmlns="http://www.w3.org/2000/svg"><path d="M0 20 Q 100 0 200 20 T 400 20 T 600 20 T 800 20 L 800 40 L 0 40 Z" fill="rgba(30, 58, 138, 0.3)"/></svg>') repeat-x; 
+        }
+        
+        @keyframes wave { 
+            0% { transform: translateX(0); } 
+            100% { transform: translateX(-50%); } 
+        }
+
+        /* EFEITO GLASSMORPHISM (VIDRO FOSCO) NO FORMULÁRIO */
+        .form-glass-wrapper { 
+            background: rgba(255, 255, 255, 0.85); 
+            padding: 12px; 
+            border-radius: 12px; 
+            position: relative; 
+            z-index: 5; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px); 
+            border: 1px solid rgba(255,255,255,0.7); 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+        }
+
+        /* TÍTULO COMPACTO */
+        .card-title { 
+            font-size: 16px; 
+            font-weight: 800; 
+            margin-top: 0; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            color: var(--text-main); 
+            z-index: 5; 
+            position: relative;
+        }
+        
+        .play-icon { 
+            color: var(--primary); 
+            border: 2px solid var(--primary); 
+            border-radius: 50%; 
+            width: 18px; 
+            height: 18px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 8px; 
+            padding-left: 1px;
+        }
+
+        /* FORMULÁRIO ULTRA COMPACTO */
+        .grid-form { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+        }
+        
+        .full-width { 
+            grid-column: span 2; 
+        }
+        
+        .form-group { 
+            margin-bottom: 0; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative;
+        }
+        
+        /* LABELS SOBREPOSTAS (MATERIAL DESIGN STYLE) PARA SALVAR ESPAÇO */
+        label { 
+            font-size: 9px; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin-bottom: 2px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            margin-left: 2px;
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 8px 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background-color: var(--input-bg); 
+            font-size: 13px; 
+            color: var(--text-main); 
+            outline: none; 
+            transition: all 0.2s; 
+            height: 38px; 
+            font-weight: 500;
+        }
+        
+        input:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); 
+            background-color: #ffffff;
+        }
+        
+        /* ÁREA DA FOTO HORIZONTAL (MAIS FINA) */
+        .photo-area { 
+            border: 2px dashed #93c5fd; 
+            border-radius: 10px; 
+            padding: 8px; 
+            text-align: center; 
+            margin-top: 8px; 
+            background-color: rgba(239, 246, 255, 0.8); 
+            transition: all 0.3s; 
+            position: relative; 
+            z-index: 5; 
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px;
+        }
+        
+        .photo-area canvas { 
+            height: 40px; 
+            border-radius: 6px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            width: auto;
+        }
+        
+        .btn-camera { 
+            background: none; 
+            border: none; 
+            color: var(--primary); 
+            font-weight: 800; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 11px; 
+            outline: none; 
+            margin: 0; 
+            padding: 5px;
+        }
         
         /* INFO E BOTÃO */
-        .info-text { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; font-weight: 600; background-color: rgba(255,255,255,0.9); padding: 8px; border-radius: 8px; position: relative; z-index: 5;}
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; text-align: center; color: white; position: relative; z-index: 5; display: flex; justify-content: center; align-items: center; gap: 8px;}
-        .btn-primary { background-color: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
-        .btn-secondary { background-color: #e5e7eb; color: var(--text-main); box-shadow: none;}
+        .info-text { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            text-align: center; 
+            margin-top: 10px; 
+            margin-bottom: 10px; 
+            font-weight: 700; 
+            background-color: rgba(255,255,255,0.9); 
+            padding: 8px; 
+            border-radius: 8px; 
+            position: relative; 
+            z-index: 5; 
+            border: 1px solid #e5e7eb;
+        }
         
-        /* ASSINATURAS */
-        .signature-pad { border: 2px solid var(--border-color); background: #ffffff; width: 100%; height: 220px; border-radius: 10px; touch-action: none; margin-bottom: 15px; position: relative; z-index: 2;}
+        .btn { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: none; 
+            font-weight: 800; 
+            font-size: 15px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            text-align: center; 
+            color: white; 
+            position: relative; 
+            z-index: 5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 8px;
+        }
+        
+        .btn-primary { 
+            background-color: var(--primary); 
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); 
+        }
+        
+        .btn-primary:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-1px); 
+        }
+        
+        .btn-secondary { 
+            background-color: #d1d5db; 
+            color: var(--text-main); 
+            box-shadow: none;
+        }
+        
+        /* ASSINATURAS GIGANTES E PRECISAS */
+        .signature-pad { 
+            border: 2px solid var(--primary); 
+            background: #ffffff; 
+            width: 100%; 
+            height: 60vh; 
+            border-radius: 12px; 
+            touch-action: none; 
+            margin-bottom: 15px; 
+            position: relative; 
+            z-index: 2;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
 
         /* MODAIS E OVERLAYS BÁSICOS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(3px); }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; max-width: 90%; width: auto; max-height: 90vh; text-align: center; overflow-y: auto; display: flex; flex-direction: column; align-items: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-        .modal-content img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; background-color: #ffffff !important; }
-        .modal-close { background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%;}
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.85); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 9999; 
+            backdrop-filter: blur(5px); 
+        }
+        
+        .modal-content { 
+            background: #fff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            max-width: 90%; 
+            width: auto; 
+            max-height: 90vh; 
+            text-align: center; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+        }
+        
+        .modal-content img { 
+            max-width: 100%; 
+            max-height: 60vh; 
+            object-fit: contain; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ddd; 
+            background-color: #ffffff !important; 
+        }
+        
+        .modal-close { 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 10px; 
+            width: 100%;
+        }
 
-        /* ADMIN DASHBOARD - COM MENU EXPANDING HOVER */
-        .admin-layout { display: flex; min-height: 100vh; background-color: var(--bg-color); position: relative;}
+        /* ADMIN DASHBOARD */
+        .admin-layout { 
+            display: flex; 
+            min-height: 100vh; 
+            background-color: var(--bg-color); 
+            position: relative;
+        }
         
         @media (min-width: 769px) {
-            .sidebar { width: 75px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; z-index: 1000; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-x: hidden; white-space: nowrap; position: fixed; height: 100vh;}
+            .sidebar { 
+                width: 75px; 
+                background-color: var(--sidebar-bg); 
+                color: white; 
+                display: flex; 
+                flex-direction: column; 
+                padding: 20px 0; 
+                z-index: 1000; 
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+                overflow-x: hidden; 
+                white-space: nowrap; 
+                position: fixed; 
+                height: 100vh;
+            }
             .sidebar:hover { width: 260px; }
             .nav-text, .brand-text { opacity: 0; transition: opacity 0.2s 0.1s; }
             .sidebar:hover .nav-text, .sidebar:hover .brand-text { opacity: 1; }
             .admin-content { flex: 1; padding: 30px; overflow-y: auto; width: 100%; margin-left: 75px; }
         }
         
-        .sidebar-brand { padding: 0 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
-        .sidebar-brand h2 { margin: 0; color: #fff; font-size: 20px; display: flex; align-items: center; }
+        .sidebar-brand { 
+            padding: 0 20px 30px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            margin-bottom: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
         
-        .nav-item { padding: 15px 20px; color: #9ca3af; text-decoration: none; display: flex; align-items: center; cursor: pointer; border-left: 3px solid transparent; transition: background-color 0.2s, border-color 0.2s; }
-        .nav-item:hover, .nav-item.active { color: #fff; background-color: rgba(255,255,255,0.05); border-left-color: var(--primary); }
-        .nav-icon { min-width: 32px; text-align: center; font-size: 18px; display: inline-block;}
-        .nav-text { font-size: 14px; font-weight: 500; }
+        .sidebar-brand h2 { 
+            margin: 0; 
+            color: #fff; 
+            font-size: 20px; 
+            display: flex; 
+            align-items: center; 
+        }
         
-        /* ANIMAÇÃO DA BARRA DE TANQUE NO ADMIN (NOVO LÍQUIDO HORIZONTAL) */
-        .tank-bar-wrapper { background: #e5e7eb; border-radius: 10px; overflow: hidden; position: relative; height: 70px; display: flex; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .tank-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #1e3a8a, #3b82f6); transition: width 1s ease-in-out, background 0.5s ease; z-index: 1; overflow: hidden; }
-        .tank-bar-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 20px, transparent 20px, transparent 40px); background-size: 200% 100%; animation: moveLiquidAdmin 20s linear infinite; opacity: 0.6; }
-        @keyframes moveLiquidAdmin { 0% { background-position: 0 0; } 100% { background-position: 100% 0; } }
+        .nav-item { 
+            padding: 15px 20px; 
+            color: #9ca3af; 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            cursor: pointer; 
+            border-left: 3px solid transparent; 
+            transition: background-color 0.2s, border-color 0.2s; 
+        }
+        
+        .nav-item:hover, .nav-item.active { 
+            color: #fff; 
+            background-color: rgba(255,255,255,0.05); 
+            border-left-color: var(--primary); 
+        }
+        
+        .nav-icon { 
+            min-width: 32px; 
+            text-align: center; 
+            font-size: 18px; 
+            display: inline-block;
+        }
+        
+        .nav-text { 
+            font-size: 14px; 
+            font-weight: 500; 
+        }
+        
+        .tank-bar-wrapper { 
+            background: #d1d5db; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            position: relative; 
+            height: 70px; 
+            display: flex; 
+            align-items: center; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 20px; 
+        }
+        
+        .tank-bar-fill { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            height: 100%; 
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6); 
+            transition: width 1s ease-in-out, background 0.5s ease; 
+            z-index: 1; 
+            overflow: hidden; 
+        }
+        
+        .tank-bar-fill::after { 
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 20px, transparent 20px, transparent 40px); 
+            background-size: 200% 100%; 
+            animation: moveLiquidAdmin 20s linear infinite; 
+            opacity: 0.8; 
+        }
+        
+        @keyframes moveLiquidAdmin { 
+            0% { background-position: 0 0; } 
+            100% { background-position: 100% 0; } 
+        }
 
-        .tank-bar-content { position: relative; z-index: 2; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: color 0.3s; }
-        .tank-bar-content h3 { margin: 0; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;}
-        .tank-bar-content .tank-value { font-size: 20px; font-weight: 700; }
+        .tank-bar-content { 
+            position: relative; 
+            z-index: 2; 
+            width: 100%; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 20px; 
+            color: #fff; 
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); 
+            transition: color 0.3s; 
+        }
+        
+        .tank-bar-content h3 { 
+            margin: 0; 
+            font-size: 16px; 
+            font-weight: 600; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+        }
+        
+        .tank-bar-content .tank-value { 
+            font-size: 20px; 
+            font-weight: 800; 
+        }
 
-        .admin-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
-        .info-text-admin { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; background: rgba(239, 246, 255, 0.9); padding: 10px; border-radius: 6px; border-left: 3px solid var(--primary); position: relative; z-index: 2;}
+        .admin-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #fff; 
+            padding: 15px 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
         
-        @keyframes tabFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .admin-aba:not(.hidden) { animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .info-text-admin { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            margin-bottom: 15px; 
+            background: rgba(239, 246, 255, 0.9); 
+            padding: 10px; 
+            border-radius: 6px; 
+            border-left: 3px solid var(--primary); 
+            position: relative; 
+            z-index: 2;
+        }
+        
+        @keyframes tabFadeIn { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .admin-aba:not(.hidden) { 
+            animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
 
-        /* CSS DO DASHBOARD E GRÁFICOS */
-        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .dash-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
-        .dash-card h4 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
-        .dash-card .value { font-size: 28px; font-weight: 700; color: var(--text-main); }
-        .dash-list { list-style: none; padding: 0; margin: 0; }
-        .dash-list li { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
-        .dash-list li:last-child { border-bottom: none; }
-        .dash-list .plate { font-weight: 700; color: var(--primary); font-size: 15px;}
+        .dash-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 20px; 
+        }
         
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        .dash-card { 
+            background: #fff; 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+            border: 1px solid var(--border-color); 
+        }
         
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; min-width: 900px; }
-        .admin-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); color: var(--text-muted); background: #f9fafb; }
-        .admin-table td { padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
-        .admin-table button.link-btn { background: none; border: none; color: var(--primary); font-weight: 500; cursor: pointer; padding: 0; font-size: 13px; text-decoration: underline; margin-right: 8px; }
-        .btn-delete { color: #ef4444 !important; }
+        .dash-card h4 { 
+            margin: 0 0 10px 0; 
+            color: var(--text-muted); 
+            font-size: 13px; 
+            text-transform: uppercase; 
+            font-weight: 800;
+        }
         
-        .plate-list { list-style: none; padding: 0; margin: 0; }
-        .plate-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
-        .plate-item:last-child { border-bottom: none; }
-        .plate-item button { background: none; border: none; color: #ef4444; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .dash-card .value { 
+            font-size: 28px; 
+            font-weight: 800; 
+            color: var(--text-main); 
+        }
         
-        .menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-main); margin-right: 10px; padding: 0;}
-        .sidebar-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998; display:none; }
+        .chart-container { 
+            position: relative; 
+            height: 300px; 
+            width: 100%; 
+        }
+        
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+        }
+        
+        .admin-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            font-size: 13px; 
+            min-width: 900px; 
+        }
+        
+        .admin-table th { 
+            text-align: left; 
+            padding: 12px; 
+            border-bottom: 2px solid var(--border-color); 
+            color: var(--text-muted); 
+            background: #f9fafb; 
+        }
+        
+        .admin-table td { 
+            padding: 12px; 
+            border-bottom: 1px solid var(--border-color); 
+            color: var(--text-main); 
+        }
+        
+        .admin-table button.link-btn { 
+            background: none; 
+            border: none; 
+            color: var(--primary); 
+            font-weight: 600; 
+            cursor: pointer; 
+            padding: 0; 
+            font-size: 14px; 
+            text-decoration: none; 
+            margin-right: 12px; 
+        }
+        
+        .btn-delete { 
+            color: #ef4444 !important; 
+        }
+        
+        .plate-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        
+        .plate-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 15px; 
+            border-bottom: 1px solid var(--border-color); 
+        }
+        
+        .plate-item:last-child { 
+            border-bottom: none; 
+        }
+        
+        .plate-item button { 
+            background: none; 
+            border: none; 
+            color: #ef4444; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        
+        .menu-toggle { 
+            display: none; 
+            background: none; 
+            border: none; 
+            font-size: 24px; 
+            cursor: pointer; 
+            color: var(--text-main); 
+            margin-right: 10px; 
+            padding: 0;
+        }
+        
+        .sidebar-overlay { 
+            position: fixed; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            background:rgba(0,0,0,0.5); 
+            z-index:998; 
+            display:none; 
+        }
         
         @media (max-width: 768px) {
-            .sidebar { position: fixed; width: 250px; left: -250px; top: 0; height: 100%; transition: left 0.3s ease; box-shadow: 2px 0 5px rgba(0,0,0,0.5); background-color: var(--sidebar-bg); z-index: 1000; padding: 20px 0;}
-            .sidebar.open { left: 0; }
-            .nav-text, .brand-text { opacity: 1; }
-            .menu-toggle { display: inline-block; }
-            .sidebar-overlay.open { display: block; }
-            .admin-content { padding: 15px; flex: 1; width: 100%; margin-left: 0; }
+            body { 
+                overflow-y: auto; 
+                overflow-x: hidden;
+            } /* Libera rolagem no mobile caso o teclado suba */
+            
+            .sidebar { 
+                position: fixed; 
+                width: 250px; 
+                left: -250px; 
+                top: 0; 
+                height: 100%; 
+                transition: left 0.3s ease; 
+                box-shadow: 2px 0 5px rgba(0,0,0,0.5); 
+                background-color: var(--sidebar-bg); 
+                z-index: 1000; 
+                padding: 20px 0;
+            }
+            
+            .sidebar.open { 
+                left: 0; 
+            }
+            
+            .nav-text, .brand-text { 
+                opacity: 1; 
+            }
+            
+            .menu-toggle { 
+                display: inline-block; 
+            }
+            
+            .sidebar-overlay.open { 
+                display: block; 
+            }
+            
+            .admin-content { 
+                padding: 15px; 
+                flex: 1; 
+                width: 100%; 
+                margin-left: 0; 
+            }
         }
     </style>
 </head>
@@ -205,12 +787,10 @@
     <div class="modal-content" style="max-width: 350px; width: 100%;">
         <div style="font-size: 40px; margin-bottom: 10px;">🛡️</div>
         <h2 class="card-title" style="justify-content: center; margin-bottom: 25px;">Acesso Restrito</h2>
-        
         <div class="form-group full-width" style="margin-bottom: 20px; text-align: left; width: 100%;">
             <label>Senha do Painel</label>
             <input type="password" id="adminPassword" required placeholder="Digite a senha..." style="text-align: center; letter-spacing: 3px; font-size: 18px;">
         </div>
-        
         <button id="btnAdminLogin" class="btn btn-primary" style="margin-bottom: 12px;">Entrar no Painel</button>
         <button id="btnBackToMain" class="btn btn-secondary">Cancelar</button>
     </div>
@@ -225,17 +805,18 @@
         </div>
     </div>
     <div class="header-actions">
-        <button id="btnOpenAdminLogin" title="Acesso Admin">🛡️</button>
+        <button id="btnOpenAdminLogin" title="Acesso Admin">⚙️</button>
     </div>
 </div>
 
 <div class="mobile-container">
-    <div id="offlineIndicator" class="hidden" style="background: #fef08a; color: #854d0e; padding: 10px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px;">
-        ⚠️ Você está sem internet. O sistema salvará os dados e enviará automaticamente quando a conexão voltar!
+    <div id="offlineIndicator" class="hidden" style="background: #fef08a; color: #854d0e; padding: 8px; text-align: center; border-radius: 8px; font-size: 11px; font-weight: 700; margin-bottom: 10px;">
+        ⚠️ MODO OFFLINE ATIVADO
     </div>
 
-    <div id="main-screen">
-        <div class="card">
+    <div id="main-screen" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="card" style="flex-grow: 1;">
+            
             <div class="liquid-container">
                 <div class="liquid-fill" id="liquidFillLevel" style="height: 0%;">
                     <div class="liquid-wave"></div>
@@ -245,15 +826,14 @@
 
             <div class="card-padding">
                 
-                <div id="alertaEstoqueCriticoFuncionario" class="hidden" style="background: rgba(254, 226, 226, 0.95); border-left: 5px solid var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); flex-wrap: wrap; gap: 10px; position: relative; z-index: 5;">
+                <div id="alertaEstoqueCriticoFuncionario" class="hidden" style="background: rgba(254, 226, 226, 0.95); border-left: 4px solid var(--danger); padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2); position: relative; z-index: 5;">
                     <div>
-                        <h3 style="margin: 0; color: #991b1b; font-size: 14px; display: flex; align-items: center; gap: 8px;">🚨 ESTOQUE CRÍTICO!</h3>
-                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #7f1d1d;">Tanque no nível de segurança. Avise o setor de compras.</p>
+                        <h3 style="margin: 0; color: #991b1b; font-size: 12px; display: flex; align-items: center; gap: 5px;">🚨 ESTOQUE CRÍTICO!</h3>
                     </div>
-                    <button type="button" onclick="enviarAlertaWhatsApp()" class="btn btn-primary" style="background: var(--danger); width: auto; padding: 8px 15px; font-size: 13px; box-shadow: none;">Avisar Compras 📱</button>
+                    <button type="button" onclick="enviarAlertaWhatsApp()" class="btn btn-primary" style="background: var(--danger); width: auto; padding: 6px 12px; font-size: 11px; box-shadow: none;">Avisar Compras</button>
                 </div>
 
-                <h2 class="card-title" style="position: relative; z-index: 5;"><span class="play-icon">▶</span> Novo Abastecimento</h2>
+                <h2 class="card-title"><span class="play-icon">▶</span> Novo Registro</h2>
                 
                 <div class="form-glass-wrapper">
                     <div class="grid-form">
@@ -263,58 +843,57 @@
                         </div>
                         <div class="form-group">
                             <label>Placa</label>
-                            <input type="text" id="placaVeiculo" list="listaPlacasInput" placeholder="Digite ou selecione..." autocomplete="off" style="text-transform: uppercase;" required>
+                            <input type="text" id="placaVeiculo" list="listaPlacasInput" placeholder="Busca..." autocomplete="off" style="text-transform: uppercase;" required>
                             <datalist id="listaPlacasInput"></datalist>
                         </div>
                         
                         <div class="form-group full-width">
                             <label>Condutor</label>
-                            <input type="text" id="nomeMotorista" required>
+                            <input type="text" id="nomeMotorista" placeholder="Nome do motorista..." required>
                         </div>
 
                         <div class="form-group">
-                            <label>Litros (Nº)</label>
-                            <input type="number" id="qtdLitros" required>
+                            <label>Litros</label>
+                            <input type="number" id="qtdLitros" placeholder="0" required>
                         </div>
                         <div class="form-group">
                             <label>KM</label>
-                            <input type="number" id="kmVeiculo" placeholder="Opcional">
+                            <input type="number" id="kmVeiculo" placeholder="0">
                         </div>
 
                         <div class="form-group">
-                            <label>Resp. Pista</label>
-                            <input type="text" id="nomeFuncionario" required>
+                            <label>Responsável</label>
+                            <input type="text" id="nomeFuncionario" placeholder="Seu nome..." required>
                         </div>
                         <div class="form-group">
-                            <label>Observações</label>
-                            <input type="text" id="obsAbastecimento" placeholder="Opcional">
+                            <label>Obs</label>
+                            <input type="text" id="obsAbastecimento" placeholder="Opcional...">
                         </div>
+                    </div>
+                    
+                    <div class="photo-area" id="photoAreaContainer">
+                        <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+                        <button id="btnCapturePhoto" class="btn-camera" type="button">
+                            <span id="cameraIcon" style="font-size: 20px;">📷</span>
+                            <span id="cameraText">ANEXAR FOTO DA BOMBA</span>
+                        </button>
+                        <canvas id="photo-canvas" class="hidden"></canvas> 
                     </div>
                 </div>
 
-                <div class="photo-area" id="photoAreaContainer">
-                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
-                    <button id="btnCapturePhoto" class="btn-camera" type="button">
-                        <span id="cameraIcon" style="font-size: 24px; margin-bottom: 4px;">📷</span>
-                        <span id="cameraText">FOTO DO PAINEL / BOMBA (OBRIGATÓRIO)</span>
-                    </button>
-                    <canvas id="photo-canvas" class="hidden"></canvas> 
-                </div>
-
                 <div class="info-text">
-                    Diesel S10 | Valor Previsto: R$ <span id="displayValorTotal" style="font-weight: 700; color: var(--primary);">0.00</span>
+                    Total S10: <span style="font-weight: 800; color: var(--primary);">R$ <span id="displayValorTotal">0.00</span></span>
                 </div>
 
-                <button id="btnProsseguirAssinaturas" class="btn btn-primary">INICIAR AGORA</button>
+                <button id="btnProsseguirAssinaturas" class="btn btn-primary">INICIAR ASSINATURA</button>
             </div>
         </div>
     </div>
 
-    <div id="signature-driver-screen" class="hidden">
-        <div class="card card-padding">
-            <h2 class="card-title"><span class="play-icon">▶</span> Assinatura Motorista</h2>
+    <div id="signature-driver-screen" class="hidden" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="card card-padding" style="flex-grow: 1;">
+            <h2 class="card-title"><span class="play-icon">▶</span> Motorista</h2>
             <canvas id="canvasMotorista" class="signature-pad"></canvas>
-            
             <div style="display: flex; gap: 10px; position: relative; z-index: 5;">
                 <button id="btnClearDriver" class="btn btn-secondary" style="flex: 1;">Limpar</button>
                 <button id="btnNextFuncionario" class="btn btn-primary" style="flex: 1;">Avançar</button>
@@ -322,11 +901,10 @@
         </div>
     </div>
 
-    <div id="signature-emp-screen" class="hidden">
-        <div class="card card-padding">
-            <h2 class="card-title"><span class="play-icon">▶</span> Assinatura Responsável</h2>
+    <div id="signature-emp-screen" class="hidden" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="card card-padding" style="flex-grow: 1;">
+            <h2 class="card-title"><span class="play-icon">▶</span> Responsável Pista</h2>
             <canvas id="canvasFuncionario" class="signature-pad"></canvas>
-            
             <div style="display: flex; gap: 10px; position: relative; z-index: 5;">
                 <button id="btnClearEmp" class="btn btn-secondary" style="flex: 1;">Limpar</button>
                 <button id="btnFinalizeRecord" class="btn btn-primary" style="flex: 1;">Finalizar</button>
@@ -336,13 +914,13 @@
 
     <div id="whatsapp-screen" class="hidden">
         <div class="card card-padding" style="text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-            <h2 class="card-title" style="justify-content: center;">Registro Salvo!</h2>
-            <div class="form-group full-width" style="text-align: left; margin-bottom: 20px;">
-                <label>WhatsApp do Condutor</label>
-                <input type="number" id="whatsappNumber" placeholder="Ex: 21999999999">
+            <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
+            <h2 class="card-title" style="justify-content: center;">Salvo com Sucesso!</h2>
+            <div class="form-group full-width" style="text-align: left; margin-bottom: 20px; margin-top: 20px;">
+                <label style="font-size: 11px;">WhatsApp do Condutor (Opcional)</label>
+                <input type="number" id="whatsappNumber" placeholder="Ex: 21999999999" style="height: 50px;">
             </div>
-            <button id="btnShareWhatsApp" class="btn btn-primary" style="margin-bottom: 15px; background-color: #25D366; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">Enviar via WhatsApp</button>
+            <button id="btnShareWhatsApp" class="btn btn-primary" style="margin-bottom: 15px; background-color: #25D366; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">Enviar Comprovante</button>
             <button id="btnNewRecord" class="btn btn-secondary">Novo Abastecimento</button>
         </div>
     </div>
@@ -387,11 +965,11 @@
 
         <div id="aba-historico" class="admin-aba">
             <div class="admin-header">
-                <div style="font-size: 20px; font-weight: 600;">Relatório de Abastecimentos (Saída)</div>
+                <div style="font-size: 20px; font-weight: 800;">Relatório de Abastecimentos</div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="date" id="filtroDataAdmin" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
                     <input type="text" id="filtroPlacaAdmin" placeholder="Filtrar Placa" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd; text-transform: uppercase;">
-                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltrosAdmin()">Filtrar</button>
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltrosAdmin()">Filtrar</button>
                     <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="limparFiltrosAdmin()">Limpar</button>
                 </div>
             </div>
@@ -401,22 +979,27 @@
         </div>
 
         <div id="aba-dashboard" class="admin-aba hidden">
-            <h2 style="margin-top:0; font-size: 22px; margin-bottom: 20px;">Visão Geral do Mês (Tempo Real)</h2>
+            <div class="admin-header">
+                <div style="font-size: 20px; font-weight: 800;">Visão Geral do Consumo</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="date" id="dashFiltroInicio" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                    <input type="date" id="dashFiltroFim" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 15px;" onclick="atualizarDashboard(true)">Aplicar Período</button>
+                </div>
+            </div>
+            
             <div class="dash-grid">
                 <div class="dash-card" style="border-left: 4px solid var(--primary);">
-                    <h4>Saídas este mês</h4>
+                    <h4>Saídas no Período</h4>
                     <div class="value" id="dashSaidasLitros">0.00 L</div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total utilizado na pista</div>
                 </div>
                 <div class="dash-card" style="border-left: 4px solid #ef4444;">
-                    <h4>Custo Mensal (Saída)</h4>
+                    <h4>Custo (Saídas)</h4>
                     <div class="value" id="dashCustoMensal">R$ 0,00</div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Valor estimado do consumo</div>
                 </div>
                 <div class="dash-card" style="border-left: 4px solid var(--success);">
-                    <h4>Entradas este mês</h4>
+                    <h4>Entradas no Período</h4>
                     <div class="value" id="dashEntradasLitros">0.00 L</div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total recebido dos fornecedores</div>
                 </div>
             </div>
             <div class="dash-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
@@ -456,11 +1039,11 @@
             </div>
 
             <div class="admin-header" style="margin-top: 30px;">
-                <div style="font-size: 18px; font-weight: 600;">Histórico de Recebimentos</div>
+                <div style="font-size: 18px; font-weight: 800;">Histórico de Recebimentos</div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="date" id="filtroDataRecInicio" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
                     <input type="date" id="filtroDataRecFim" style="width: 140px; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
-                    <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltroRecebimento()">Filtrar</button>
+                    <button class="btn btn-primary" style="width: auto; padding: 8px 15px;" onclick="aplicarFiltroRecebimento()">Filtrar</button>
                     <button class="btn btn-success" style="width: auto; padding: 8px 15px;" onclick="exportarRecebimentos()">📥 Excel</button>
                 </div>
             </div>
@@ -560,7 +1143,6 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    
     const db = initializeFirestore(app, {
         localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
     });
@@ -634,6 +1216,7 @@
             document.querySelector('.mobile-container').classList.add('hidden');
             document.getElementById('app-header').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
+            
             carregarRelatoriosAdmin(); 
             atualizarInputsAdmin(); 
             carregarRecebimentosBanco();
@@ -644,10 +1227,10 @@
             document.getElementById(screenId).classList.remove('hidden');
             
             if(screenId === 'signature-driver-screen') {
-                setTimeout(() => setupCanvas('canvasMotorista'), 50);
+                setTimeout(() => setupCanvas('canvasMotorista'), 100);
             }
             if(screenId === 'signature-emp-screen') {
-                setTimeout(() => setupCanvas('canvasFuncionario'), 50);
+                setTimeout(() => setupCanvas('canvasFuncionario'), 100);
             }
         }
     };
@@ -674,8 +1257,8 @@
                 img.onload = function() {
                     const canvas = document.getElementById('photo-canvas');
                     const ctx = canvas.getContext('2d');
-                    
                     const MAX_WIDTH = 800;
+                    
                     let width = img.width; 
                     let height = img.height;
                     
@@ -694,14 +1277,15 @@
                     canvas.width = width; 
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
-
+                    
                     photoDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
                     
                     document.getElementById('cameraIcon').innerText = "✅";
-                    document.getElementById('cameraText').innerText = "FOTO ANEXADA COM SUCESSO!";
+                    document.getElementById('cameraText').innerText = "FOTO ANEXADA!";
                     document.getElementById('photoAreaContainer').style.backgroundColor = "#ecfdf5";
                     document.getElementById('photoAreaContainer').style.borderColor = "#10b981";
                     document.getElementById('btnCapturePhoto').style.color = "#059669";
+                    document.getElementById('photo-canvas').classList.remove('hidden');
                 }
                 img.src = event.target.result;
             }
@@ -712,6 +1296,7 @@
     document.getElementById('qtdLitros').addEventListener('input', (e) => {
         let val = e.target.value.replace(/[^0-9.]/g, ''); 
         e.target.value = val;
+        
         const litros = parseFloat(val) || 0;
         document.getElementById('displayValorTotal').innerText = (litros * configGerais.precoDiesel).toFixed(2);
     });
@@ -719,8 +1304,8 @@
     function atualizarVisorTanque() {
         document.getElementById('displayTankLitersAdmin').innerText = configGerais.estoqueTanque.toFixed(2);
         
-        if(document.getElementById('displayTankCapAdmin')) {
-            document.getElementById('displayTankCapAdmin').innerText = configGerais.capacidadeTanque;
+        if(document.getElementById('displayTankCapAdmin')) { 
+            document.getElementById('displayTankCapAdmin').innerText = configGerais.capacidadeTanque; 
         }
         
         let pct = 0;
@@ -741,9 +1326,9 @@
         if(fillEl) {
             fillEl.style.height = `${pct}%`;
             if(isCritico && configGerais.pontoPedido > 0) {
-                fillEl.style.backgroundColor = '#fca5a5';
+                fillEl.style.background = 'linear-gradient(to top, rgba(153, 27, 27, 0.7), rgba(239, 68, 68, 0.4))';
             } else {
-                fillEl.style.backgroundColor = '#bfdbfe';
+                fillEl.style.background = 'linear-gradient(to top, rgba(30, 58, 138, 0.7), rgba(59, 130, 246, 0.4))';
             }
         }
         
@@ -772,7 +1357,7 @@
                  if(menuToggleBtn) menuToggleBtn.style.color = '#1f2937';
              } else {
                  tankContent.style.color = '#fff'; 
-                 tankContent.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+                 tankContent.style.textShadow = '1px 1px 3px rgba(0,0,0,0.8)';
                  const menuToggleBtn = tankContent.querySelector('.menu-toggle');
                  if(menuToggleBtn) menuToggleBtn.style.color = '#fff';
              }
@@ -791,17 +1376,17 @@
         unsubConfig = onSnapshot(doc(db, "configuracoes", "gerais"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                configGerais.precoDiesel = data.precoDiesel || 5.90;
+                configGerais.precoDiesel = data.precoDiesel || 5.90; 
                 configGerais.estoqueTanque = data.estoqueTanque || 0;
-                configGerais.capacidadeTanque = data.capacidadeTanque || 10000;
-                configGerais.pontoPedido = data.pontoPedido || 2000;
+                configGerais.capacidadeTanque = data.capacidadeTanque || 10000; 
+                configGerais.pontoPedido = data.pontoPedido || 2000; 
                 configGerais.placas = data.placas || [];
                 
-                atualizarVisorTanque();
+                atualizarVisorTanque(); 
                 renderizarSelectPlacas();
                 
-                if (!document.getElementById('aba-frota').classList.contains('hidden')) { 
-                    renderizarListaPlacasAdmin(); 
+                if (!document.getElementById('aba-frota').classList.contains('hidden')) {
+                    renderizarListaPlacasAdmin();
                 }
             } else { 
                 setDoc(doc(db, "configuracoes", "gerais"), configGerais); 
@@ -809,16 +1394,16 @@
         });
     }
 
-    async function atualizarConfigFirebase(dadosParciais) {
+    async function atualizarConfigFirebase(dadosParciais) { 
         try { 
             await setDoc(doc(db, "configuracoes", "gerais"), dadosParciais, {merge: true}); 
         } catch(e) { 
-            console.error("Erro ao atualizar:", e); 
-        }
+            console.error("Erro:", e); 
+        } 
     }
 
     function renderizarSelectPlacas() {
-        const datalist = document.getElementById('listaPlacasInput');
+        const datalist = document.getElementById('listaPlacasInput'); 
         if(!datalist) return;
         
         datalist.innerHTML = '';
@@ -827,18 +1412,33 @@
         });
     }
 
+    /* SISTEMA DE ASSINATURA CORRIGIDO E DE ALTA PRECISÃO */
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId); 
         const ctx = canvas.getContext('2d'); 
         let isDrawing = false;
         
-        const rect = canvas.parentElement.getBoundingClientRect(); 
-        canvas.width = rect.width - 40; 
+        // Define as dimensões reais de renderização do canvas igual as dimensões de exibição
+        canvas.width = canvas.offsetWidth; 
+        canvas.height = canvas.offsetHeight; 
         preencherFundoBranco(canvasId);
+
+        // Mapeamento preciso de coordenadas (Corrige o zoom/offset)
+        const getPos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        };
 
         const startDraw = (e) => { 
             isDrawing = true; 
-            draw(e); 
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
         };
         
         const endDraw = () => { 
@@ -848,19 +1448,13 @@
         
         const draw = (e) => {
             if (!isDrawing) return; 
-            e.preventDefault(); 
-            ctx.lineWidth = 2.5; 
+            e.preventDefault(); // Impede a tela de rolar enquanto assina
+            ctx.lineWidth = 3.5; 
             ctx.lineCap = 'round'; 
             ctx.strokeStyle = '#000';
-            
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            ctx.lineTo(clientX - rect.left, clientY - rect.top); 
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y); 
             ctx.stroke();
-            ctx.beginPath(); 
-            ctx.moveTo(clientX - rect.left, clientY - rect.top);
         };
         
         canvas.addEventListener('mousedown', startDraw); 
@@ -912,48 +1506,47 @@
     });
 
     function resetarFormulario() {
-        document.getElementById('placaVeiculo').value = "";
-        document.getElementById('kmVeiculo').value = "";
+        document.getElementById('placaVeiculo').value = ""; 
+        document.getElementById('kmVeiculo').value = ""; 
         document.getElementById('nomeMotorista').value = "";
-        document.getElementById('qtdLitros').value = "";
-        document.getElementById('obsAbastecimento').value = "";
+        document.getElementById('qtdLitros').value = ""; 
+        document.getElementById('obsAbastecimento').value = ""; 
         document.getElementById('whatsappNumber').value = "";
-        document.getElementById('displayValorTotal').innerText = "0.00";
-        document.getElementById('dataAbastecimento').valueAsDate = new Date();
+        document.getElementById('displayValorTotal').innerText = "0.00"; 
+        document.getElementById('dataAbastecimento').valueAsDate = new Date(); 
         document.getElementById('nomeFuncionario').value = "";
 
-        document.getElementById('cameraIcon').innerText = "📷";
-        document.getElementById('cameraText').innerText = "FOTO DO PAINEL / BOMBA (OBRIGATÓRIO)";
-        document.getElementById('photoAreaContainer').style.backgroundColor = "rgba(239, 246, 255, 0.95)";
-        document.getElementById('photoAreaContainer').style.borderColor = "#93c5fd";
+        document.getElementById('cameraIcon').innerText = "📷"; 
+        document.getElementById('cameraText').innerText = "ANEXAR FOTO DA BOMBA";
+        document.getElementById('photoAreaContainer').style.backgroundColor = "rgba(239, 246, 255, 0.8)";
+        document.getElementById('photoAreaContainer').style.borderColor = "#93c5fd"; 
         document.getElementById('btnCapturePhoto').style.color = "var(--primary)";
-        photoDataUrl = null;
-
-        preencherFundoBranco('canvasMotorista');
+        document.getElementById('photo-canvas').classList.add('hidden');
+        
+        photoDataUrl = null; 
+        preencherFundoBranco('canvasMotorista'); 
         preencherFundoBranco('canvasFuncionario');
     }
 
     document.getElementById('btnFinalizeRecord').addEventListener('click', async () => {
-        const btn = document.getElementById('btnFinalizeRecord');
+        const btn = document.getElementById('btnFinalizeRecord'); 
         btn.innerText = "Enviando Dados..."; 
         btn.disabled = true;
-
+        
         const assMotoristaBase64 = document.getElementById('canvasMotorista').toDataURL('image/jpeg', 0.6);
         const assFuncBase64 = document.getElementById('canvasFuncionario').toDataURL('image/jpeg', 0.6);
 
         try {
-            currentRecordData.fotoBombaBase64 = photoDataUrl;
-            currentRecordData.assMotoristaBase64 = assMotoristaBase64;
+            currentRecordData.fotoBombaBase64 = photoDataUrl; 
+            currentRecordData.assMotoristaBase64 = assMotoristaBase64; 
             currentRecordData.assFuncionarioBase64 = assFuncBase64;
             
             await addDoc(collection(db, "abastecimentos"), currentRecordData);
             
-            const litrosAbastecidos = parseFloat(currentRecordData.litros);
-            configGerais.estoqueTanque -= litrosAbastecidos;
-            
+            configGerais.estoqueTanque -= parseFloat(currentRecordData.litros); 
             await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque });
             
-            resetarFormulario();
+            resetarFormulario(); 
             switchScreen('whatsapp-screen');
         } catch (error) { 
             console.error(error); 
@@ -966,11 +1559,11 @@
 
     document.getElementById('btnShareWhatsApp').addEventListener('click', () => {
         const phone = document.getElementById('whatsappNumber').value;
-        
         let dataBr = currentRecordData.data;
-        if(dataBr && dataBr.includes('-')) {
-            const partes = dataBr.split('-');
-            dataBr = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        
+        if(dataBr && dataBr.includes('-')) { 
+            const partes = dataBr.split('-'); 
+            dataBr = `${partes[2]}/${partes[1]}/${partes[0]}`; 
         }
         
         const texto = `*IcaphiAbastecimento*\nData: ${dataBr} às ${currentRecordData.horario}\nPlaca: ${currentRecordData.placa}\nLitros: ${currentRecordData.litros}L\nValor Total: R$ ${currentRecordData.valorTotal}`;
@@ -994,8 +1587,8 @@
     
     document.getElementById('btnAdminLogin').addEventListener('click', () => {
         if(document.getElementById('adminPassword').value === "60010774") { 
-            document.getElementById('admin-login-modal').classList.add('hidden');
-            document.getElementById('adminPassword').value = "";
+            document.getElementById('admin-login-modal').classList.add('hidden'); 
+            document.getElementById('adminPassword').value = ""; 
             switchScreen('admin-panel'); 
         } else { 
             alert("Senha Incorreta!"); 
@@ -1009,24 +1602,18 @@
     window.mudarAbaAdmin = function(aba) {
         document.querySelectorAll('.admin-aba').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.getElementById(`aba-${aba}`).classList.remove('hidden');
+        
+        document.getElementById(`aba-${aba}`).classList.remove('hidden'); 
         event.currentTarget.classList.add('active');
         
-        if(aba === 'frota') { 
-            renderizarListaPlacasAdmin(); 
-        }
-        if(aba === 'dashboard') { 
-            atualizarDashboard(); 
-        }
-        
-        if(window.innerWidth <= 768) { 
-            toggleSidebar(); 
-        }
+        if(aba === 'frota') renderizarListaPlacasAdmin(); 
+        if(aba === 'dashboard') atualizarDashboard(); 
+        if(window.innerWidth <= 768) toggleSidebar(); 
     }
 
     window.abrirModalImagem = function(titulo, htmlConteudo) {
-        document.getElementById('modal-title').innerText = titulo;
-        document.getElementById('modal-images-container').innerHTML = htmlConteudo;
+        document.getElementById('modal-title').innerText = titulo; 
+        document.getElementById('modal-images-container').innerHTML = htmlConteudo; 
         document.getElementById('image-modal').classList.remove('hidden');
     }
     
@@ -1034,33 +1621,29 @@
         document.getElementById('image-modal').classList.add('hidden'); 
     }
 
-    window.abrirFotoBomba = function(index) {
-        const d = window.dadosRelatorio[index];
-        abrirModalImagem('Foto do Painel / Bomba', `<img src="${d.fotoBombaBase64}">`);
+    window.abrirFotoBombaPorId = function(id) {
+        const d = window.dadosRelatorio.find(r => r.id === id);
+        if(d) abrirModalImagem('Foto do Painel / Bomba', `<img src="${d.fotoBombaBase64}">`);
     }
-    
-    window.abrirAssinaturas = function(index) {
-        const d = window.dadosRelatorio[index];
-        abrirModalImagem(
-            'Assinaturas', 
-            `<p style="text-align: left; font-size: 14px;"><strong>Condutor:</strong></p>
-             <img src="${d.assMotoristaBase64}" style="background-color: white;">
-             <p style="text-align: left; font-size: 14px;"><strong>Responsável:</strong></p>
-             <img src="${d.assFuncionarioBase64}" style="background-color: white;">`
-        );
+
+    window.abrirAssinaturasPorId = function(id) {
+        const d = window.dadosRelatorio.find(r => r.id === id);
+        if(d) {
+            abrirModalImagem('Assinaturas', `<p style="text-align: left; font-size: 14px;"><strong>Condutor:</strong></p><img src="${d.assMotoristaBase64}" style="background-color: white;"><p style="text-align: left; font-size: 14px;"><strong>Responsável:</strong></p><img src="${d.assFuncionarioBase64}" style="background-color: white;">`);
+        }
     }
 
     function atualizarInputsAdmin() {
-        if(document.activeElement.id !== 'precoDieselAdmin') { 
+        if(document.activeElement.id !== 'precoDieselAdmin') {
             document.getElementById('precoDieselAdmin').value = configGerais.precoDiesel; 
         }
-        if(document.activeElement.id !== 'estoqueTanqueAdmin') { 
+        if(document.activeElement.id !== 'estoqueTanqueAdmin') {
             document.getElementById('estoqueTanqueAdmin').value = configGerais.estoqueTanque; 
         }
-        if(document.activeElement.id !== 'capacidadeTanqueAdmin') { 
+        if(document.activeElement.id !== 'capacidadeTanqueAdmin') {
             document.getElementById('capacidadeTanqueAdmin').value = configGerais.capacidadeTanque; 
         }
-        if(document.activeElement.id !== 'pontoPedidoAdmin') { 
+        if(document.activeElement.id !== 'pontoPedidoAdmin') {
             document.getElementById('pontoPedidoAdmin').value = configGerais.pontoPedido; 
         }
     }
@@ -1081,12 +1664,7 @@
         if(!isNaN(est) && !isNaN(cap) && cap > 0) { 
             configGerais.estoqueTanque = est; 
             configGerais.capacidadeTanque = cap;
-            
-            await atualizarConfigFirebase({ 
-                estoqueTanque: configGerais.estoqueTanque, 
-                capacidadeTanque: configGerais.capacidadeTanque 
-            }); 
-            
+            await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque, capacidadeTanque: configGerais.capacidadeTanque }); 
             alert("Estoque e Capacidade atualizados!"); 
             document.getElementById('estoqueTanqueCM').value = "";
         } else { 
@@ -1096,7 +1674,6 @@
 
     window.salvarPontoPedido = async function() {
         const pt = parseFloat(document.getElementById('pontoPedidoAdmin').value);
-        
         if(!isNaN(pt) && pt >= 0) {
             configGerais.pontoPedido = pt; 
             await atualizarConfigFirebase({ pontoPedido: configGerais.pontoPedido });
@@ -1107,11 +1684,25 @@
         }
     }
 
-    function atualizarDashboard() {
-        const hoje = new Date();
-        const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
-        const anoAtual = String(hoje.getFullYear());
-        const prefixoData = `${anoAtual}-${mesAtual}`; 
+    window.atualizarDashboard = function(foiClicado = false) {
+        let dataInicio = document.getElementById('dashFiltroInicio').value; 
+        let dataFim = document.getElementById('dashFiltroFim').value;
+        
+        if (!dataInicio || !dataFim) {
+            const hoje = new Date(); 
+            const ano = hoje.getFullYear(); 
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0'); 
+            const ultimoDia = new Date(ano, hoje.getMonth() + 1, 0).getDate();
+            
+            if(!dataInicio) { 
+                dataInicio = `${ano}-${mes}-01`; 
+                document.getElementById('dashFiltroInicio').value = dataInicio; 
+            }
+            if(!dataFim) { 
+                dataFim = `${ano}-${mes}-${String(ultimoDia).padStart(2, '0')}`; 
+                document.getElementById('dashFiltroFim').value = dataFim; 
+            }
+        }
 
         let litrosSaida = 0; 
         let custoSaida = 0; 
@@ -1119,19 +1710,20 @@
         let consumoDiario = {}; 
 
         window.dadosRelatorio.forEach(d => {
-            if (d.data && d.data.startsWith(prefixoData)) {
+            if (d.data >= dataInicio && d.data <= dataFim) {
                 let l = parseFloat(d.litros) || 0; 
                 let v = parseFloat(d.valorTotal) || 0;
                 litrosSaida += l; 
                 custoSaida += v;
                 
-                if (!consumoPorPlaca[d.placa]) { 
+                if (!consumoPorPlaca[d.placa]) {
                     consumoPorPlaca[d.placa] = 0; 
                 }
                 consumoPorPlaca[d.placa] += l;
                 
-                let dia = d.data.split('-')[2];
-                if(!consumoDiario[dia]) { 
+                let dia = d.data.split('-')[2] + '/' + d.data.split('-')[1]; 
+                
+                if(!consumoDiario[dia]) {
                     consumoDiario[dia] = 0; 
                 }
                 consumoDiario[dia] += l;
@@ -1140,7 +1732,7 @@
 
         let litrosEntrada = 0;
         window.dadosRecebimentosLista.forEach(d => {
-            if (d.dataChegada && d.dataChegada.startsWith(prefixoData)) { 
+            if (d.dataChegada >= dataInicio && d.dataChegada <= dataFim) {
                 litrosEntrada += parseFloat(d.litros) || 0; 
             }
         });
@@ -1151,15 +1743,20 @@
 
         const ctxDiario = document.getElementById('graficoConsumoDiario');
         if(ctxDiario) {
-            if(chartConsumoDiarioInstance) { 
+            if(chartConsumoDiarioInstance) {
                 chartConsumoDiarioInstance.destroy(); 
             }
             
-            let diasOrdenados = Object.keys(consumoDiario).sort();
+            let diasOrdenados = Object.keys(consumoDiario).sort((a,b) => {
+                let [diaA, mesA] = a.split('/'); 
+                let [diaB, mesB] = b.split('/');
+                return new Date(`2026-${mesA}-${diaA}`) - new Date(`2026-${mesB}-${diaB}`);
+            });
+            
             let valoresDias = diasOrdenados.map(dia => consumoDiario[dia]);
             
             chartConsumoDiarioInstance = new Chart(ctxDiario, {
-                type: 'line',
+                type: 'line', 
                 data: { 
                     labels: diasOrdenados, 
                     datasets: [{ 
@@ -1175,9 +1772,7 @@
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { display: false } 
-                    } 
+                    plugins: { legend: { display: false } } 
                 }
             });
         }
@@ -1189,12 +1784,12 @@
             
         const ctxTop = document.getElementById('graficoTopPlacas');
         if(ctxTop) {
-            if(chartTopPlacasInstance) { 
+            if(chartTopPlacasInstance) {
                 chartTopPlacasInstance.destroy(); 
             }
             
             chartTopPlacasInstance = new Chart(ctxTop, {
-                type: 'doughnut',
+                type: 'doughnut', 
                 data: { 
                     labels: topPlacas.map(t => t.placa), 
                     datasets: [{ 
@@ -1218,15 +1813,15 @@
         
         const q = query(collection(db, "abastecimentos"));
         unsubRelatorio = onSnapshot(q, (querySnapshot) => {
-            window.dadosRelatorio = [];
+            window.dadosRelatorio = []; 
             querySnapshot.forEach(doc => { 
                 window.dadosRelatorio.push({ id: doc.id, ...doc.data() }); 
             });
-            
             window.dadosRelatorio.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
+            
             atualizarDashboard();
             
-            if (!document.getElementById('aba-historico').classList.contains('hidden')) { 
+            if (!document.getElementById('aba-historico').classList.contains('hidden')) {
                 aplicarFiltrosAdmin(); 
             }
         }, (e) => { 
@@ -1242,15 +1837,15 @@
         
         const q = query(collection(db, "recebimentos"));
         unsubRecebimentos = onSnapshot(q, (querySnapshot) => {
-            window.dadosRecebimentosLista = [];
+            window.dadosRecebimentosLista = []; 
             querySnapshot.forEach(doc => { 
                 window.dadosRecebimentosLista.push({ id: doc.id, ...doc.data() }); 
             });
-            
             window.dadosRecebimentosLista.sort((a,b) => new Date(b.timestamp || b.dataChegada) - new Date(a.timestamp || a.dataChegada));
+            
             atualizarDashboard();
             
-            if (!document.getElementById('aba-recebimento').classList.contains('hidden')) { 
+            if (!document.getElementById('aba-recebimento').classList.contains('hidden')) {
                 aplicarFiltroRecebimento(); 
             }
         }, (e) => { 
@@ -1274,7 +1869,7 @@
         const vencimento = document.getElementById('recVencimento').value; 
         const responsavel = document.getElementById('recResponsavel').value; 
         const total = document.getElementById('recTotalPagar').value;
-
+        
         if(!dataChegada || !fornecedor || !litros || !valorLitro || !responsavel) { 
             alert("Preencha todos os campos obrigatórios."); 
             return; 
@@ -1362,7 +1957,6 @@
             try { 
                 await deleteDoc(doc(db, "recebimentos", id)); 
                 configGerais.estoqueTanque -= parseFloat(rec.litros); 
-                
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Apagado!"); 
             } catch(e) { 
@@ -1376,12 +1970,8 @@
         const fFim = document.getElementById('filtroDataRecFim').value; 
         let filtrados = window.dadosRecebimentosLista;
         
-        if (fInicio) { 
-            filtrados = filtrados.filter(d => d.dataChegada >= fInicio); 
-        }
-        if (fFim) { 
-            filtrados = filtrados.filter(d => d.dataChegada <= fFim); 
-        }
+        if (fInicio) filtrados = filtrados.filter(d => d.dataChegada >= fInicio); 
+        if (fFim) filtrados = filtrados.filter(d => d.dataChegada <= fFim); 
         
         desenharTabelaRecebimentos(filtrados);
     }
@@ -1423,8 +2013,8 @@
                 </td>
             </tr>`; 
         });
-        
         html += "</table>"; 
+        
         container.innerHTML = html;
     }
 
@@ -1510,9 +2100,10 @@
             if(novasPlacas > 0) { 
                 await atualizarConfigFirebase({ placas: configGerais.placas }); 
                 alert(`${novasPlacas} importadas!`); 
-            }
+            } 
+            
             e.target.value = ''; 
-        };
+        }; 
         reader.readAsArrayBuffer(file);
     });
 
@@ -1524,7 +2115,6 @@
             try { 
                 await deleteDoc(doc(db, "abastecimentos", id)); 
                 configGerais.estoqueTanque += parseFloat(d.litros); 
-                
                 await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
                 alert("Apagado e devolvido!"); 
             } catch(e) { 
@@ -1538,10 +2128,11 @@
         const fPlaca = document.getElementById('filtroPlacaAdmin').value.trim().toUpperCase();
         let dadosFiltrados = window.dadosRelatorio;
         
-        if (fData) { 
+        if (fData) {
             dadosFiltrados = dadosFiltrados.filter(d => d.data === fData); 
         }
-        if (fPlaca) { 
+        
+        if (fPlaca) {
             dadosFiltrados = dadosFiltrados.filter(d => d.placa.includes(fPlaca)); 
         }
         
@@ -1556,7 +2147,6 @@
 
     function desenharTabelaAdmin(dados) {
         const container = document.getElementById('admin-table-container');
-        
         if (dados.length === 0) { 
             container.innerHTML = "<p style='padding:15px;'>Nenhum abastecimento encontrado.</p>"; 
             return; 
@@ -1564,7 +2154,6 @@
         
         let totalLitros = 0; 
         let totalValor = 0;
-        
         let html = `<table class="admin-table">
             <tr>
                 <th>Data</th>
@@ -1580,7 +2169,7 @@
                 <th>Ações</th>
             </tr>`;
             
-        dados.forEach((d, index) => { 
+        dados.forEach((d) => { 
             totalLitros += parseFloat(d.litros) || 0; 
             totalValor += parseFloat(d.valorTotal) || 0;
             
@@ -1595,8 +2184,8 @@
                 <td>R$ ${d.valorUnitario || '-'}</td>
                 <td>R$ ${d.valorTotal}</td>
                 <td style="min-width: 140px;">
-                    <button class="link-btn" onclick="abrirFotoBomba(${index})">📷</button>
-                    <button class="link-btn" onclick="abrirAssinaturas(${index})">✍️</button>
+                    <button class="link-btn" onclick="abrirFotoBombaPorId('${d.id}')">📷</button>
+                    <button class="link-btn" onclick="abrirAssinaturasPorId('${d.id}')">✍️</button>
                 </td>
                 <td>
                     <button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')">🗑️</button>
@@ -1606,7 +2195,7 @@
         
         html += `<tfoot>
             <tr style="background-color: #f3f4f6; font-weight: bold; border-top: 2px solid var(--border-color);">
-                <td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL:</td>
+                <td colspan="6" style="text-align: right; padding-right: 15px;">TOTAL DESTA BUSCA:</td>
                 <td style="color: #ef4444; font-size: 15px;">${totalLitros.toFixed(2)}L</td>
                 <td>-</td>
                 <td style="color: var(--text-main); font-size: 15px;">R$ ${totalValor.toFixed(2)}</td>
@@ -1621,13 +2210,13 @@
         const dataInicio = document.getElementById('exportDataInicio').value; 
         const dataFim = document.getElementById('exportDataFim').value;
         
-        if(!dataInicio || !dataFim) { 
+        if(!dataInicio || !dataFim) {
             return alert('Selecione as datas.'); 
         }
         
         const filtrados = window.dadosRelatorio.filter(d => d.data >= dataInicio && d.data <= dataFim);
         
-        if(filtrados.length === 0) { 
+        if(filtrados.length === 0) {
             return alert('Nenhum abastecimento encontrado.'); 
         }
         
