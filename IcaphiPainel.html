@@ -9,55 +9,104 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
+        /* VARIÁVEIS DE TEMA (CLARO) */
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
-            --bg-body: #f8fafc;
+            --bg-body: #e2e8f0; 
             --bg-card: #ffffff;
+            --bg-card-alpha: rgba(255, 255, 255, 0.95);
+            --bg-sys-name: rgba(248, 250, 252, 0.9);
             --text-main: #1e293b;
             --text-muted: #64748b;
             --success: #10b981;
             --danger: #ef4444;
-            --border-light: #e2e8f0;
+            --border-light: #cbd5e1;
+            --shadow-color: rgba(0,0,0,0.06);
+            --wave-color-1: #e2e8f0;
+            --wave-color-2: rgba(255, 255, 255, 0.6);
+        }
+
+        /* VARIÁVEIS DE TEMA (ESCURO) */
+        body.dark-mode {
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --bg-body: #1e293b; 
+            --bg-card: #334155; 
+            --bg-card-alpha: rgba(51, 65, 85, 0.95);
+            --bg-sys-name: rgba(30, 41, 59, 0.9); 
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --border-light: #475569;
+            --shadow-color: rgba(0,0,0,0.3);
+            --wave-color-1: #1e293b;
+            --wave-color-2: rgba(30, 41, 59, 0.6);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-body); /* Fundo limpo original restaurado */
+            background-color: var(--bg-body);
             color: var(--text-main);
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
+            transition: background-color 0.5s ease;
         }
 
         /* --- HEADER --- */
         .topbar {
             width: 100%; max-width: 1200px; display: flex;
             justify-content: space-between; align-items: center;
-            padding: 20px 20px; height: 100px; z-index: 10;
+            padding: 20px 20px; height: 100px; z-index: 10; position: relative;
         }
 
-        .topbar-logo h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); }
+        .topbar-logo h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); transition: color 0.3s; }
         .topbar-logo span { color: var(--primary); }
         .filters-container { display: flex; gap: 15px; align-items: center; }
 
         .filter-box {
             display: flex; align-items: center; gap: 10px;
-            background: rgba(255, 255, 255, 0.9); padding: 10px 20px; 
-            border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            background: var(--bg-card-alpha); padding: 10px 20px; 
+            border-radius: 12px; box-shadow: 0 4px 10px var(--shadow-color);
             border: 1px solid var(--border-light);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); transition: all 0.3s;
         }
         .filter-box i { color: var(--primary); font-size: 1.2rem; }
         .filter-box select {
             background: transparent; border: none; font-family: 'Poppins', sans-serif;
             font-size: 1rem; font-weight: 600; color: var(--text-main); outline: none; cursor: pointer;
+            transition: color 0.3s;
         }
-        .filter-box select option { background: #ffffff; color: var(--text-main); }
+        .filter-box select option { background: var(--bg-card); color: var(--text-main); }
+
+        /* --- BOTÃO SWITCH TEMA 3D --- */
+        .theme-switch-wrapper {
+            position: absolute; top: 30px; right: 30px;
+            display: flex; align-items: center; gap: 10px; z-index: 100;
+        }
+        .theme-switch { position: relative; display: inline-block; width: 66px; height: 34px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; transition: .4s; border-radius: 34px;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(255,255,255,0.4);
+            border: 1px solid #94a3b8; border-bottom: 2px solid #94a3b8;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px; left: 3px; bottom: 2px;
+            background-color: white; transition: .4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        input:checked + .slider { background-color: var(--primary); border-color: var(--primary-hover); border-bottom: 2px solid var(--primary-hover); }
+        input:checked + .slider:before { transform: translateX(32px); }
+        .theme-switch-wrapper i.fa-sun { color: #f59e0b; font-size: 1.3rem; filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));}
+        .theme-switch-wrapper i.fa-moon { color: var(--text-muted); font-size: 1.2rem; transition: color 0.3s; }
+        body.dark-mode .theme-switch-wrapper i.fa-moon { color: #fbbf24; filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));}
+        body.dark-mode .theme-switch-wrapper i.fa-sun { color: var(--text-muted); filter: none;}
 
         /* --- DATA E HORA / RODAPÉ --- */
         .clock-container {
@@ -65,128 +114,81 @@
             z-index: 20; display: flex; flex-direction: column; gap: 2px;
             animation: floatClock 4s ease-in-out infinite;
         }
-        @keyframes floatClock {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
+        @keyframes floatClock { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         
-        .clock-time { 
-            font-size: 2.4rem; font-weight: 800; color: var(--text-main); 
-            letter-spacing: 2px; text-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
+        .clock-time { font-size: 2.4rem; font-weight: 800; color: var(--text-main); letter-spacing: 2px; text-shadow: 0 4px 15px var(--shadow-color); transition: color 0.3s; }
         .clock-date { font-size: 1rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
         .clock-time span { animation: pulseSec 1s infinite; display: inline-block;}
         @keyframes pulseSec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } }
 
-        .footer-credits {
-            position: absolute; bottom: 12px; width: 100%; text-align: center;
-            color: #94a3b8; font-size: 0.8rem; font-weight: 700; letter-spacing: 1px;
-            z-index: 20; text-transform: uppercase;
-        }
+        .footer-credits { position: absolute; bottom: 12px; width: 100%; text-align: center; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; z-index: 20; text-transform: uppercase; transition: color 0.3s; }
 
-        /* --- AVISO ROLAR TELA (DIREITA) --- */
+        /* --- AVISOS LATERAIS --- */
         .scroll-indicator {
-            position: absolute; bottom: 30px; right: 30px;
-            display: flex; align-items: center; gap: 10px;
-            color: var(--text-muted); font-weight: 600; font-size: 0.95rem;
-            animation: bounce 2s infinite; z-index: 20; background: rgba(255,255,255,0.7);
+            position: absolute; bottom: 30px; right: 30px; display: flex; align-items: center; gap: 10px;
+            color: var(--text-muted); font-weight: 600; font-size: 0.95rem; animation: bounce 2s infinite; z-index: 20; background: var(--bg-card-alpha);
             padding: 10px 20px; border-radius: 30px; backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.5);
-            transition: all 0.3s;
+            box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--border-light); transition: all 0.3s;
         }
         .scroll-indicator i { font-size: 1.2rem; color: var(--primary); transition: transform 0.3s; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 60% { transform: translateY(-4px); } }
 
-        /* --- BOTÃO MODO VISUALIZAÇÃO (ESQUERDA) --- */
         .view-mode-wrapper {
-            position: absolute; bottom: 30px; left: 30px;
-            display: flex; align-items: center; gap: 8px;
-            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px);
-            padding: 10px 20px; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.5);
-            z-index: 20; transition: all 0.3s;
+            position: absolute; bottom: 30px; left: 30px; display: flex; align-items: center; gap: 8px; background: var(--bg-card-alpha); backdrop-filter: blur(8px);
+            padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--border-light); z-index: 20; transition: all 0.3s;
         }
-        .view-mode-wrapper:hover { background: rgba(255, 255, 255, 0.95); transform: translateY(-2px); }
+        .view-mode-wrapper:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow-color); }
         .view-mode-wrapper i { color: var(--primary); font-size: 1.1rem; }
-        .view-mode-wrapper select {
-            background: transparent; border: none; font-family: 'Poppins', sans-serif;
-            font-size: 0.9rem; font-weight: 600; color: var(--text-muted); outline: none; cursor: pointer;
-        }
-        .view-mode-wrapper select option { background: #ffffff; color: var(--text-main); font-weight: 500;}
+        .view-mode-wrapper select { background: transparent; border: none; font-family: 'Poppins', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); outline: none; cursor: pointer; transition: color 0.3s;}
+        .view-mode-wrapper select option { background: var(--bg-card); color: var(--text-main); font-weight: 500;}
 
         /* --- CENA 3D --- */
-        .scene {
-            width: 100%; height: calc(100vh - 100px); perspective: 2500px; 
-            display: flex; justify-content: center; align-items: flex-start; padding-top: 10px;
-        }
-
-        .cube {
-            width: 100%; max-width: 1100px; height: 100%; position: relative;
-            transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
-        }
-
+        .scene { width: 100%; height: calc(100vh - 100px); perspective: 2500px; display: flex; justify-content: center; align-items: flex-start; padding-top: 10px; }
+        .cube { width: 100%; max-width: 1100px; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1); }
         .cube.is-flipped { transform: rotateX(-180deg); }
-
-        .face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
-            display: flex; justify-content: center; align-items: flex-start; 
-            flex-direction: row; gap: 40px;
-        }
-
+        .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; justify-content: center; align-items: flex-start; flex-direction: row; gap: 40px; }
         .face-front { transform: rotateX(0deg); }
         .face-back { transform: rotateX(180deg); } 
 
-        /* --- LADO A: CARDS PRINCIPAIS --- */
-        .stat-card {
-            width: 450px; background: rgba(255, 255, 255, 0.95); border-radius: 28px; position: relative;
-            overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-            border: 1px solid rgba(255, 255, 255, 0.8); display: flex; flex-direction: column;
-            align-items: center; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            height: 350px; transform-origin: top center; backdrop-filter: blur(10px);
+        /* --- CARDS PRINCIPAIS (COM ALTURA AUMENTADA PARA CABER TUDO) --- */
+        .stat-card, .back-card {
+            width: 450px; background: var(--bg-card-alpha); border-radius: 28px; position: relative;
+            overflow: hidden; box-shadow: 0 15px 35px var(--shadow-color);
+            border: 1px solid var(--border-light); display: flex; flex-direction: column;
+            align-items: center; backdrop-filter: blur(10px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 440px; 
+            transform-origin: top center;
         }
-
-        .stat-card:hover { height: 680px; box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15); border-color: rgba(37, 99, 235, 0.4); }
-
-        /* Fundo Líquido para o Card Abastecimento */
-        .card-bg-liquid {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
-            background: rgba(37, 99, 235, 0.08);
-            z-index: 0; transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease;
-        }
-        .card-bg-liquid.low-fuel-bg { background: rgba(239, 68, 68, 0.08) !important; }
-        .card-bg-liquid::before, .card-bg-liquid::after {
-            content: ""; position: absolute; width: 1200px; height: 1200px; background: var(--bg-card);
-            top: -1180px; left: 50%; transform: translateX(-50%);
-            border-radius: 40%; animation: wave 8s infinite linear;
-        }
-        .card-bg-liquid::after {
-            background: rgba(255, 255, 255, 0.6); animation: wave 12s infinite linear; top: -1190px;
-        }
-
-        .sys-name { position: relative; z-index: 2; width: 100%; background: rgba(248, 250, 252, 0.8); backdrop-filter: blur(5px); padding: 15px 0; text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border-light); letter-spacing: 1px; text-transform: uppercase; }
+        
+        .stat-card:hover, .back-card:hover { height: 680px; box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15); border-color: var(--primary); }
+        
+        .sys-name { position: relative; z-index: 2; width: 100%; background: var(--bg-sys-name); padding: 15px 0; text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border-light); letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s;}
+        
         .card-content { position: relative; z-index: 2; padding: 40px 20px; transition: transform 0.5s ease; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .back-card-content { position: relative; z-index: 2; padding: 20px 20px; gap: 15px; width: 100%; display: flex; flex-direction: column; align-items: center;}
+        
         .stat-card:hover .card-content { transform: translateY(-30px); opacity: 0.1; }
 
         .stat-icon { width: 80px; height: 80px; border-radius: 22px; display: flex; justify-content: center; align-items: center; font-size: 2.2rem; margin-bottom: 20px; }
-        .bg-blue { background: #eff6ff; color: #3b82f6; }
-        .bg-green { background: #ecfdf5; color: #10b981; }
+        .bg-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .bg-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 
         .stat-info { text-align: center; }
-        .stat-info p { font-size: 1rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 3.2rem; font-weight: 800; margin-top: 5px; color: var(--text-main); }
+        .stat-info p { font-size: 1rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s;}
+        .stat-value { font-size: 3.2rem; font-weight: 800; margin-top: 5px; color: var(--text-main); transition: color 0.3s;}
         .badge-dispersao-fora { font-size: 0.95rem; font-weight: 700; margin-top: 5px; opacity: 0.9; }
 
         /* --- DETALHES NO HOVER --- */
         .hover-details {
             position: absolute; z-index: 3; bottom: -100%; left: 0; width: 100%; height: calc(100% - 55px);
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); display: flex;
+            background: var(--bg-sys-name); backdrop-filter: blur(12px); display: flex;
             flex-direction: column; justify-content: center; padding: 25px 40px;
             transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1); border-top: 1px solid var(--border-light);
         }
         .stat-card:hover .hover-details { bottom: 0; }
         .detail-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1.05rem; }
-        .detail-row span { color: var(--text-muted); font-weight: 500; }
-        .detail-row strong { color: var(--text-main); font-weight: 700; font-size: 1.15rem;}
+        .detail-row span { color: var(--text-muted); font-weight: 500; transition: color 0.3s;}
+        .detail-row strong { color: var(--text-main); font-weight: 700; font-size: 1.15rem; transition: color 0.3s;}
         .detail-row.highlight span { color: var(--text-main); font-weight: 700; }
         .detail-row.highlight strong { color: var(--primary); font-size: 1.3rem; }
         .subtitle-hoje { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;}
@@ -196,33 +198,22 @@
         .progress-labels { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
         .pl-em-rota { color: var(--primary); }
         .pl-finalizada { color: var(--success); }
-        .progress-bar-bg { width: 100%; height: 14px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .progress-bar-bg { width: 100%; height: 14px; background: var(--border-light); border-radius: 10px; overflow: hidden; transition: background 0.3s;}
         .progress-bar-fill { height: 100%; background: var(--success); width: 0%; transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        /* --- TANQUE INDUSTRIAL PEQUENO --- */
+        /* --- FUNDO LÍQUIDO E TANQUE --- */
+        .card-bg-liquid { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(37, 99, 235, 0.08); z-index: 0; transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease; }
+        .card-bg-liquid.low-fuel-bg { background: rgba(239, 68, 68, 0.08) !important; }
+        .card-bg-liquid::before, .card-bg-liquid::after { content: ""; position: absolute; width: 1200px; height: 1200px; background: var(--wave-color-1); top: -1180px; left: 50%; transform: translateX(-50%); border-radius: 40%; animation: wave 8s infinite linear; transition: background 0.5s ease; }
+        .card-bg-liquid::after { background: var(--wave-color-2); animation: wave 12s infinite linear; top: -1190px; }
+
         .tank-wrapper { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; margin-top: 10px; }
         .tank-cap { width: 45px; height: 10px; background: #64748b; border-radius: 5px 5px 0 0; position: relative; z-index: 2; border: 2px solid #475569; border-bottom: none;}
-        .tank-container { 
-            width: 140px; height: 140px; border: 4px solid #94a3b8; border-radius: 12px 12px 25px 25px; 
-            position: relative; overflow: hidden; background: #f8fafc; 
-            box-shadow: inset 0px 0px 15px rgba(0,0,0,0.1), 0 8px 15px rgba(0,0,0,0.05);
-        }
-        .tank-liquid { 
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; 
-            background: var(--primary); 
-            transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease;
-            z-index: 1;
-        }
+        .tank-container { width: 140px; height: 140px; border: 4px solid #94a3b8; border-radius: 12px 12px 25px 25px; position: relative; overflow: hidden; background: var(--bg-card); box-shadow: inset 0px 0px 15px rgba(0,0,0,0.1), 0 8px 15px var(--shadow-color); transition: background 0.3s;}
+        .tank-liquid { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: var(--primary); transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease; z-index: 1; }
         .tank-liquid.low-fuel { background: var(--danger) !important; }
-        .tank-liquid::before, .tank-liquid::after {
-            content: ""; position: absolute; width: 300px; height: 300px; background: #f8fafc;
-            top: -290px; left: 50%; transform: translateX(-50%);
-            border-radius: 40%; animation: wave 4s infinite linear;
-        }
-        .tank-liquid::after {
-            border-radius: 43%; background: rgba(248, 250, 252, 0.5); 
-            animation: wave 6s infinite linear; top: -294px;
-        }
+        .tank-liquid::before, .tank-liquid::after { content: ""; position: absolute; width: 300px; height: 300px; background: var(--bg-card); top: -290px; left: 50%; transform: translateX(-50%); border-radius: 40%; animation: wave 4s infinite linear; transition: background 0.3s;}
+        .tank-liquid::after { border-radius: 43%; background: var(--bg-sys-name); animation: wave 6s infinite linear; top: -294px; }
         @keyframes wave { 0% { transform: translateX(-50%) rotate(0deg); } 100% { transform: translateX(-50%) rotate(360deg); } }
 
         /* BOTOES GERAIS */
@@ -230,60 +221,59 @@
         .btn-acao { flex: 1; padding: 14px 0; border-radius: 12px; text-align: center; font-weight: 600; font-size: 0.95rem; text-decoration: none; cursor: pointer; border: none; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-app { background: var(--primary); color: white; }
         .btn-app:hover { background: var(--primary-hover); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
-        .btn-grafico { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border-light); }
-        .btn-grafico:hover { background: #e2e8f0; }
+        .btn-grafico { background: var(--bg-sys-name); color: var(--text-main); border: 1px solid var(--border-light); }
+        .btn-grafico:hover { background: var(--border-light); }
 
-        /* --- LADO B: CARDS INDEPENDENTES E BLOCOS (TOP 5) --- */
-        .back-card {
-            width: 450px; background: rgba(255, 255, 255, 0.95); border-radius: 28px; position: relative;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.05); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.8); display: flex; flex-direction: column;
-            align-items: center; transition: all 0.5s ease;
-            overflow: hidden;
+        /* --- INSIGHT BOXES DO VERSO --- */
+        .insight-box { 
+            display: flex; align-items: center; gap: 15px; background: var(--bg-sys-name); 
+            padding: 15px 20px; border-radius: 16px; border: 1px solid var(--border-light); 
+            height: 85px; overflow: hidden; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: default; width: 100%; 
         }
-
-        .back-card-content { padding: 30px 20px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
-
-        .insight-box {
-            display: flex; align-items: flex-start; gap: 20px; background: rgba(248, 250, 252, 0.8);
-            padding: 25px; border-radius: 20px; border: 1px solid var(--border-light);
-            height: 110px; overflow: hidden; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: default; width: 100%;
+        .insight-box.expandable:hover { 
+            height: 280px; align-items: flex-start; background: var(--bg-card); 
+            box-shadow: 0 15px 35px var(--shadow-color); border-color: var(--primary); z-index: 5; 
         }
-        .insight-box.expandable:hover {
-            height: 380px; background: #ffffff; box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-            border-color: var(--primary); z-index: 5;
-        }
-
-        .insight-info { width: 100%; }
-        .insight-icon { width: 60px; height: 60px; border-radius: 16px; display: flex; flex-shrink: 0; justify-content: center; align-items: center; font-size: 1.8rem; background: #eff6ff; color: var(--primary);}
-        .insight-info p { font-size: 0.95rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 5px;}
-        .insight-info h4 { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
-        .icon-green { background: #ecfdf5; color: var(--success); }
-
-        .top-list {
-            margin-top: 20px; width: 100%; display: flex; flex-direction: column; gap: 12px;
-            opacity: 0; transition: opacity 0.3s; visibility: hidden;
-        }
-        .insight-box.expandable:hover .top-list { opacity: 1; visibility: visible; transition-delay: 0.15s; }
         
-        .top-item {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.95rem; border-bottom: 1px dashed var(--border-light); padding-bottom: 8px; width: 100%;
+        .insight-info { width: 100%; }
+        .insight-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; flex-shrink: 0; justify-content: center; align-items: center; font-size: 1.5rem; background: rgba(59, 130, 246, 0.15); color: var(--primary);}
+        .insight-info p { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; transition: color 0.3s;}
+        .insight-info h4 { font-size: 1.2rem; font-weight: 800; color: var(--text-main); transition: color 0.3s;}
+        
+        .icon-green { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .icon-gray { background: rgba(100, 116, 139, 0.15); color: var(--text-muted); }
+        
+        .top-list { 
+            width: 100%; display: flex; flex-direction: column; gap: 8px; 
+            max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s; margin-top: 0; 
         }
-        .top-item span { color: var(--text-muted); font-weight: 600;}
+        .insight-box.expandable:hover .top-list { 
+            max-height: 200px; opacity: 1; margin-top: 15px; transition-delay: 0.1s; 
+        }
+        
+        .top-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; border-bottom: 1px dashed var(--border-light); padding-bottom: 8px; width: 100%; transition: border-color 0.3s;}
+        .top-item span { color: var(--text-muted); font-weight: 600; transition: color 0.3s;}
         .top-item strong { font-weight: 800; font-size: 1.05rem;}
 
         /* MODAL */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.6); justify-content: center; align-items: center; backdrop-filter: blur(6px); }
-        .modal-content { background: white; padding: 40px; border-radius: 24px; width: 90%; max-width: 900px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
-        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 28px; color: var(--text-muted); cursor: pointer; transition: 0.3s; background: #f1f5f9; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; backdrop-filter: blur(6px); }
+        .modal-content { background: var(--bg-card); padding: 40px; border-radius: 24px; width: 90%; max-width: 900px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); border: 1px solid var(--border-light); transition: background 0.3s;}
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 28px; color: var(--text-muted); cursor: pointer; transition: 0.3s; background: var(--bg-sys-name); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
         .close-btn:hover { color: white; background: var(--danger); transform: rotate(90deg); }
         .chart-container { position: relative; height: 400px; width: 100%; margin-top: 30px;}
 
     </style>
 </head>
 <body>
+
+    <div class="theme-switch-wrapper" title="Alternar Modo de Visualização">
+        <i class="fas fa-sun"></i>
+        <label class="theme-switch" for="theme-switch-input">
+            <input type="checkbox" id="theme-switch-input" onchange="toggleTheme()">
+            <div class="slider"></div>
+        </label>
+        <i class="fas fa-moon"></i>
+    </div>
 
     <header class="topbar">
         <div class="topbar-logo">
@@ -296,7 +286,7 @@
                 <select id="filtro-mes" onchange="carregarDadosGlobais()">
                     <option value="01">Janeiro</option>
                     <option value="02">Fevereiro</option>
-                    <option value="03" selected>Março</option>
+                    <option value="03">Março</option>
                     <option value="04">Abril</option>
                     <option value="05">Maio</option>
                     <option value="06">Junho</option>
@@ -311,7 +301,7 @@
             <div class="filter-box">
                 <i class="fas fa-filter"></i>
                 <select id="filtro-quinzena" onchange="carregarDadosGlobais()">
-                    <option value="tudo" selected>Mês Todo</option>
+                    <option value="tudo">Mês Todo</option>
                     <option value="1">1ª Quinzena (1-15)</option>
                     <option value="2">2ª Quinzena (16-31)</option>
                 </select>
@@ -323,7 +313,7 @@
         <div class="cube" id="painel-cubo">
             
             <div class="face face-front">
-                <div class="stat-card">
+                <div class="stat-card hoverable-card">
                     <div class="sys-name">Icaphi KMs</div>
                     <div class="card-content">
                         <div class="stat-icon bg-blue">
@@ -372,9 +362,8 @@
                     </div>
                 </div>
 
-                <div class="stat-card">
+                <div class="stat-card hoverable-card">
                     <div class="card-bg-liquid" id="card-bg-liquid"></div>
-                    
                     <div class="sys-name">Icaphi Abastecimento</div>
                     <div class="card-content">
                         <div class="stat-icon bg-green">
@@ -425,11 +414,10 @@
             </div>
 
             <div class="face face-back">
-                <div class="back-card">
+                <div class="back-card hoverable-card">
                     <div class="sys-name">Insights KMs</div>
                     <div class="back-card-content">
-                        
-                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 5px;">
+                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
                             <div class="progress-labels">
                                 <span class="pl-em-rota"><i class="fas fa-car-side"></i> Em Rota: <span id="qtd-em-curso-back">0</span></span>
                                 <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Finalizadas: <span id="qtd-finalizadas-back">0</span></span>
@@ -443,9 +431,19 @@
                             <div class="insight-icon"><i class="fas fa-car-side"></i></div>
                             <div class="insight-info">
                                 <p>Mais Viagens</p>
-                                <h4 id="insight-mais-viagens" style="font-size: 1.2rem;">Carregando...</h4>
+                                <h4 id="insight-mais-viagens">Carregando...</h4>
                             </div>
                         </div>
+                        
+                        <div class="insight-box expandable" id="box-ultimo-km">
+                            <div class="insight-icon icon-gray"><i class="fas fa-flag-checkered"></i></div>
+                            <div class="insight-info">
+                                <p>Últimos Finalizados</p>
+                                <h4 id="insight-ultimo-km" style="color: var(--text-main);">Carregando...</h4>
+                                <div class="top-list" id="lista-ultimos-kms"></div>
+                            </div>
+                        </div>
+
                         <div class="insight-box expandable" id="box-top-km">
                             <div class="insight-icon"><i class="fas fa-truck-moving"></i></div>
                             <div class="insight-info">
@@ -457,11 +455,10 @@
                     </div>
                 </div>
 
-                <div class="back-card">
+                <div class="back-card hoverable-card">
                     <div class="sys-name">Insights Abastecimento</div>
                     <div class="back-card-content">
-                        
-                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 5px;">
+                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
                             <div class="progress-labels">
                                 <span style="color: var(--primary);"><i class="fas fa-gas-pump"></i> Estoque: <span id="qtd-estoque-back">0 L</span></span>
                                 <span style="color: var(--text-muted);"><i class="fas fa-tachometer-alt"></i> Cap: <span id="qtd-capacidade-back">0 L</span></span>
@@ -475,9 +472,19 @@
                             <div class="insight-icon icon-green"><i class="fas fa-hand-holding-usd"></i></div>
                             <div class="insight-info">
                                 <p>Total Gasto (Mês)</p>
-                                <h4 id="insight-custo-total" style="font-size: 1.4rem;">Carregando...</h4>
+                                <h4 id="insight-custo-total">Carregando...</h4>
                             </div>
                         </div>
+
+                        <div class="insight-box expandable" id="box-ultimo-abast">
+                            <div class="insight-icon icon-gray"><i class="fas fa-gas-pump"></i></div>
+                            <div class="insight-info">
+                                <p>Últimos Abastecidos</p>
+                                <h4 id="insight-ultimo-abast" style="color: var(--text-main);">Carregando...</h4>
+                                <div class="top-list" id="lista-ultimos-abast"></div>
+                            </div>
+                        </div>
+
                         <div class="insight-box expandable" id="box-top-abast">
                             <div class="insight-icon icon-green"><i class="fas fa-gas-pump"></i></div>
                             <div class="insight-info">
@@ -497,13 +504,12 @@
         <i class="fas fa-desktop"></i>
         <select id="auto-flip-time" onchange="toggleAutoFlip()">
             <option value="0">Modo Auto: Desligado</option>
-            <option value="0.5" selected>Girar a cada 30 seg</option>
+            <option value="0.25" selected>Girar a cada 15 seg</option>
+            <option value="0.5">Girar a cada 30 seg</option>
             <option value="1">Girar a cada 1 min</option>
             <option value="5">Girar a cada 5 min</option>
             <option value="10">Girar a cada 10 min</option>
             <option value="15">Girar a cada 15 min</option>
-            <option value="20">Girar a cada 20 min</option>
-            <option value="25">Girar a cada 25 min</option>
             <option value="30">Girar a cada 30 min</option>
         </select>
     </div>
@@ -558,8 +564,16 @@
         let graficoAtual = null;
         window.dadosKmsDiario = [];
         window.dadosAbastDiario = [];
+        
+        // CONTROLE DE HOVER PARA PAUSAR ROTAÇÃO AUTOMÁTICA
+        let isUserHovering = false;
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.hoverable-card')) isUserHovering = true;
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('.hoverable-card')) isUserHovering = false;
+        });
 
-        // SISTEMA DE RELÓGIO
         function atualizarRelogio() {
             const agora = new Date();
             const horas = String(agora.getHours()).padStart(2, '0');
@@ -577,7 +591,17 @@
         setInterval(atualizarRelogio, 1000);
         atualizarRelogio();
 
-        // FUNÇÃO GIRAR CAIXA
+        window.toggleTheme = function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('icaphi_theme', isDark ? 'dark' : 'light');
+        };
+
+        if(localStorage.getItem('icaphi_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-switch-input').checked = true;
+        }
+
         window.girarCaixa = function() {
             const cubo = document.getElementById('painel-cubo');
             cubo.classList.toggle('is-flipped');
@@ -594,17 +618,18 @@
             }
         };
 
-        // MODO VISUALIZAÇÃO AUTOMÁTICO
         let autoFlipInterval = null;
         window.toggleAutoFlip = function() {
             if (autoFlipInterval) clearInterval(autoFlipInterval);
             const mins = parseFloat(document.getElementById('auto-flip-time').value);
             if (mins > 0) {
-                autoFlipInterval = setInterval(() => { window.girarCaixa(); }, mins * 60000);
+                // SÓ GIRA SE O USUÁRIO NÃO ESTIVER COM O MOUSE NOS CARDS
+                autoFlipInterval = setInterval(() => { 
+                    if (!isUserHovering) window.girarCaixa(); 
+                }, mins * 60000);
             }
         };
 
-        // DETECÇÃO SCROLL / TOUCH
         let isFlipping = false;
         window.addEventListener('wheel', (e) => {
             if (isFlipping) return;
@@ -635,12 +660,25 @@
             modal.style.display = "flex";
             if(graficoAtual) { graficoAtual.destroy(); }
 
+            const isDark = document.body.classList.contains('dark-mode');
+            const gridColor = isDark ? '#475569' : '#e2e8f0';
+            const textColor = isDark ? '#cbd5e1' : '#64748b';
+
+            const chartOptions = { 
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                },
+                plugins: { legend: { labels: { color: textColor } } }
+            };
+
             if(tipo === 'kms') {
                 titulo.innerText = "Histórico Diário de KMs Rodados";
-                graficoAtual = new Chart(ctx, { type: 'bar', data: { labels: labelsDias, datasets: [{ label: 'KM Rodados', data: window.dadosKmsDiario, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                graficoAtual = new Chart(ctx, { type: 'bar', data: { labels: labelsDias, datasets: [{ label: 'KM Rodados', data: window.dadosKmsDiario, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: chartOptions });
             } else if (tipo === 'abastecimento') {
                 titulo.innerText = "Histórico Diário de Abastecimento (Litros)";
-                graficoAtual = new Chart(ctx, { type: 'line', data: { labels: labelsDias, datasets: [{ label: 'Litros', data: window.dadosAbastDiario, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                graficoAtual = new Chart(ctx, { type: 'line', data: { labels: labelsDias, datasets: [{ label: 'Litros', data: window.dadosAbastDiario, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }] }, options: chartOptions });
             }
         };
 
@@ -651,35 +689,70 @@
             let num = parseFloat(limpo); return isNaN(num) ? 0 : num;
         }
 
-        // VARIÁVEIS DE LISTENER TEMPO REAL
+        // FUNÇÃO INTELIGENTE DE CONVERSÃO DE DATA (Resolve o problema de "00:00")
+        function parseDataFirebaseString(str) {
+            if (!str) return new Date(0);
+            if (typeof str.toDate === 'function') return str.toDate();
+            
+            // Tenta ler o formato "5 de fevereiro de 2026 às 14:37"
+            const regex = /(\d{1,2})\s+de\s+([a-zç]+)\s+de\s+(\d{4})(?:\s+às\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/i;
+            const match = str.match(regex);
+            if (match) {
+                const dia = parseInt(match[1]);
+                const mesStr = match[2].toLowerCase();
+                const ano = parseInt(match[3]);
+                const horas = match[4] ? parseInt(match[4]) : 0;
+                const min = match[5] ? parseInt(match[5]) : 0;
+                
+                const meses = {'janeiro':0, 'fevereiro':1, 'março':2, 'abril':3, 'maio':4, 'junho':5, 'julho':6, 'agosto':7, 'setembro':8, 'outubro':9, 'novembro':10, 'dezembro':11};
+                const mes = meses[mesStr] !== undefined ? meses[mesStr] : 0;
+                return new Date(ano, mes, dia, horas, min);
+            }
+            
+            // Formatos padrão YYYY-MM-DD ou DD/MM/YYYY
+            if (str.includes('/')) {
+                 let parts = str.split(' ')[0].split('/');
+                 let timeParts = str.includes(':') ? str.split(' ')[1].split(':') : [0,0,0];
+                 if(parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0], timeParts[0], timeParts[1], timeParts[2]||0);
+            } else if (str.includes('-')) {
+                 let parts = str.split('T')[0].split(' ')[0].split('-');
+                 let timeParts = str.includes(':') ? (str.includes('T') ? str.split('T')[1].split('Z')[0].split(':') : str.split(' ')[1].split(':')) : [0,0,0];
+                 if(parts.length === 3 && parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], timeParts[2]||0);
+            }
+            return new Date(str);
+        }
+
+        // FORMATADOR VISUAL (ex: "05/03 14:37")
+        function formatarDataHoraStr(d) {
+            if (isNaN(d.getTime()) || d.getTime() === 0) return "--/-- --:--";
+            let dia = String(d.getDate()).padStart(2, '0');
+            let mes = String(d.getMonth() + 1).padStart(2, '0');
+            let hr = String(d.getHours()).padStart(2, '0');
+            let mn = String(d.getMinutes()).padStart(2, '0');
+            return `${dia}/${mes} ${hr}:${mn}`;
+        }
+
         let unsubKms = null; let unsubAbast = null; let unsubConfig = null;
-        
         let gLitrosEtanolTotal = 0; let gValorTotalGasto = 0; let gLitrosHoje = 0; let gRankingAbast = {};
         let gEstoqueAtualTanque = 0; let gCapacidadeMaximaTanque = 5000;
 
         function renderAbastecimentoUI() {
-            // Front Card
             document.getElementById('valor-litros').innerText = `${gEstoqueAtualTanque.toFixed(1)} L`;
             document.getElementById('hover-litros-total').innerText = `${gLitrosEtanolTotal.toFixed(1)} L`;
             const valorFormatado = gValorTotalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('hover-valor-total').innerText = valorFormatado;
             document.getElementById('hover-litros-hoje').innerText = `${gLitrosHoje.toFixed(1)} L`;
             document.getElementById('hover-estoque-texto').innerText = `${gEstoqueAtualTanque.toFixed(1)} L / ${gCapacidadeMaximaTanque} L`;
-            
-            // Back Card
             document.getElementById('insight-custo-total').innerText = valorFormatado;
             document.getElementById('qtd-estoque-back').innerText = `${gEstoqueAtualTanque.toFixed(1)} L`;
             document.getElementById('qtd-capacidade-back').innerText = `${gCapacidadeMaximaTanque} L`;
 
             let percentualTanque = Math.min((gEstoqueAtualTanque / gCapacidadeMaximaTanque) * 100, 100);
-            
-            // Atualiza Frentes
             const liquidElement = document.getElementById('liquid-level');
             const bgLiquidElement = document.getElementById('card-bg-liquid');
             liquidElement.style.height = percentualTanque + '%';
             bgLiquidElement.style.height = percentualTanque + '%';
             
-            // Atualiza Barra Verso
             const barEstoqueBack = document.getElementById('bar-estoque-back');
             barEstoqueBack.style.width = percentualTanque + '%';
 
@@ -693,17 +766,13 @@
                 barEstoqueBack.style.backgroundColor = 'var(--primary)';
             }
 
-            // Top Abastecimentos
             let arrAbast = Object.keys(gRankingAbast).map(placa => ({ placa, val: gRankingAbast[placa] }));
             arrAbast.sort((a, b) => b.val - a.val);
-            let top5Abast = arrAbast.slice(0, 5);
-            let htmlAbast = '';
+            let top5Abast = arrAbast.slice(0, 5); let htmlAbast = '';
             if(top5Abast.length > 0) {
-                document.getElementById('insight-topabast').innerHTML = `${top5Abast[0].placa} <span style="font-size: 1rem; color: var(--text-muted); font-weight: 600;">(${top5Abast[0].val.toFixed(1)} L)</span>`;
+                document.getElementById('insight-topabast').innerHTML = `${top5Abast[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${top5Abast[0].val.toFixed(1)} L)</span>`;
                 top5Abast.forEach((item, index) => { htmlAbast += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${item.val.toFixed(1)} L</strong></div>`; });
-            } else {
-                document.getElementById('insight-topabast').innerText = "Sem Dados"; htmlAbast = '<div class="top-item"><span>Nenhum registro</span></div>';
-            }
+            } else { document.getElementById('insight-topabast').innerText = "Sem Dados"; htmlAbast = '<div class="top-item"><span>Nenhum registro</span></div>'; }
             document.getElementById('lista-top-abast').innerHTML = htmlAbast;
         }
 
@@ -720,47 +789,38 @@
             document.getElementById('valor-km').innerHTML = '<i class="fas fa-spinner fa-spin" style="color: #cbd5e1;"></i>';
             document.getElementById('valor-litros').innerHTML = '<i class="fas fa-spinner fa-spin" style="color: #cbd5e1;"></i>';
 
-            // TEMPO REAL: KMs
             unsubKms = onSnapshot(collection(dbKms, "viagens"), (kmSnapshot) => {
                 let kmRodadosTotal = 0; let kmEscaladoTotal = 0; let qtdEmCursoHoje = 0; let qtdFinalizadaHoje = 0;
-                let rankingDispersao = {}; let rankingViagens = {}; 
-                window.dadosKmsDiario = new Array(diasNoMes).fill(0);
+                let rankingDispersao = {}; let rankingViagens = {}; window.dadosKmsDiario = new Array(diasNoMes).fill(0);
+                
+                let ultimosKms = [];
 
                 kmSnapshot.forEach((doc) => {
                     try {
                         const dataObj = doc.data(); const obs = dataObj.historico_obs || dataObj; 
                         let dataRaw = dataObj.dataFim || dataObj.dataInicio || dataObj.data || obs.dataFim || obs.dataInicio || obs.data;
-                        let dataCriacao = null;
+                        let dataCriacao = parseDataFirebaseString(dataRaw);
 
-                        if (dataRaw) {
-                            if (typeof dataRaw.toDate === 'function') { dataCriacao = dataRaw.toDate(); } 
-                            else if (typeof dataRaw === 'string') {
-                                if (dataRaw.includes('/')) {
-                                    let partes = dataRaw.split(' ')[0].split('/');
-                                    if (partes.length === 3) dataCriacao = new Date(parseInt(partes[2]), parseInt(partes[1]) - 1, parseInt(partes[0]));
-                                } else if (dataRaw.includes('-')) {
-                                    let partes = dataRaw.split('T')[0].split(' ')[0].split('-');
-                                    if (partes.length === 3 && partes[0].length === 4) dataCriacao = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-                                }
-                                if (!dataCriacao || isNaN(dataCriacao.getTime())) dataCriacao = new Date(dataRaw);
-                            } else if (dataRaw.seconds !== undefined) { dataCriacao = new Date(dataRaw.seconds * 1000); }
-                        }
-
-                        if (dataCriacao && !isNaN(dataCriacao.getTime())) {
+                        if (dataCriacao && !isNaN(dataCriacao.getTime()) && dataCriacao.getTime() !== 0) {
                             const docMes = String(dataCriacao.getMonth() + 1).padStart(2, '0'); const docDia = dataCriacao.getDate();
                             
                             if (docMes === mesSelecionado) {
                                 if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
 
                                 let isHoje = (docDia === dataHojeObjeto.getDate() && dataCriacao.getMonth() === dataHojeObjeto.getMonth());
+                                const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Veículo Indefinido';
+
                                 if (isHoje) {
                                     if(dataObj.status === 'em_curso' || obs.status === 'em_curso') qtdEmCursoHoje++;
                                     if(dataObj.status === 'finalizada' || obs.status === 'finalizada') qtdFinalizadaHoje++;
                                 }
 
+                                if (dataObj.status === 'finalizada' || obs.status === 'finalizada') {
+                                    ultimosKms.push({ placa: placaVal, tempo: dataCriacao.getTime(), dataObj: dataCriacao });
+                                }
+
                                 const meta = limparNumero(obs.metaKm || dataObj.metaKm); kmEscaladoTotal += meta;
                                 const kmFinal = limparNumero(obs.kmFim || dataObj.kmFim); const kmInicial = limparNumero(obs.kmInicio || dataObj.kmInicio);
-                                const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Veículo';
                                 
                                 rankingViagens[placaVal] = (rankingViagens[placaVal] || 0) + 1;
 
@@ -774,6 +834,23 @@
                     } catch (e) {}
                 });
 
+                ultimosKms.sort((a, b) => b.tempo - a.tempo);
+                let top5UltimosKms = ultimosKms.slice(0, 5);
+                
+                if(top5UltimosKms.length > 0) {
+                    let u = top5UltimosKms[0];
+                    document.getElementById('insight-ultimo-km').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarDataHoraStr(u.dataObj)})</span>`;
+                    
+                    let htmlU = '';
+                    top5UltimosKms.forEach((item, index) => {
+                        htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraStr(item.dataObj)}</strong></div>`;
+                    });
+                    document.getElementById('lista-ultimos-kms').innerHTML = htmlU;
+                } else {
+                    document.getElementById('insight-ultimo-km').innerText = "Sem Dados";
+                    document.getElementById('lista-ultimos-kms').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
+                }
+
                 const dispersao = kmRodadosTotal - kmEscaladoTotal; const dispText = dispersao > 0 ? `+${dispersao.toFixed(0)} km` : `${dispersao.toFixed(0)} km`;
                 const colorDisp = dispersao > 0 ? 'var(--danger)' : 'var(--success)';
                 document.getElementById('valor-km').innerText = `${kmRodadosTotal.toFixed(0)} KM`;
@@ -782,26 +859,23 @@
                 document.getElementById('hover-dispersao').innerText = dispText; document.getElementById('hover-dispersao').style.color = colorDisp;
                 document.getElementById('badge-dispersao').innerText = `Dispersão: ${dispText}`; document.getElementById('badge-dispersao').style.color = colorDisp;
                 
-                document.getElementById('qtd-em-curso').innerText = qtdEmCursoHoje; 
-                document.getElementById('qtd-finalizadas').innerText = qtdFinalizadaHoje;
-                document.getElementById('qtd-em-curso-back').innerText = qtdEmCursoHoje; 
-                document.getElementById('qtd-finalizadas-back').innerText = qtdFinalizadaHoje;
+                document.getElementById('qtd-em-curso').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas').innerText = qtdFinalizadaHoje;
+                document.getElementById('qtd-em-curso-back').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-back').innerText = qtdFinalizadaHoje;
                 
                 let totalViagensHoje = qtdEmCursoHoje + qtdFinalizadaHoje;
                 let perFinalizado = totalViagensHoje > 0 ? (qtdFinalizadaHoje / totalViagensHoje) * 100 : 0;
-                document.getElementById('bar-finalizadas').style.width = perFinalizado + '%';
-                document.getElementById('bar-finalizadas-back').style.width = perFinalizado + '%';
+                document.getElementById('bar-finalizadas').style.width = perFinalizado + '%'; document.getElementById('bar-finalizadas-back').style.width = perFinalizado + '%';
 
                 let arrViagens = Object.keys(rankingViagens).map(placa => ({ placa, val: rankingViagens[placa] }));
                 arrViagens.sort((a, b) => b.val - a.val);
-                document.getElementById('insight-mais-viagens').innerHTML = arrViagens.length > 0 ? `${arrViagens[0].placa} <br><span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${arrViagens[0].val} viagens no período)</span>` : "Sem Dados";
+                document.getElementById('insight-mais-viagens').innerHTML = arrViagens.length > 0 ? `${arrViagens[0].placa} <br><span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">(${arrViagens[0].val} viagens)</span>` : "Sem Dados";
 
                 let arrDispersao = Object.keys(rankingDispersao).map(placa => ({ placa, val: rankingDispersao[placa] }));
                 arrDispersao.sort((a, b) => b.val - a.val); 
                 let top5Disp = arrDispersao.slice(0, 5); let htmlDisp = '';
                 if(top5Disp.length > 0) {
                     let sinalPrim = top5Disp[0].val > 0 ? '+' : '';
-                    document.getElementById('insight-topkm').innerHTML = `${top5Disp[0].placa} <span style="font-size: 1rem; color: var(--text-muted); font-weight: 600;">(${sinalPrim}${top5Disp[0].val.toFixed(0)} km)</span>`;
+                    document.getElementById('insight-topkm').innerHTML = `${top5Disp[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${sinalPrim}${top5Disp[0].val.toFixed(0)} km)</span>`;
                     top5Disp.forEach((item, index) => {
                         let color = item.val > 0 ? 'var(--danger)' : 'var(--success)';
                         htmlDisp += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong style="color: ${color}">${item.val > 0 ? '+' : ''}${item.val.toFixed(0)} km</strong></div>`;
@@ -810,7 +884,6 @@
                 document.getElementById('lista-top-dispersao').innerHTML = htmlDisp;
             });
 
-            // TEMPO REAL: ESTOQUE DO TANQUE
             unsubConfig = onSnapshot(doc(dbAbast, "configuracoes", "gerais"), (docSnap) => {
                 if (docSnap.exists()) {
                     gEstoqueAtualTanque = limparNumero(docSnap.data().estoqueTanque);
@@ -819,10 +892,10 @@
                 }
             });
 
-            // TEMPO REAL: ABASTECIMENTOS
             unsubAbast = onSnapshot(collection(dbAbast, "abastecimentos"), (abastSnapshot) => {
-                gLitrosEtanolTotal = 0; gValorTotalGasto = 0; gLitrosHoje = 0; gRankingAbast = {};
-                window.dadosAbastDiario = new Array(diasNoMes).fill(0);
+                gLitrosEtanolTotal = 0; gValorTotalGasto = 0; gLitrosHoje = 0; gRankingAbast = {}; window.dadosAbastDiario = new Array(diasNoMes).fill(0);
+
+                let ultimosAbast = [];
 
                 abastSnapshot.forEach((doc) => {
                     try {
@@ -835,25 +908,66 @@
 
                                 const litros = limparNumero(dataObj.litros); const valorUnit = limparNumero(dataObj.valorUnitario);
                                 const valor = valorUnit > 0 ? (litros * valorUnit) : (limparNumero(dataObj.valorTotal) || limparNumero(dataObj.valor));
+                                const placaVal = dataObj.placa || 'Veículo Indefinido';
 
                                 gLitrosEtanolTotal += litros; gValorTotalGasto += valor;
                                 if (dataObj.data.startsWith(hojeStr)) { gLitrosHoje += litros; }
                                 if(docDia >= 1 && docDia <= diasNoMes) { window.dadosAbastDiario[docDia - 1] += litros; }
 
-                                const placaVal = dataObj.placa || 'Veículo';
+                                // RESOLVENDO A HORA DO ABASTECIMENTO
+                                let dataAbastObj = new Date(0);
+                                if (dataObj.dataCriacao && typeof dataObj.dataCriacao.toDate === 'function') {
+                                    dataAbastObj = dataObj.dataCriacao.toDate();
+                                } else if (dataObj.data) {
+                                    let h = 12, m = 0;
+                                    if (dataObj.hora) {
+                                        let partesHora = dataObj.hora.split(':');
+                                        if(partesHora.length >= 2) { h = parseInt(partesHora[0]); m = parseInt(partesHora[1]); }
+                                    }
+                                    dataAbastObj = new Date(parseInt(partesData[0]), parseInt(partesData[1])-1, parseInt(partesData[2]), h, m);
+                                }
+
+                                if(!isNaN(dataAbastObj.getTime())) {
+                                    ultimosAbast.push({ placa: placaVal, tempo: dataAbastObj.getTime(), dataObj: dataAbastObj, litros: litros });
+                                }
+
                                 gRankingAbast[placaVal] = (gRankingAbast[placaVal] || 0) + litros;
                             }
                         }
                     } catch (e) {}
                 });
+                
+                ultimosAbast.sort((a, b) => b.tempo - a.tempo);
+                let top5UltimosAbast = ultimosAbast.slice(0, 5);
+                
+                if(top5UltimosAbast.length > 0) {
+                    let u = top5UltimosAbast[0];
+                    document.getElementById('insight-ultimo-abast').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarDataHoraStr(u.dataObj)})</span>`;
+                    
+                    let htmlU = '';
+                    top5UltimosAbast.forEach((item, index) => {
+                        htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraStr(item.dataObj)}</strong></div>`;
+                    });
+                    document.getElementById('lista-ultimos-abast').innerHTML = htmlU;
+                } else {
+                    document.getElementById('insight-ultimo-abast').innerText = "Sem Dados";
+                    document.getElementById('lista-ultimos-abast').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
+                }
+
                 renderAbastecimentoUI();
             });
         };
 
-        // Inicia o carregamento dos dados E o botão automático ao abrir a página
         window.onload = () => {
+            const hoje = new Date();
+            const diaAtual = hoje.getDate();
+            const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+            
+            document.getElementById('filtro-mes').value = mesAtual;
+            document.getElementById('filtro-quinzena').value = diaAtual <= 15 ? "1" : "2";
+
             window.carregarDadosGlobais();
-            window.toggleAutoFlip(); // Dá o play na rolagem automática (padrão de 30s)
+            window.toggleAutoFlip(); 
         };
     </script>
 </body>
