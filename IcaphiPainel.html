@@ -88,10 +88,10 @@
             position: absolute; top: 30px; right: 30px;
             display: flex; align-items: center; gap: 10px; z-index: 100;
         }
-        .theme-switch { position: relative; display: inline-block; width: 66px; height: 34px; }
+        .theme-switch { position: relative; display: inline-block; width: 66px; height: 34px; cursor: pointer; }
         .theme-switch input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-color: #cbd5e1; transition: .4s; border-radius: 34px;
             box-shadow: inset 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(255,255,255,0.4);
             border: 1px solid #94a3b8; border-bottom: 2px solid #94a3b8;
@@ -107,6 +107,141 @@
         .theme-switch-wrapper i.fa-moon { color: var(--text-muted); font-size: 1.2rem; transition: color 0.3s; }
         body.dark-mode .theme-switch-wrapper i.fa-moon { color: #fbbf24; filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));}
         body.dark-mode .theme-switch-wrapper i.fa-sun { color: var(--text-muted); filter: none;}
+
+        /* --- CAMADA DE DESFOQUE (BLUR) PARA ANIMAÇÃO DO ABAJUR --- */
+        #theme-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9995;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #theme-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* --- EFEITO ABAJUR (LAMP) --- */
+        .lamp-wrapper {
+            position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%);
+            width: 160px; z-index: 9999; transition: bottom 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; pointer-events: none;
+        }
+        .lamp-wrapper.show { bottom: 15vh; }
+        .lamp-shade {
+            width: 160px; height: 90px; background: #334155;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+            position: relative; z-index: 4; border-bottom: 6px solid #1e293b;
+        }
+        .lamp-bulb {
+            width: 50px; height: 25px; background: #94a3b8; border-radius: 0 0 25px 25px;
+            margin-top: -6px; z-index: 3; transition: background 0.3s, box-shadow 0.3s;
+        }
+        .lamp-bulb.on {
+            background: #fef08a;
+            box-shadow: 0 15px 40px rgba(253, 224, 71, 0.9), 0 0 80px rgba(253, 224, 71, 0.6);
+        }
+        .lamp-base-stick {
+            width: 14px; height: 220px; background: #475569; position: relative; z-index: 2;
+            box-shadow: inset -4px 0 0 rgba(0,0,0,0.2);
+        }
+        .lamp-base-bottom {
+            width: 120px; height: 24px; background: #1e293b; border-radius: 20px 20px 0 0;
+            margin-top: -5px; z-index: 2;
+        }
+        .pull-string {
+            width: 4px; height: 50px; background: #ef4444; position: absolute; top: 90px; right: 50px;
+            z-index: 5; border-radius: 2px; transition: height 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .pull-string::after {
+            content: ''; position: absolute; bottom: -6px; left: -3px; width: 10px; height: 10px;
+            background: #dc2626; border-radius: 50%;
+        }
+        .lamp-wrapper.pull .pull-string { height: 80px; }
+
+        /* --- EFEITO DADO (SHAKE) --- */
+        .shake-dice {
+            animation: shake-anim 0.4s cubic-bezier(.36,.07,.19,.97) infinite;
+            transform: translate3d(0, 0, 0); backface-visibility: hidden; perspective: 1000px;
+        }
+        @keyframes shake-anim {
+            0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+            10%, 90% { transform: translate3d(-2px, -2px, 0) rotate(-1deg); }
+            20%, 80% { transform: translate3d(2px, -1px, 0) rotate(1deg); }
+            30%, 50%, 70% { transform: translate3d(-3px, 1px, 0) rotate(-1deg); }
+            40%, 60% { transform: translate3d(3px, 2px, 0) rotate(1deg); }
+        }
+
+        /* --- BOTÃO DE MONITORAMENTO DINÂMICO --- */
+        .btn-monitoramento {
+            position: absolute;
+            bottom: 150px; /* Mais alto, distante do relógio */
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            height: 50px;
+            width: 210px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 20;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .btn-monitoramento i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .btn-monitoramento .text-normal {
+            display: inline;
+            transition: opacity 0.2s;
+        }
+        .btn-monitoramento .text-hover {
+            display: none;
+            opacity: 0;
+        }
+        .btn-monitoramento:hover {
+            width: 320px;
+            background: var(--primary-hover);
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.5);
+            transform: translateX(-50%) translateY(-4px);
+        }
+        .btn-monitoramento:hover .text-normal {
+            display: none;
+        }
+        .btn-monitoramento:hover .text-hover {
+            display: inline;
+            animation: fadeInText 0.3s forwards;
+        }
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Ação de Desvio do botão (Dodge) para PC */
+        .btn-monitoramento.push-right {
+            transform: translateX(calc(-50% + 245px));
+        }
+        .btn-monitoramento.push-left {
+            transform: translateX(calc(-50% - 245px));
+        }
+        .btn-monitoramento.push-right:hover {
+            transform: translateX(calc(-50% + 245px)) translateY(-4px);
+        }
+        .btn-monitoramento.push-left:hover {
+            transform: translateX(calc(-50% - 245px)) translateY(-4px);
+        }
 
         /* --- DATA E HORA / RODAPÉ --- */
         .clock-container {
@@ -150,30 +285,29 @@
         .face-front { transform: rotateX(0deg); }
         .face-back { transform: rotateX(180deg); } 
 
-        /* --- CARDS PRINCIPAIS (COM ALTURA AUMENTADA PARA CABER TUDO) --- */
+        /* --- CARDS PRINCIPAIS (ALTURA 460px) --- */
         .stat-card, .back-card {
             width: 450px; background: var(--bg-card-alpha); border-radius: 28px; position: relative;
             overflow: hidden; box-shadow: 0 15px 35px var(--shadow-color);
             border: 1px solid var(--border-light); display: flex; flex-direction: column;
             align-items: center; backdrop-filter: blur(10px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            height: 440px; 
-            transform-origin: top center;
+            height: 460px; transform-origin: top center;
         }
         
-        .stat-card:hover, .back-card:hover { height: 680px; box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15); border-color: var(--primary); }
+        .stat-card:hover, .back-card:hover { height: 680px; box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15); border-color: var(--primary); z-index: 10; }
         
         .sys-name { position: relative; z-index: 2; width: 100%; background: var(--bg-sys-name); padding: 15px 0; text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border-light); letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s;}
         
-        .card-content { position: relative; z-index: 2; padding: 40px 20px; transition: transform 0.5s ease; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .card-content { position: relative; z-index: 2; padding: 30px 20px; transition: transform 0.5s ease; width: 100%; display: flex; flex-direction: column; align-items: center; }
         .back-card-content { position: relative; z-index: 2; padding: 20px 20px; gap: 15px; width: 100%; display: flex; flex-direction: column; align-items: center;}
         
-        .stat-card:hover .card-content { transform: translateY(-30px); opacity: 0.1; }
+        .stat-card:hover .card-content { transform: translateY(-40px); opacity: 0.1; }
 
-        .stat-icon { width: 80px; height: 80px; border-radius: 22px; display: flex; justify-content: center; align-items: center; font-size: 2.2rem; margin-bottom: 20px; }
+        .stat-icon { width: 80px; height: 80px; border-radius: 22px; display: flex; justify-content: center; align-items: center; font-size: 2.2rem; margin-bottom: 15px; }
         .bg-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
         .bg-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 
-        .stat-info { text-align: center; }
+        .stat-info { text-align: center; width: 100%; }
         .stat-info p { font-size: 1rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s;}
         .stat-value { font-size: 3.2rem; font-weight: 800; margin-top: 5px; color: var(--text-main); transition: color 0.3s;}
         .badge-dispersao-fora { font-size: 0.95rem; font-weight: 700; margin-top: 5px; opacity: 0.9; }
@@ -193,8 +327,8 @@
         .detail-row.highlight strong { color: var(--primary); font-size: 1.3rem; }
         .subtitle-hoje { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;}
 
-        /* BARRAS */
-        .progress-wrapper { width: 100%; margin: 15px 0 20px 0; }
+        /* BARRAS DE PROGRESSO */
+        .progress-wrapper { width: 100%; margin: 15px 0 10px 0; }
         .progress-labels { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
         .pl-em-rota { color: var(--primary); }
         .pl-finalizada { color: var(--success); }
@@ -262,14 +396,70 @@
         .close-btn:hover { color: white; background: var(--danger); transform: rotate(90deg); }
         .chart-container { position: relative; height: 400px; width: 100%; margin-top: 30px;}
 
+        /* ==========================================================
+           RESPONSIVIDADE MOBILE (CELULAR) - TUDO FICA PERFEITO AQUI
+           ========================================================== */
+        @media (max-width: 992px) {
+            body { 
+                height: auto; min-height: 100vh; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px; 
+            }
+            .topbar { 
+                flex-direction: column; height: auto; gap: 20px; padding: 20px; text-align: center; 
+            }
+            .topbar-logo h1 { font-size: 2rem; }
+            .theme-switch-wrapper { top: 20px; right: 20px; }
+            .filters-container { flex-direction: column; width: 100%; gap: 10px; }
+            .filter-box { width: 100%; justify-content: center; }
+            
+            .scene { height: auto; padding: 10px; perspective: none; }
+            .cube { 
+                height: auto; transform: none !important; transition: none; display: flex; flex-direction: column; gap: 20px; 
+            }
+            .face { 
+                position: relative; height: auto; transform: none !important; flex-direction: column; gap: 20px; 
+            }
+            .face-back { display: flex; } /* Garante que os cards do verso apareçam na lista */
+            
+            .stat-card, .back-card { 
+                width: 100%; max-width: 450px; height: auto !important; margin: 0 auto; 
+            }
+            
+            /* No celular as informações sempre ficam visíveis para facilitar a rolagem */
+            .stat-card:hover .card-content { transform: none; opacity: 1; }
+            .hover-details { 
+                position: relative; bottom: 0 !important; height: auto; padding: 20px; 
+            }
+            .insight-box { 
+                height: auto !important; align-items: center !important; 
+            }
+            .top-list { 
+                max-height: 500px !important; opacity: 1 !important; margin-top: 15px !important; 
+            }
+            
+            /* Oculta os atalhos e dicas exclusivas para PC */
+            .view-mode-wrapper, .scroll-indicator { display: none; }
+            
+            /* Botão de Monitoramento adaptado e estático */
+            .btn-monitoramento {
+                position: relative; bottom: auto; left: auto; transform: none !important; 
+                margin: 30px auto; width: 250px;
+            }
+            .btn-monitoramento:hover { width: 280px; transform: translateY(-4px) !important; }
+            .btn-monitoramento.push-right, .btn-monitoramento.push-left { transform: none !important; }
+            
+            .clock-container { position: relative; bottom: auto; margin: 20px auto 40px auto; animation: none; }
+            .footer-credits { position: relative; bottom: auto; padding: 10px; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="theme-overlay"></div>
+
     <div class="theme-switch-wrapper" title="Alternar Modo de Visualização">
         <i class="fas fa-sun"></i>
-        <label class="theme-switch" for="theme-switch-input">
-            <input type="checkbox" id="theme-switch-input" onchange="toggleTheme()">
+        <label class="theme-switch" for="theme-switch-input" onclick="triggerThemeAnimation(event)">
+            <input type="checkbox" id="theme-switch-input">
             <div class="slider"></div>
         </label>
         <i class="fas fa-moon"></i>
@@ -321,30 +511,40 @@
                         </div>
                         <div class="stat-info">
                             <p>Total Rodado</p>
-                            <h3 id="valor-km" class="stat-value">...</h3>
-                            <div id="badge-dispersao" class="badge-dispersao-fora">...</div>
+                            <h3 id="valor-km" class="stat-value scramble-text">...</h3>
+                            <div id="badge-dispersao" class="badge-dispersao-fora scramble-text">...</div>
+                        </div>
+                        
+                        <div class="progress-wrapper" style="margin-top: 25px; width: 100%;">
+                            <div class="progress-labels" style="font-size: 0.85rem;">
+                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Rota: <span id="qtd-em-curso-front" class="scramble-text">0</span></span>
+                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Fim: <span id="qtd-finalizadas-front" class="scramble-text">0</span></span>
+                            </div>
+                            <div class="progress-bar-bg" style="height: 10px;">
+                                <div class="progress-bar-fill" id="bar-finalizadas-front"></div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="hover-details">
                         <div class="detail-row">
                             <span>KM Rodado Real</span>
-                            <strong id="hover-rodado">...</strong>
+                            <strong id="hover-rodado" class="scramble-text">...</strong>
                         </div>
                         <div class="detail-row">
                             <span>KM Escalado (Meta)</span>
-                            <strong id="hover-escalado">...</strong>
+                            <strong id="hover-escalado" class="scramble-text">...</strong>
                         </div>
                         <div class="detail-row highlight" style="margin-bottom: 20px;">
                             <span>Dispersão Geral</span>
-                            <strong id="hover-dispersao">...</strong>
+                            <strong id="hover-dispersao" class="scramble-text">...</strong>
                         </div>
                         
                         <div class="subtitle-hoje">Status de Viagens (Hoje)</div>
                         <div class="progress-wrapper">
                             <div class="progress-labels">
-                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Em Rota: <span id="qtd-em-curso">0</span></span>
-                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Finalizadas: <span id="qtd-finalizadas">0</span></span>
+                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Em Rota: <span id="qtd-em-curso" class="scramble-text">0</span></span>
+                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Finalizadas: <span id="qtd-finalizadas" class="scramble-text">0</span></span>
                             </div>
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" id="bar-finalizadas"></div>
@@ -356,7 +556,7 @@
                                 <i class="fas fa-external-link-alt"></i> Abrir App
                             </a>
                             <button onclick="verDashboard('kms')" class="btn-acao btn-grafico">
-                                <i class="fas fa-chart-bar"></i> Gráfico Diário
+                                <i class="fas fa-chart-bar"></i> Gráfico
                             </button>
                         </div>
                     </div>
@@ -371,27 +571,27 @@
                         </div>
                         <div class="stat-info">
                             <p>Estoque no Tanque</p> 
-                            <h3 id="valor-litros" class="stat-value">...</h3>
+                            <h3 id="valor-litros" class="stat-value scramble-text">...</h3>
                         </div>
                     </div>
 
                     <div class="hover-details">
                         <div class="detail-row">
                             <span>Litros Abastecidos (Mês)</span>
-                            <strong id="hover-litros-total">...</strong>
+                            <strong id="hover-litros-total" class="scramble-text">...</strong>
                         </div>
                         <div class="detail-row highlight">
                             <span>Custo Total</span>
-                            <strong id="hover-valor-total">...</strong>
+                            <strong id="hover-valor-total" class="scramble-text">...</strong>
                         </div>
                         <div class="detail-row" style="margin-bottom: 5px;">
                             <span>Litros Abastecidos Hoje:</span>
-                            <strong id="hover-litros-hoje" style="color: var(--success);">0 L</strong>
+                            <strong id="hover-litros-hoje" style="color: var(--success);" class="scramble-text">0 L</strong>
                         </div>
                         
                         <div class="detail-row highlight" style="margin-top: 5px; margin-bottom: 5px; border-top: 1px dashed var(--border-light); padding-top: 10px;">
                             <span>Estoque no Tanque:</span>
-                            <strong id="hover-estoque-texto">... L</strong>
+                            <strong id="hover-estoque-texto" class="scramble-text">... L</strong>
                         </div>
                         
                         <div class="tank-wrapper">
@@ -406,7 +606,7 @@
                                 <i class="fas fa-external-link-alt"></i> Abrir App
                             </a>
                             <button onclick="verDashboard('abastecimento')" class="btn-acao btn-grafico">
-                                <i class="fas fa-chart-line"></i> Gráfico Diário
+                                <i class="fas fa-chart-line"></i> Gráfico
                             </button>
                         </div>
                     </div>
@@ -419,8 +619,8 @@
                     <div class="back-card-content">
                         <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
                             <div class="progress-labels">
-                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Em Rota: <span id="qtd-em-curso-back">0</span></span>
-                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Finalizadas: <span id="qtd-finalizadas-back">0</span></span>
+                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Rota: <span id="qtd-em-curso-back" class="scramble-text">0</span></span>
+                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Fim: <span id="qtd-finalizadas-back" class="scramble-text">0</span></span>
                             </div>
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" id="bar-finalizadas-back"></div>
@@ -431,7 +631,7 @@
                             <div class="insight-icon"><i class="fas fa-car-side"></i></div>
                             <div class="insight-info">
                                 <p>Mais Viagens</p>
-                                <h4 id="insight-mais-viagens">Carregando...</h4>
+                                <h4 id="insight-mais-viagens" class="scramble-text">Carregando...</h4>
                             </div>
                         </div>
                         
@@ -439,7 +639,7 @@
                             <div class="insight-icon icon-gray"><i class="fas fa-flag-checkered"></i></div>
                             <div class="insight-info">
                                 <p>Últimos Finalizados</p>
-                                <h4 id="insight-ultimo-km" style="color: var(--text-main);">Carregando...</h4>
+                                <h4 id="insight-ultimo-km" style="color: var(--text-main);" class="scramble-text">Carregando...</h4>
                                 <div class="top-list" id="lista-ultimos-kms"></div>
                             </div>
                         </div>
@@ -448,7 +648,7 @@
                             <div class="insight-icon"><i class="fas fa-truck-moving"></i></div>
                             <div class="insight-info">
                                 <p>Top Dispersão</p>
-                                <h4 id="insight-topkm" style="color: var(--primary);">Carregando...</h4>
+                                <h4 id="insight-topkm" style="color: var(--primary);" class="scramble-text">Carregando...</h4>
                                 <div class="top-list" id="lista-top-dispersao"></div>
                             </div>
                         </div>
@@ -460,8 +660,8 @@
                     <div class="back-card-content">
                         <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
                             <div class="progress-labels">
-                                <span style="color: var(--primary);"><i class="fas fa-gas-pump"></i> Estoque: <span id="qtd-estoque-back">0 L</span></span>
-                                <span style="color: var(--text-muted);"><i class="fas fa-tachometer-alt"></i> Cap: <span id="qtd-capacidade-back">0 L</span></span>
+                                <span style="color: var(--primary);"><i class="fas fa-gas-pump"></i> Estoque: <span id="qtd-estoque-back" class="scramble-text">0 L</span></span>
+                                <span style="color: var(--text-muted);"><i class="fas fa-tachometer-alt"></i> Cap: <span id="qtd-capacidade-back" class="scramble-text">0 L</span></span>
                             </div>
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" id="bar-estoque-back" style="background-color: var(--primary);"></div>
@@ -472,7 +672,7 @@
                             <div class="insight-icon icon-green"><i class="fas fa-hand-holding-usd"></i></div>
                             <div class="insight-info">
                                 <p>Total Gasto (Mês)</p>
-                                <h4 id="insight-custo-total">Carregando...</h4>
+                                <h4 id="insight-custo-total" class="scramble-text">Carregando...</h4>
                             </div>
                         </div>
 
@@ -480,7 +680,7 @@
                             <div class="insight-icon icon-gray"><i class="fas fa-gas-pump"></i></div>
                             <div class="insight-info">
                                 <p>Últimos Abastecidos</p>
-                                <h4 id="insight-ultimo-abast" style="color: var(--text-main);">Carregando...</h4>
+                                <h4 id="insight-ultimo-abast" style="color: var(--text-main);" class="scramble-text">Carregando...</h4>
                                 <div class="top-list" id="lista-ultimos-abast"></div>
                             </div>
                         </div>
@@ -489,7 +689,7 @@
                             <div class="insight-icon icon-green"><i class="fas fa-gas-pump"></i></div>
                             <div class="insight-info">
                                 <p>Top Consumo (Litros)</p>
-                                <h4 id="insight-topabast" style="color: var(--success);">Carregando...</h4>
+                                <h4 id="insight-topabast" style="color: var(--success);" class="scramble-text">Carregando...</h4>
                                 <div class="top-list" id="lista-top-abast"></div>
                             </div>
                         </div>
@@ -499,6 +699,12 @@
 
         </div>
     </div>
+
+    <a href="https://1drv.ms/f/c/f6d4fa37c5517917/IgAXeVHFN_rUIID2kgAAAAAAAb5bWQ4m4d4gAXMQLb4MN4c?e=hddSi3" target="_blank" class="btn-monitoramento">
+        <i class="fas fa-file-excel"></i>
+        <span class="text-normal">Monitoramento</span>
+        <span class="text-hover">Planilhas de Monitoramento</span>
+    </a>
 
     <div class="view-mode-wrapper">
         <i class="fas fa-desktop"></i>
@@ -536,9 +742,17 @@
         </div>
     </div>
 
+    <div class="lamp-wrapper" id="lamp-wrapper">
+        <div class="lamp-shade"></div>
+        <div class="lamp-bulb" id="lamp-bulb"></div>
+        <div class="pull-string"></div>
+        <div class="lamp-base-stick"></div>
+        <div class="lamp-base-bottom"></div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"; 
+        import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"; 
 
         const appKMS = initializeApp({
             apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
@@ -565,15 +779,8 @@
         window.dadosKmsDiario = [];
         window.dadosAbastDiario = [];
         
-        // CONTROLE DE HOVER PARA PAUSAR ROTAÇÃO AUTOMÁTICA
         let isUserHovering = false;
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('.hoverable-card')) isUserHovering = true;
-        });
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.closest('.hoverable-card')) isUserHovering = false;
-        });
-
+        
         function atualizarRelogio() {
             const agora = new Date();
             const horas = String(agora.getHours()).padStart(2, '0');
@@ -591,16 +798,53 @@
         setInterval(atualizarRelogio, 1000);
         atualizarRelogio();
 
-        window.toggleTheme = function() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('icaphi_theme', isDark ? 'dark' : 'light');
-        };
-
         if(localStorage.getItem('icaphi_theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.getElementById('theme-switch-input').checked = true;
+        } else {
+            document.body.classList.remove('dark-mode');
+            document.getElementById('theme-switch-input').checked = false;
         }
+
+        window.triggerThemeAnimation = function(e) {
+            e.preventDefault(); 
+            if(window.isLampAnimating) return; 
+            window.isLampAnimating = true;
+
+            const lamp = document.getElementById('lamp-wrapper');
+            const bulb = document.getElementById('lamp-bulb');
+            const checkbox = document.getElementById('theme-switch-input');
+            const overlay = document.getElementById('theme-overlay'); 
+            
+            lamp.classList.add('show');
+            overlay.classList.add('active'); 
+            
+            setTimeout(() => {
+                lamp.classList.add('pull');
+                
+                setTimeout(() => {
+                    lamp.classList.remove('pull');
+                    
+                    document.body.classList.toggle('dark-mode');
+                    const isDark = document.body.classList.contains('dark-mode');
+                    checkbox.checked = isDark;
+                    localStorage.setItem('icaphi_theme', isDark ? 'dark' : 'light');
+                    
+                    if (!isDark) { bulb.classList.add('on'); } 
+                    else { bulb.classList.remove('on'); }
+                    
+                    setTimeout(() => {
+                        lamp.classList.remove('show');
+                        overlay.classList.remove('active'); 
+                        setTimeout(() => {
+                            bulb.classList.remove('on');
+                            window.isLampAnimating = false;
+                        }, 800);
+                    }, 800); 
+                    
+                }, 200); 
+            }, 800); 
+        };
 
         window.girarCaixa = function() {
             const cubo = document.getElementById('painel-cubo');
@@ -623,7 +867,6 @@
             if (autoFlipInterval) clearInterval(autoFlipInterval);
             const mins = parseFloat(document.getElementById('auto-flip-time').value);
             if (mins > 0) {
-                // SÓ GIRA SE O USUÁRIO NÃO ESTIVER COM O MOUSE NOS CARDS
                 autoFlipInterval = setInterval(() => { 
                     if (!isUserHovering) window.girarCaixa(); 
                 }, mins * 60000);
@@ -689,47 +932,83 @@
             let num = parseFloat(limpo); return isNaN(num) ? 0 : num;
         }
 
-        // FUNÇÃO INTELIGENTE DE CONVERSÃO DE DATA (Resolve o problema de "00:00")
         function parseDataFirebaseString(str) {
-            if (!str) return new Date(0);
+            if (!str) return null;
             if (typeof str.toDate === 'function') return str.toDate();
             
-            // Tenta ler o formato "5 de fevereiro de 2026 às 14:37"
-            const regex = /(\d{1,2})\s+de\s+([a-zç]+)\s+de\s+(\d{4})(?:\s+às\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/i;
-            const match = str.match(regex);
-            if (match) {
-                const dia = parseInt(match[1]);
-                const mesStr = match[2].toLowerCase();
-                const ano = parseInt(match[3]);
-                const horas = match[4] ? parseInt(match[4]) : 0;
-                const min = match[5] ? parseInt(match[5]) : 0;
-                
-                const meses = {'janeiro':0, 'fevereiro':1, 'março':2, 'abril':3, 'maio':4, 'junho':5, 'julho':6, 'agosto':7, 'setembro':8, 'outubro':9, 'novembro':10, 'dezembro':11};
-                const mes = meses[mesStr] !== undefined ? meses[mesStr] : 0;
-                return new Date(ano, mes, dia, horas, min);
+            let parsedNative = new Date(str);
+            if (!isNaN(parsedNative.getTime()) && String(str).includes('T')) {
+                return parsedNative; 
+            }
+
+            let hr = 0, mn = 0, sc = 0;
+            let timeMatch = String(str).match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
+            if(timeMatch) { hr = parseInt(timeMatch[1]); mn = parseInt(timeMatch[2]); if(timeMatch[3]) sc = parseInt(timeMatch[3]); }
+
+            const meses = {'janeiro':0, 'fevereiro':1, 'março':2, 'abril':3, 'maio':4, 'junho':5, 'julho':6, 'agosto':7, 'setembro':8, 'outubro':9, 'novembro':10, 'dezembro':11};
+            
+            const regexExtenso = /(\d{1,2})\s+de\s+([a-zçA-Z]+)\s+de\s+(\d{4})/i;
+            const matchExt = String(str).match(regexExtenso);
+            if (matchExt) {
+                let mStr = matchExt[2].toLowerCase();
+                let m = meses[mStr] !== undefined ? meses[mStr] : 0;
+                return new Date(parseInt(matchExt[3]), m, parseInt(matchExt[1]), hr, mn, sc);
             }
             
-            // Formatos padrão YYYY-MM-DD ou DD/MM/YYYY
-            if (str.includes('/')) {
-                 let parts = str.split(' ')[0].split('/');
-                 let timeParts = str.includes(':') ? str.split(' ')[1].split(':') : [0,0,0];
-                 if(parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0], timeParts[0], timeParts[1], timeParts[2]||0);
-            } else if (str.includes('-')) {
+            if (String(str).includes('-')) {
                  let parts = str.split('T')[0].split(' ')[0].split('-');
-                 let timeParts = str.includes(':') ? (str.includes('T') ? str.split('T')[1].split('Z')[0].split(':') : str.split(' ')[1].split(':')) : [0,0,0];
-                 if(parts.length === 3 && parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], timeParts[2]||0);
+                 if(parts.length >= 3 && parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2], hr, mn, sc);
             }
-            return new Date(str);
+            if (String(str).includes('/')) {
+                 let parts = str.split(' ')[0].split('/');
+                 if(parts.length >= 3) return new Date(parts[2], parts[1]-1, parts[0], hr, mn, sc);
+            }
+            
+            let parsed = new Date(str);
+            if(!isNaN(parsed.getTime())) return parsed;
+
+            return null;
         }
 
-        // FORMATADOR VISUAL (ex: "05/03 14:37")
-        function formatarDataHoraStr(d) {
-            if (isNaN(d.getTime()) || d.getTime() === 0) return "--/-- --:--";
+        function formatarHora(d) {
+            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return "--:--";
+            let hr = String(d.getHours()).padStart(2, '0');
+            let mn = String(d.getMinutes()).padStart(2, '0');
+            return `${hr}:${mn}`;
+        }
+
+        function formatarDataHoraFull(d) {
+            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return "--/-- --:--";
             let dia = String(d.getDate()).padStart(2, '0');
             let mes = String(d.getMonth() + 1).padStart(2, '0');
             let hr = String(d.getHours()).padStart(2, '0');
             let mn = String(d.getMinutes()).padStart(2, '0');
             return `${dia}/${mes} ${hr}:${mn}`;
+        }
+
+        let scrambleIntervals = [];
+        let pendingKmsSnap = null;
+        let pendingAbastSnap = null;
+        let isAnimating = false;
+
+        function startLoadingAnim() {
+            document.querySelectorAll('.stat-card, .back-card').forEach(c => c.classList.add('shake-dice'));
+            const elementsToScramble = document.querySelectorAll('.scramble-text');
+            const chars = "0123456789!@#$%&*";
+            
+            elementsToScramble.forEach(el => {
+                scrambleIntervals.push(setInterval(() => {
+                    let rand = "";
+                    for(let i=0; i<4; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+                    el.innerText = rand;
+                }, 40));
+            });
+        }
+
+        function stopLoadingAnim() {
+            document.querySelectorAll('.stat-card, .back-card').forEach(c => c.classList.remove('shake-dice'));
+            scrambleIntervals.forEach(clearInterval);
+            scrambleIntervals = [];
         }
 
         let unsubKms = null; let unsubAbast = null; let unsubConfig = null;
@@ -744,6 +1023,7 @@
             document.getElementById('hover-litros-hoje').innerText = `${gLitrosHoje.toFixed(1)} L`;
             document.getElementById('hover-estoque-texto').innerText = `${gEstoqueAtualTanque.toFixed(1)} L / ${gCapacidadeMaximaTanque} L`;
             document.getElementById('insight-custo-total').innerText = valorFormatado;
+            
             document.getElementById('qtd-estoque-back').innerText = `${gEstoqueAtualTanque.toFixed(1)} L`;
             document.getElementById('qtd-capacidade-back').innerText = `${gCapacidadeMaximaTanque} L`;
 
@@ -776,6 +1056,171 @@
             document.getElementById('lista-top-abast').innerHTML = htmlAbast;
         }
 
+        function renderKMsData(kmSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto) {
+            let kmRodadosTotal = 0; let kmEscaladoTotal = 0; let qtdEmCursoHoje = 0; let qtdFinalizadaHoje = 0;
+            let rankingDispersao = {}; let rankingViagens = {}; window.dadosKmsDiario = new Array(diasNoMes).fill(0);
+            let ultimosKms = [];
+
+            kmSnapshot.forEach((doc) => {
+                try {
+                    const dataObj = doc.data(); const obs = dataObj.historico_obs || dataObj; 
+                    
+                    let isFinalizada = (dataObj.status === 'finalizada' || obs.status === 'finalizada');
+                    
+                    let dataStringAlvo = null;
+                    if (isFinalizada && (dataObj.dataFim || obs.dataFim)) {
+                        dataStringAlvo = dataObj.dataFim || obs.dataFim;
+                    } else {
+                        dataStringAlvo = dataObj.dataInicio || obs.dataInicio || dataObj.data || obs.data;
+                    }
+
+                    let dataCriacao = parseDataFirebaseString(dataStringAlvo);
+
+                    if (dataCriacao && !isNaN(dataCriacao.getTime())) {
+                        const docMes = String(dataCriacao.getMonth() + 1).padStart(2, '0'); const docDia = dataCriacao.getDate();
+                        
+                        if (docMes === mesSelecionado) {
+                            if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
+
+                            let isHoje = (docDia === dataHojeObjeto.getDate() && dataCriacao.getMonth() === dataHojeObjeto.getMonth());
+                            const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Veículo Indefinido';
+
+                            if (isHoje) {
+                                if(dataObj.status === 'em_curso' || obs.status === 'em_curso') qtdEmCursoHoje++;
+                                if(isFinalizada) qtdFinalizadaHoje++;
+                            }
+
+                            if (isFinalizada) {
+                                ultimosKms.push({ placa: placaVal, tempo: dataCriacao.getTime(), dataObj: dataCriacao });
+                            }
+
+                            const meta = limparNumero(obs.metaKm || dataObj.metaKm); kmEscaladoTotal += meta;
+                            const kmFinal = limparNumero(obs.kmFim || dataObj.kmFim); const kmInicial = limparNumero(obs.kmInicio || dataObj.kmInicio);
+                            
+                            rankingViagens[placaVal] = (rankingViagens[placaVal] || 0) + 1;
+
+                            if (kmFinal > 0 && kmFinal >= kmInicial) {
+                                const rodado = kmFinal - kmInicial; kmRodadosTotal += rodado;
+                                if(docDia >= 1 && docDia <= diasNoMes) { window.dadosKmsDiario[docDia - 1] = (window.dadosKmsDiario[docDia - 1] || 0) + rodado; }
+                                rankingDispersao[placaVal] = (rankingDispersao[placaVal] || 0) + (rodado - meta);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            });
+
+            ultimosKms.sort((a, b) => b.tempo - a.tempo);
+            let top5UltimosKms = ultimosKms.slice(0, 5);
+            
+            if(top5UltimosKms.length > 0) {
+                let u = top5UltimosKms[0];
+                document.getElementById('insight-ultimo-km').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarHora(u.dataObj)})</span>`;
+                
+                let htmlU = '';
+                top5UltimosKms.forEach((item, index) => {
+                    htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraFull(item.dataObj)}</strong></div>`;
+                });
+                document.getElementById('lista-ultimos-kms').innerHTML = htmlU;
+            } else {
+                document.getElementById('insight-ultimo-km').innerText = "Sem Dados";
+                document.getElementById('lista-ultimos-kms').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
+            }
+
+            const dispersao = kmRodadosTotal - kmEscaladoTotal; const dispText = dispersao > 0 ? `+${dispersao.toFixed(0)} km` : `${dispersao.toFixed(0)} km`;
+            const colorDisp = dispersao > 0 ? 'var(--danger)' : 'var(--success)';
+            document.getElementById('valor-km').innerText = `${kmRodadosTotal.toFixed(0)} KM`;
+            document.getElementById('hover-rodado').innerText = `${kmRodadosTotal.toFixed(0)} km`;
+            document.getElementById('hover-escalado').innerText = `${kmEscaladoTotal.toFixed(0)} km`;
+            document.getElementById('hover-dispersao').innerText = dispText; document.getElementById('hover-dispersao').style.color = colorDisp;
+            document.getElementById('badge-dispersao').innerText = `Dispersão: ${dispText}`; document.getElementById('badge-dispersao').style.color = colorDisp;
+            
+            document.getElementById('qtd-em-curso').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas').innerText = qtdFinalizadaHoje;
+            document.getElementById('qtd-em-curso-front').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-front').innerText = qtdFinalizadaHoje;
+            document.getElementById('qtd-em-curso-back').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-back').innerText = qtdFinalizadaHoje;
+            
+            let totalViagensHoje = qtdEmCursoHoje + qtdFinalizadaHoje;
+            let perFinalizado = totalViagensHoje > 0 ? (qtdFinalizadaHoje / totalViagensHoje) * 100 : 0;
+            document.getElementById('bar-finalizadas').style.width = perFinalizado + '%'; 
+            document.getElementById('bar-finalizadas-front').style.width = perFinalizado + '%'; 
+            document.getElementById('bar-finalizadas-back').style.width = perFinalizado + '%';
+
+            let arrViagens = Object.keys(rankingViagens).map(placa => ({ placa, val: rankingViagens[placa] }));
+            arrViagens.sort((a, b) => b.val - a.val);
+            document.getElementById('insight-mais-viagens').innerHTML = arrViagens.length > 0 ? `${arrViagens[0].placa} <br><span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">(${arrViagens[0].val} viagens)</span>` : "Sem Dados";
+
+            let arrDispersao = Object.keys(rankingDispersao).map(placa => ({ placa, val: rankingDispersao[placa] }));
+            arrDispersao.sort((a, b) => b.val - a.val); 
+            let top5Disp = arrDispersao.slice(0, 5); let htmlDisp = '';
+            if(top5Disp.length > 0) {
+                let sinalPrim = top5Disp[0].val > 0 ? '+' : '';
+                document.getElementById('insight-topkm').innerHTML = `${top5Disp[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${sinalPrim}${top5Disp[0].val.toFixed(0)} km)</span>`;
+                top5Disp.forEach((item, index) => {
+                    let color = item.val > 0 ? 'var(--danger)' : 'var(--success)';
+                    htmlDisp += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong style="color: ${color}">${item.val > 0 ? '+' : ''}${item.val.toFixed(0)} km</strong></div>`;
+                });
+            } else { document.getElementById('insight-topkm').innerText = "Sem Dados"; htmlDisp = '<div class="top-item"><span>Nenhum registro</span></div>'; }
+            document.getElementById('lista-top-dispersao').innerHTML = htmlDisp;
+        }
+
+        function renderAbastData(abastSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr) {
+            gLitrosEtanolTotal = 0; gValorTotalGasto = 0; gLitrosHoje = 0; gRankingAbast = {}; window.dadosAbastDiario = new Array(diasNoMes).fill(0);
+            let ultimosAbast = [];
+
+            abastSnapshot.forEach((doc) => {
+                try {
+                    const dataObj = doc.data();
+                    if (dataObj.data) {
+                        const partesData = dataObj.data.split('-'); 
+                        if (partesData.length >= 2 && partesData[1] === mesSelecionado) {
+                            const docDia = parseInt(partesData[2]);
+                            if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
+
+                            const litros = limparNumero(dataObj.litros); const valorUnit = limparNumero(dataObj.valorUnitario);
+                            const valor = valorUnit > 0 ? (litros * valorUnit) : (limparNumero(dataObj.valorTotal) || limparNumero(dataObj.valor));
+                            const placaVal = dataObj.placa || 'Veículo Indefinido';
+
+                            gLitrosEtanolTotal += litros; gValorTotalGasto += valor;
+                            if (dataObj.data.startsWith(hojeStr)) { gLitrosHoje += litros; }
+                            if(docDia >= 1 && docDia <= diasNoMes) { window.dadosAbastDiario[docDia - 1] += litros; }
+
+                            let dataAbastObj = new Date(0);
+                            if (dataObj.data) {
+                                let timePart = dataObj.horario ? dataObj.horario : "12:00";
+                                if(timePart.length === 5) timePart += ":00"; 
+                                dataAbastObj = new Date(dataObj.data + "T" + timePart);
+                                if(isNaN(dataAbastObj.getTime())) dataAbastObj = new Date(dataObj.data + "T12:00:00");
+                            }
+
+                            if(!isNaN(dataAbastObj.getTime())) {
+                                ultimosAbast.push({ placa: placaVal, tempo: dataAbastObj.getTime(), dataObj: dataAbastObj, litros: litros });
+                            }
+
+                            gRankingAbast[placaVal] = (gRankingAbast[placaVal] || 0) + litros;
+                        }
+                    }
+                } catch (e) {}
+            });
+            
+            ultimosAbast.sort((a, b) => b.tempo - a.tempo);
+            let top5UltimosAbast = ultimosAbast.slice(0, 5);
+            
+            if(top5UltimosAbast.length > 0) {
+                let u = top5UltimosAbast[0];
+                document.getElementById('insight-ultimo-abast').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarHora(u.dataObj)})</span>`;
+                
+                let htmlU = '';
+                top5UltimosAbast.forEach((item, index) => {
+                    htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraFull(item.dataObj)}</strong></div>`;
+                });
+                document.getElementById('lista-ultimos-abast').innerHTML = htmlU;
+            } else {
+                document.getElementById('insight-ultimo-abast').innerText = "Sem Dados";
+                document.getElementById('lista-ultimos-abast').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
+            }
+
+            renderAbastecimentoUI();
+        }
+
         window.carregarDadosGlobais = function() {
             if(unsubKms) unsubKms(); if(unsubAbast) unsubAbast(); if(unsubConfig) unsubConfig();
 
@@ -786,175 +1231,32 @@
             const dataHojeObjeto = new Date();
             const hojeStr = `${dataHojeObjeto.getFullYear()}-${String(dataHojeObjeto.getMonth() + 1).padStart(2, '0')}-${String(dataHojeObjeto.getDate()).padStart(2, '0')}`;
 
-            document.getElementById('valor-km').innerHTML = '<i class="fas fa-spinner fa-spin" style="color: #cbd5e1;"></i>';
-            document.getElementById('valor-litros').innerHTML = '<i class="fas fa-spinner fa-spin" style="color: #cbd5e1;"></i>';
+            startLoadingAnim();
+            isAnimating = true;
+
+            setTimeout(() => {
+                isAnimating = false;
+                stopLoadingAnim();
+                if (pendingKmsSnap) renderKMsData(pendingKmsSnap, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto);
+                if (pendingAbastSnap) renderAbastData(pendingAbastSnap, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr);
+            }, 600); 
 
             unsubKms = onSnapshot(collection(dbKms, "viagens"), (kmSnapshot) => {
-                let kmRodadosTotal = 0; let kmEscaladoTotal = 0; let qtdEmCursoHoje = 0; let qtdFinalizadaHoje = 0;
-                let rankingDispersao = {}; let rankingViagens = {}; window.dadosKmsDiario = new Array(diasNoMes).fill(0);
-                
-                let ultimosKms = [];
+                pendingKmsSnap = kmSnapshot;
+                if (!isAnimating) renderKMsData(kmSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto);
+            });
 
-                kmSnapshot.forEach((doc) => {
-                    try {
-                        const dataObj = doc.data(); const obs = dataObj.historico_obs || dataObj; 
-                        let dataRaw = dataObj.dataFim || dataObj.dataInicio || dataObj.data || obs.dataFim || obs.dataInicio || obs.data;
-                        let dataCriacao = parseDataFirebaseString(dataRaw);
-
-                        if (dataCriacao && !isNaN(dataCriacao.getTime()) && dataCriacao.getTime() !== 0) {
-                            const docMes = String(dataCriacao.getMonth() + 1).padStart(2, '0'); const docDia = dataCriacao.getDate();
-                            
-                            if (docMes === mesSelecionado) {
-                                if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
-
-                                let isHoje = (docDia === dataHojeObjeto.getDate() && dataCriacao.getMonth() === dataHojeObjeto.getMonth());
-                                const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Veículo Indefinido';
-
-                                if (isHoje) {
-                                    if(dataObj.status === 'em_curso' || obs.status === 'em_curso') qtdEmCursoHoje++;
-                                    if(dataObj.status === 'finalizada' || obs.status === 'finalizada') qtdFinalizadaHoje++;
-                                }
-
-                                if (dataObj.status === 'finalizada' || obs.status === 'finalizada') {
-                                    ultimosKms.push({ placa: placaVal, tempo: dataCriacao.getTime(), dataObj: dataCriacao });
-                                }
-
-                                const meta = limparNumero(obs.metaKm || dataObj.metaKm); kmEscaladoTotal += meta;
-                                const kmFinal = limparNumero(obs.kmFim || dataObj.kmFim); const kmInicial = limparNumero(obs.kmInicio || dataObj.kmInicio);
-                                
-                                rankingViagens[placaVal] = (rankingViagens[placaVal] || 0) + 1;
-
-                                if (kmFinal > 0 && kmFinal >= kmInicial) {
-                                    const rodado = kmFinal - kmInicial; kmRodadosTotal += rodado;
-                                    if(docDia >= 1 && docDia <= diasNoMes) { window.dadosKmsDiario[docDia - 1] = (window.dadosKmsDiario[docDia - 1] || 0) + rodado; }
-                                    rankingDispersao[placaVal] = (rankingDispersao[placaVal] || 0) + (rodado - meta);
-                                }
-                            }
-                        }
-                    } catch (e) {}
-                });
-
-                ultimosKms.sort((a, b) => b.tempo - a.tempo);
-                let top5UltimosKms = ultimosKms.slice(0, 5);
-                
-                if(top5UltimosKms.length > 0) {
-                    let u = top5UltimosKms[0];
-                    document.getElementById('insight-ultimo-km').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarDataHoraStr(u.dataObj)})</span>`;
-                    
-                    let htmlU = '';
-                    top5UltimosKms.forEach((item, index) => {
-                        htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraStr(item.dataObj)}</strong></div>`;
-                    });
-                    document.getElementById('lista-ultimos-kms').innerHTML = htmlU;
-                } else {
-                    document.getElementById('insight-ultimo-km').innerText = "Sem Dados";
-                    document.getElementById('lista-ultimos-kms').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
-                }
-
-                const dispersao = kmRodadosTotal - kmEscaladoTotal; const dispText = dispersao > 0 ? `+${dispersao.toFixed(0)} km` : `${dispersao.toFixed(0)} km`;
-                const colorDisp = dispersao > 0 ? 'var(--danger)' : 'var(--success)';
-                document.getElementById('valor-km').innerText = `${kmRodadosTotal.toFixed(0)} KM`;
-                document.getElementById('hover-rodado').innerText = `${kmRodadosTotal.toFixed(0)} km`;
-                document.getElementById('hover-escalado').innerText = `${kmEscaladoTotal.toFixed(0)} km`;
-                document.getElementById('hover-dispersao').innerText = dispText; document.getElementById('hover-dispersao').style.color = colorDisp;
-                document.getElementById('badge-dispersao').innerText = `Dispersão: ${dispText}`; document.getElementById('badge-dispersao').style.color = colorDisp;
-                
-                document.getElementById('qtd-em-curso').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas').innerText = qtdFinalizadaHoje;
-                document.getElementById('qtd-em-curso-back').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-back').innerText = qtdFinalizadaHoje;
-                
-                let totalViagensHoje = qtdEmCursoHoje + qtdFinalizadaHoje;
-                let perFinalizado = totalViagensHoje > 0 ? (qtdFinalizadaHoje / totalViagensHoje) * 100 : 0;
-                document.getElementById('bar-finalizadas').style.width = perFinalizado + '%'; document.getElementById('bar-finalizadas-back').style.width = perFinalizado + '%';
-
-                let arrViagens = Object.keys(rankingViagens).map(placa => ({ placa, val: rankingViagens[placa] }));
-                arrViagens.sort((a, b) => b.val - a.val);
-                document.getElementById('insight-mais-viagens').innerHTML = arrViagens.length > 0 ? `${arrViagens[0].placa} <br><span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">(${arrViagens[0].val} viagens)</span>` : "Sem Dados";
-
-                let arrDispersao = Object.keys(rankingDispersao).map(placa => ({ placa, val: rankingDispersao[placa] }));
-                arrDispersao.sort((a, b) => b.val - a.val); 
-                let top5Disp = arrDispersao.slice(0, 5); let htmlDisp = '';
-                if(top5Disp.length > 0) {
-                    let sinalPrim = top5Disp[0].val > 0 ? '+' : '';
-                    document.getElementById('insight-topkm').innerHTML = `${top5Disp[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${sinalPrim}${top5Disp[0].val.toFixed(0)} km)</span>`;
-                    top5Disp.forEach((item, index) => {
-                        let color = item.val > 0 ? 'var(--danger)' : 'var(--success)';
-                        htmlDisp += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong style="color: ${color}">${item.val > 0 ? '+' : ''}${item.val.toFixed(0)} km</strong></div>`;
-                    });
-                } else { document.getElementById('insight-topkm').innerText = "Sem Dados"; htmlDisp = '<div class="top-item"><span>Nenhum registro</span></div>'; }
-                document.getElementById('lista-top-dispersao').innerHTML = htmlDisp;
+            unsubAbast = onSnapshot(collection(dbAbast, "abastecimentos"), (abastSnapshot) => {
+                pendingAbastSnap = abastSnapshot;
+                if (!isAnimating) renderAbastData(abastSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr);
             });
 
             unsubConfig = onSnapshot(doc(dbAbast, "configuracoes", "gerais"), (docSnap) => {
                 if (docSnap.exists()) {
                     gEstoqueAtualTanque = limparNumero(docSnap.data().estoqueTanque);
                     gCapacidadeMaximaTanque = limparNumero(docSnap.data().capacidadeTanque) || 5000;
-                    renderAbastecimentoUI();
+                    if (!isAnimating) renderAbastecimentoUI();
                 }
-            });
-
-            unsubAbast = onSnapshot(collection(dbAbast, "abastecimentos"), (abastSnapshot) => {
-                gLitrosEtanolTotal = 0; gValorTotalGasto = 0; gLitrosHoje = 0; gRankingAbast = {}; window.dadosAbastDiario = new Array(diasNoMes).fill(0);
-
-                let ultimosAbast = [];
-
-                abastSnapshot.forEach((doc) => {
-                    try {
-                        const dataObj = doc.data();
-                        if (dataObj.data) {
-                            const partesData = dataObj.data.split('-'); 
-                            if (partesData.length >= 2 && partesData[1] === mesSelecionado) {
-                                const docDia = parseInt(partesData[2]);
-                                if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
-
-                                const litros = limparNumero(dataObj.litros); const valorUnit = limparNumero(dataObj.valorUnitario);
-                                const valor = valorUnit > 0 ? (litros * valorUnit) : (limparNumero(dataObj.valorTotal) || limparNumero(dataObj.valor));
-                                const placaVal = dataObj.placa || 'Veículo Indefinido';
-
-                                gLitrosEtanolTotal += litros; gValorTotalGasto += valor;
-                                if (dataObj.data.startsWith(hojeStr)) { gLitrosHoje += litros; }
-                                if(docDia >= 1 && docDia <= diasNoMes) { window.dadosAbastDiario[docDia - 1] += litros; }
-
-                                // RESOLVENDO A HORA DO ABASTECIMENTO
-                                let dataAbastObj = new Date(0);
-                                if (dataObj.dataCriacao && typeof dataObj.dataCriacao.toDate === 'function') {
-                                    dataAbastObj = dataObj.dataCriacao.toDate();
-                                } else if (dataObj.data) {
-                                    let h = 12, m = 0;
-                                    if (dataObj.hora) {
-                                        let partesHora = dataObj.hora.split(':');
-                                        if(partesHora.length >= 2) { h = parseInt(partesHora[0]); m = parseInt(partesHora[1]); }
-                                    }
-                                    dataAbastObj = new Date(parseInt(partesData[0]), parseInt(partesData[1])-1, parseInt(partesData[2]), h, m);
-                                }
-
-                                if(!isNaN(dataAbastObj.getTime())) {
-                                    ultimosAbast.push({ placa: placaVal, tempo: dataAbastObj.getTime(), dataObj: dataAbastObj, litros: litros });
-                                }
-
-                                gRankingAbast[placaVal] = (gRankingAbast[placaVal] || 0) + litros;
-                            }
-                        }
-                    } catch (e) {}
-                });
-                
-                ultimosAbast.sort((a, b) => b.tempo - a.tempo);
-                let top5UltimosAbast = ultimosAbast.slice(0, 5);
-                
-                if(top5UltimosAbast.length > 0) {
-                    let u = top5UltimosAbast[0];
-                    document.getElementById('insight-ultimo-abast').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarDataHoraStr(u.dataObj)})</span>`;
-                    
-                    let htmlU = '';
-                    top5UltimosAbast.forEach((item, index) => {
-                        htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraStr(item.dataObj)}</strong></div>`;
-                    });
-                    document.getElementById('lista-ultimos-abast').innerHTML = htmlU;
-                } else {
-                    document.getElementById('insight-ultimo-abast').innerText = "Sem Dados";
-                    document.getElementById('lista-ultimos-abast').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
-                }
-
-                renderAbastecimentoUI();
             });
         };
 
@@ -968,6 +1270,26 @@
 
             window.carregarDadosGlobais();
             window.toggleAutoFlip(); 
+            
+            // LÓGICA DE FUGA DO BOTÃO (Dodge Animation)
+            const cardsHover = document.querySelectorAll('.hoverable-card');
+            const btnMonHover = document.querySelector('.btn-monitoramento');
+            
+            // Quando passar o mouse nos cards esquerdos (0 = Frente, 2 = Verso) empurra botão para a direita
+            // Quando passar o mouse nos cards direitos (1 = Frente, 3 = Verso) empurra botão para a esquerda
+            if(cardsHover.length >= 4 && btnMonHover) {
+                cardsHover[0].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-right'); });
+                cardsHover[0].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-right'); });
+                
+                cardsHover[1].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-left'); });
+                cardsHover[1].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-left'); });
+                
+                cardsHover[2].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-right'); });
+                cardsHover[2].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-right'); });
+                
+                cardsHover[3].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-left'); });
+                cardsHover[3].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-left'); });
+            }
         };
     </script>
 </body>
