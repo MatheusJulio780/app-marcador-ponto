@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IcaphiAbastecimento</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" type="image/png">
-    <link rel="manifest" href='data:application/manifest+json,{"name":"IcaphiApp","short_name":"Icaphi","display":"standalone","background_color":"#f8fafc","theme_color":"#2563eb"}'>
+    
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22IcaphiApp%22%2C%22short_name%22%3A%22Icaphi%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%7D">
+    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1510,7 +1512,6 @@
         switchScreen('main-screen'); 
     });
 
-    // Filtros Rápidos de Data
     window.setFiltroDataAdmin = function(offset) {
         const d = new Date();
         d.setDate(d.getDate() + offset);
@@ -1803,9 +1804,13 @@
         
         const recebimentoData = { 
             dataChegada, horario, fornecedor, litros, valorLitro, vencimento, responsavel, total, 
-            fotoNotaBase64: photoNotaBase64, 
-            timestamp: editandoRecebimentoId ? undefined : new Date().toISOString() 
+            fotoNotaBase64: photoNotaBase64
         };
+
+        // Correção aqui: só adiciona o timestamp se for um registro novo
+        if (!editandoRecebimentoId) {
+            recebimentoData.timestamp = new Date().toISOString();
+        }
         
         try {
             if (editandoRecebimentoId) {
