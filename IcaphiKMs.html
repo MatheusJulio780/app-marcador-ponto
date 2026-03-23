@@ -725,7 +725,7 @@
             <h2 class="font-black text-gray-800 dark:text-white text-3xl tracking-tight mb-2">CONCLUÍDA</h2>
             <p class="text-base text-gray-500 dark:text-zinc-400 font-medium mb-10">Viagem registrada com sucesso no sistema central.</p>
             
-            <button id="btn-zap-motorista" class="w-full py-5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-black rounded-2xl shadow-[0_10px_20px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-1 text-sm tracking-widest flex items-center justify-center gap-3 mb-4">
+            <button onclick="window.enviarZapMotoristaAtual(this)" class="w-full py-5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-black rounded-2xl shadow-[0_10px_20px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-1 text-sm tracking-widest flex items-center justify-center gap-3 mb-4">
                 ENVIAR RELATÓRIO <i data-lucide="message-circle" class="w-5 h-5 fill-current"></i>
             </button>
             
@@ -3045,7 +3045,6 @@
         };
 
         window.encerrarViagem = async function() {
-            // Caça o ID antes de tentar enviar pro banco
             const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
             
             if (!idViagem) {
@@ -3063,10 +3062,16 @@
 
             const loader = document.getElementById('main-loader');
             const textoLoader = document.getElementById('texto-loader');
+            
+            // 1. FORÇA A EXIBIÇÃO DO LOADING IMEDIATAMENTE
             if (loader) {
                 loader.classList.remove('hidden');
+                loader.style.display = 'flex'; // Garante que nada bloqueie a exibição
                 if (textoLoader) textoLoader.innerText = "Buscando localização final...";
             }
+
+            // 2. O SEGREDO MÁGICO: Dá um respiro de 100ms para o navegador desenhar a tela preta antes de focar no GPS
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
                 const locFim = await window.obterGpsSeguro();
@@ -3083,13 +3088,20 @@
                 if (window.pararRastreioContinuo) window.pararRastreioContinuo();
                 if (window.cronometroInterval) clearInterval(window.cronometroInterval);
 
-                if (loader) loader.classList.add('hidden');
+                // 3. ESCONDE O LOADING
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.display = '';
+                }
                 mudarTelaMotorista('sucesso');
 
             } catch (erro) {
                 console.error("Erro ao finalizar:", erro);
-                if (loader) loader.classList.add('hidden');
-                alert("Erro ao finalizar. Tente novamente ou verifique a internet. Erro: " + erro.message);
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.display = '';
+                }
+                alert("Erro ao finalizar. Tente novamente. Erro: " + erro.message);
             }
         };
 
@@ -3370,6 +3382,57 @@
                 lista.innerHTML = '<div class="text-center text-red-500 py-8 font-black text-xs uppercase tracking-widest">Erro de conexão. Tente novamente.</div>';
             }
         };
+
+        // FUNÇÃO: Enviar relatório automático pelo WhatsApp do Motorista
+        window.enviarZapMotoristaAtual = async function(btn) {
+            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            if (!idViagem) {
+                alert("Erro ao resgatar os dados da viagem.");
+                return;
+            }
+
+            // Efeito visual no botão pra ele saber que tá carregando
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> GERANDO...';
+            btn.disabled = true;
+            if(window.lucide) window.lucide.createIcons();
+
+            try {
+                // Puxa a viagem fresquinha do banco pra garantir que a conta do KM bata
+                const doc = await db.collection('viagens').doc(idViagem).get();
+                if(doc.exists) {
+                    const v = doc.data();
+                    const kmIni = v.kmInicio || 0;
+                    const kmFim = v.kmFim || 0;
+                    const totalRodado = kmFim - kmIni;
+                    
+                    // Monta o texto formatado (O %0A é o código para "Enter/Pular linha" no WhatsApp)
+                    let texto = `*✅ RELATÓRIO DE VIAGEM FINALIZADA*%0A%0A`;
+                    texto += `Motorista: *${v.nome}*%0A`;
+                    texto += `Placa: *${v.placa}*%0A`;
+                    texto += `Serviço: *${v.tipoServico}*%0A`;
+                    texto += `KM Inicial: *${kmIni}*%0A`;
+                    texto += `KM Final: *${kmFim}*%0A`;
+                    texto += `Total Rodado: *${totalRodado > 0 ? totalRodado : 0} km*%0A`;
+                    
+                    if (v.observacoes && v.observacoes.length > 0) {
+                        texto += `%0A⚠️ *Ocorrências registradas:* ${v.observacoes.length}%0A`;
+                    }
+                    
+                    const link = `https://wa.me/?text=${texto}`;
+                    window.open(link, '_blank');
+                }
+            } catch(e) {
+                console.error("Erro no Zap:", e);
+                alert("Não foi possível gerar o relatório. Verifique sua conexão.");
+            } finally {
+                // Devolve o botão ao normal
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if(window.lucide) window.lucide.createIcons();
+            }
+        };
+        
     </script>
 </body>
 </html>
