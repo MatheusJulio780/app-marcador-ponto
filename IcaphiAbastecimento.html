@@ -294,7 +294,7 @@
             height: fit-content;
         }
 
-        /* BOLINHAS FLUTUANTES (MOBILE ADMIN) */
+        /* BOLINHAS FLUTUANTES (MOBILE ADMIN) E ANIMAÇÃO DE ESTOURO */
         .history-ball {
             position: absolute;
             top: 0; left: 0;
@@ -312,7 +312,16 @@
             z-index: 10;
         }
         body.dark-mode .history-ball { background: linear-gradient(135deg, #1e40af, #3b82f6); }
-        .history-ball:active { transform: scale(0.9) !important; transition: transform 0.1s; }
+        
+        @keyframes burst {
+            0% { transform: scale(1); opacity: 1; }
+            40% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; filter: blur(4px); }
+        }
+        .ball-burst {
+            animation: burst 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+            pointer-events: none;
+        }
 
         .detalhe-mobile-item label { font-size: 10px; margin-bottom: 2px; color: var(--text-muted); display: block; }
         .detalhe-mobile-item span { font-size: 13px; font-weight: 700; color: var(--text-main); }
@@ -333,8 +342,10 @@
         .nav-item { padding: 16px 20px; color: #94a3b8; text-decoration: none; display: flex; align-items: center; cursor: pointer; border-left: 3px solid transparent; transition: all 0.2s; }
         .nav-item:hover, .nav-item.active { color: #fff; background-color: rgba(255,255,255,0.05); border-left-color: var(--primary); }
         .nav-icon { min-width: 32px; text-align: center; font-size: 18px; }
-        .nav-text { font-size: 14px; font-weight: 600; }
+        .nav-text { font-size: 14px; font-weight: 600; width: 100%;}
         
+        .badge-apagados { background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 800; margin-left: auto;}
+
         /* HEADER DO ADMIN PC - Filtros Organizados e Alinhados */
         .admin-header { 
             display: flex; 
@@ -400,7 +411,7 @@
             .dash-card .value { font-size: 16px; margin-top: 4px; }
 
             /* Ajustes Finos Aba Histórico Mobile - Para NÃO ROLAR */
-            #aba-historico { height: calc(100vh - 20px); display: flex; flex-direction: column; overflow: hidden; }
+            #aba-historico, #aba-apagados { height: calc(100vh - 20px); display: flex; flex-direction: column; overflow: hidden; }
             
             /* Retorna o flex-direction column apenas para mobile */
             .header-historico { flex-direction: column; align-items: stretch; padding: 12px; margin-bottom: 10px; gap: 10px; flex-shrink: 0; }
@@ -421,7 +432,7 @@
             .input-filtro-placa { grid-column: 2; grid-row: 2; }
             .btn-filtro-aplicar { grid-column: 3; grid-row: 2; }
             
-            #admin-table-container { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 0; }
+            #admin-table-container, #apagados-table-container { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 0; }
             
             /* Outras Abas liberadas para rolagem */
             #aba-dashboard, #aba-recebimento, #aba-frota, #aba-exportar, #aba-precos, #aba-tanque { overflow-y: auto; height: 100%; padding-bottom: 60px; }
@@ -726,6 +737,19 @@
     </div>
 </div>
 
+<div id="modal-senha-apagados" class="modal-overlay hidden" style="z-index: 10006;">
+    <div class="modal-content" style="max-width: 320px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🗑️</div>
+        <h3 style="margin-top:0; font-weight:800; color:var(--text-main);">Acesso à Lixeira</h3>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom: 20px;">Digite a senha para visualizar registros apagados.</p>
+        <input type="password" id="inputSenhaApagados" placeholder="Senha..." style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); text-align:center; letter-spacing:5px; margin-bottom:15px; font-size:20px; outline: none;">
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="fecharModalSenhaApagados()" style="flex:1;">Cancelar</button>
+            <button class="btn btn-primary" onclick="verificarSenhaApagados()" style="flex:1;">Acessar</button>
+        </div>
+    </div>
+</div>
+
 <div id="app-header" class="app-header">
     <div class="logo-area">
         <div class="logo-icon">I</div>
@@ -876,6 +900,9 @@
         <div class="nav-item" onclick="mudarAbaAdmin('exportar')"><span class="nav-icon">📤</span> <span class="nav-text">Exportar</span></div>
         <div class="nav-item" onclick="mudarAbaAdmin('precos')"><span class="nav-icon">💲</span> <span class="nav-text">Preço Litro</span></div>
         <div class="nav-item" onclick="mudarAbaAdmin('tanque')"><span class="nav-icon">🛢️</span> <span class="nav-text">Gestão Tanque</span></div>
+        
+        <div class="nav-item" id="navItemApagados" onclick="solicitarSenhaApagados()"><span class="nav-icon">🗑️</span> <span class="nav-text" style="display: flex; align-items: center;">Apagados <span id="badgeApagados" class="badge-apagados">0</span></span></div>
+
         <div style="flex-grow: 1;"></div>
         <div class="nav-item" id="btnExitAdmin" style="color: #ef4444;"><span class="nav-icon">🚪</span> <span class="nav-text">Sair</span></div>
     </div>
@@ -922,6 +949,14 @@
             
             <div id="admin-table-container" class="table-responsive">
                 <p style="color: var(--text-muted); font-size: 14px; padding: 20px; font-weight: 500;">Carregando dados do banco...</p>
+            </div>
+        </div>
+
+        <div id="aba-apagados" class="admin-aba hidden">
+            <h2 style="margin-top:0; font-weight: 800;"><button class="menu-toggle" onclick="toggleSidebar()" style="display:inline-block;">☰</button> Lixeira (Apagados)</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; background: rgba(239, 68, 68, 0.05); padding: 15px; border-radius: 12px; border-left: 4px solid var(--danger);">Os registros nesta área permanecem por <strong>30 dias</strong> contados da data de exclusão. Após este período, são deletados automaticamente pelo sistema.</p>
+            <div id="apagados-table-container" class="table-responsive">
+                <p style="color: var(--text-muted); font-size: 14px; padding: 20px; font-weight: 500;">Carregando lixeira...</p>
             </div>
         </div>
 
@@ -1092,7 +1127,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, deleteField } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const logoIcaphiBase64 = ""; 
 
@@ -1218,7 +1253,7 @@
 
     let configGerais = { precoDiesel: 5.90, estoqueTanque: 0, capacidadeTanque: 10000, pontoPedido: 2000, placas: [], tabelaRegua: null };
     let currentRecordData = {}; let photoDataUrl = null; let photoNotaBase64 = null; 
-    window.dadosRelatorio = []; window.dadosRecebimentosLista = []; 
+    window.dadosRelatorio = []; window.dadosRecebimentosLista = []; window.dadosApagados = [];
     let editandoRecebimentoId = null; let litrosAntigosRecebimento = 0; let currentPdfId = null; 
     let chartConsumoDiarioInstance = null; let chartTopPlacasInstance = null; let animationFrameId = null; 
 
@@ -1527,26 +1562,39 @@
         document.getElementById('detMobileMotorista').innerText = d.motorista; document.getElementById('detMobileResp').innerText = d.funcionario;
         document.getElementById('detMobileLitros').innerText = d.litros + ' L'; document.getElementById('detMobileValor').innerText = 'R$ ' + d.valorTotal;
         document.getElementById('btnMobileBomba').onclick = () => abrirFotoBombaPorId(d.id); document.getElementById('btnMobileAssinaturas').onclick = () => abrirAssinaturasPorId(d.id);
-        document.getElementById('btnMobilePdf').onclick = () => abrirModalPDF(d.id); document.getElementById('btnMobileApagar').onclick = () => { fecharDetalheMobile(); apagarRegistro(d.id); };
+        document.getElementById('btnMobilePdf').onclick = () => abrirModalPDF(d.id); 
+        
+        // Verifica se é um registro apagado para mudar a função do botão de exclusão
+        if(d.apagado) {
+            document.getElementById('btnMobileApagar').classList.add('hidden'); // Oculta no mobile para itens apagados
+        } else {
+            document.getElementById('btnMobileApagar').classList.remove('hidden');
+            document.getElementById('btnMobileApagar').onclick = () => { fecharDetalheMobile(); apagarRegistro(d.id); };
+        }
+
         document.getElementById('modal-detalhe-mobile').classList.remove('hidden');
     }
 
-    window.fecharDetalheMobile = function() { document.getElementById('modal-detalhe-mobile').classList.add('hidden'); }
+    window.fecharDetalheMobile = function() { 
+        document.getElementById('modal-detalhe-mobile').classList.add('hidden'); 
+        // Remove a classe de estouro de todas as bolinhas para que voltem a aparecer
+        document.querySelectorAll('.history-ball').forEach(el => el.classList.remove('ball-burst'));
+    }
 
     window.abrirModalPDF = function(id) {
-        currentPdfId = id; const d = window.dadosRelatorio.find(r => r.id === id); if(!d) return;
+        currentPdfId = id; const d = window.dadosRelatorio.find(r => r.id === id) || window.dadosApagados.find(r => r.id === id); if(!d) return;
         document.getElementById('pdf-html-preview').innerHTML = gerarPreviewHTML(d); document.getElementById('pdf-view-modal').classList.remove('hidden');
     };
 
     window.fecharModalPDF = function() { document.getElementById('pdf-view-modal').classList.add('hidden'); document.getElementById('pdf-html-preview').innerHTML = ""; currentPdfId = null; };
 
     document.getElementById('btnDownloadPdf').addEventListener('click', () => {
-        if(!currentPdfId) return; const d = window.dadosRelatorio.find(r => r.id === currentPdfId); if(!d) return;
+        if(!currentPdfId) return; const d = window.dadosRelatorio.find(r => r.id === currentPdfId) || window.dadosApagados.find(r => r.id === currentPdfId); if(!d) return;
         const docPDF = window.construirPDFDoc(d); let dataBrNome = dataBR(d.data).replace(/\//g, ''); docPDF.save(`Recibo_Icaphi_${d.placa}_${dataBrNome}.pdf`);
     });
 
     document.getElementById('btnShareModalPdf').addEventListener('click', async () => {
-        if(!currentPdfId) return; const d = window.dadosRelatorio.find(r => r.id === currentPdfId); if(!d) return;
+        if(!currentPdfId) return; const d = window.dadosRelatorio.find(r => r.id === currentPdfId) || window.dadosApagados.find(r => r.id === currentPdfId); if(!d) return;
         const docPDF = window.construirPDFDoc(d); const pdfBlob = docPDF.output('blob'); let dataBrNome = dataBR(d.data).replace(/\//g, '');
         const pdfFile = new File([pdfBlob], `Recibo_Icaphi_${d.placa}_${dataBrNome}.pdf`, { type: "application/pdf" });
 
@@ -1563,13 +1611,23 @@
     });
 
     document.getElementById('btnNewRecord').addEventListener('click', () => { resetarFormulario(); switchScreen('main-screen'); });
+    
     document.getElementById('btnOpenAdminLogin').addEventListener('click', () => { document.getElementById('admin-login-modal').classList.remove('hidden'); });
     document.getElementById('btnBackToMain').addEventListener('click', () => { document.getElementById('admin-login-modal').classList.add('hidden'); document.getElementById('adminPassword').value = ""; });
-    
     document.getElementById('btnAdminLogin').addEventListener('click', () => {
         if(document.getElementById('adminPassword').value === "60010774") { document.getElementById('admin-login-modal').classList.add('hidden'); document.getElementById('adminPassword').value = ""; switchScreen('admin-panel'); 
         } else { alert("Senha Incorreta!"); }
     });
+
+    // SISTEMA DE SENHA DA LIXEIRA
+    window.solicitarSenhaApagados = function() { document.getElementById('modal-senha-apagados').classList.remove('hidden'); }
+    window.fecharModalSenhaApagados = function() { document.getElementById('modal-senha-apagados').classList.add('hidden'); document.getElementById('inputSenhaApagados').value = ""; }
+    window.verificarSenhaApagados = function() {
+        if(document.getElementById('inputSenhaApagados').value === "2121") { 
+            fecharModalSenhaApagados(); 
+            mudarAbaAdmin('apagados'); 
+        } else { alert("Senha Incorreta!"); }
+    }
     
     document.getElementById('btnExitAdmin').addEventListener('click', () => { switchScreen('main-screen'); });
 
@@ -1580,7 +1638,11 @@
 
     window.mudarAbaAdmin = function(aba) {
         document.querySelectorAll('.admin-aba').forEach(el => el.classList.add('hidden')); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.getElementById(`aba-${aba}`).classList.remove('hidden'); event.currentTarget.classList.add('active');
+        document.getElementById(`aba-${aba}`).classList.remove('hidden'); 
+        
+        // Ativa o botão correspondente no menu
+        if(aba === 'apagados') { document.getElementById('navItemApagados').classList.add('active'); renderTabelaApagados(); } 
+        else { event.currentTarget.classList.add('active'); }
         
         if(animationFrameId) cancelAnimationFrame(animationFrameId); 
         if(aba === 'frota') renderizarListaPlacasAdmin(); 
@@ -1595,9 +1657,9 @@
     }
     window.fecharModal = function() { document.getElementById('image-modal').classList.add('hidden'); }
 
-    window.abrirFotoBombaPorId = function(id) { const d = window.dadosRelatorio.find(r => r.id === id); if(d) abrirModalImagem('Foto do Painel / Bomba', `<img src="${d.fotoBombaBase64}">`); }
+    window.abrirFotoBombaPorId = function(id) { const d = window.dadosRelatorio.find(r => r.id === id) || window.dadosApagados.find(r => r.id === id); if(d) abrirModalImagem('Foto do Painel / Bomba', `<img src="${d.fotoBombaBase64}">`); }
     window.abrirFotoNotaPorId = function(id) { const d = window.dadosRecebimentosLista.find(r => r.id === id); if(d && d.fotoNotaBase64) { abrirModalImagem('Nota Fiscal do Fornecedor', `<img src="${d.fotoNotaBase64}">`); } else { alert("Não há nota fiscal anexada neste recebimento."); } }
-    window.abrirAssinaturasPorId = function(id) { const d = window.dadosRelatorio.find(r => r.id === id); if(d) { abrirModalImagem('Assinaturas', `<p style="text-align: left; font-size: 14px; color: var(--text-muted); font-weight: 800;">CONDUTOR:</p><img src="${d.assMotoristaBase64}" style="background-color: white; border: 2px solid #e2e8f0; border-radius: 12px;"><p style="text-align: left; font-size: 14px; color: var(--text-muted); font-weight: 800; margin-top: 10px;">RESPONSÁVEL:</p><img src="${d.assFuncionarioBase64}" style="background-color: white; border: 2px solid #e2e8f0; border-radius: 12px;">`); } }
+    window.abrirAssinaturasPorId = function(id) { const d = window.dadosRelatorio.find(r => r.id === id) || window.dadosApagados.find(r => r.id === id); if(d) { abrirModalImagem('Assinaturas', `<p style="text-align: left; font-size: 14px; color: var(--text-muted); font-weight: 800;">CONDUTOR:</p><img src="${d.assMotoristaBase64}" style="background-color: white; border: 2px solid #e2e8f0; border-radius: 12px;"><p style="text-align: left; font-size: 14px; color: var(--text-muted); font-weight: 800; margin-top: 10px;">RESPONSÁVEL:</p><img src="${d.assFuncionarioBase64}" style="background-color: white; border: 2px solid #e2e8f0; border-radius: 12px;">`); } }
 
     function atualizarInputsAdmin() {
         if(document.activeElement.id !== 'precoDieselAdmin') document.getElementById('precoDieselAdmin').value = configGerais.precoDiesel; 
@@ -1662,14 +1724,42 @@
     function carregarRelatoriosAdmin() {
         const container = document.getElementById('admin-table-container'); if (unsubRelatorio) return; 
         const q = query(collection(db, "abastecimentos"));
+        
         unsubRelatorio = onSnapshot(q, (querySnapshot) => {
-            window.dadosRelatorio = []; querySnapshot.forEach(doc => { window.dadosRelatorio.push({ id: doc.id, ...doc.data() }); });
+            window.dadosRelatorio = []; 
+            window.dadosApagados = [];
+            const trintaDiasMs = 30 * 24 * 60 * 60 * 1000;
+            const agora = new Date();
+
+            querySnapshot.forEach(docSnap => { 
+                const data = docSnap.data();
+                if(data.apagado) {
+                    // Lógica de exclusão automática após 30 dias
+                    if(data.dataExclusao) {
+                        const dataExc = new Date(data.dataExclusao);
+                        if((agora - dataExc) > trintaDiasMs) {
+                            deleteDoc(docSnap.ref); // Deleta do banco permanentemente
+                            return; // Pula este item
+                        }
+                    }
+                    window.dadosApagados.push({ id: docSnap.id, ...data });
+                } else {
+                    window.dadosRelatorio.push({ id: docSnap.id, ...data }); 
+                }
+            });
+            
             window.dadosRelatorio.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
+            window.dadosApagados.sort((a,b) => new Date(b.dataExclusao) - new Date(a.dataExclusao));
+            
+            // Atualiza Badge Lixeira
+            document.getElementById('badgeApagados').innerText = window.dadosApagados.length;
+
             atualizarDashboard(); 
             if (!document.getElementById('aba-historico').classList.contains('hidden')) {
                 if(!document.getElementById('filtroDataAdmin').value) { const d = new Date(); const ano = d.getFullYear(); const mes = String(d.getMonth() + 1).padStart(2, '0'); const dia = String(d.getDate()).padStart(2, '0'); document.getElementById('filtroDataAdmin').value = `${ano}-${mes}-${dia}`; }
                 aplicarFiltrosAdmin(); 
             }
+            if (!document.getElementById('aba-apagados').classList.contains('hidden')) { renderTabelaApagados(); }
         }, (e) => { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; });
     }
 
@@ -1682,6 +1772,62 @@
             window.dadosRecebimentosLista.sort((a,b) => new Date(b.timestamp || b.dataChegada) - new Date(a.timestamp || a.dataChegada));
             atualizarDashboard(); if (!document.getElementById('aba-recebimento').classList.contains('hidden')) { aplicarFiltroRecebimento(); }
         }, (e) => { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; });
+    }
+
+    // SOFT DELETE: Move para a Lixeira e devolve litros
+    window.apagarRegistro = async function(id) {
+        const d = window.dadosRelatorio.find(r => r.id === id); if(!d) return;
+        if(confirm("Deseja mover este registro para a lixeira? Os litros serão devolvidos ao tanque.")) { 
+            try { 
+                await updateDoc(doc(db, "abastecimentos", id), { apagado: true, dataExclusao: new Date().toISOString() });
+                configGerais.estoqueTanque += parseFloat(d.litros); 
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); 
+                alert("Movido para a lixeira!"); 
+            } catch(e) { console.error(e); } 
+        }
+    }
+
+    // RESTAURAR: Volta pro relatório e retira litros do tanque de novo
+    window.restaurarRegistro = async function(id) {
+        const d = window.dadosApagados.find(r => r.id === id); if(!d) return;
+        if(confirm("Restaurar este abastecimento? Os litros serão subtraídos do tanque novamente.")) {
+            try {
+                await updateDoc(doc(db, "abastecimentos", id), { apagado: deleteField(), dataExclusao: deleteField() });
+                configGerais.estoqueTanque -= parseFloat(d.litros); 
+                await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque });
+                alert("Registro restaurado!");
+            } catch(e) { console.error(e); }
+        }
+    }
+
+    // EXCLUIR PERMANENTE: Da lixeira para o limbo
+    window.excluirPermanente = async function(id) {
+        if(confirm("APAGAR PERMANENTEMENTE? Esta ação não pode ser desfeita.")) {
+            try { await deleteDoc(doc(db, "abastecimentos", id)); alert("Excluído para sempre."); } catch(e) { console.error(e); }
+        }
+    }
+
+    function renderTabelaApagados() {
+        const container = document.getElementById('apagados-table-container');
+        if (window.dadosApagados.length === 0) { container.innerHTML = "<p style='padding:20px; color: var(--text-muted); font-weight: 500;'>A lixeira está vazia.</p>"; return; }
+        
+        let html = `<table class="admin-table"><tr><th>Data Exclusão</th><th>Placa</th><th>Motorista</th><th>Litros</th><th>Ações</th></tr>`;
+        window.dadosApagados.forEach((d) => { 
+            const expiraEm = 30 - Math.floor((new Date() - new Date(d.dataExclusao)) / (1000 * 60 * 60 * 24));
+            html += `<tr>
+                <td>${dataBR(d.dataExclusao.split('T')[0])} <br><span style="font-size:10px; color:var(--danger); font-weight:800;">Expira em ${expiraEm} dias</span></td>
+                <td><strong>${d.placa}</strong></td>
+                <td>${d.motorista}</td>
+                <td style="color: var(--primary); font-weight: 800;">${d.litros}L</td>
+                <td style="min-width: 160px;">
+                    <button class="link-btn" onclick="abrirModalPDF('${d.id}')" title="Ver Recibo" style="padding: 6px;">📄</button>
+                    <button class="link-btn" onclick="restaurarRegistro('${d.id}')" title="Restaurar" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">🔄 Restaurar</button>
+                    <button class="link-btn" onclick="excluirPermanente('${d.id}')" title="Excluir Permanente" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);">🗑️ Excluir</button>
+                </td>
+            </tr>`; 
+        });
+        html += `</table>`; 
+        container.innerHTML = html;
     }
 
     window.calcularTotalRecebimento = function() {
@@ -1778,11 +1924,6 @@
         reader.readAsArrayBuffer(file);
     });
 
-    window.apagarRegistro = async function(id) {
-        const d = window.dadosRelatorio.find(r => r.id === id); if(!d) return;
-        if(confirm("Apagar permanentemente? Devolverá os litros ao tanque.")) { try { await deleteDoc(doc(db, "abastecimentos", id)); configGerais.estoqueTanque += parseFloat(d.litros); await atualizarConfigFirebase({ estoqueTanque: configGerais.estoqueTanque }); alert("Apagado e devolvido!"); } catch(e) { console.error(e); } }
-    }
-
     window.aplicarFiltrosAdmin = function() {
         const fData = document.getElementById('filtroDataAdmin').value; const fPlaca = document.getElementById('filtroPlacaAdmin').value.trim().toUpperCase(); 
         let dadosFiltrados = window.dadosRelatorio;
@@ -1796,24 +1937,36 @@
         let totalLitros = 0; let totalValor = 0;
         dados.forEach(d => { totalLitros += parseFloat(d.litros) || 0; totalValor += parseFloat(d.valorTotal) || 0; });
 
+        // Correção do Glassmorphism: removido o override de background no balls-arena.
         container.innerHTML = `
             <div class="bolinhas-container-mobile" style="margin-bottom: 10px; padding: 10px; border-radius: 12px; text-align: center; flex-shrink: 0;">
                 <div style="font-size: 10px; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">Toque nas bolinhas para ver detalhes</div>
                 <div style="font-size: 13px; font-weight: 800; color: var(--danger); margin-top: 2px;">Total Filtrado: ${totalLitros.toFixed(2)} L | R$ ${totalValor.toFixed(2)}</div>
             </div>
-            <div id="balls-arena" style="flex-grow: 1; position:relative; width:100%; border-radius:16px; overflow:hidden; border:1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);"></div>
+            <div id="balls-arena" style="flex-grow: 1; position:relative; width:100%; border-radius:16px; overflow:hidden;"></div>
         `;
         
-        container.style.display = 'flex'; container.style.flexDirection = 'column'; container.style.height = '100%'; container.style.padding = '0'; container.style.border = 'none'; container.style.background = 'transparent'; container.style.boxShadow = 'none';
+        // Mantém apenas configurações de layout, preservando o class "table-responsive" do pai.
+        container.style.display = 'flex'; 
+        container.style.flexDirection = 'column'; 
+        container.style.height = '100%'; 
+        container.style.padding = '0'; 
         
         const arena = document.getElementById('balls-arena'); let balls = [];
         dados.forEach((d) => {
             let size = 65 + Math.random() * 25; let el = document.createElement('div');
             el.className = 'history-ball'; el.style.width = `${size}px`; el.style.height = `${size}px`;
-            el.innerHTML = `<span style="font-size:12px; font-weight:800; color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${d.placa}</span><span style="font-size:11px; color:rgba(255,255,255,0.9); font-weight: 600;">${d.litros}L</span>`;
+            el.innerHTML = `<span style="font-size:12px; font-weight:800; color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${d.placa}</span><span style="font-size:10px; color:rgba(255,255,255,0.85); font-weight: 700; margin: 1px 0;">${d.horario || '-'}</span><span style="font-size:11px; color:rgba(255,255,255,0.95); font-weight: 600;">${d.litros}L</span>`;
             arena.appendChild(el);
             balls.push({ el: el, x: Math.random() * (arena.clientWidth - size), y: Math.random() * (arena.clientHeight - size), vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, size: size, data: d });
-            el.addEventListener('click', () => abrirDetalhesMobile(d));
+            
+            // Lógica de animação do estouro
+            el.addEventListener('click', function() {
+                this.classList.add('ball-burst');
+                setTimeout(() => {
+                    abrirDetalhesMobile(d);
+                }, 300); // Aguarda o CSS terminar a animação de inflar/desaparecer
+            });
         });
         
         function animate() {
@@ -1840,7 +1993,7 @@
             let html = `<table class="admin-table"><tr><th>Data</th><th>Horário</th><th>Placa</th><th>KM</th><th>Motorista</th><th>Responsável</th><th>Litros</th><th>Val. Unit</th><th>Total</th><th>Anexos</th><th>Ações</th></tr>`;
             dados.forEach((d) => { 
                 totalLitros += parseFloat(d.litros) || 0; totalValor += parseFloat(d.valorTotal) || 0;
-                html += `<tr><td>${dataBR(d.data)}</td><td>${d.horario || '-'}</td><td><strong>${d.placa}</strong></td><td>${d.km || '-'}</td><td>${d.motorista}</td><td>${d.funcionario}</td><td style="color: var(--danger); font-weight: 800;">-${d.litros}L</td><td>R$ ${d.valorUnitario || '-'}</td><td style="font-weight: 700;">R$ ${d.valorTotal}</td><td style="min-width: 140px;"><button class="link-btn" onclick="abrirFotoBombaPorId('${d.id}')" title="Ver Bomba">📷</button><button class="link-btn" onclick="abrirAssinaturasPorId('${d.id}')" title="Ver Assinaturas">✍️</button></td><td style="min-width: 140px;"><button class="link-btn pdf-btn" onclick="abrirModalPDF('${d.id}')" title="Ver PDF do Recibo">📄 PDF</button><button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')" title="Apagar Registro" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">🗑️</button></td></tr>`; 
+                html += `<tr><td>${dataBR(d.data)}</td><td>${d.horario || '-'}</td><td><strong>${d.placa}</strong></td><td>${d.km || '-'}</td><td>${d.motorista}</td><td>${d.funcionario}</td><td style="color: var(--danger); font-weight: 800;">-${d.litros}L</td><td>R$ ${d.valorUnitario || '-'}</td><td style="font-weight: 700;">R$ ${d.valorTotal}</td><td style="min-width: 140px;"><button class="link-btn" onclick="abrirFotoBombaPorId('${d.id}')" title="Ver Bomba">📷</button><button class="link-btn" onclick="abrirAssinaturasPorId('${d.id}')" title="Ver Assinaturas">✍️</button></td><td style="min-width: 140px;"><button class="link-btn pdf-btn" onclick="abrirModalPDF('${d.id}')" title="Ver PDF do Recibo">📄 PDF</button><button class="link-btn btn-delete" onclick="apagarRegistro('${d.id}')" title="Mover p/ Lixeira" style="color: var(--danger); background: rgba(239, 68, 68, 0.1);">🗑️</button></td></tr>`; 
             });
             html += `<tfoot><tr style="border-top: 2px solid var(--border-color);"><td colspan="6" style="text-align: right; padding-right: 15px; font-weight: 800;">TOTAL DESTA BUSCA:</td><td style="color: var(--danger); font-size: 16px; font-weight: 800;">${totalLitros.toFixed(2)}L</td><td>-</td><td style="color: var(--primary); font-size: 16px; font-weight: 800;">R$ ${totalValor.toFixed(2)}</td><td colspan="2"></td></tr></tfoot></table>`; 
             container.innerHTML = html;
