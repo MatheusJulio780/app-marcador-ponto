@@ -3,1296 +3,1311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Controle | ICAPHI</title>
-
+    <title>Torre de Controle V3 | ICAPHI</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/10218/10218090.png" type="image/png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* VARIÁVEIS DE TEMA (CLARO) */
+        /* TEMA CYBER-LOGISTICS V3 (VARIÁVEIS DINÂMICAS) */
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-body: #e2e8f0; 
-            --bg-card: #ffffff;
-            --bg-card-alpha: rgba(255, 255, 255, 0.95);
-            --bg-sys-name: rgba(248, 250, 252, 0.9);
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --success: #10b981;
-            --danger: #ef4444;
-            --border-light: #cbd5e1;
-            --shadow-color: rgba(0,0,0,0.06);
-            --wave-color-1: #e2e8f0;
-            --wave-color-2: rgba(255, 255, 255, 0.6);
+            --primary: #00d2ff; 
+            --primary-hover: #00a8ff; 
+            
+            --panel-rgb: 17, 24, 39; 
+            --bg-header: rgba(5, 8, 16, 0.7);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981; 
+            --danger: #f43f5e; 
+            --warning: #f59e0b;
+            
+            --border-color: rgba(0, 210, 255, 0.15);
+            --glow-primary: 0 0 15px rgba(0, 210, 255, 0.25);
+            --font-family: 'Inter', sans-serif;
+            --glass-blur: blur(15px);
+            
+            --card-opacity: 0.55; 
         }
 
-        /* VARIÁVEIS DE TEMA (ESCURO) */
-        body.dark-mode {
-            --primary: #3b82f6;
-            --primary-hover: #60a5fa;
-            --bg-body: #1e293b; 
-            --bg-card: #334155; 
-            --bg-card-alpha: rgba(51, 65, 85, 0.95);
-            --bg-sys-name: rgba(30, 41, 59, 0.9); 
-            --text-main: #f8fafc;
-            --text-muted: #cbd5e1;
-            --border-light: #475569;
-            --shadow-color: rgba(0,0,0,0.3);
-            --wave-color-1: #1e293b;
-            --wave-color-2: rgba(30, 41, 59, 0.6);
+        body.light-mode {
+            --primary: #0284c7; 
+            --primary-hover: #0369a1; 
+            
+            --panel-rgb: 255, 255, 255; 
+            --bg-header: rgba(255, 255, 255, 0.7);
+            
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: rgba(2, 132, 199, 0.2);
+            --glow-primary: 0 4px 15px rgba(2, 132, 199, 0.2);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: background-color 0.5s ease;
+        body { 
+            font-family: var(--font-family); 
+            background-color: transparent; /* O canvas faz o papel do fundo */
+            color: var(--text-main); 
+            height: 100vh; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            transition: color 0.5s ease; 
         }
+
+        /* MOTOR GRÁFICO DE FUNDO (CANVAS 60FPS) */
+        #bg-canvas { 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            z-index: -1; 
+            pointer-events: none; 
+        }
+
+        /* --- TELA DE CARREGAMENTO BLINDADA --- */
+        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #060913; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        body.light-mode #loader-overlay { background: #cbd5e1; }
+        #loader-overlay.hidden { opacity: 0; pointer-events: none; }
+        .truck-road { width: 300px; height: 1px; background: rgba(255,255,255,0.1); position: relative; margin-top: 50px;}
+        .truck-icon { font-size: 2.5rem; color: var(--primary); text-shadow: var(--glow-primary); position: absolute; bottom: 0; left: -100px; animation: truckRoute 2.5s cubic-bezier(0.77, 0, 0.175, 1) infinite; }
+        .truck-speed-line { width: 50px; height: 3px; background: rgba(0,210,255,0.3); position: absolute; bottom: 10px; left: -140px; border-radius: 3px; animation: speedLine 2.5s infinite; }
+        @keyframes truckRoute { 0% { left: -100px; opacity: 0; } 10% { opacity: 1; } 45%, 55% { left: 50%; transform: translateX(-50%); opacity: 1; } 90% { opacity: 1; } 100% { left: calc(100% + 100px); opacity: 0; } }
+        @keyframes speedLine { 0% { left: -140px; opacity: 0; } 20% { opacity: 1; left: -80px; } 100% { left: calc(100% + 50px); opacity: 0; } }
+
+        /* --- SISTEMA DE TOOLTIPS --- */
+        [data-tooltip] { position: relative; cursor: pointer; }
+        [data-tooltip]::before { content: attr(data-tooltip); position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(-10px); background: rgba(var(--panel-rgb), 0.95); backdrop-filter: blur(5px); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+        [data-tooltip]:hover::before { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         /* --- HEADER --- */
-        .topbar {
-            width: 100%; max-width: 1200px; display: flex;
-            justify-content: space-between; align-items: center;
-            padding: 20px 20px; height: 100px; z-index: 10; position: relative;
-        }
+        .topbar { width: 100%; background: var(--bg-header); border-bottom: 1px solid var(--border-color); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; z-index: 100; transition: background 0.5s ease, border-color 0.5s ease; }
+        .brand-area { display: flex; align-items: center; gap: 20px; }
+        .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); transition: color 0.5s ease;}
+        .logo span { color: var(--primary); text-shadow: var(--glow-primary); }
+        .clock { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border-left: 1px solid var(--border-color); padding-left: 20px; transition: border-color 0.5s ease; }
+        .clock strong { color: var(--text-main); font-size: 1.1rem; }
+        .network-status { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; transition: all 0.3s; }
+        .network-status.online { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .network-status.offline { background: rgba(244, 63, 94, 0.1); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); animation: pulse-danger 2s infinite; }
+        @keyframes pulse-danger { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
 
-        .topbar-logo h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); transition: color 0.3s; }
-        .topbar-logo span { color: var(--primary); }
-        .filters-container { display: flex; gap: 15px; align-items: center; }
+        .controls-area { display: flex; align-items: center; gap: 15px; }
+        .filter-group { display: flex; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; transition: all 0.5s ease; }
+        body.light-mode .filter-group { background: rgba(255,255,255,0.4); }
+        .filter-group select { background: transparent; color: var(--text-main); border: none; padding: 8px 15px; font-family: var(--font-family); font-size: 0.9rem; font-weight: 600; outline: none; cursor: pointer; border-right: 1px solid var(--border-color); }
+        .filter-group select:last-child { border-right: none; }
+        .filter-group select option { background: #0f172a; color: #fff; }
+        body.light-mode .filter-group select option { background: #f8fafc; color: #000; }
 
-        .filter-box {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--bg-card-alpha); padding: 10px 20px; 
-            border-radius: 12px; box-shadow: 0 4px 10px var(--shadow-color);
-            border: 1px solid var(--border-light);
-            backdrop-filter: blur(5px); transition: all 0.3s;
-        }
-        .filter-box i { color: var(--primary); font-size: 1.2rem; }
-        .filter-box select {
-            background: transparent; border: none; font-family: 'Poppins', sans-serif;
-            font-size: 1rem; font-weight: 600; color: var(--text-main); outline: none; cursor: pointer;
-            transition: color 0.3s;
-        }
-        .filter-box select option { background: var(--bg-card); color: var(--text-main); }
+        .btn-action { display: flex; align-items: center; gap: 8px; background: var(--primary); color: #000; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; text-decoration: none; transition: all 0.2s; border: 1px solid transparent; }
+        .btn-action:hover { background: var(--primary-hover); box-shadow: var(--glow-primary); transform: translateY(-2px); color: #fff; }
+        .btn-outline { background: rgba(0,0,0,0.2); border-color: var(--border-color); color: var(--text-main); font-weight: 600; backdrop-filter: blur(5px);}
+        .btn-outline:hover { background: rgba(0, 210, 255, 0.15); border-color: var(--primary); color: var(--primary);}
+        body.light-mode .btn-action:not(.btn-outline) { color: #fff; }
+        body.light-mode .btn-outline { background: rgba(255,255,255,0.4); color: var(--primary); border-color: var(--primary); }
+        body.light-mode .btn-outline:hover { background: var(--primary); color: #fff; }
 
-        /* --- BOTÃO SWITCH TEMA 3D --- */
-        .theme-switch-wrapper {
-            position: absolute; top: 30px; right: 30px;
-            display: flex; align-items: center; gap: 10px; z-index: 100;
-        }
-        .theme-switch { position: relative; display: inline-block; width: 66px; height: 34px; cursor: pointer; }
-        .theme-switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #cbd5e1; transition: .4s; border-radius: 34px;
-            box-shadow: inset 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(255,255,255,0.4);
-            border: 1px solid #94a3b8; border-bottom: 2px solid #94a3b8;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 26px; width: 26px; left: 3px; bottom: 2px;
-            background-color: white; transition: .4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-radius: 50%;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.1);
-        }
-        input:checked + .slider { background-color: var(--primary); border-color: var(--primary-hover); border-bottom: 2px solid var(--primary-hover); }
-        input:checked + .slider:before { transform: translateX(32px); }
-        .theme-switch-wrapper i.fa-sun { color: #f59e0b; font-size: 1.3rem; filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));}
-        .theme-switch-wrapper i.fa-moon { color: var(--text-muted); font-size: 1.2rem; transition: color 0.3s; }
-        body.dark-mode .theme-switch-wrapper i.fa-moon { color: #fbbf24; filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.3));}
-        body.dark-mode .theme-switch-wrapper i.fa-sun { color: var(--text-muted); filter: none;}
+        /* --- WRAPPER E PÁGINAS --- */
+        #pages-wrapper { position: relative; width: 100%; flex: 1; overflow: hidden; }
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px 40px 100px 40px; display: flex; flex-direction: column; gap: 20px; opacity: 0; pointer-events: none; transform: translateY(20px) scale(0.98); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .page.active { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
 
-        /* --- CAMADA DE DESFOQUE (BLUR) PARA ANIMAÇÃO DO ABAJUR --- */
-        #theme-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 9995;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
+        /* --- DASHBOARD GRID --- */
+        .panel { 
+            background: rgba(var(--panel-rgb), var(--card-opacity)); 
+            backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; padding: 20px; 
+            display: flex; flex-direction: column; 
+            transition: background 0.5s ease, border-color 0.5s ease, transform 0.3s ease, box-shadow 0.3s ease; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
         }
-        #theme-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        /* --- EFEITO ABAJUR (LAMP) --- */
-        .lamp-wrapper {
-            position: fixed; bottom: -500px; left: 50%; transform: translateX(-50%);
-            width: 160px; z-index: 9999; transition: bottom 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; flex-direction: column; align-items: center; pointer-events: none;
-        }
-        .lamp-wrapper.show { bottom: 15vh; }
-        .lamp-shade {
-            width: 160px; height: 90px; background: #334155;
-            clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
-            position: relative; z-index: 4; border-bottom: 6px solid #1e293b;
-        }
-        .lamp-bulb {
-            width: 50px; height: 25px; background: #94a3b8; border-radius: 0 0 25px 25px;
-            margin-top: -6px; z-index: 3; transition: background 0.3s, box-shadow 0.3s;
-        }
-        .lamp-bulb.on {
-            background: #fef08a;
-            box-shadow: 0 15px 40px rgba(253, 224, 71, 0.9), 0 0 80px rgba(253, 224, 71, 0.6);
-        }
-        .lamp-base-stick {
-            width: 14px; height: 220px; background: #475569; position: relative; z-index: 2;
-            box-shadow: inset -4px 0 0 rgba(0,0,0,0.2);
-        }
-        .lamp-base-bottom {
-            width: 120px; height: 24px; background: #1e293b; border-radius: 20px 20px 0 0;
-            margin-top: -5px; z-index: 2;
-        }
-        .pull-string {
-            width: 4px; height: 50px; background: #ef4444; position: absolute; top: 90px; right: 50px;
-            z-index: 5; border-radius: 2px; transition: height 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .pull-string::after {
-            content: ''; position: absolute; bottom: -6px; left: -3px; width: 10px; height: 10px;
-            background: #dc2626; border-radius: 50%;
-        }
-        .lamp-wrapper.pull .pull-string { height: 80px; }
-
-        /* --- EFEITO DADO (SHAKE) --- */
-        .shake-dice {
-            animation: shake-anim 0.4s cubic-bezier(.36,.07,.19,.97) infinite;
-            transform: translate3d(0, 0, 0); backface-visibility: hidden; perspective: 1000px;
-        }
-        @keyframes shake-anim {
-            0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-            10%, 90% { transform: translate3d(-2px, -2px, 0) rotate(-1deg); }
-            20%, 80% { transform: translate3d(2px, -1px, 0) rotate(1deg); }
-            30%, 50%, 70% { transform: translate3d(-3px, 1px, 0) rotate(-1deg); }
-            40%, 60% { transform: translate3d(3px, 2px, 0) rotate(1deg); }
-        }
-
-        /* --- BOTÃO DE MONITORAMENTO DINÂMICO --- */
-        .btn-monitoramento {
-            position: absolute;
-            bottom: 150px; /* Mais alto, distante do relógio */
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: white;
-            height: 50px;
-            width: 210px;
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 20;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .btn-monitoramento i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-        .btn-monitoramento .text-normal {
-            display: inline;
-            transition: opacity 0.2s;
-        }
-        .btn-monitoramento .text-hover {
-            display: none;
-            opacity: 0;
-        }
-        .btn-monitoramento:hover {
-            width: 320px;
-            background: var(--primary-hover);
-            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.5);
-            transform: translateX(-50%) translateY(-4px);
-        }
-        .btn-monitoramento:hover .text-normal {
-            display: none;
-        }
-        .btn-monitoramento:hover .text-hover {
-            display: inline;
-            animation: fadeInText 0.3s forwards;
-        }
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Ação de Desvio do botão (Dodge) para PC */
-        .btn-monitoramento.push-right {
-            transform: translateX(calc(-50% + 245px));
-        }
-        .btn-monitoramento.push-left {
-            transform: translateX(calc(-50% - 245px));
-        }
-        .btn-monitoramento.push-right:hover {
-            transform: translateX(calc(-50% + 245px)) translateY(-4px);
-        }
-        .btn-monitoramento.push-left:hover {
-            transform: translateX(calc(-50% - 245px)) translateY(-4px);
-        }
-
-        /* --- DATA E HORA / RODAPÉ --- */
-        .clock-container {
-            position: absolute; bottom: 40px; text-align: center;
-            z-index: 20; display: flex; flex-direction: column; gap: 2px;
-            animation: floatClock 4s ease-in-out infinite;
-        }
-        @keyframes floatClock { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .panel:hover { border-color: var(--primary); box-shadow: var(--glow-primary); transform: translateY(-3px) scale(1.002); }
         
-        .clock-time { font-size: 2.4rem; font-weight: 800; color: var(--text-main); letter-spacing: 2px; text-shadow: 0 4px 15px var(--shadow-color); transition: color 0.3s; }
-        .clock-date { font-size: 1rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
-        .clock-time span { animation: pulseSec 1s infinite; display: inline-block;}
-        @keyframes pulseSec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } }
-
-        .footer-credits { position: absolute; bottom: 12px; width: 100%; text-align: center; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; z-index: 20; text-transform: uppercase; transition: color 0.3s; }
-
-        /* --- AVISOS LATERAIS --- */
-        .scroll-indicator {
-            position: absolute; bottom: 30px; right: 30px; display: flex; align-items: center; gap: 10px;
-            color: var(--text-muted); font-weight: 600; font-size: 0.95rem; animation: bounce 2s infinite; z-index: 20; background: var(--bg-card-alpha);
-            padding: 10px 20px; border-radius: 30px; backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--border-light); transition: all 0.3s;
-        }
-        .scroll-indicator i { font-size: 1.2rem; color: var(--primary); transition: transform 0.3s; }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 60% { transform: translateY(-4px); } }
-
-        .view-mode-wrapper {
-            position: absolute; bottom: 30px; left: 30px; display: flex; align-items: center; gap: 8px; background: var(--bg-card-alpha); backdrop-filter: blur(8px);
-            padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--border-light); z-index: 20; transition: all 0.3s;
-        }
-        .view-mode-wrapper:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow-color); }
-        .view-mode-wrapper i { color: var(--primary); font-size: 1.1rem; }
-        .view-mode-wrapper select { background: transparent; border: none; font-family: 'Poppins', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); outline: none; cursor: pointer; transition: color 0.3s;}
-        .view-mode-wrapper select option { background: var(--bg-card); color: var(--text-main); font-weight: 500;}
-
-        /* --- CENA 3D --- */
-        .scene { width: 100%; height: calc(100vh - 100px); perspective: 2500px; display: flex; justify-content: center; align-items: flex-start; padding-top: 10px; }
-        .cube { width: 100%; max-width: 1100px; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1); }
-        .cube.is-flipped { transform: rotateX(-180deg); }
-        .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; justify-content: center; align-items: flex-start; flex-direction: row; gap: 40px; }
-        .face-front { transform: rotateX(0deg); }
-        .face-back { transform: rotateX(180deg); } 
-
-        /* --- CARDS PRINCIPAIS (ALTURA 460px) --- */
-        .stat-card, .back-card {
-            width: 450px; background: var(--bg-card-alpha); border-radius: 28px; position: relative;
-            overflow: hidden; box-shadow: 0 15px 35px var(--shadow-color);
-            border: 1px solid var(--border-light); display: flex; flex-direction: column;
-            align-items: center; backdrop-filter: blur(10px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            height: 460px; transform-origin: top center;
-        }
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; flex-shrink: 0; }
+        .kpi-card { display: flex; align-items: flex-start; gap: 15px; }
+        .kpi-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; transition: transform 0.3s; flex-shrink: 0; }
+        .kpi-card:hover .kpi-icon { transform: scale(1.1); }
         
-        .stat-card:hover, .back-card:hover { height: 680px; box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15); border-color: var(--primary); z-index: 10; }
+        .icon-primary { background: rgba(0, 210, 255, 0.15); color: var(--primary); border: 1px solid rgba(0, 210, 255, 0.2); }
+        .icon-success { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .icon-danger { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); }
+
+        .kpi-data { flex: 1; display: flex; flex-direction: column; }
+        .kpi-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; transition: border-color 0.5s ease;}
+        .kpi-dual-container { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; gap: 10px; margin-bottom: 5px;}
+        .kpi-dual-container:last-child { margin-bottom: 0; }
+        .kpi-dual-box { display: flex; flex-direction: column; }
+        .kpi-dual-box.right { text-align: right; }
+        .kpi-dual-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+        .kpi-dual-value { font-size: 1.25rem; font-weight: 800; line-height: 1; color: var(--text-main); }
+        .kpi-single-value { font-size: 1.8rem; font-weight: 800; line-height: 1; color: var(--text-main); margin-bottom: 5px; }
+        .kpi-status-badge { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content; }
+
+        .tactical-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; transition: border-color 0.5s ease;}
+        .panel-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .panel-title i { color: var(--primary); }
+        .chart-selector { background: rgba(0,0,0,0.2); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-family: var(--font-family); font-size: 0.85rem; font-weight: 600; outline: none; cursor: pointer; transition: all 0.5s ease; }
+        body.light-mode .chart-selector { background: rgba(255,255,255,0.4); }
+        .chart-selector:focus, .chart-selector:hover { border-color: var(--primary); box-shadow: 0 0 5px rgba(0, 210, 255, 0.3); }
+
+        .data-split { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .data-box { background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        body.light-mode .data-box { background: rgba(255,255,255,0.5); border-color: rgba(0,0,0,0.05); }
+        .data-box:hover { background: rgba(0, 210, 255, 0.1); border-color: var(--primary); transform: scale(1.02); }
+        .data-box label { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 5px;}
+        .data-box .value { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+
+        .bar-container { width: 100%; margin: 15px 0; }
+        .bar-labels { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; }
+        .bar-track { width: 100%; height: 16px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); position: relative; cursor: pointer; transition: border-color 0.5s ease;}
+        body.light-mode .bar-track { background: rgba(0,0,0,0.05); }
+        .bar-fill { height: 100%; transition: width 1s ease; position: relative; }
+        .bg-success { background-color: var(--success); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); }
+        .bg-primary { background-color: var(--primary); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); }
+
+        .list-container { flex: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-right: 5px; }
+        .list-container::-webkit-scrollbar { width: 4px; }
+        .list-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .list-header { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-top: 5px; transition: border-color 0.5s ease;}
+        .list-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); border-radius: 6px; transition: all 0.2s; }
+        body.light-mode .list-item { border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .list-item:hover { background: rgba(0, 210, 255, 0.15); transform: translateX(3px); color: var(--primary); border-left: 2px solid var(--primary); }
+        .list-item span { color: var(--text-main); font-weight: 600; }
+        .list-item strong { font-weight: 800; }
+        .new-item-anim { animation: fadeInSlide 0.5s ease; }
+
+        .chart-row { display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+        .chart-wrapper { width: 100%; flex: 1; min-height: 0; position: relative; }
+
+        /* --- MENU SUSPENSO (BOTTOM DOCK) --- */
+        #bottom-dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; padding: 10px 20px; background: rgba(var(--panel-rgb), var(--card-opacity)); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border-color); border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 1000; transition: all 0.5s ease; }
+        .dock-btn { width: 45px; height: 45px; border-radius: 50%; border: none; outline: none; background: transparent; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; justify-content: center; align-items: center; }
+        .dock-btn:hover, .dock-btn.active { color: var(--primary); background: rgba(0, 210, 255, 0.1); transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0, 210, 255, 0.2); }
+
+        #scroll-hud { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; gap: 5px; background: rgba(var(--panel-rgb), var(--card-opacity)); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-color); padding: 10px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 1001; }
+        .timer-btn { background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: var(--text-main); padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        body.light-mode .timer-btn { background: rgba(255,255,255,0.5); }
+        .timer-btn:hover, .timer-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+        body.light-mode .timer-btn.active { color: #fff; }
+
+        /* --- MODAL DE PERSONALIZAÇÃO --- */
+        #settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 2000; }
+        #settings-modal.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: rgba(var(--panel-rgb), 0.95); border: 1px solid var(--border-color); padding: 25px; border-radius: 16px; width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: var(--text-main); }
+        #settings-modal.active .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;}
+        .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: 0.2s;}
+        .close-btn:hover { color: var(--danger); transform: scale(1.1); }
         
-        .sys-name { position: relative; z-index: 2; width: 100%; background: var(--bg-sys-name); padding: 15px 0; text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--text-muted); border-bottom: 1px solid var(--border-light); letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s;}
+        .settings-section { margin-bottom: 20px; background: rgba(0,0,0,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        body.light-mode .settings-section { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.05); }
+        .settings-section h4 { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;}
+        .slider-group { margin-bottom: 12px; }
+        .slider-group label { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; }
         
-        .card-content { position: relative; z-index: 2; padding: 30px 20px; transition: transform 0.5s ease; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        .back-card-content { position: relative; z-index: 2; padding: 20px 20px; gap: 15px; width: 100%; display: flex; flex-direction: column; align-items: center;}
+        .slider-group input[type="range"] { width: 100%; -webkit-appearance: none; background: rgba(0,0,0,0.3); height: 6px; border-radius: 3px; outline: none; border: 1px solid var(--border-color); }
+        body.light-mode .slider-group input[type="range"] { background: rgba(0,0,0,0.1); }
+        .slider-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; box-shadow: 0 0 10px var(--primary); }
         
-        .stat-card:hover .card-content { transform: translateY(-40px); opacity: 0.1; }
-
-        .stat-icon { width: 80px; height: 80px; border-radius: 22px; display: flex; justify-content: center; align-items: center; font-size: 2.2rem; margin-bottom: 15px; }
-        .bg-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-        .bg-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-
-        .stat-info { text-align: center; width: 100%; }
-        .stat-info p { font-size: 1rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s;}
-        .stat-value { font-size: 3.2rem; font-weight: 800; margin-top: 5px; color: var(--text-main); transition: color 0.3s;}
-        .badge-dispersao-fora { font-size: 0.95rem; font-weight: 700; margin-top: 5px; opacity: 0.9; }
-
-        /* --- DETALHES NO HOVER --- */
-        .hover-details {
-            position: absolute; z-index: 3; bottom: -100%; left: 0; width: 100%; height: calc(100% - 55px);
-            background: var(--bg-sys-name); backdrop-filter: blur(12px); display: flex;
-            flex-direction: column; justify-content: center; padding: 25px 40px;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1); border-top: 1px solid var(--border-light);
-        }
-        .stat-card:hover .hover-details { bottom: 0; }
-        .detail-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1.05rem; }
-        .detail-row span { color: var(--text-muted); font-weight: 500; transition: color 0.3s;}
-        .detail-row strong { color: var(--text-main); font-weight: 700; font-size: 1.15rem; transition: color 0.3s;}
-        .detail-row.highlight span { color: var(--text-main); font-weight: 700; }
-        .detail-row.highlight strong { color: var(--primary); font-size: 1.3rem; }
-        .subtitle-hoje { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;}
-
-        /* BARRAS DE PROGRESSO */
-        .progress-wrapper { width: 100%; margin: 15px 0 10px 0; }
-        .progress-labels { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
-        .pl-em-rota { color: var(--primary); }
-        .pl-finalizada { color: var(--success); }
-        .progress-bar-bg { width: 100%; height: 14px; background: var(--border-light); border-radius: 10px; overflow: hidden; transition: background 0.3s;}
-        .progress-bar-fill { height: 100%; background: var(--success); width: 0%; transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
-        /* --- FUNDO LÍQUIDO E TANQUE --- */
-        .card-bg-liquid { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(37, 99, 235, 0.08); z-index: 0; transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease; }
-        .card-bg-liquid.low-fuel-bg { background: rgba(239, 68, 68, 0.08) !important; }
-        .card-bg-liquid::before, .card-bg-liquid::after { content: ""; position: absolute; width: 1200px; height: 1200px; background: var(--wave-color-1); top: -1180px; left: 50%; transform: translateX(-50%); border-radius: 40%; animation: wave 8s infinite linear; transition: background 0.5s ease; }
-        .card-bg-liquid::after { background: var(--wave-color-2); animation: wave 12s infinite linear; top: -1190px; }
-
-        .tank-wrapper { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; margin-top: 10px; }
-        .tank-cap { width: 45px; height: 10px; background: #64748b; border-radius: 5px 5px 0 0; position: relative; z-index: 2; border: 2px solid #475569; border-bottom: none;}
-        .tank-container { width: 140px; height: 140px; border: 4px solid #94a3b8; border-radius: 12px 12px 25px 25px; position: relative; overflow: hidden; background: var(--bg-card); box-shadow: inset 0px 0px 15px rgba(0,0,0,0.1), 0 8px 15px var(--shadow-color); transition: background 0.3s;}
-        .tank-liquid { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: var(--primary); transition: height 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.5s ease; z-index: 1; }
-        .tank-liquid.low-fuel { background: var(--danger) !important; }
-        .tank-liquid::before, .tank-liquid::after { content: ""; position: absolute; width: 300px; height: 300px; background: var(--bg-card); top: -290px; left: 50%; transform: translateX(-50%); border-radius: 40%; animation: wave 4s infinite linear; transition: background 0.3s;}
-        .tank-liquid::after { border-radius: 43%; background: var(--bg-sys-name); animation: wave 6s infinite linear; top: -294px; }
-        @keyframes wave { 0% { transform: translateX(-50%) rotate(0deg); } 100% { transform: translateX(-50%) rotate(360deg); } }
-
-        /* BOTOES GERAIS */
-        .btn-group { display: flex; gap: 12px; margin-top: auto; width: 100%; }
-        .btn-acao { flex: 1; padding: 14px 0; border-radius: 12px; text-align: center; font-weight: 600; font-size: 0.95rem; text-decoration: none; cursor: pointer; border: none; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-app { background: var(--primary); color: white; }
-        .btn-app:hover { background: var(--primary-hover); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
-        .btn-grafico { background: var(--bg-sys-name); color: var(--text-main); border: 1px solid var(--border-light); }
-        .btn-grafico:hover { background: var(--border-light); }
-
-        /* --- INSIGHT BOXES DO VERSO --- */
-        .insight-box { 
-            display: flex; align-items: center; gap: 15px; background: var(--bg-sys-name); 
-            padding: 15px 20px; border-radius: 16px; border: 1px solid var(--border-light); 
-            height: 85px; overflow: hidden; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: default; width: 100%; 
-        }
-        .insight-box.expandable:hover { 
-            height: 280px; align-items: flex-start; background: var(--bg-card); 
-            box-shadow: 0 15px 35px var(--shadow-color); border-color: var(--primary); z-index: 5; 
-        }
-        
-        .insight-info { width: 100%; }
-        .insight-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; flex-shrink: 0; justify-content: center; align-items: center; font-size: 1.5rem; background: rgba(59, 130, 246, 0.15); color: var(--primary);}
-        .insight-info p { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; transition: color 0.3s;}
-        .insight-info h4 { font-size: 1.2rem; font-weight: 800; color: var(--text-main); transition: color 0.3s;}
-        
-        .icon-green { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-        .icon-gray { background: rgba(100, 116, 139, 0.15); color: var(--text-muted); }
-        
-        .top-list { 
-            width: 100%; display: flex; flex-direction: column; gap: 8px; 
-            max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s; margin-top: 0; 
-        }
-        .insight-box.expandable:hover .top-list { 
-            max-height: 200px; opacity: 1; margin-top: 15px; transition-delay: 0.1s; 
-        }
-        
-        .top-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; border-bottom: 1px dashed var(--border-light); padding-bottom: 8px; width: 100%; transition: border-color 0.3s;}
-        .top-item span { color: var(--text-muted); font-weight: 600; transition: color 0.3s;}
-        .top-item strong { font-weight: 800; font-size: 1.05rem;}
-
-        /* MODAL */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; backdrop-filter: blur(6px); }
-        .modal-content { background: var(--bg-card); padding: 40px; border-radius: 24px; width: 90%; max-width: 900px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); border: 1px solid var(--border-light); transition: background 0.3s;}
-        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 28px; color: var(--text-muted); cursor: pointer; transition: 0.3s; background: var(--bg-sys-name); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
-        .close-btn:hover { color: white; background: var(--danger); transform: rotate(90deg); }
-        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 30px;}
-
-        /* ==========================================================
-           RESPONSIVIDADE MOBILE (CELULAR) - TUDO FICA PERFEITO AQUI
-           ========================================================== */
-        @media (max-width: 992px) {
-            body { 
-                height: auto; min-height: 100vh; overflow-y: auto; overflow-x: hidden; padding-bottom: 20px; 
-            }
-            .topbar { 
-                flex-direction: column; height: auto; gap: 20px; padding: 20px; text-align: center; 
-            }
-            .topbar-logo h1 { font-size: 2rem; }
-            .theme-switch-wrapper { top: 20px; right: 20px; }
-            .filters-container { flex-direction: column; width: 100%; gap: 10px; }
-            .filter-box { width: 100%; justify-content: center; }
-            
-            .scene { height: auto; padding: 10px; perspective: none; }
-            .cube { 
-                height: auto; transform: none !important; transition: none; display: flex; flex-direction: column; gap: 20px; 
-            }
-            .face { 
-                position: relative; height: auto; transform: none !important; flex-direction: column; gap: 20px; 
-            }
-            .face-back { display: flex; } /* Garante que os cards do verso apareçam na lista */
-            
-            .stat-card, .back-card { 
-                width: 100%; max-width: 450px; height: auto !important; margin: 0 auto; 
-            }
-            
-            /* No celular as informações sempre ficam visíveis para facilitar a rolagem */
-            .stat-card:hover .card-content { transform: none; opacity: 1; }
-            .hover-details { 
-                position: relative; bottom: 0 !important; height: auto; padding: 20px; 
-            }
-            .insight-box { 
-                height: auto !important; align-items: center !important; 
-            }
-            .top-list { 
-                max-height: 500px !important; opacity: 1 !important; margin-top: 15px !important; 
-            }
-            
-            /* Oculta os atalhos e dicas exclusivas para PC */
-            .view-mode-wrapper, .scroll-indicator { display: none; }
-            
-            /* Botão de Monitoramento adaptado e estático */
-            .btn-monitoramento {
-                position: relative; bottom: auto; left: auto; transform: none !important; 
-                margin: 30px auto; width: 250px;
-            }
-            .btn-monitoramento:hover { width: 280px; transform: translateY(-4px) !important; }
-            .btn-monitoramento.push-right, .btn-monitoramento.push-left { transform: none !important; }
-            
-            .clock-container { position: relative; bottom: auto; margin: 20px auto 40px auto; animation: none; }
-            .footer-credits { position: relative; bottom: auto; padding: 10px; }
-        }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .btn-cancelar { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-cancelar:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+        .btn-salvar { background: var(--primary); color: #000; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: var(--glow-primary); }
+        .btn-salvar:hover { background: var(--primary-hover); transform: translateY(-2px); color: #fff; }
     </style>
 </head>
-<body>
+<body class="dark-mode">
 
-    <div id="theme-overlay"></div>
+    <canvas id="bg-canvas"></canvas>
 
-    <div class="theme-switch-wrapper" title="Alternar Modo de Visualização">
-        <i class="fas fa-sun"></i>
-        <label class="theme-switch" for="theme-switch-input" onclick="triggerThemeAnimation(event)">
-            <input type="checkbox" id="theme-switch-input">
-            <div class="slider"></div>
-        </label>
-        <i class="fas fa-moon"></i>
+    <div id="loader-overlay">
+        <strong class="logo" style="font-size: 2.5rem;">ICAPHI</strong>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px;" id="loader-text">Sincronizando Firebase...</p>
+        <div class="truck-road">
+            <div class="truck-speed-line"></div>
+            <i class="fas fa-truck-moving truck-icon"></i>
+        </div>
+    </div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-paint-brush"></i> Personalização Visual</h3>
+                <button class="close-btn" onclick="toggleSettingsModal(true)"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="settings-section">
+                <h4><i class="fas fa-moon"></i> Modo Escuro</h4>
+                <div class="slider-group">
+                    <label><span>Opacidade dos Cards</span> <span id="val-dark-opacity">55%</span></label>
+                    <input type="range" id="dark-opacity" min="10" max="100" value="55" oninput="updateLabel('dark-opacity', this.value + '%')">
+                </div>
+                <div class="slider-group">
+                    <label><span>Chuva de Meteoros</span> <span id="val-dark-stars">5</span></label>
+                    <input type="range" id="dark-stars" min="0" max="20" value="5" oninput="updateLabel('dark-stars', this.value)">
+                </div>
+                <div class="slider-group">
+                    <label><span>Velocidade Espacial</span> <span id="val-dark-speed">1.0x</span></label>
+                    <input type="range" id="dark-speed" min="1" max="30" value="10" oninput="updateLabel('dark-speed', (this.value/10).toFixed(1) + 'x')">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h4><i class="fas fa-sun"></i> Modo Claro</h4>
+                <div class="slider-group">
+                    <label><span>Opacidade dos Cards</span> <span id="val-light-opacity">60%</span></label>
+                    <input type="range" id="light-opacity" min="10" max="100" value="60" oninput="updateLabel('light-opacity', this.value + '%')">
+                </div>
+                <div class="slider-group">
+                    <label><span>Densidade de Nuvens</span> <span id="val-light-clouds">15</span></label>
+                    <input type="range" id="light-clouds" min="0" max="50" value="15" oninput="updateLabel('light-clouds', this.value)">
+                </div>
+                <div class="slider-group">
+                    <label><span>Velocidade do Vento</span> <span id="val-light-speed">1.0x</span></label>
+                    <input type="range" id="light-speed" min="1" max="30" value="10" oninput="updateLabel('light-speed', (this.value/10).toFixed(1) + 'x')">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-cancelar" onclick="toggleSettingsModal(true)">Cancelar</button>
+                <button class="btn-salvar" onclick="saveVisualSettings()"><i class="fas fa-save"></i> Salvar Mudanças</button>
+            </div>
+        </div>
     </div>
 
     <header class="topbar">
-        <div class="topbar-logo">
-            <h1>ICAPHI<span>.</span></h1>
+        <div class="brand-area" data-tooltip="Torre de Controle Operacional">
+            <div class="logo">ICAPHI<span>.</span></div>
+            <div class="clock">
+                <span id="clock-date">--/--/----</span> <br>
+                <strong id="clock-time">--:--:--</strong>
+            </div>
+            <div id="network-indicator" class="network-status online" data-tooltip="Conexão em tempo real">
+                <i class="fas fa-wifi"></i> Online
+            </div>
         </div>
-        
-        <div class="filters-container">
-            <div class="filter-box">
-                <i class="far fa-calendar-alt"></i>
-                <select id="filtro-mes" onchange="carregarDadosGlobais()">
-                    <option value="01">Janeiro</option>
-                    <option value="02">Fevereiro</option>
-                    <option value="03">Março</option>
-                    <option value="04">Abril</option>
-                    <option value="05">Maio</option>
-                    <option value="06">Junho</option>
-                    <option value="07">Julho</option>
-                    <option value="08">Agosto</option>
-                    <option value="09">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
+
+        <div class="controls-area">
+            <div class="filter-group" data-tooltip="Filtre sem recarregar">
+                <select id="filtro-mes" onchange="aplicarFiltros()">
+                    <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+                    <option value="03" selected>Março</option><option value="04">Abril</option>
+                    <option value="05">Maio</option><option value="06">Junho</option>
+                    <option value="07">Julho</option><option value="08">Agosto</option>
+                    <option value="09">Setembro</option><option value="10">Outubro</option>
+                    <option value="11">Novembro</option><option value="12">Dezembro</option>
+                </select>
+                <select id="filtro-quinzena" onchange="aplicarFiltros()">
+                    <option value="tudo">Mês Completo</option>
+                    <option value="1">1ª Quinzena</option>
+                    <option value="2">2ª Quinzena</option>
                 </select>
             </div>
-            <div class="filter-box">
-                <i class="fas fa-filter"></i>
-                <select id="filtro-quinzena" onchange="carregarDadosGlobais()">
-                    <option value="tudo">Mês Todo</option>
-                    <option value="1">1ª Quinzena (1-15)</option>
-                    <option value="2">2ª Quinzena (16-31)</option>
-                </select>
-            </div>
+            
+            <a href="https://1drv.ms/f/c/f6d4fa37c5517917/IgAXeVHFN_rUIID2kgAAAAAAAb5bWQ4m4d4gAXMQLb4MN4c?e=hddSi3" target="_blank" class="btn-action" data-tooltip="Planilhas Externas"><i class="fas fa-file-excel"></i></a>
+            <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html" target="_blank" class="btn-action btn-outline" data-tooltip="App Motoristas"><i class="fas fa-truck-moving"></i></a>
+            <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiAbastecimento.html" target="_blank" class="btn-action btn-outline" data-tooltip="App Bomba"><i class="fas fa-gas-pump"></i></a>
         </div>
     </header>
 
-    <div class="scene">
-        <div class="cube" id="painel-cubo">
-            
-            <div class="face face-front">
-                <div class="stat-card hoverable-card">
-                    <div class="sys-name">Icaphi KMs</div>
-                    <div class="card-content">
-                        <div class="stat-icon bg-blue">
-                            <i class="fas fa-route"></i>
-                        </div>
-                        <div class="stat-info">
-                            <p>Total Rodado</p>
-                            <h3 id="valor-km" class="stat-value scramble-text">...</h3>
-                            <div id="badge-dispersao" class="badge-dispersao-fora scramble-text">...</div>
-                        </div>
-                        
-                        <div class="progress-wrapper" style="margin-top: 25px; width: 100%;">
-                            <div class="progress-labels" style="font-size: 0.85rem;">
-                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Rota: <span id="qtd-em-curso-front" class="scramble-text">0</span></span>
-                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Fim: <span id="qtd-finalizadas-front" class="scramble-text">0</span></span>
-                            </div>
-                            <div class="progress-bar-bg" style="height: 10px;">
-                                <div class="progress-bar-fill" id="bar-finalizadas-front"></div>
-                            </div>
+    <div id="pages-wrapper">
+        <main id="page-1" class="page active">
+            <section class="kpi-row">
+                <div class="panel kpi-card" data-tooltip="Dados de viagens finalizadas">
+                    <div class="kpi-icon icon-primary"><i class="fas fa-route"></i></div>
+                    <div class="kpi-data">
+                        <div class="kpi-title">Gestão de KM</div>
+                        <div class="kpi-dual-container">
+                            <div class="kpi-dual-box"><span class="kpi-dual-label">Rodado</span><div class="kpi-dual-value" id="kpi-km-total">0 km</div></div>
+                            <div class="kpi-dual-box right"><span class="kpi-dual-label">Escalado</span><div class="kpi-dual-value" id="kpi-km-meta" style="color: var(--primary);">0 km</div></div>
                         </div>
                     </div>
+                </div>
+                <div class="panel kpi-card" data-tooltip="Soma exata dos desvios">
+                    <div class="kpi-icon icon-danger" id="icon-dispersao"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="kpi-data">
+                        <div class="kpi-title">Dispersão Total</div>
+                        <div class="kpi-single-value" id="kpi-dispersao">0 km</div>
+                        <div class="kpi-status-badge" id="kpi-dispersao-status" style="background: rgba(244, 63, 94, 0.2); color: var(--danger);">Analisando...</div>
+                    </div>
+                </div>
+                <div class="panel kpi-card" data-tooltip="Nível atual do reservatório">
+                    <div class="kpi-icon icon-success" id="icon-tanque"><i class="fas fa-gas-pump"></i></div>
+                    <div class="kpi-data">
+                        <div class="kpi-title">Litros no Tanque</div>
+                        <div class="kpi-single-value" id="kpi-estoque">0 L</div>
+                        <div class="kpi-status-badge" style="background: rgba(148, 163, 184, 0.1); color: var(--text-muted);" id="kpi-capacidade">Máx: 0 L</div>
+                    </div>
+                </div>
+                <div class="panel kpi-card" data-tooltip="Analytics financeiro mensal">
+                    <div class="kpi-icon icon-primary"><i class="fas fa-wallet"></i></div>
+                    <div class="kpi-data">
+                        <div class="kpi-title">Gestão de Combustivel</div>
+                        <div class="kpi-dual-container">
+                            <div class="kpi-dual-box"><span class="kpi-dual-label">Comprado</span><div class="kpi-dual-value" id="kpi-volume-comprado" style="color: var(--primary);">0 L</div></div>
+                            <div class="kpi-dual-box right"><span class="kpi-dual-label">Valor (R$)</span><div class="kpi-dual-value" id="kpi-valor-comprado">R$ 0,00</div></div>
+                        </div>
+                        <div class="kpi-dual-container">
+                            <div class="kpi-dual-box"><span class="kpi-dual-label">Abastecido</span><div class="kpi-dual-value" id="kpi-volume-abastecido" style="color: var(--success);">0 L</div></div>
+                            <div class="kpi-dual-box right"><span class="kpi-dual-label">Est. Gasto</span><div class="kpi-dual-value" id="kpi-valor-abastecido">R$ 0,00</div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-                    <div class="hover-details">
-                        <div class="detail-row">
-                            <span>KM Rodado Real</span>
-                            <strong id="hover-rodado" class="scramble-text">...</strong>
+            <section class="tactical-row">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><i class="fas fa-truck-fast"></i> Operação e Rotas</div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-labels">
+                            <span>Status Hoje</span>
+                            <span><strong id="val-em-curso" style="color: var(--primary);">0</strong> Em rota / <strong id="val-finalizadas" style="color: var(--success);">0</strong> Finalizado</span>
                         </div>
-                        <div class="detail-row">
-                            <span>KM Escalado (Meta)</span>
-                            <strong id="hover-escalado" class="scramble-text">...</strong>
+                        <div class="bar-track" id="tooltip-status-frota" data-tooltip="Progresso do dia">
+                            <div class="bar-fill bg-primary" id="bar-status-frota" style="width: 0%;"></div>
                         </div>
-                        <div class="detail-row highlight" style="margin-bottom: 20px;">
-                            <span>Dispersão Geral</span>
-                            <strong id="hover-dispersao" class="scramble-text">...</strong>
+                    </div>
+                    <div class="data-split">
+                        <div class="data-box" data-tooltip="Mais utilizada no mês">
+                            <label>Placa que mais rodou</label>
+                            <div class="value" id="box-mais-viagens" style="color: var(--primary);">---</div>
                         </div>
-                        
-                        <div class="subtitle-hoje">Status de Viagens (Hoje)</div>
-                        <div class="progress-wrapper">
-                            <div class="progress-labels">
-                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Em Rota: <span id="qtd-em-curso" class="scramble-text">0</span></span>
-                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Finalizadas: <span id="qtd-finalizadas" class="scramble-text">0</span></span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" id="bar-finalizadas"></div>
-                            </div>
+                        <div class="data-box" data-tooltip="Hora do último KM fim">
+                            <label>Último Finalizado</label>
+                            <div class="value" id="box-ultimo-km">---</div>
                         </div>
-                        
-                        <div class="btn-group">
-                            <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html" class="btn-acao btn-app" target="_blank">
-                                <i class="fas fa-external-link-alt"></i> Abrir App
-                            </a>
-                            <button onclick="verDashboard('kms')" class="btn-acao btn-grafico">
-                                <i class="fas fa-chart-bar"></i> Gráfico
-                            </button>
+                    </div>
+                    <div class="list-container">
+                        <div class="list-header">Ranking Dispersão De KM</div>
+                        <div id="lista-top-dispersao">
+                            <div class="list-item"><span>Carregando...</span></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="stat-card hoverable-card">
-                    <div class="card-bg-liquid" id="card-bg-liquid"></div>
-                    <div class="sys-name">Icaphi Abastecimento</div>
-                    <div class="card-content">
-                        <div class="stat-icon bg-green">
-                            <i class="fas fa-gas-pump"></i>
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><i class="fas fa-fill-drip"></i> Suprimento</div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-labels">
+                            <span>Litros no Tanque</span>
+                            <span id="txt-percent-tanque">0%</span>
                         </div>
-                        <div class="stat-info">
-                            <p>Estoque no Tanque</p> 
-                            <h3 id="valor-litros" class="stat-value scramble-text">...</h3>
+                        <div class="bar-track" id="tooltip-nivel-tanque" data-tooltip="Nível físico">
+                            <div class="bar-fill bg-success" id="bar-nivel-tanque" style="width: 0%;"></div>
                         </div>
                     </div>
-
-                    <div class="hover-details">
-                        <div class="detail-row">
-                            <span>Litros Abastecidos (Mês)</span>
-                            <strong id="hover-litros-total" class="scramble-text">...</strong>
+                    <div class="data-split">
+                        <div class="data-box" data-tooltip="Retirada total bomba hoje">
+                            <label>Abastecido Hoje</label>
+                            <div class="value" id="box-litros-hoje" style="color: var(--success);">0 L</div>
                         </div>
-                        <div class="detail-row highlight">
-                            <span>Custo Total</span>
-                            <strong id="hover-valor-total" class="scramble-text">...</strong>
+                        <div class="data-box" data-tooltip="Último registro bomba">
+                            <label>Último Abastecido</label>
+                            <div class="value" id="box-ultimo-abast">---</div>
                         </div>
-                        <div class="detail-row" style="margin-bottom: 5px;">
-                            <span>Litros Abastecidos Hoje:</span>
-                            <strong id="hover-litros-hoje" style="color: var(--success);" class="scramble-text">0 L</strong>
-                        </div>
-                        
-                        <div class="detail-row highlight" style="margin-top: 5px; margin-bottom: 5px; border-top: 1px dashed var(--border-light); padding-top: 10px;">
-                            <span>Estoque no Tanque:</span>
-                            <strong id="hover-estoque-texto" class="scramble-text">... L</strong>
-                        </div>
-                        
-                        <div class="tank-wrapper">
-                            <div class="tank-cap"></div>
-                            <div class="tank-container">
-                                <div class="tank-liquid" id="liquid-level"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="btn-group">
-                            <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiAbastecimento.html" class="btn-acao btn-app" target="_blank">
-                                <i class="fas fa-external-link-alt"></i> Abrir App
-                            </a>
-                            <button onclick="verDashboard('abastecimento')" class="btn-acao btn-grafico">
-                                <i class="fas fa-chart-line"></i> Gráfico
-                            </button>
+                    </div>
+                    <div class="list-container">
+                        <div class="list-header">Maiores Consumidores (Litros)</div>
+                        <div id="lista-top-abast">
+                            <div class="list-item"><span>Carregando...</span></div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+        </main>
 
-            <div class="face face-back">
-                <div class="back-card hoverable-card">
-                    <div class="sys-name">Insights KMs</div>
-                    <div class="back-card-content">
-                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
-                            <div class="progress-labels">
-                                <span class="pl-em-rota"><i class="fas fa-car-side"></i> Rota: <span id="qtd-em-curso-back" class="scramble-text">0</span></span>
-                                <span class="pl-finalizada"><i class="fas fa-check-circle"></i> Fim: <span id="qtd-finalizadas-back" class="scramble-text">0</span></span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" id="bar-finalizadas-back"></div>
-                            </div>
-                        </div>
-
-                        <div class="insight-box">
-                            <div class="insight-icon"><i class="fas fa-car-side"></i></div>
-                            <div class="insight-info">
-                                <p>Mais Viagens</p>
-                                <h4 id="insight-mais-viagens" class="scramble-text">Carregando...</h4>
-                            </div>
-                        </div>
-                        
-                        <div class="insight-box expandable" id="box-ultimo-km">
-                            <div class="insight-icon icon-gray"><i class="fas fa-flag-checkered"></i></div>
-                            <div class="insight-info">
-                                <p>Últimos Finalizados</p>
-                                <h4 id="insight-ultimo-km" style="color: var(--text-main);" class="scramble-text">Carregando...</h4>
-                                <div class="top-list" id="lista-ultimos-kms"></div>
-                            </div>
-                        </div>
-
-                        <div class="insight-box expandable" id="box-top-km">
-                            <div class="insight-icon"><i class="fas fa-truck-moving"></i></div>
-                            <div class="insight-info">
-                                <p>Top Dispersão</p>
-                                <h4 id="insight-topkm" style="color: var(--primary);" class="scramble-text">Carregando...</h4>
-                                <div class="top-list" id="lista-top-dispersao"></div>
-                            </div>
-                        </div>
+        <main id="page-2" class="page">
+            <section class="chart-row">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><i class="fas fa-chart-line"></i> Analytics KM</div>
+                        <select id="chart-tipo-kms" class="chart-selector" onchange="window.atualizarGraficos()">
+                            <option value="diario">Evolução Diária</option>
+                            <option value="placa">Dispersão/Placa</option>
+                        </select>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-kms"></canvas>
                     </div>
                 </div>
-
-                <div class="back-card hoverable-card">
-                    <div class="sys-name">Insights Abastecimento</div>
-                    <div class="back-card-content">
-                        <div class="progress-wrapper" style="margin-top: 0; margin-bottom: 0px;">
-                            <div class="progress-labels">
-                                <span style="color: var(--primary);"><i class="fas fa-gas-pump"></i> Estoque: <span id="qtd-estoque-back" class="scramble-text">0 L</span></span>
-                                <span style="color: var(--text-muted);"><i class="fas fa-tachometer-alt"></i> Cap: <span id="qtd-capacidade-back" class="scramble-text">0 L</span></span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" id="bar-estoque-back" style="background-color: var(--primary);"></div>
-                            </div>
-                        </div>
-
-                        <div class="insight-box">
-                            <div class="insight-icon icon-green"><i class="fas fa-hand-holding-usd"></i></div>
-                            <div class="insight-info">
-                                <p>Total Gasto (Mês)</p>
-                                <h4 id="insight-custo-total" class="scramble-text">Carregando...</h4>
-                            </div>
-                        </div>
-
-                        <div class="insight-box expandable" id="box-ultimo-abast">
-                            <div class="insight-icon icon-gray"><i class="fas fa-gas-pump"></i></div>
-                            <div class="insight-info">
-                                <p>Últimos Abastecidos</p>
-                                <h4 id="insight-ultimo-abast" style="color: var(--text-main);" class="scramble-text">Carregando...</h4>
-                                <div class="top-list" id="lista-ultimos-abast"></div>
-                            </div>
-                        </div>
-
-                        <div class="insight-box expandable" id="box-top-abast">
-                            <div class="insight-icon icon-green"><i class="fas fa-gas-pump"></i></div>
-                            <div class="insight-info">
-                                <p>Top Consumo (Litros)</p>
-                                <h4 id="insight-topabast" style="color: var(--success);" class="scramble-text">Carregando...</h4>
-                                <div class="top-list" id="lista-top-abast"></div>
-                            </div>
-                        </div>
+                
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><i class="fas fa-chart-bar"></i> Analytics Combustível</div>
+                        <select id="chart-tipo-abast" class="chart-selector" onchange="window.atualizarGraficos()">
+                            <option value="diario">Consumo Diário</option>
+                            <option value="placa">Consumo/Placa</option>
+                        </select>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-abast"></canvas>
                     </div>
                 </div>
-            </div>
+            </section>
+        </main>
+    </div>
 
+    <div id="scroll-hud">
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">ROLAGEM AUTOMÁTICA</span>
+        <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button class="timer-btn" id="timer-off" onclick="setAutoScrollTimer(0)">OFF</button>
+            <button class="timer-btn" id="timer-10" onclick="setAutoScrollTimer(10000)">10s</button>
+            <button class="timer-btn" id="timer-20" onclick="setAutoScrollTimer(20000)">20s</button>
+            <button class="timer-btn" id="timer-30" onclick="setAutoScrollTimer(30000)">30s</button>
         </div>
     </div>
 
-    <a href="https://1drv.ms/f/c/f6d4fa37c5517917/IgAXeVHFN_rUIID2kgAAAAAAAb5bWQ4m4d4gAXMQLb4MN4c?e=hddSi3" target="_blank" class="btn-monitoramento">
-        <i class="fas fa-file-excel"></i>
-        <span class="text-normal">Monitoramento</span>
-        <span class="text-hover">Planilhas de Monitoramento</span>
-    </a>
-
-    <div class="view-mode-wrapper">
-        <i class="fas fa-desktop"></i>
-        <select id="auto-flip-time" onchange="toggleAutoFlip()">
-            <option value="0">Modo Auto: Desligado</option>
-            <option value="0.25" selected>Girar a cada 15 seg</option>
-            <option value="0.5">Girar a cada 30 seg</option>
-            <option value="1">Girar a cada 1 min</option>
-            <option value="5">Girar a cada 5 min</option>
-            <option value="10">Girar a cada 10 min</option>
-            <option value="15">Girar a cada 15 min</option>
-            <option value="30">Girar a cada 30 min</option>
-        </select>
-    </div>
-
-    <div class="scroll-indicator" id="scroll-indicator-container">
-        <i class="fas fa-mouse" id="scroll-icon"></i> 
-        <span id="scroll-text">Rolar tela para mais informações</span>
-    </div>
-
-    <div class="clock-container">
-        <div class="clock-time" id="clock-time">--:--<span style="display:inline-block;">:</span>--</div>
-        <div class="clock-date" id="clock-date">-- de -- de ----</div>
-    </div>
-
-    <div class="footer-credits">By: Matheus Julio</div>
-
-    <div id="dashboardModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="fecharDashboard()">&times;</span>
-            <h2 id="modalTitle" style="color: var(--text-main); font-weight: 700; font-size: 1.5rem;">Dashboard</h2>
-            <div class="chart-container">
-                <canvas id="meuGrafico"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="lamp-wrapper" id="lamp-wrapper">
-        <div class="lamp-shade"></div>
-        <div class="lamp-bulb" id="lamp-bulb"></div>
-        <div class="pull-string"></div>
-        <div class="lamp-base-stick"></div>
-        <div class="lamp-base-bottom"></div>
+    <div id="bottom-dock">
+        <button class="dock-btn" id="btn-theme" onclick="toggleTheme()" data-tooltip="Alternar Tema"><i class="fas fa-moon"></i></button>
+        <button class="dock-btn" id="btn-scroll-trigger" onclick="switchPage()" data-tooltip="Mudar Página"><i class="fas fa-arrows-up-down"></i></button>
+        <button class="dock-btn" id="btn-auto-scroll" onclick="toggleAutoScroll()" data-tooltip="Rolagem Auto."><i class="fas fa-clock"></i></button>
+        <button class="dock-btn" onclick="toggleSettingsModal()" data-tooltip="Personalizar Visuais"><i class="fas fa-paint-brush"></i></button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"; 
+        import { getFirestore, collection, onSnapshot, doc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"; 
 
-        const appKMS = initializeApp({
-            apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
-            authDomain: "marcador-ponto-digital.firebaseapp.com",
-            projectId: "marcador-ponto-digital",
-            storageBucket: "marcador-ponto-digital.firebasestorage.app",
-            messagingSenderId: "774324665760",
-            appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
-            measurementId: "G-W1QEJTCS1B"
+        const appKMS = initializeApp({ 
+            apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U", 
+            authDomain: "marcador-ponto-digital.firebaseapp.com", 
+            projectId: "marcador-ponto-digital", 
+            storageBucket: "marcador-ponto-digital.firebasestorage.app", 
+            messagingSenderId: "774324665760", 
+            appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5" 
         }, "KMS");
         const dbKms = getFirestore(appKMS);
         
-        const appAbastecimento = initializeApp({
-            apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
-            authDomain: "gestao-abastecimento.firebaseapp.com",
-            projectId: "gestao-abastecimento",
-            storageBucket: "gestao-abastecimento.firebasestorage.app",
-            messagingSenderId: "462798250454",
-            appId: "1:462798250454:web:f56cf50bd2c0223459c477"
+        const appAbastecimento = initializeApp({ 
+            apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM", 
+            authDomain: "gestao-abastecimento.firebaseapp.com", 
+            projectId: "gestao-abastecimento", 
+            storageBucket: "gestao-abastecimento.firebasestorage.app", 
+            messagingSenderId: "462798250454", 
+            appId: "1:462798250454:web:f56cf50bd2c0223459c477" 
         }, "ABASTECIMENTO");
         const dbAbast = getFirestore(appAbastecimento);
 
-        let graficoAtual = null;
-        window.dadosKmsDiario = [];
-        window.dadosAbastDiario = [];
-        
-        let isUserHovering = false;
-        
-        function atualizarRelogio() {
-            const agora = new Date();
-            const horas = String(agora.getHours()).padStart(2, '0');
-            const minutos = String(agora.getMinutes()).padStart(2, '0');
-            const segundos = String(agora.getSeconds()).padStart(2, '0');
-            
-            const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            const dia = agora.getDate();
-            const mes = meses[agora.getMonth()];
-            const ano = agora.getFullYear();
+        try { enableIndexedDbPersistence(dbKms).catch(() => {}); } catch(e) {}
+        try { enableIndexedDbPersistence(dbAbast).catch(() => {}); } catch(e) {}
 
-            document.getElementById('clock-time').innerHTML = `${horas}:${minutos}<span>:</span>${segundos}`;
-            document.getElementById('clock-date').innerText = `${dia} de ${mes} de ${ano}`;
+        let cacheKmsSnap = null; 
+        let cacheAbastSnap = null; 
+        let cachePurchasesSnap = null; 
+        let chartKmsInstance = null; 
+        let chartAbastInstance = null; 
+        let isInitialLoad = true;
+        
+        const netIndicator = document.getElementById('network-indicator');
+        window.setNetworkOnline = function() { 
+            netIndicator.className = 'network-status online'; 
+            netIndicator.innerHTML = '<i class="fas fa-wifi"></i> Online'; 
         }
-        setInterval(atualizarRelogio, 1000);
+        window.setNetworkOffline = function() { 
+            netIndicator.className = 'network-status offline'; 
+            netIndicator.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Offline'; 
+        }
+
+        window.dadosKmsDiario = []; 
+        window.dadosAbastDiario = []; 
+        window.rankingKmsDispersao = {}; 
+        window.rankingAbastGeral = {}; 
+        window.lastDaysInMonth = 31;
+        
+        // --- GERENCIADOR DE ESTADO E PERSISTÊNCIA ---
+        const defaultSettings = { 
+            dark: { opacity: 55, stars: 5, speed: 1.0 }, 
+            light: { opacity: 60, clouds: 15, speed: 1.0 } 
+        };
+        
+        let savedStore = JSON.parse(localStorage.getItem('icaphi_visual_config')) || {};
+        let appSettings = {
+            dark: { ...defaultSettings.dark, ...(savedStore.dark || {}) },
+            light: { ...defaultSettings.light, ...(savedStore.light || {}) }
+        };
+
+        window.updateLabel = function(id, text) {
+            document.getElementById('val-' + id).innerText = text;
+        };
+
+        function applyVisualsFromSettings() {
+            const isLight = document.body.classList.contains('light-mode');
+            const mode = isLight ? 'light' : 'dark';
+            
+            // Aplica opacidade baseada no tema atual
+            document.documentElement.style.setProperty('--card-opacity', appSettings[mode].opacity / 100);
+            
+            // Recalcula as partículas no canvas baseado na nova densidade
+            initCanvas(); 
+        }
+
+        function syncSettingsModalValues() {
+            // Sincroniza a tela de configurações com os valores salvos
+            document.getElementById('dark-opacity').value = appSettings.dark.opacity; 
+            updateLabel('dark-opacity', appSettings.dark.opacity + '%');
+            
+            document.getElementById('dark-stars').value = appSettings.dark.stars; 
+            updateLabel('dark-stars', appSettings.dark.stars);
+            
+            document.getElementById('dark-speed').value = appSettings.dark.speed * 10; 
+            updateLabel('dark-speed', appSettings.dark.speed.toFixed(1) + 'x');
+
+            document.getElementById('light-opacity').value = appSettings.light.opacity; 
+            updateLabel('light-opacity', appSettings.light.opacity + '%');
+            
+            document.getElementById('light-clouds').value = appSettings.light.clouds; 
+            updateLabel('light-clouds', appSettings.light.clouds);
+            
+            document.getElementById('light-speed').value = appSettings.light.speed * 10; 
+            updateLabel('light-speed', appSettings.light.speed.toFixed(1) + 'x');
+        }
+
+        window.toggleSettingsModal = function(cancel = false) {
+            const modal = document.getElementById('settings-modal');
+            if(!modal.classList.contains('active') || cancel) {
+                syncSettingsModalValues(); 
+            }
+            if(cancel) { 
+                modal.classList.remove('active'); 
+            } else { 
+                modal.classList.toggle('active'); 
+            }
+        }
+
+        window.saveVisualSettings = function() {
+            appSettings.dark.opacity = parseInt(document.getElementById('dark-opacity').value);
+            appSettings.dark.stars = parseInt(document.getElementById('dark-stars').value);
+            appSettings.dark.speed = parseInt(document.getElementById('dark-speed').value) / 10;
+
+            appSettings.light.opacity = parseInt(document.getElementById('light-opacity').value);
+            appSettings.light.clouds = parseInt(document.getElementById('light-clouds').value);
+            appSettings.light.speed = parseInt(document.getElementById('light-speed').value) / 10;
+
+            localStorage.setItem('icaphi_visual_config', JSON.stringify(appSettings));
+            applyVisualsFromSettings();
+            document.getElementById('settings-modal').classList.remove('active');
+        }
+
+        // --- MOTOR CANVAS DE ALTA PERFORMANCE ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let cw, ch; 
+        let particles = []; 
+        let shootingStar = { x: 0, y: 0, length: 0, speed: 0, active: false };
+        let cachedCloudImage = null;
+
+        // Renderiza a nuvem 1 vez na memória (Otimização Extrema)
+        function preRenderCloud() {
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = 200; 
+            offCanvas.height = 100;
+            const oCtx = offCanvas.getContext('2d');
+            
+            oCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            oCtx.beginPath();
+            oCtx.arc(100, 60, 35, 0, Math.PI * 2);
+            oCtx.arc(60, 70, 25, 0, Math.PI * 2);
+            oCtx.arc(140, 70, 25, 0, Math.PI * 2);
+            oCtx.arc(80, 45, 25, 0, Math.PI * 2);
+            oCtx.arc(120, 45, 25, 0, Math.PI * 2);
+            oCtx.fill();
+            return offCanvas;
+        }
+
+        function initCanvas() {
+            cw = canvas.width = window.innerWidth; 
+            ch = canvas.height = window.innerHeight; 
+            particles = [];
+            const isLight = document.body.classList.contains('light-mode');
+            
+            if (isLight) {
+                if(!cachedCloudImage) cachedCloudImage = preRenderCloud();
+                for (let i = 0; i < appSettings.light.clouds; i++) {
+                    particles.push({
+                        x: Math.random() * cw, 
+                        y: Math.random() * (ch * 0.7), 
+                        scale: Math.random() * 1.5 + 0.5,
+                        speed: Math.random() * 0.8 + 0.2,
+                        opacity: Math.random() * 0.4 + 0.2
+                    });
+                }
+            } else {
+                for (let i = 0; i < 150; i++) {
+                    particles.push({
+                        x: Math.random() * cw, 
+                        y: Math.random() * ch, 
+                        r: Math.random() * 1.5 + 0.5, 
+                        speed: Math.random() * 0.4 + 0.1, 
+                        opacity: Math.random() * 0.8 + 0.2
+                    });
+                }
+            }
+        }
+
+        function drawCanvas() {
+            // Pintando o fundo dinamicamente dentro do canvas para evitar bugs visuais
+            const isLight = document.body.classList.contains('light-mode');
+            
+            if (isLight) {
+                let grad = ctx.createLinearGradient(0, 0, 0, ch);
+                grad.addColorStop(0, '#dfeded');
+                grad.addColorStop(1, '#c8dede');
+                ctx.fillStyle = grad;
+            } else {
+                ctx.fillStyle = '#060913';
+            }
+            ctx.fillRect(0, 0, cw, ch);
+
+            if (isLight) {
+                const speedMultiplier = appSettings.light.speed;
+                particles.forEach(p => {
+                    ctx.globalAlpha = p.opacity;
+                    ctx.drawImage(cachedCloudImage, p.x, p.y, 200 * p.scale, 100 * p.scale);
+                    ctx.globalAlpha = 1.0;
+                    
+                    p.x += p.speed * speedMultiplier;
+                    if (p.x > cw) p.x = - (200 * p.scale);
+                });
+            } else {
+                const speedMultiplier = appSettings.dark.speed;
+                particles.forEach(p => { 
+                    ctx.beginPath(); 
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
+                    ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`; 
+                    ctx.fill(); 
+                    p.y -= (p.speed * speedMultiplier); 
+                    p.x -= (p.speed/2 * speedMultiplier); 
+                    if (p.y < 0) p.y = ch; 
+                    if (p.x < 0) p.x = cw; 
+                });
+                
+                let starProb = appSettings.dark.stars * 0.001; 
+                if (!shootingStar.active && Math.random() < starProb && appSettings.dark.stars > 0) { 
+                    shootingStar = { 
+                        x: cw + 100, 
+                        y: Math.random() * ch / 2, 
+                        length: Math.random() * 80 + 50, 
+                        speed: (Math.random() * 10 + 15) * speedMultiplier, 
+                        active: true 
+                    }; 
+                }
+                
+                if (shootingStar.active) { 
+                    ctx.beginPath(); 
+                    ctx.moveTo(shootingStar.x, shootingStar.y); 
+                    ctx.lineTo(shootingStar.x + shootingStar.length, shootingStar.y - shootingStar.length * 0.5); 
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; 
+                    ctx.lineWidth = 1.5; 
+                    ctx.stroke(); 
+                    shootingStar.x -= shootingStar.speed; 
+                    shootingStar.y += shootingStar.speed * 0.5; 
+                    if (shootingStar.x < -200) shootingStar.active = false; 
+                }
+            }
+            requestAnimationFrame(drawCanvas);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas(); 
+        requestAnimationFrame(drawCanvas);
+
+        // --- SISTEMA DE TEMA ---
+        window.toggleTheme = function() {
+            const body = document.body; 
+            const icon = document.querySelector('#btn-theme i');
+            body.classList.toggle('light-mode');
+            
+            if (body.classList.contains('light-mode')) { 
+                icon.className = 'fas fa-sun'; 
+                localStorage.setItem('icaphi_theme', 'light'); 
+            } else { 
+                icon.className = 'fas fa-moon'; 
+                localStorage.setItem('icaphi_theme', 'dark'); 
+            }
+            
+            applyVisualsFromSettings(); 
+            window.atualizarGraficos(); 
+        };
+
+        // Boot do Tema e Configurações
+        if(localStorage.getItem('icaphi_theme') === 'light') { 
+            document.body.classList.add('light-mode'); 
+            document.querySelector('#btn-theme i').className = 'fas fa-sun'; 
+        }
+        applyVisualsFromSettings(); 
+
+        // --- RELÓGIO GLOBAL ---
+        function atualizarRelogio() { 
+            const agora = new Date(); 
+            document.getElementById('clock-time').innerText = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}:${String(agora.getSeconds()).padStart(2, '0')}`; 
+            document.getElementById('clock-date').innerText = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}`; 
+        }
+        setInterval(atualizarRelogio, 1000); 
         atualizarRelogio();
 
-        if(localStorage.getItem('icaphi_theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-            document.getElementById('theme-switch-input').checked = true;
-        } else {
-            document.body.classList.remove('dark-mode');
-            document.getElementById('theme-switch-input').checked = false;
-        }
-
-        window.triggerThemeAnimation = function(e) {
-            e.preventDefault(); 
-            if(window.isLampAnimating) return; 
-            window.isLampAnimating = true;
-
-            const lamp = document.getElementById('lamp-wrapper');
-            const bulb = document.getElementById('lamp-bulb');
-            const checkbox = document.getElementById('theme-switch-input');
-            const overlay = document.getElementById('theme-overlay'); 
+        // --- CONTROLE DE PAGINAÇÃO E ROLAGEM AUTOMÁTICA ---
+        let currentPage = 1; 
+        
+        window.switchPage = function() { 
+            const page1 = document.getElementById('page-1'); 
+            const page2 = document.getElementById('page-2'); 
+            const btnScroll = document.getElementById('btn-scroll-trigger'); 
             
-            lamp.classList.add('show');
-            overlay.classList.add('active'); 
-            
-            setTimeout(() => {
-                lamp.classList.add('pull');
-                
-                setTimeout(() => {
-                    lamp.classList.remove('pull');
-                    
-                    document.body.classList.toggle('dark-mode');
-                    const isDark = document.body.classList.contains('dark-mode');
-                    checkbox.checked = isDark;
-                    localStorage.setItem('icaphi_theme', isDark ? 'dark' : 'light');
-                    
-                    if (!isDark) { bulb.classList.add('on'); } 
-                    else { bulb.classList.remove('on'); }
-                    
-                    setTimeout(() => {
-                        lamp.classList.remove('show');
-                        overlay.classList.remove('active'); 
-                        setTimeout(() => {
-                            bulb.classList.remove('on');
-                            window.isLampAnimating = false;
-                        }, 800);
-                    }, 800); 
-                    
-                }, 200); 
-            }, 800); 
-        };
-
-        window.girarCaixa = function() {
-            const cubo = document.getElementById('painel-cubo');
-            cubo.classList.toggle('is-flipped');
-            
-            const textEl = document.getElementById('scroll-text');
-            const iconEl = document.getElementById('scroll-icon');
-            
-            if (cubo.classList.contains('is-flipped')) {
-                textEl.innerText = "Rolar para cima para visualizar a página inicial";
-                iconEl.className = "fas fa-arrow-up";
-            } else {
-                textEl.innerText = "Rolar tela para mais informações";
-                iconEl.className = "fas fa-mouse";
-            }
-        };
-
-        let autoFlipInterval = null;
-        window.toggleAutoFlip = function() {
-            if (autoFlipInterval) clearInterval(autoFlipInterval);
-            const mins = parseFloat(document.getElementById('auto-flip-time').value);
-            if (mins > 0) {
-                autoFlipInterval = setInterval(() => { 
-                    if (!isUserHovering) window.girarCaixa(); 
-                }, mins * 60000);
-            }
-        };
-
-        let isFlipping = false;
-        window.addEventListener('wheel', (e) => {
-            if (isFlipping) return;
-            const isFlipped = document.getElementById('painel-cubo').classList.contains('is-flipped');
-            if (e.deltaY > 20 && !isFlipped) { window.girarCaixa(); isFlipping = true; setTimeout(() => isFlipping = false, 1200); } 
-            else if (e.deltaY < -20 && isFlipped) { window.girarCaixa(); isFlipping = true; setTimeout(() => isFlipping = false, 1200); }
-        });
-
-        let touchStartY = 0;
-        window.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
-        window.addEventListener('touchend', e => {
-            if (isFlipping) return;
-            let touchEndY = e.changedTouches[0].clientY;
-            const isFlipped = document.getElementById('painel-cubo').classList.contains('is-flipped');
-            if (touchStartY - touchEndY > 50 && !isFlipped) { window.girarCaixa(); isFlipping = true; setTimeout(() => isFlipping = false, 1200); } 
-            else if (touchEndY - touchStartY > 50 && isFlipped) { window.girarCaixa(); isFlipping = true; setTimeout(() => isFlipping = false, 1200); }
-        });
-
-        window.fecharDashboard = function() { document.getElementById("dashboardModal").style.display = "none"; };
-        window.verDashboard = function(tipo) {
-            const modal = document.getElementById("dashboardModal");
-            const titulo = document.getElementById("modalTitle");
-            const ctx = document.getElementById('meuGrafico').getContext('2d');
-            const mesSelecionado = document.getElementById('filtro-mes').value;
-            const diasNoMes = new Date(new Date().getFullYear(), parseInt(mesSelecionado), 0).getDate();
-            const labelsDias = Array.from({length: diasNoMes}, (_, i) => `${i + 1}`);
-
-            modal.style.display = "flex";
-            if(graficoAtual) { graficoAtual.destroy(); }
-
-            const isDark = document.body.classList.contains('dark-mode');
-            const gridColor = isDark ? '#475569' : '#e2e8f0';
-            const textColor = isDark ? '#cbd5e1' : '#64748b';
-
-            const chartOptions = { 
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                    y: { ticks: { color: textColor }, grid: { color: gridColor } }
-                },
-                plugins: { legend: { labels: { color: textColor } } }
-            };
-
-            if(tipo === 'kms') {
-                titulo.innerText = "Histórico Diário de KMs Rodados";
-                graficoAtual = new Chart(ctx, { type: 'bar', data: { labels: labelsDias, datasets: [{ label: 'KM Rodados', data: window.dadosKmsDiario, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: chartOptions });
-            } else if (tipo === 'abastecimento') {
-                titulo.innerText = "Histórico Diário de Abastecimento (Litros)";
-                graficoAtual = new Chart(ctx, { type: 'line', data: { labels: labelsDias, datasets: [{ label: 'Litros', data: window.dadosAbastDiario, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }] }, options: chartOptions });
-            }
-        };
-
-        function limparNumero(valor) {
-            if (!valor) return 0;
-            if (typeof valor === 'number') return valor;
-            let limpo = String(valor).replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(',', '.');
-            let num = parseFloat(limpo); return isNaN(num) ? 0 : num;
-        }
-
-        function parseDataFirebaseString(str) {
-            if (!str) return null;
-            if (typeof str.toDate === 'function') return str.toDate();
-            
-            let parsedNative = new Date(str);
-            if (!isNaN(parsedNative.getTime()) && String(str).includes('T')) {
-                return parsedNative; 
-            }
-
-            let hr = 0, mn = 0, sc = 0;
-            let timeMatch = String(str).match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-            if(timeMatch) { hr = parseInt(timeMatch[1]); mn = parseInt(timeMatch[2]); if(timeMatch[3]) sc = parseInt(timeMatch[3]); }
-
-            const meses = {'janeiro':0, 'fevereiro':1, 'março':2, 'abril':3, 'maio':4, 'junho':5, 'julho':6, 'agosto':7, 'setembro':8, 'outubro':9, 'novembro':10, 'dezembro':11};
-            
-            const regexExtenso = /(\d{1,2})\s+de\s+([a-zçA-Z]+)\s+de\s+(\d{4})/i;
-            const matchExt = String(str).match(regexExtenso);
-            if (matchExt) {
-                let mStr = matchExt[2].toLowerCase();
-                let m = meses[mStr] !== undefined ? meses[mStr] : 0;
-                return new Date(parseInt(matchExt[3]), m, parseInt(matchExt[1]), hr, mn, sc);
-            }
-            
-            if (String(str).includes('-')) {
-                 let parts = str.split('T')[0].split(' ')[0].split('-');
-                 if(parts.length >= 3 && parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2], hr, mn, sc);
-            }
-            if (String(str).includes('/')) {
-                 let parts = str.split(' ')[0].split('/');
-                 if(parts.length >= 3) return new Date(parts[2], parts[1]-1, parts[0], hr, mn, sc);
-            }
-            
-            let parsed = new Date(str);
-            if(!isNaN(parsed.getTime())) return parsed;
-
-            return null;
-        }
-
-        function formatarHora(d) {
-            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return "--:--";
-            let hr = String(d.getHours()).padStart(2, '0');
-            let mn = String(d.getMinutes()).padStart(2, '0');
-            return `${hr}:${mn}`;
-        }
-
-        function formatarDataHoraFull(d) {
-            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return "--/-- --:--";
-            let dia = String(d.getDate()).padStart(2, '0');
-            let mes = String(d.getMonth() + 1).padStart(2, '0');
-            let hr = String(d.getHours()).padStart(2, '0');
-            let mn = String(d.getMinutes()).padStart(2, '0');
-            return `${dia}/${mes} ${hr}:${mn}`;
-        }
-
-        let scrambleIntervals = [];
-        let pendingKmsSnap = null;
-        let pendingAbastSnap = null;
-        let isAnimating = false;
-
-        function startLoadingAnim() {
-            document.querySelectorAll('.stat-card, .back-card').forEach(c => c.classList.add('shake-dice'));
-            const elementsToScramble = document.querySelectorAll('.scramble-text');
-            const chars = "0123456789!@#$%&*";
-            
-            elementsToScramble.forEach(el => {
-                scrambleIntervals.push(setInterval(() => {
-                    let rand = "";
-                    for(let i=0; i<4; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
-                    el.innerText = rand;
-                }, 40));
-            });
-        }
-
-        function stopLoadingAnim() {
-            document.querySelectorAll('.stat-card, .back-card').forEach(c => c.classList.remove('shake-dice'));
-            scrambleIntervals.forEach(clearInterval);
-            scrambleIntervals = [];
-        }
-
-        let unsubKms = null; let unsubAbast = null; let unsubConfig = null;
-        let gLitrosEtanolTotal = 0; let gValorTotalGasto = 0; let gLitrosHoje = 0; let gRankingAbast = {};
-        let gEstoqueAtualTanque = 0; let gCapacidadeMaximaTanque = 5000;
-
-        function renderAbastecimentoUI() {
-            document.getElementById('valor-litros').innerText = `${gEstoqueAtualTanque.toFixed(1)} L`;
-            document.getElementById('hover-litros-total').innerText = `${gLitrosEtanolTotal.toFixed(1)} L`;
-            const valorFormatado = gValorTotalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('hover-valor-total').innerText = valorFormatado;
-            document.getElementById('hover-litros-hoje').innerText = `${gLitrosHoje.toFixed(1)} L`;
-            document.getElementById('hover-estoque-texto').innerText = `${gEstoqueAtualTanque.toFixed(1)} L / ${gCapacidadeMaximaTanque} L`;
-            document.getElementById('insight-custo-total').innerText = valorFormatado;
-            
-            document.getElementById('qtd-estoque-back').innerText = `${gEstoqueAtualTanque.toFixed(1)} L`;
-            document.getElementById('qtd-capacidade-back').innerText = `${gCapacidadeMaximaTanque} L`;
-
-            let percentualTanque = Math.min((gEstoqueAtualTanque / gCapacidadeMaximaTanque) * 100, 100);
-            const liquidElement = document.getElementById('liquid-level');
-            const bgLiquidElement = document.getElementById('card-bg-liquid');
-            liquidElement.style.height = percentualTanque + '%';
-            bgLiquidElement.style.height = percentualTanque + '%';
-            
-            const barEstoqueBack = document.getElementById('bar-estoque-back');
-            barEstoqueBack.style.width = percentualTanque + '%';
-
-            if (gEstoqueAtualTanque < 600) { 
-                liquidElement.classList.add('low-fuel'); 
-                bgLiquidElement.classList.add('low-fuel-bg'); 
-                barEstoqueBack.style.backgroundColor = 'var(--danger)';
+            if (currentPage === 1) { 
+                page1.classList.remove('active'); 
+                page2.classList.add('active'); 
+                btnScroll.classList.add('active'); 
+                currentPage = 2; 
             } else { 
-                liquidElement.classList.remove('low-fuel'); 
-                bgLiquidElement.classList.remove('low-fuel-bg'); 
-                barEstoqueBack.style.backgroundColor = 'var(--primary)';
-            }
-
-            let arrAbast = Object.keys(gRankingAbast).map(placa => ({ placa, val: gRankingAbast[placa] }));
-            arrAbast.sort((a, b) => b.val - a.val);
-            let top5Abast = arrAbast.slice(0, 5); let htmlAbast = '';
-            if(top5Abast.length > 0) {
-                document.getElementById('insight-topabast').innerHTML = `${top5Abast[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${top5Abast[0].val.toFixed(1)} L)</span>`;
-                top5Abast.forEach((item, index) => { htmlAbast += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${item.val.toFixed(1)} L</strong></div>`; });
-            } else { document.getElementById('insight-topabast').innerText = "Sem Dados"; htmlAbast = '<div class="top-item"><span>Nenhum registro</span></div>'; }
-            document.getElementById('lista-top-abast').innerHTML = htmlAbast;
-        }
-
-        function renderKMsData(kmSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto) {
-            let kmRodadosTotal = 0; let kmEscaladoTotal = 0; let qtdEmCursoHoje = 0; let qtdFinalizadaHoje = 0;
-            let rankingDispersao = {}; let rankingViagens = {}; window.dadosKmsDiario = new Array(diasNoMes).fill(0);
-            let ultimosKms = [];
-
-            kmSnapshot.forEach((doc) => {
-                try {
-                    const dataObj = doc.data(); const obs = dataObj.historico_obs || dataObj; 
-                    
-                    let isFinalizada = (dataObj.status === 'finalizada' || obs.status === 'finalizada');
-                    
-                    let dataStringAlvo = null;
-                    if (isFinalizada && (dataObj.dataFim || obs.dataFim)) {
-                        dataStringAlvo = dataObj.dataFim || obs.dataFim;
-                    } else {
-                        dataStringAlvo = dataObj.dataInicio || obs.dataInicio || dataObj.data || obs.data;
-                    }
-
-                    let dataCriacao = parseDataFirebaseString(dataStringAlvo);
-
-                    if (dataCriacao && !isNaN(dataCriacao.getTime())) {
-                        const docMes = String(dataCriacao.getMonth() + 1).padStart(2, '0'); const docDia = dataCriacao.getDate();
-                        
-                        if (docMes === mesSelecionado) {
-                            if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
-
-                            let isHoje = (docDia === dataHojeObjeto.getDate() && dataCriacao.getMonth() === dataHojeObjeto.getMonth());
-                            const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Veículo Indefinido';
-
-                            if (isHoje) {
-                                if(dataObj.status === 'em_curso' || obs.status === 'em_curso') qtdEmCursoHoje++;
-                                if(isFinalizada) qtdFinalizadaHoje++;
-                            }
-
-                            if (isFinalizada) {
-                                ultimosKms.push({ placa: placaVal, tempo: dataCriacao.getTime(), dataObj: dataCriacao });
-                            }
-
-                            const meta = limparNumero(obs.metaKm || dataObj.metaKm); kmEscaladoTotal += meta;
-                            const kmFinal = limparNumero(obs.kmFim || dataObj.kmFim); const kmInicial = limparNumero(obs.kmInicio || dataObj.kmInicio);
-                            
-                            rankingViagens[placaVal] = (rankingViagens[placaVal] || 0) + 1;
-
-                            if (kmFinal > 0 && kmFinal >= kmInicial) {
-                                const rodado = kmFinal - kmInicial; kmRodadosTotal += rodado;
-                                if(docDia >= 1 && docDia <= diasNoMes) { window.dadosKmsDiario[docDia - 1] = (window.dadosKmsDiario[docDia - 1] || 0) + rodado; }
-                                rankingDispersao[placaVal] = (rankingDispersao[placaVal] || 0) + (rodado - meta);
-                            }
-                        }
-                    }
-                } catch (e) {}
-            });
-
-            ultimosKms.sort((a, b) => b.tempo - a.tempo);
-            let top5UltimosKms = ultimosKms.slice(0, 5);
-            
-            if(top5UltimosKms.length > 0) {
-                let u = top5UltimosKms[0];
-                document.getElementById('insight-ultimo-km').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarHora(u.dataObj)})</span>`;
-                
-                let htmlU = '';
-                top5UltimosKms.forEach((item, index) => {
-                    htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraFull(item.dataObj)}</strong></div>`;
-                });
-                document.getElementById('lista-ultimos-kms').innerHTML = htmlU;
-            } else {
-                document.getElementById('insight-ultimo-km').innerText = "Sem Dados";
-                document.getElementById('lista-ultimos-kms').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
-            }
-
-            const dispersao = kmRodadosTotal - kmEscaladoTotal; const dispText = dispersao > 0 ? `+${dispersao.toFixed(0)} km` : `${dispersao.toFixed(0)} km`;
-            const colorDisp = dispersao > 0 ? 'var(--danger)' : 'var(--success)';
-            document.getElementById('valor-km').innerText = `${kmRodadosTotal.toFixed(0)} KM`;
-            document.getElementById('hover-rodado').innerText = `${kmRodadosTotal.toFixed(0)} km`;
-            document.getElementById('hover-escalado').innerText = `${kmEscaladoTotal.toFixed(0)} km`;
-            document.getElementById('hover-dispersao').innerText = dispText; document.getElementById('hover-dispersao').style.color = colorDisp;
-            document.getElementById('badge-dispersao').innerText = `Dispersão: ${dispText}`; document.getElementById('badge-dispersao').style.color = colorDisp;
-            
-            document.getElementById('qtd-em-curso').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas').innerText = qtdFinalizadaHoje;
-            document.getElementById('qtd-em-curso-front').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-front').innerText = qtdFinalizadaHoje;
-            document.getElementById('qtd-em-curso-back').innerText = qtdEmCursoHoje; document.getElementById('qtd-finalizadas-back').innerText = qtdFinalizadaHoje;
-            
-            let totalViagensHoje = qtdEmCursoHoje + qtdFinalizadaHoje;
-            let perFinalizado = totalViagensHoje > 0 ? (qtdFinalizadaHoje / totalViagensHoje) * 100 : 0;
-            document.getElementById('bar-finalizadas').style.width = perFinalizado + '%'; 
-            document.getElementById('bar-finalizadas-front').style.width = perFinalizado + '%'; 
-            document.getElementById('bar-finalizadas-back').style.width = perFinalizado + '%';
-
-            let arrViagens = Object.keys(rankingViagens).map(placa => ({ placa, val: rankingViagens[placa] }));
-            arrViagens.sort((a, b) => b.val - a.val);
-            document.getElementById('insight-mais-viagens').innerHTML = arrViagens.length > 0 ? `${arrViagens[0].placa} <br><span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">(${arrViagens[0].val} viagens)</span>` : "Sem Dados";
-
-            let arrDispersao = Object.keys(rankingDispersao).map(placa => ({ placa, val: rankingDispersao[placa] }));
-            arrDispersao.sort((a, b) => b.val - a.val); 
-            let top5Disp = arrDispersao.slice(0, 5); let htmlDisp = '';
-            if(top5Disp.length > 0) {
-                let sinalPrim = top5Disp[0].val > 0 ? '+' : '';
-                document.getElementById('insight-topkm').innerHTML = `${top5Disp[0].placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${sinalPrim}${top5Disp[0].val.toFixed(0)} km)</span>`;
-                top5Disp.forEach((item, index) => {
-                    let color = item.val > 0 ? 'var(--danger)' : 'var(--success)';
-                    htmlDisp += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong style="color: ${color}">${item.val > 0 ? '+' : ''}${item.val.toFixed(0)} km</strong></div>`;
-                });
-            } else { document.getElementById('insight-topkm').innerText = "Sem Dados"; htmlDisp = '<div class="top-item"><span>Nenhum registro</span></div>'; }
-            document.getElementById('lista-top-dispersao').innerHTML = htmlDisp;
-        }
-
-        function renderAbastData(abastSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr) {
-            gLitrosEtanolTotal = 0; gValorTotalGasto = 0; gLitrosHoje = 0; gRankingAbast = {}; window.dadosAbastDiario = new Array(diasNoMes).fill(0);
-            let ultimosAbast = [];
-
-            abastSnapshot.forEach((doc) => {
-                try {
-                    const dataObj = doc.data();
-                    if (dataObj.data) {
-                        const partesData = dataObj.data.split('-'); 
-                        if (partesData.length >= 2 && partesData[1] === mesSelecionado) {
-                            const docDia = parseInt(partesData[2]);
-                            if (quinzenaSelecionada === '1' && docDia > 15) return; if (quinzenaSelecionada === '2' && docDia <= 15) return;
-
-                            const litros = limparNumero(dataObj.litros); const valorUnit = limparNumero(dataObj.valorUnitario);
-                            const valor = valorUnit > 0 ? (litros * valorUnit) : (limparNumero(dataObj.valorTotal) || limparNumero(dataObj.valor));
-                            const placaVal = dataObj.placa || 'Veículo Indefinido';
-
-                            gLitrosEtanolTotal += litros; gValorTotalGasto += valor;
-                            if (dataObj.data.startsWith(hojeStr)) { gLitrosHoje += litros; }
-                            if(docDia >= 1 && docDia <= diasNoMes) { window.dadosAbastDiario[docDia - 1] += litros; }
-
-                            let dataAbastObj = new Date(0);
-                            if (dataObj.data) {
-                                let timePart = dataObj.horario ? dataObj.horario : "12:00";
-                                if(timePart.length === 5) timePart += ":00"; 
-                                dataAbastObj = new Date(dataObj.data + "T" + timePart);
-                                if(isNaN(dataAbastObj.getTime())) dataAbastObj = new Date(dataObj.data + "T12:00:00");
-                            }
-
-                            if(!isNaN(dataAbastObj.getTime())) {
-                                ultimosAbast.push({ placa: placaVal, tempo: dataAbastObj.getTime(), dataObj: dataAbastObj, litros: litros });
-                            }
-
-                            gRankingAbast[placaVal] = (gRankingAbast[placaVal] || 0) + litros;
-                        }
-                    }
-                } catch (e) {}
-            });
-            
-            ultimosAbast.sort((a, b) => b.tempo - a.tempo);
-            let top5UltimosAbast = ultimosAbast.slice(0, 5);
-            
-            if(top5UltimosAbast.length > 0) {
-                let u = top5UltimosAbast[0];
-                document.getElementById('insight-ultimo-abast').innerHTML = `${u.placa} <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">(${formatarHora(u.dataObj)})</span>`;
-                
-                let htmlU = '';
-                top5UltimosAbast.forEach((item, index) => {
-                    htmlU += `<div class="top-item"><span>${index+1}º ${item.placa}</span> <strong>${formatarDataHoraFull(item.dataObj)}</strong></div>`;
-                });
-                document.getElementById('lista-ultimos-abast').innerHTML = htmlU;
-            } else {
-                document.getElementById('insight-ultimo-abast').innerText = "Sem Dados";
-                document.getElementById('lista-ultimos-abast').innerHTML = '<div class="top-item"><span>Nenhum registro</span></div>';
-            }
-
-            renderAbastecimentoUI();
-        }
-
-        window.carregarDadosGlobais = function() {
-            if(unsubKms) unsubKms(); if(unsubAbast) unsubAbast(); if(unsubConfig) unsubConfig();
-
-            const mesSelecionado = document.getElementById('filtro-mes').value;
-            const quinzenaSelecionada = document.getElementById('filtro-quinzena').value;
-            const anoAtual = new Date().getFullYear();
-            const diasNoMes = new Date(anoAtual, parseInt(mesSelecionado), 0).getDate();
-            const dataHojeObjeto = new Date();
-            const hojeStr = `${dataHojeObjeto.getFullYear()}-${String(dataHojeObjeto.getMonth() + 1).padStart(2, '0')}-${String(dataHojeObjeto.getDate()).padStart(2, '0')}`;
-
-            startLoadingAnim();
-            isAnimating = true;
-
-            setTimeout(() => {
-                isAnimating = false;
-                stopLoadingAnim();
-                if (pendingKmsSnap) renderKMsData(pendingKmsSnap, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto);
-                if (pendingAbastSnap) renderAbastData(pendingAbastSnap, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr);
-            }, 600); 
-
-            unsubKms = onSnapshot(collection(dbKms, "viagens"), (kmSnapshot) => {
-                pendingKmsSnap = kmSnapshot;
-                if (!isAnimating) renderKMsData(kmSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto);
-            });
-
-            unsubAbast = onSnapshot(collection(dbAbast, "abastecimentos"), (abastSnapshot) => {
-                pendingAbastSnap = abastSnapshot;
-                if (!isAnimating) renderAbastData(abastSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr);
-            });
-
-            unsubConfig = onSnapshot(doc(dbAbast, "configuracoes", "gerais"), (docSnap) => {
-                if (docSnap.exists()) {
-                    gEstoqueAtualTanque = limparNumero(docSnap.data().estoqueTanque);
-                    gCapacidadeMaximaTanque = limparNumero(docSnap.data().capacidadeTanque) || 5000;
-                    if (!isAnimating) renderAbastecimentoUI();
-                }
-            });
+                page2.classList.remove('active'); 
+                page1.classList.add('active'); 
+                btnScroll.classList.remove('active'); 
+                currentPage = 1; 
+            } 
+            window.atualizarGraficos(); 
         };
 
-        window.onload = () => {
-            const hoje = new Date();
-            const diaAtual = hoje.getDate();
-            const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
-            
-            document.getElementById('filtro-mes').value = mesAtual;
-            document.getElementById('filtro-quinzena').value = diaAtual <= 15 ? "1" : "2";
+        window.addEventListener('wheel', (e) => { 
+            if(e.deltaY > 50 && currentPage === 1) window.switchPage(); 
+            if(e.deltaY < -50 && currentPage === 2) window.switchPage(); 
+        });
 
-            window.carregarDadosGlobais();
-            window.toggleAutoFlip(); 
+        let autoScrollInterval = null; 
+        
+        window.toggleAutoScroll = function() { 
+            const hud = document.getElementById('scroll-hud'); 
+            hud.style.display = hud.style.display === 'flex' ? 'none' : 'flex'; 
+        }
+        
+        window.setAutoScrollTimer = function(timeMs) { 
+            document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active')); 
+            if(timeMs === 0) { 
+                document.getElementById('timer-off').classList.add('active'); 
+                document.getElementById('btn-auto-scroll').style.color = 'var(--text-muted)'; 
+            } else { 
+                document.getElementById('timer-'+(timeMs/1000)).classList.add('active'); 
+                document.getElementById('btn-auto-scroll').style.color = 'var(--primary)'; 
+            } 
+            clearInterval(autoScrollInterval); 
+            if(timeMs > 0) { 
+                autoScrollInterval = setInterval(() => { window.switchPage(); }, timeMs); 
+            } 
+            document.getElementById('scroll-hud').style.display = 'none'; 
+        }
+        
+        window.setAutoScrollTimer(0);
+
+        // =========================================================================
+        // LÓGICA CORE DE DADOS E FIREBASE (RESTAURADA, LEGÍVEL E SEM MINIFICAÇÃO)
+        // =========================================================================
+
+        function limparNumero(valor) { 
+            if (!valor) return 0; 
+            if (typeof valor === 'number') return valor; 
             
-            // LÓGICA DE FUGA DO BOTÃO (Dodge Animation)
-            const cardsHover = document.querySelectorAll('.hoverable-card');
-            const btnMonHover = document.querySelector('.btn-monitoramento');
+            let str = String(valor).trim(); 
+            if (str.includes(',')) { 
+                str = str.replace(/[^\d,-]/g, '').replace(',', '.'); 
+            } else { 
+                str = str.replace(/[^\d.-]/g, ''); 
+            } 
+            let num = parseFloat(str); 
+            return isNaN(num) ? 0 : num; 
+        }
+
+        function parseDataFirebaseString(str) { 
+            if (!str) return null; 
+            if (typeof str.toDate === 'function') return str.toDate(); 
             
-            // Quando passar o mouse nos cards esquerdos (0 = Frente, 2 = Verso) empurra botão para a direita
-            // Quando passar o mouse nos cards direitos (1 = Frente, 3 = Verso) empurra botão para a esquerda
-            if(cardsHover.length >= 4 && btnMonHover) {
-                cardsHover[0].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-right'); });
-                cardsHover[0].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-right'); });
+            let parsedNative = new Date(str); 
+            if (!isNaN(parsedNative.getTime()) && String(str).includes('T')) return parsedNative; 
+            
+            let hr = 0, mn = 0, sc = 0; 
+            let timeMatch = String(str).match(/(\d{2}):(\d{2})(?::(\d{2}))?/); 
+            if(timeMatch) { 
+                hr = parseInt(timeMatch[1]); 
+                mn = parseInt(timeMatch[2]); 
+                if(timeMatch[3]) sc = parseInt(timeMatch[3]); 
+            } 
+            
+            const meses = {
+                'janeiro':0, 'fevereiro':1, 'março':2, 'abril':3, 'maio':4, 'junho':5, 
+                'julho':6, 'agosto':7, 'setembro':8, 'outubro':9, 'novembro':10, 'dezembro':11
+            }; 
+            
+            const matchExt = String(str).match(/(\d{1,2})\s+de\s+([a-zçA-Z]+)\s+de\s+(\d{4})/i); 
+            if (matchExt) { 
+                return new Date(parseInt(matchExt[3]), meses[matchExt[2].toLowerCase()] || 0, parseInt(matchExt[1]), hr, mn, sc); 
+            } 
+            
+            if (String(str).includes('-')) { 
+                let parts = str.split('T')[0].split(' ')[0].split('-'); 
+                if(parts.length >= 3 && parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2], hr, mn, sc); 
+            } 
+            
+            if (String(str).includes('/')) { 
+                let parts = str.split(' ')[0].split('/'); 
+                if(parts.length >= 3) return new Date(parts[2], parts[1]-1, parts[0], hr, mn, sc); 
+            } 
+            
+            let parsed = new Date(str); 
+            return !isNaN(parsed.getTime()) ? parsed : null; 
+        }
+
+        function formatarHora(d) { 
+            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return "--:--"; 
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; 
+        }
+
+        window.atualizarGraficos = function() { 
+            if(currentPage === 1 && !isInitialLoad) return; 
+            
+            const diasNoMes = window.lastDaysInMonth || 31; 
+            const quinzenaSelecionada = document.getElementById('filtro-quinzena').value; 
+            const tipoKms = document.getElementById('chart-tipo-kms').value; 
+            const tipoAbast = document.getElementById('chart-tipo-abast').value; 
+            const isLight = document.body.classList.contains('light-mode'); 
+            
+            const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'; 
+            const textColor = isLight ? '#334155' : '#cbd5e1'; 
+            const tooltipBg = isLight ? 'rgba(255,255,255,0.9)' : 'rgba(15, 23, 42, 0.9)'; 
+            const tooltipText = isLight ? '#0f172a' : '#f8fafc'; 
+            const primaryColor = isLight ? '#0284c7' : '#00d2ff'; 
+            
+            const baseOptions = { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    x: { ticks: { color: textColor, font: {family: "'Inter', sans-serif"} }, grid: { color: gridColor, display: false } }, 
+                    y: { ticks: { color: textColor, font: {family: "'Inter', sans-serif"} }, grid: { color: gridColor } } 
+                }, 
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { backgroundColor: tooltipBg, titleColor: tooltipText, bodyColor: tooltipText, borderColor: 'rgba(0, 210, 255, 0.3)', borderWidth: 1, padding: 10, cornerRadius: 8 } 
+                } 
+            }; 
+            
+            // GRÁFICO KMs
+            let labelsKms = []; 
+            let dataKms = []; 
+            let bgColorsKms = []; 
+            
+            if (tipoKms === 'diario') { 
+                baseOptions.scales.y.beginAtZero = true; 
+                let startDay = 1; let endDay = diasNoMes; 
+                if(quinzenaSelecionada === '1') { endDay = 15; } else if(quinzenaSelecionada === '2') { startDay = 16; } 
                 
-                cardsHover[1].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-left'); });
-                cardsHover[1].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-left'); });
+                for(let i = startDay; i <= endDay; i++) { 
+                    labelsKms.push(`Dia ${i}`); 
+                    dataKms.push(window.dadosKmsDiario[i-1] || 0); 
+                    bgColorsKms.push(primaryColor); 
+                } 
+            } else { 
+                baseOptions.scales.y.beginAtZero = false; 
+                let arrPlacas = Object.keys(window.rankingKmsDispersao).map(p => ({ p, v: window.rankingKmsDispersao[p] })); 
+                arrPlacas.sort((a, b) => b.v - a.v); 
                 
-                cardsHover[2].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-right'); });
-                cardsHover[2].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-right'); });
+                labelsKms = arrPlacas.map(x => x.p); 
+                dataKms = arrPlacas.map(x => x.v); 
+                bgColorsKms = dataKms.map(val => val > 0 ? '#f43f5e' : '#10b981'); 
+            } 
+            
+            const ctxKms = document.getElementById('chart-kms').getContext('2d'); 
+            if(chartKmsInstance) chartKmsInstance.destroy(); 
+            chartKmsInstance = new Chart(ctxKms, { 
+                type: 'bar', 
+                data: { labels: labelsKms, datasets: [{ data: dataKms, backgroundColor: bgColorsKms, borderRadius: 4 }] }, 
+                options: baseOptions 
+            }); 
+            
+            // GRÁFICO ABASTECIMENTO
+            let labelsAbast = []; 
+            let dataAbast = []; 
+            baseOptions.scales.y.beginAtZero = true; 
+            
+            if (tipoAbast === 'diario') { 
+                let startDay = 1; let endDay = diasNoMes; 
+                if(quinzenaSelecionada === '1') { endDay = 15; } else if(quinzenaSelecionada === '2') { startDay = 16; } 
                 
-                cardsHover[3].addEventListener('mouseenter', () => { isUserHovering = true; btnMonHover.classList.add('push-left'); });
-                cardsHover[3].addEventListener('mouseleave', () => { isUserHovering = false; btnMonHover.classList.remove('push-left'); });
-            }
+                for(let i = startDay; i <= endDay; i++) { 
+                    labelsAbast.push(`Dia ${i}`); 
+                    dataAbast.push(window.dadosAbastDiario[i-1] || 0); 
+                } 
+            } else { 
+                let arrPlacas = Object.keys(window.rankingAbastGeral).map(p => ({ p, v: window.rankingAbastGeral[p] })).filter(x => x.v > 0); 
+                arrPlacas.sort((a, b) => b.v - a.v); 
+                labelsAbast = arrPlacas.map(x => x.p); 
+                dataAbast = arrPlacas.map(x => x.v); 
+            } 
+            
+            const ctxAbast = document.getElementById('chart-abast').getContext('2d'); 
+            if(chartAbastInstance) chartAbastInstance.destroy(); 
+            chartAbastInstance = new Chart(ctxAbast, { 
+                type: tipoAbast === 'diario' ? 'line' : 'bar', 
+                data: { 
+                    labels: labelsAbast, 
+                    datasets: [{ 
+                        data: dataAbast, 
+                        borderColor: '#10b981', 
+                        backgroundColor: tipoAbast === 'diario' ? 'rgba(16, 185, 129, 0.2)' : '#10b981', 
+                        fill: true, tension: 0.4, borderWidth: 3, borderRadius: 4, pointBackgroundColor: '#10b981', pointRadius: 4 
+                    }] 
+                }, 
+                options: baseOptions 
+            }); 
+        };
+
+        let gEstoqueAtualTanque = 0; 
+        let gCapacidadeMaximaTanque = 5000; 
+        let gLitrosAbastecidosTotal = 0; 
+        let gValorAbastecidoGasto = 0;
+
+        function renderSupplyChainUI(litrosHoje, rankingAbast) { 
+            document.getElementById('kpi-estoque').innerText = `${gEstoqueAtualTanque.toFixed(0)} L`; 
+            document.getElementById('kpi-capacidade').innerText = `Máx: ${gCapacidadeMaximaTanque} L`; 
+            document.getElementById('kpi-volume-abastecido').innerText = `${gLitrosAbastecidosTotal.toFixed(0)} L`; 
+            document.getElementById('kpi-valor-abastecido').innerText = gValorAbastecidoGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
+            document.getElementById('box-litros-hoje').innerText = `${litrosHoje.toFixed(1)} L`; 
+            
+            let percentualTanque = Math.min((gEstoqueAtualTanque / gCapacidadeMaximaTanque) * 100, 100); 
+            const barTanque = document.getElementById('bar-nivel-tanque'); 
+            const tooltipTanque = document.getElementById('tooltip-nivel-tanque'); 
+            const iconTanque = document.getElementById('icon-tanque'); 
+            
+            barTanque.style.width = percentualTanque + '%'; 
+            document.getElementById('txt-percent-tanque').innerText = `${percentualTanque.toFixed(0)}%`; 
+            tooltipTanque.setAttribute('data-tooltip', `Estoque Atual: ${gEstoqueAtualTanque.toFixed(1)} L (${percentualTanque.toFixed(1)}%)`); 
+            
+            if (gEstoqueAtualTanque < 600) { 
+                barTanque.className = 'bar-fill bg-danger'; 
+                iconTanque.className = 'kpi-icon icon-danger'; 
+            } else { 
+                barTanque.className = 'bar-fill bg-success'; 
+                iconTanque.className = 'kpi-icon icon-success'; 
+            } 
+            
+            let arrAbast = Object.keys(rankingAbast).map(placa => ({ placa, val: rankingAbast[placa] })); 
+            arrAbast.sort((a, b) => b.val - a.val); 
+            let top5Abast = arrAbast.slice(0, 5); 
+            let htmlAbast = ''; 
+            
+            if(top5Abast.length > 0) { 
+                top5Abast.forEach((item, index) => { 
+                    htmlAbast += `<div class="list-item new-item-anim"><span>${index+1}º ${item.placa}</span> <strong>${item.val.toFixed(1)} L</strong></div>`; 
+                }); 
+            } else { 
+                htmlAbast = '<div class="list-item"><span>Nenhum registro</span></div>'; 
+            } 
+            document.getElementById('lista-top-abast').innerHTML = htmlAbast; 
+        }
+
+        function renderKMsData(kmSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, dataHojeObjeto) { 
+            let kmRodadosTotal = 0; 
+            let kmEscaladoTotal = 0; 
+            let qtdEmCursoHoje = 0; 
+            let qtdFinalizadaHoje = 0; 
+            let rankingViagens = {}; 
+            let rankingsLocaisDispersao = {}; 
+            
+            window.dadosKmsDiario = new Array(diasNoMes).fill(0); 
+            window.rankingKmsDispersao = {}; 
+            let ultimosKms = []; 
+            
+            kmSnapshot.forEach((doc) => { 
+                try { 
+                    const dataObj = doc.data(); 
+                    const obs = dataObj.historico_obs || dataObj; 
+                    let isFinalizada = (dataObj.status === 'finalizada' || obs.status === 'finalizada'); 
+                    let dataStringAlvo = dataObj.data || obs.data; 
+                    
+                    if (isFinalizada) dataStringAlvo = dataObj.dataFim || obs.dataFim || dataStringAlvo; 
+                    if (!dataStringAlvo) dataStringAlvo = dataObj.dataInicio || obs.dataInicio; 
+                    
+                    let dataCriacao = parseDataFirebaseString(dataStringAlvo); 
+                    
+                    if (dataCriacao && !isNaN(dataCriacao.getTime())) { 
+                        const docMes = String(dataCriacao.getMonth() + 1).padStart(2, '0'); 
+                        const docDia = dataCriacao.getDate(); 
+                        
+                        if (docMes === mesSelecionado) { 
+                            if (quinzenaSelecionada === '1' && docDia > 15) return; 
+                            if (quinzenaSelecionada === '2' && docDia <= 15) return; 
+                            
+                            let isHoje = (docDia === dataHojeObjeto.getDate() && dataCriacao.getMonth() === dataHojeObjeto.getMonth()); 
+                            const placaVal = obs.placa || dataObj.placa || obs.perfilVeiculo || dataObj.perfilVeiculo || 'Indefinido'; 
+                            
+                            if (isHoje) { 
+                                if(dataObj.status === 'em_curso' || obs.status === 'em_curso') qtdEmCursoHoje++; 
+                                if(isFinalizada) qtdFinalizadaHoje++; 
+                            } 
+                            
+                            if (isFinalizada) { 
+                                ultimosKms.push({ placa: placaVal, tempo: dataCriacao.getTime(), dataObj: dataCriacao }); 
+                            } 
+                            
+                            const meta = limparNumero(obs.metaKm || dataObj.metaKm); 
+                            const kmFinal = limparNumero(obs.kmFim || dataObj.kmFim); 
+                            const kmInicial = limparNumero(obs.kmInicio || dataObj.kmInicio); 
+                            
+                            rankingViagens[placaVal] = (rankingViagens[placaVal] || 0) + 1; 
+                            
+                            if (kmFinal > 0 && kmFinal >= kmInicial) { 
+                                const rodado = kmFinal - kmInicial; 
+                                kmRodadosTotal += rodado; 
+                                kmEscaladoTotal += meta; 
+                                
+                                if(docDia >= 1 && docDia <= diasNoMes) { 
+                                    window.dadosKmsDiario[docDia - 1] += rodado; 
+                                } 
+                                
+                                const valDispersao = rodado - meta; 
+                                rankingsLocaisDispersao[placaVal] = (rankingsLocaisDispersao[placaVal] || 0) + valDispersao; 
+                                window.rankingKmsDispersao[placaVal] = (window.rankingKmsDispersao[placaVal] || 0) + valDispersao; 
+                            } 
+                        } 
+                    } 
+                } catch (e) {} 
+            }); 
+            
+            let somaDinamicaDispersao = 0; 
+            Object.values(rankingsLocaisDispersao).forEach(dispPlaca => somaDinamicaDispersao += dispPlaca); 
+            ultimosKms.sort((a, b) => b.tempo - a.tempo); 
+            
+            if(ultimosKms.length > 0) { 
+                document.getElementById('box-ultimo-km').innerText = `${ultimosKms[0].placa} (${formatarHora(ultimosKms[0].dataObj)})`; 
+            } else { 
+                document.getElementById('box-ultimo-km').innerText = "Sem Dados"; 
+            } 
+            
+            let arrViagens = Object.keys(rankingViagens).map(placa => ({ placa, val: rankingViagens[placa] })); 
+            arrViagens.sort((a, b) => b.val - a.val); 
+            document.getElementById('box-mais-viagens').innerText = arrViagens.length > 0 ? `${arrViagens[0].placa} (${arrViagens[0].val}x)` : "Sem Dados"; 
+            
+            document.getElementById('kpi-km-total').innerText = `${kmRodadosTotal.toFixed(0)} km`; 
+            document.getElementById('kpi-km-meta').innerText = `${kmEscaladoTotal.toFixed(0)} km`; 
+            
+            const dispGeralText = somaDinamicaDispersao > 0 ? `+${somaDinamicaDispersao.toFixed(0)} km` : `${somaDinamicaDispersao.toFixed(0)} km`; 
+            document.getElementById('kpi-dispersao').innerText = dispGeralText; 
+            
+            const iconDisp = document.getElementById('icon-dispersao'); 
+            const statusDisp = document.getElementById('kpi-dispersao-status'); 
+            
+            if(somaDinamicaDispersao > 0) { 
+                document.getElementById('kpi-dispersao').style.color = 'var(--danger)'; 
+                iconDisp.className = 'kpi-icon icon-danger'; 
+                statusDisp.innerText = 'Cuidado: Acima Meta'; 
+                statusDisp.style.background = 'rgba(244, 63, 94, 0.2)'; 
+                statusDisp.style.color = 'var(--danger)'; 
+            } else { 
+                document.getElementById('kpi-dispersao').style.color = 'var(--success)'; 
+                iconDisp.className = 'kpi-icon icon-success'; 
+                statusDisp.innerText = 'Eficiente: Dentro Meta'; 
+                statusDisp.style.background = 'rgba(16, 185, 129, 0.2)'; 
+                statusDisp.style.color = 'var(--success)'; 
+            } 
+            
+            document.getElementById('val-em-curso').innerText = qtdEmCursoHoje; 
+            document.getElementById('val-finalizadas').innerText = qtdFinalizadaHoje; 
+            
+            let totalViagensHoje = qtdEmCursoHoje + qtdFinalizadaHoje; 
+            let perFinalizado = totalViagensHoje > 0 ? (qtdFinalizadaHoje / totalViagensHoje) * 100 : 0; 
+            const barStatus = document.getElementById('bar-status-frota'); 
+            const tooltipStatus = document.getElementById('tooltip-status-frota'); 
+            tooltipStatus.setAttribute('data-tooltip', `${qtdEmCursoHoje} em rota, ${qtdFinalizadaHoje} base.`); 
+            
+            if(totalViagensHoje === 0) { 
+                barStatus.style.width = '0%'; 
+            } else if (qtdFinalizadaHoje > 0) { 
+                barStatus.style.width = perFinalizado + '%'; 
+                barStatus.className = 'bar-fill bg-success'; 
+            } else { 
+                barStatus.style.width = '100%'; 
+                barStatus.className = 'bar-fill bg-primary'; 
+            } 
+            
+            let arrDispersao = Object.keys(rankingsLocaisDispersao).map(placa => ({ placa, val: rankingsLocaisDispersao[placa] })); 
+            arrDispersao.sort((a, b) => b.val - a.val); 
+            let top5Disp = arrDispersao.slice(0, 5); 
+            let htmlDisp = ''; 
+            
+            if(top5Disp.length > 0) { 
+                top5Disp.forEach((item, index) => { 
+                    let color = item.val > 0 ? 'var(--danger)' : 'var(--success)'; 
+                    htmlDisp += `<div class="list-item new-item-anim"><span>${index+1}º ${item.placa}</span> <strong style="color: ${color}">${item.val > 0 ? '+' : ''}${item.val.toFixed(0)} km</strong></div>`; 
+                }); 
+            } else { 
+                htmlDisp = '<div class="list-item"><span>Nenhum desvio detectado</span></div>'; 
+            } 
+            document.getElementById('lista-top-dispersao').innerHTML = htmlDisp; 
+        }
+
+        function renderPurchasesData(purSnapshot, mesSelecionado, quinzenaSelecionada) { 
+            let volumeCompradoMês = 0; 
+            let custoCompradoGasto = 0; 
+            
+            purSnapshot.forEach((doc) => { 
+                try { 
+                    const dataObj = doc.data(); 
+                    if (dataObj.dataChegada) { 
+                        const partesData = dataObj.dataChegada.split('-'); 
+                        if (partesData.length >= 2 && partesData[1] === mesSelecionado) { 
+                            const docDia = parseInt(partesData[2]); 
+                            if (quinzenaSelecionada === '1' && docDia > 15) return; 
+                            if (quinzenaSelecionada === '2' && docDia <= 15) return; 
+                            
+                            volumeCompradoMês += limparNumero(dataObj.litros); 
+                            custoCompradoGasto += limparNumero(dataObj.total); 
+                        } 
+                    } 
+                } catch (e) {} 
+            }); 
+            
+            document.getElementById('kpi-volume-comprado').innerText = `${volumeCompradoMês.toFixed(0)} L`; 
+            document.getElementById('kpi-valor-comprado').innerText = custoCompradoGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
+        }
+
+        function renderAbastData(abastSnapshot, mesSelecionado, quinzenaSelecionada, diasNoMes, hojeStr) { 
+            let litrosHoje = 0; 
+            let rankingAbast = {}; 
+            gLitrosAbastecidosTotal = 0; 
+            gValorAbastecidoGasto = 0; 
+            
+            window.dadosAbastDiario = new Array(diasNoMes).fill(0); 
+            window.rankingAbastGeral = {}; 
+            let ultimosAbast = []; 
+            
+            abastSnapshot.forEach((doc) => { 
+                try { 
+                    const dataObj = doc.data(); 
+                    if (dataObj.data) { 
+                        const partesData = dataObj.data.split('-'); 
+                        if (partesData.length >= 2 && partesData[1] === mesSelecionado) { 
+                            const docDia = parseInt(partesData[2]); 
+                            if (quinzenaSelecionada === '1' && docDia > 15) return; 
+                            if (quinzenaSelecionada === '2' && docDia <= 15) return; 
+                            
+                            const litros = limparNumero(dataObj.litros); 
+                            const valorUnit = limparNumero(dataObj.valorUnitario); 
+                            const valorAbast = valorUnit > 0 ? (litros * valorUnit) : (limparNumero(dataObj.valorTotal) || limparNumero(dataObj.valor)); 
+                            const placaVal = dataObj.placa || 'Indefinido'; 
+                            
+                            gLitrosAbastecidosTotal += litros; 
+                            gValorAbastecidoGasto += valorAbast; 
+                            
+                            if (dataObj.data.startsWith(hojeStr)) { 
+                                litrosHoje += litros; 
+                            } 
+                            if(docDia >= 1 && docDia <= diasNoMes) { 
+                                window.dadosAbastDiario[docDia - 1] += litros; 
+                            } 
+                            
+                            let dataAbastObj = new Date(0); 
+                            if (dataObj.data) { 
+                                let timePart = dataObj.horario ? dataObj.horario : "12:00"; 
+                                if(timePart.length === 5) timePart += ":00"; 
+                                dataAbastObj = new Date(dataObj.data + "T" + timePart); 
+                                if(isNaN(dataAbastObj.getTime())) dataAbastObj = new Date(dataObj.data + "T12:00:00"); 
+                            } 
+                            
+                            if(!isNaN(dataAbastObj.getTime())) { 
+                                ultimosAbast.push({ placa: placaVal, tempo: dataAbastObj.getTime(), dataObj: dataAbastObj }); 
+                            } 
+                            
+                            rankingAbast[placaVal] = (rankingAbast[placaVal] || 0) + litros; 
+                            window.rankingAbastGeral[placaVal] = (window.rankingAbastGeral[placaVal] || 0) + litros; 
+                        } 
+                    } 
+                } catch (e) {} 
+            }); 
+            
+            ultimosAbast.sort((a, b) => b.tempo - a.tempo); 
+            if(ultimosAbast.length > 0) { 
+                document.getElementById('box-ultimo-abast').innerText = `${ultimosAbast[0].placa} (${formatarHora(ultimosAbast[0].dataObj)})`; 
+            } else { 
+                document.getElementById('box-ultimo-abast').innerText = "Sem Dados"; 
+            } 
+            
+            renderSupplyChainUI(litrosHoje, rankingAbast); 
+        }
+
+        window.aplicarFiltros = function() { 
+            const mesSelecionado = document.getElementById('filtro-mes').value; 
+            const quinzenaSelecionada = document.getElementById('filtro-quinzena').value; 
+            
+            window.lastDaysInMonth = new Date(new Date().getFullYear(), parseInt(mesSelecionado), 0).getDate(); 
+            const dataHojeObjeto = new Date(); 
+            const hojeStr = `${dataHojeObjeto.getFullYear()}-${String(dataHojeObjeto.getMonth() + 1).padStart(2, '0')}-${String(dataHojeObjeto.getDate()).padStart(2, '0')}`; 
+            
+            if(cacheKmsSnap) renderKMsData(cacheKmsSnap, mesSelecionado, quinzenaSelecionada, window.lastDaysInMonth, dataHojeObjeto); 
+            if(cacheAbastSnap) renderAbastData(cacheAbastSnap, mesSelecionado, quinzenaSelecionada, window.lastDaysInMonth, hojeStr); 
+            if(cachePurchasesSnap) renderPurchasesData(cachePurchasesSnap, mesSelecionado, quinzenaSelecionada); 
+            
+            window.atualizarGraficos(); 
+            
+            if (isInitialLoad) { 
+                setTimeout(() => { 
+                    const loader = document.getElementById('loader-overlay'); 
+                    if(loader && !loader.classList.contains('hidden')) { 
+                        loader.classList.add('hidden'); 
+                        isInitialLoad = false; 
+                    } 
+                }, 500); 
+            } 
+        };
+
+        window.carregarDadosGlobais = function() { 
+            const mesSelecionado = document.getElementById('filtro-mes').value; 
+            window.lastDaysInMonth = new Date(new Date().getFullYear(), parseInt(mesSelecionado), 0).getDate(); 
+            
+            onSnapshot(collection(dbKms, "viagens"), (kmSnapshot) => { 
+                cacheKmsSnap = kmSnapshot; window.setNetworkOnline(); window.aplicarFiltros(); 
+            }, (error) => { 
+                window.setNetworkOffline(); window.aplicarFiltros(); 
+            }); 
+            
+            onSnapshot(collection(dbAbast, "abastecimentos"), (abastSnapshot) => { 
+                cacheAbastSnap = abastSnapshot; window.setNetworkOnline(); window.aplicarFiltros(); 
+            }, (error) => { 
+                window.setNetworkOffline(); window.aplicarFiltros(); 
+            }); 
+            
+            onSnapshot(collection(dbAbast, "recebimentos"), (pSnapshot) => { 
+                cachePurchasesSnap = pSnapshot; window.setNetworkOnline(); window.aplicarFiltros(); 
+            }, (error) => { 
+                window.setNetworkOffline(); window.aplicarFiltros(); 
+            }); 
+            
+            onSnapshot(doc(dbAbast, "configuracoes", "gerais"), (docSnap) => { 
+                if (docSnap.exists()) { 
+                    gEstoqueAtualTanque = limparNumero(docSnap.data().estoqueTanque); 
+                    gCapacidadeMaximaTanque = limparNumero(docSnap.data().capacidadeTanque) || 5000; 
+                    window.aplicarFiltros(); 
+                } 
+            }, (error) => { 
+                window.setNetworkOffline(); window.aplicarFiltros(); 
+            }); 
+        };
+
+        window.onload = () => { 
+            const hoje = new Date(); 
+            const mesInput = document.getElementById('filtro-mes'); 
+            const quinzenaInput = document.getElementById('filtro-quinzena'); 
+            
+            if(mesInput && quinzenaInput) { 
+                mesInput.value = String(hoje.getMonth() + 1).padStart(2, '0'); 
+                quinzenaInput.value = hoje.getDate() <= 15 ? "1" : "2"; 
+                window.carregarDadosGlobais(); 
+            } 
         };
     </script>
 </body>
