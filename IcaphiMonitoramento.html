@@ -6,17 +6,18 @@
     <title>Icaphi Operacional PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        /* ================= PALETAS DE CORES (LIGHT / DARK) ================= */
+        /* ================= PALETAS DE CORES ================= */
         :root {
-            --bg-main: #f1f5f9; --bg-sidebar: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); 
-            --bg-panel: #ffffff; --bg-table-header: #f8fafc; --bg-table-row-alt: #f8fafc;
+            --bg-main: #cbd5e1;
+            --bg-sidebar: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); 
+            --bg-panel: #ffffff; --bg-table-header: var(--bg-sidebar); --bg-table-row-alt: #f8fafc;
             --text-main: #1e293b; --text-muted: #64748b; --text-sidebar: #94a3b8; --text-sidebar-hover: #ffffff; 
-            --border-color: #cbd5e1; --accent: #2563eb; --accent-hover: #1d4ed8; 
+            --border-color: #94a3b8; --accent: #2563eb; --accent-hover: #1d4ed8; 
             --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --drag-bg: #e2e8f0;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.15);
             
-            /* Status Colors (Light) */
             --st-vazio-bg: #eff6ff; --st-vazio-txt: #2563eb; --st-vazio-bd: #bfdbfe;
             --st-pernoite-bg: #f5f5f4; --st-pernoite-txt: #78350f; --st-pernoite-bd: #d6d3d1;
             --st-finalizado-bg: #fdf2f8; --st-finalizado-txt: #db2777; --st-finalizado-bd: #fbcfe8;
@@ -32,13 +33,13 @@
         }
 
         body.dark-mode {
-            --bg-main: #020617; --bg-sidebar: linear-gradient(180deg, #020617 0%, #0f172a 100%); 
-            --bg-panel: #0f172a; --bg-table-header: #1e293b; --bg-table-row-alt: #161f31;
+            --bg-main: #020617;
+            --bg-sidebar: linear-gradient(180deg, #090e17 0%, #0f172a 100%); 
+            --bg-panel: #1e293b; --bg-table-header: var(--bg-sidebar); --bg-table-row-alt: #0f172a;
             --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; 
-            --accent: #3b82f6; --accent-hover: #60a5fa; --drag-bg: #1e293b;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.5); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.6);
+            --accent: #3b82f6; --accent-hover: #60a5fa; --drag-bg: #334155;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.5); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.6);
 
-            /* Status Colors (Dark) - Uses RGBA for blending with dark background */
             --st-vazio-bg: rgba(37,99,235,0.15); --st-vazio-txt: #60a5fa; --st-vazio-bd: rgba(37,99,235,0.3);
             --st-pernoite-bg: rgba(168,162,158,0.15); --st-pernoite-txt: #d6d3d1; --st-pernoite-bd: rgba(168,162,158,0.3);
             --st-finalizado-bg: rgba(219,39,119,0.15); --st-finalizado-txt: #f472b6; --st-finalizado-bd: rgba(219,39,119,0.3);
@@ -53,6 +54,10 @@
             --st-entregue-bg: rgba(22,165,52,0.15); --st-entregue-txt: #4ade80; --st-entregue-bd: rgba(22,165,52,0.3);
         }
 
+        /* LITE MODE */
+        body.lite-mode *, body.lite-mode { transition: none !important; animation: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+        body.lite-mode .view-section.active { opacity: 1 !important; transform: none !important; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { display: flex; height: 100vh; overflow: hidden; background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
 
@@ -61,7 +66,6 @@
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; transition: 0.2s;}
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* ========= SIDEBAR ========= */
         .sidebar-container { width: 65px; height: 100vh; position: relative; z-index: 50; flex-shrink: 0; }
         .sidebar { width: 65px; height: 100%; background: var(--bg-sidebar); display: flex; flex-direction: column; justify-content: space-between; color: white; position: absolute; top: 0; left: 0; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; box-shadow: 4px 0 25px rgba(0,0,0,0.3); }
         .sidebar:hover { width: 230px; }
@@ -71,17 +75,16 @@
 
         .brand { font-size: 1.2rem; font-weight: 800; text-align: left; padding: 0 5px 15px 5px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; white-space: nowrap; opacity: 0; letter-spacing: -0.5px; display: flex; align-items: center;}
         .sidebar:hover .brand { opacity: 1; transition: opacity 0.3s 0.1s; }
-        .brand-icon { display: inline-block; width: 35px; text-align: center; margin-right: 5px; font-size: 1.3rem;}
+        .brand-icon { display: inline-block; width: 35px; text-align: center; margin-right: 5px; font-size: 1.3rem; color: #60a5fa;}
         
         .menu-item { padding: 10px 12px; border-radius: 8px; color: var(--text-sidebar); text-decoration: none; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; white-space: nowrap; transition: all 0.2s; border-left: 3px solid transparent;}
-        .menu-item .menu-icon { font-size: 1.2rem; width: 25px; text-align: center; margin-right: 15px; flex-shrink: 0; transition: transform 0.2s;}
+        .menu-item .menu-icon { font-size: 1.3rem; width: 25px; text-align: center; margin-right: 15px; flex-shrink: 0; transition: transform 0.2s;}
         .menu-item .menu-text { opacity: 0; transition: opacity 0.2s; }
         .sidebar:hover .menu-item .menu-text { opacity: 1; transition: opacity 0.3s 0.1s; }
         .menu-item:hover { color: var(--text-sidebar-hover); background-color: rgba(255,255,255,0.05); }
         .menu-item:hover .menu-icon { transform: scale(1.1); }
         .menu-item.active { color: white; background-color: rgba(37,99,235,0.15); border-left: 3px solid var(--accent); font-weight: 600; }
 
-        /* ========= CORE LAYOUT ========= */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; width: calc(100% - 65px); }
         .view-section { display: none; flex-direction: column; height: 100%; opacity: 0; }
         .view-section.active { display: flex; animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -91,12 +94,11 @@
         .header h2 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;}
         .header-controls { display: flex; gap: 10px; align-items: center; }
         
-        input[type="date"], input[type="month"], input[type="text"], select { padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; transition: 0.2s; color: var(--text-main); font-weight: 500; background: var(--bg-panel);}
-        input[type="date"]:focus, input[type="month"]:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        input[type="date"], input[type="month"], input[type="text"], input[type="number"], select, textarea { padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; transition: 0.2s; color: var(--text-main); font-weight: 500; background: var(--bg-panel);}
+        input[type="date"]:focus, input[type="month"]:focus, input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
         
         .content-container { flex: 1; padding: 15px; overflow: hidden; display: flex; flex-direction: column; gap: 15px; }
 
-        /* ========= WIDGETS & TABLES ========= */
         .progress-wrapper { background: var(--bg-panel); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; transition: 0.3s;}
         .progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;}
         .progress-track { background: var(--drag-bg); height: 10px; border-radius: 10px; position: relative; width: 100%; }
@@ -109,26 +111,17 @@
         .table-wrapper { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; box-shadow: var(--shadow-md); transition: 0.3s;}
         table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
         th, td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--bg-main); padding: 6px 4px; text-align: left; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: 26px;}
-        th { font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; cursor: default; letter-spacing: 0.2px; border-bottom: 2px solid var(--text-muted); border-right: 1px solid rgba(255,255,255,0.05); background: var(--bg-table-header);}
         
-        /* Células de Cabeçalho Cores Fixas Excel - Ajustadas para DarkMode via Variáveis nulas no corpo */
-        .th-placa { background: #1e293b; color: #fff; }
-        .th-motorista { background: #f59e0b; color: #0f172a; }
-        .th-painel { background: #ea580c; color: #fff; }
-        .th-nf { background: #2563eb; color: #fff; }
-        .th-regiao { background: #334155; color: #fff; }
-        .th-dev { background: #475569; color: #fff; }
-        .th-rota { background: #0ea5e9; color: #fff; }
-        .th-app { background: #10b981; color: #fff; }
+        th { font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; cursor: default; letter-spacing: 0.2px; border-bottom: 2px solid var(--text-muted); border-right: 1px solid rgba(255,255,255,0.05); background: var(--bg-table-header); color: #ffffff; }
 
         #tabela-monitoramento tbody tr:nth-child(even), #tabela-placas tbody tr:nth-child(even), #tabela-editor-painel tbody tr:nth-child(even), #tabela-canhotos tbody tr:nth-child(even) { background-color: var(--bg-table-row-alt); }
         tbody tr { transition: background-color 0.15s ease; filter: brightness(1); }
         tbody tr:hover { filter: brightness(0.9); }
         .dark-mode tbody tr:hover { filter: brightness(1.2); }
 
-        .filter-icon { cursor: pointer; margin-left: 3px; font-size: 9px; opacity: 0.6; padding: 2px; border-radius: 3px; transition: 0.2s; color: inherit;}
+        .filter-icon { cursor: pointer; margin-left: 3px; font-size: 10px; opacity: 0.6; padding: 2px; border-radius: 3px; transition: 0.2s; color: inherit;}
         .filter-icon:hover { opacity: 1; background: rgba(255,255,255,0.2); }
-        .filter-active { opacity: 1; font-weight: 800; transform: scale(1.1); }
+        .filter-active { opacity: 1; font-weight: 800; transform: scale(1.1); color: #60a5fa; }
         
         .excel-filter-popup { position: fixed; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); padding: 12px; z-index: 1000; display: none; flex-direction: column; gap: 10px; width: 220px; font-size: 11px; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; color: var(--text-main);}
         .excel-filter-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid var(--border-color); padding: 5px; border-radius: 4px; background: var(--bg-main);}
@@ -141,7 +134,6 @@
         .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); font-size: 12px; user-select: none; transition: color 0.2s;}
         tr.dragging { opacity: 0.6; background-color: var(--drag-bg) !important; transform: scale(0.995);}
 
-        /* ========= BOTÕES E CONTROLES ========= */
         .controls-bar { display: flex; gap: 10px; background: var(--bg-panel); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; box-shadow: var(--shadow-sm);}
         .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: white; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--shadow-sm); }
         .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
@@ -154,7 +146,6 @@
         .btn-sm { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; }
         .big-btn { width: 190px; height: 85px; font-size: 1.05rem; flex-direction: column; border-radius: 12px; gap: 10px; }
         
-        /* BOTÃO FLUTUANTE TEMA ESCURO */
         .theme-toggle-btn { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; cursor: pointer; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
         .theme-toggle-btn:hover { transform: scale(1.1) rotate(15deg); }
 
@@ -164,50 +155,94 @@
 
         .save-indicator { font-size: 0.8rem; font-weight: 700; color: var(--success); display: none; margin-left: 10px; background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--success);}
 
-        /* ========= MODAIS ========= */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 300; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--bg-panel); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; border: 1px solid var(--border-color); }
         
         @keyframes modalPop { from { opacity: 0; transform: scale(0.96) translateY(15px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-table-header); }
+        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-table-row-alt); }
         .modal-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main);}
         .btn-close { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center;}
         .btn-close:hover { color: var(--danger); transform: scale(1.15); }
         .modal-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
-        .modal-controls { display: flex; gap: 10px; align-items: center; background: var(--bg-table-header); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); justify-content: space-between; }
-        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: var(--bg-table-header); gap: 10px;}
+        .modal-controls { display: flex; gap: 10px; align-items: center; background: var(--bg-table-row-alt); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); justify-content: space-between; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: var(--bg-table-row-alt); gap: 10px;}
         
-        .select-status { width: 100%; padding: 4px 2px; border: 1px solid transparent; background: transparent; outline: none; cursor: pointer; font-weight: 700; font-size: 9.5px; border-radius: 4px; transition: all 0.2s;}
+        .select-status { width: 100%; padding: 4px 2px; border: 1px solid transparent; background: transparent; outline: none; cursor: pointer; font-weight: 700; font-size: 9.5px; border-radius: 4px; transition: all 0.2s; text-overflow: ellipsis; }
         .select-status:hover { border-color: var(--border-color); }
-
         .clickable-cell { cursor: pointer; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; transition: 0.2s; }
         .clickable-cell:hover { background: rgba(37,99,235,0.2); color: var(--accent) !important; border-radius: 4px;}
-
         .btn-city { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);}
         .btn-city:hover, .btn-city.active { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.05); }
+
+        #modal-motoristas { z-index: 1050 !important; }
+
+        select[multiple] { height: 120px; padding: 5px; }
+        select[multiple] option { padding: 6px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+        select[multiple] option:checked { background-color: var(--accent); color: white; }
+
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* ================= PRINT CSS PARA PRESTAÇÃO DE CONTAS (LAYOUT FIEL À IMAGEM) ================= */
+        #print-area-wrapper { display: none; }
+        @media print {
+            body { background: white !important; color: black !important; font-family: 'Arial', sans-serif !important; }
+            .sidebar-container, .main-content > section:not(#print-area-wrapper), .theme-toggle-btn, .modal-overlay { display: none !important; }
+            #print-area-wrapper { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 10mm; font-size: 11px; }
+            
+            .print-header-box { text-align: center; border: 2px solid #000; padding: 10px; margin-bottom: 15px; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+            .print-header-box h2 { margin: 0; font-size: 18px; text-transform: uppercase; font-weight: bold; }
+            .print-header-box h3 { margin: 5px 0 0 0; font-size: 14px; }
+            
+            .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+            .print-box { border: 1px solid #000; }
+            .print-box-title { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; font-weight: bold; padding: 5px 8px; border-bottom: 1px solid #000; font-size: 12px; }
+            .print-box-content { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+            .print-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #ccc; padding-bottom: 3px; }
+            .print-row:last-child { border-bottom: none; padding-bottom: 0; }
+            
+            #print-area-wrapper table { border-collapse: collapse; width: 100%; font-size: 10px; margin-top: 15px; }
+            #print-area-wrapper th, #print-area-wrapper td { border: 1px solid #000; padding: 4px; text-align: left; }
+            #print-area-wrapper th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; font-weight: bold; text-align: center; }
+            #print-area-wrapper td { text-align: center; }
+            #print-area-wrapper td:nth-child(2), #print-area-wrapper td:nth-child(3), #print-area-wrapper td:nth-child(4) { text-align: left; }
+            
+            .print-obs-box { border: 1px solid #000; margin-top: 15px; min-height: 60px; }
+            .print-obs-content { padding: 8px; white-space: pre-wrap; font-size: 11px; }
+
+            .print-signatures { display: flex; justify-content: space-around; margin-top: 40px; }
+            .print-sig-box { text-align: center; width: 40%; border-top: 1px solid #000; padding-top: 5px; font-weight: bold; }
+        }
 
     </style>
 </head>
 <body>
 
-    <button class="theme-toggle-btn" id="btn-theme-toggle">🌙</button>
+    <button class="theme-toggle-btn" id="btn-theme-toggle"><i class="ph ph-moon"></i></button>
 
     <div class="sidebar-container">
         <nav class="sidebar">
             <div class="sidebar-top">
-                <div class="brand"><span class="brand-icon">⚡</span>Icaphi</div>
-                <a class="menu-item active" data-target="view-monitoramento"><span class="menu-icon">📊</span><span class="menu-text">Monitoramento</span></a>
-                <a class="menu-item" data-target="view-notas"><span class="menu-icon">🧾</span><span class="menu-text">Notas Fiscais</span></a>
-                <a class="menu-item" onclick="abrirModalAtualizarApps()"><span class="menu-icon">📱</span><span class="menu-text">Atualizar Apps</span></a>
-                <a class="menu-item" data-target="view-canhotos"><span class="menu-icon">📋</span><span class="menu-text">Canhotos</span></a>
-                <a class="menu-item" data-target="view-dashboard"><span class="menu-icon">📈</span><span class="menu-text">Dashboard</span></a>
+                <div class="brand"><i class="ph-fill ph-lightning brand-icon"></i> Icaphi</div>
+                <a class="menu-item active" data-target="view-monitoramento"><i class="ph ph-chart-bar menu-icon"></i><span class="menu-text">Monitoramento</span></a>
+                <a class="menu-item" data-target="view-notas"><i class="ph ph-receipt menu-icon"></i><span class="menu-text">Notas Fiscais</span></a>
+                <a class="menu-item" onclick="window.abrirModalAtualizarApps()"><i class="ph ph-device-mobile menu-icon"></i><span class="menu-text">Atualizar Apps</span></a>
+                <a class="menu-item" data-target="view-canhotos"><i class="ph ph-files menu-icon"></i><span class="menu-text">Canhotos</span></a>
+                <a class="menu-item" data-target="view-ocorrencias"><i class="ph ph-warning menu-icon"></i><span class="menu-text">Ocorrências</span></a>
+                <a class="menu-item" data-target="view-prestacao"><i class="ph ph-currency-circle-dollar menu-icon"></i><span class="menu-text">Prest. Contas</span></a>
+                <a class="menu-item" data-target="view-dashboard"><i class="ph ph-chart-line-up menu-icon"></i><span class="menu-text">Dashboard</span></a>
             </div>
             <div class="sidebar-bottom">
-                <a class="menu-item" data-target="view-montar-painel"><span class="menu-icon">🛠️</span><span class="menu-text">Montar Painel</span></a>
-                <a class="menu-item" data-target="view-montar-notas"><span class="menu-icon">⚙️</span><span class="menu-text">Montar Notas</span></a>
-                <a class="menu-item" data-target="view-placas"><span class="menu-icon">🚚</span><span class="menu-text">Frota</span></a>
+                <a class="menu-item" data-target="view-montar-painel"><i class="ph ph-wrench menu-icon"></i><span class="menu-text">Montar Painel</span></a>
+                <a class="menu-item" data-target="view-montar-notas"><i class="ph ph-gear menu-icon"></i><span class="menu-text">Montar Notas</span></a>
+                <a class="menu-item" data-target="view-placas"><i class="ph ph-truck menu-icon"></i><span class="menu-text">Frota</span></a>
+                <a class="menu-item" onclick="window.abrirModalConfig()"><i class="ph ph-sliders menu-icon"></i><span class="menu-text">Configurações</span></a>
             </div>
         </nav>
     </div>
@@ -217,7 +252,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2>📊 Painel de Monitoramento</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento</h2>
                 <div class="header-controls">
                     <input type="date" id="mon-data-select">
                     <button class="btn btn-primary" id="btn-carregar-painel">Buscar</button>
@@ -235,38 +270,38 @@
                             <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 4%;">
                             <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 6%;"> <col style="width: 5%;">
                             <col style="width: 6%;"> <col style="width: 3%;"> <col style="width: 4%;"> <col style="width: 3%;">
-                            <col style="width: 5%;"> <col style="width: 5%;"> <col style="width: 3%;"> <col style="width: 3%;">
-                            <col style="width: 5%;"> <col style="width: 3%;"> <col style="width: 7%;"> <col style="width: 3%;">
+                            <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 3%;"> <col style="width: 3%;">
+                            <col style="width: 4%;"> <col style="width: 3%;"> <col style="width: 9%;"> <col style="width: 3%;"> 
                             <col style="width: 3%;"> <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 3%;">
                             <col style="width: 3%;">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th class="th-placa">PLACA <span class="filter-icon" data-col="0">▼</span></th>
-                                <th class="th-placa">TROCA <span class="filter-icon" data-col="1">▼</span></th>
-                                <th class="th-placa">PERFIL <span class="filter-icon" data-col="2">▼</span></th>
-                                <th class="th-placa">TIPO <span class="filter-icon" data-col="3">▼</span></th>
-                                <th class="th-placa">O.C. <span class="filter-icon" data-col="4">▼</span></th>
-                                <th class="th-placa">TRANS. <span class="filter-icon" data-col="5">▼</span></th>
-                                <th class="th-motorista">MOT. <span class="filter-icon" data-col="6">▼</span></th>
-                                <th class="th-motorista">CONT. <span class="filter-icon" data-col="7">▼</span></th>
-                                <th class="th-painel">ST. PAINEL <span class="filter-icon" data-col="8">▼</span></th>
-                                <th class="th-nf">Q.NF <span class="filter-icon" data-col="9">▼</span></th>
-                                <th class="th-nf">PESO <span class="filter-icon" data-col="10">▼</span></th>
-                                <th class="th-nf">KM <span class="filter-icon" data-col="11">▼</span></th>
-                                <th class="th-regiao">REGIÃO <span class="filter-icon" data-col="12">▼</span></th>
-                                <th class="th-regiao">AJUDANTE <span class="filter-icon" data-col="13">▼</span></th>
-                                <th class="th-dev">DEV <span class="filter-icon" data-col="14">▼</span></th>
-                                <th class="th-dev">REEN <span class="filter-icon" data-col="15">▼</span></th>
-                                <th class="th-dev">P+Q <span class="filter-icon" data-col="16">▼</span></th>
-                                <th class="th-motorista">PARC <span class="filter-icon" data-col="17">▼</span></th>
-                                <th class="th-rota">ST. ROTA <span class="filter-icon" data-col="18">▼</span></th>
-                                <th class="th-rota">PEN <span class="filter-icon" data-col="19">▼</span></th>
-                                <th class="th-rota">REAL <span class="filter-icon" data-col="20">▼</span></th>
-                                <th class="th-app">% APP <span class="filter-icon" data-col="21">▼</span></th>
-                                <th class="th-app">100% <span class="filter-icon" data-col="22">▼</span></th>
-                                <th class="th-dev">PAL. <span class="filter-icon" data-col="23">▼</span></th>
-                                <th class="th-dev">QTD <span class="filter-icon" data-col="24">▼</span></th>
+                                <th>PLACA <i class="ph-fill ph-caret-down filter-icon" data-col="0"></i></th>
+                                <th>TROCA <i class="ph-fill ph-caret-down filter-icon" data-col="1"></i></th>
+                                <th>PERFIL <i class="ph-fill ph-caret-down filter-icon" data-col="2"></i></th>
+                                <th>TIPO <i class="ph-fill ph-caret-down filter-icon" data-col="3"></i></th>
+                                <th>O.C. <i class="ph-fill ph-caret-down filter-icon" data-col="4"></i></th>
+                                <th>TRANS. <i class="ph-fill ph-caret-down filter-icon" data-col="5"></i></th>
+                                <th>MOT. <i class="ph-fill ph-caret-down filter-icon" data-col="6"></i></th>
+                                <th>CONT. <i class="ph-fill ph-caret-down filter-icon" data-col="7"></i></th>
+                                <th>ST. PAINEL <i class="ph-fill ph-caret-down filter-icon" data-col="8"></i></th>
+                                <th>Q.NF <i class="ph-fill ph-caret-down filter-icon" data-col="9"></i></th>
+                                <th>PESO <i class="ph-fill ph-caret-down filter-icon" data-col="10"></i></th>
+                                <th>KM <i class="ph-fill ph-caret-down filter-icon" data-col="11"></i></th>
+                                <th>REGIÃO <i class="ph-fill ph-caret-down filter-icon" data-col="12"></i></th>
+                                <th>AJUDANTE <i class="ph-fill ph-caret-down filter-icon" data-col="13"></i></th>
+                                <th>DEV <i class="ph-fill ph-caret-down filter-icon" data-col="14"></i></th>
+                                <th>REEN <i class="ph-fill ph-caret-down filter-icon" data-col="15"></i></th>
+                                <th>P+Q <i class="ph-fill ph-caret-down filter-icon" data-col="16"></i></th>
+                                <th>PARC <i class="ph-fill ph-caret-down filter-icon" data-col="17"></i></th>
+                                <th>ST. ROTA <i class="ph-fill ph-caret-down filter-icon" data-col="18"></i></th>
+                                <th>PEN <i class="ph-fill ph-caret-down filter-icon" data-col="19"></i></th>
+                                <th>REAL <i class="ph-fill ph-caret-down filter-icon" data-col="20"></i></th>
+                                <th>% APP <i class="ph-fill ph-caret-down filter-icon" data-col="21"></i></th>
+                                <th>100% <i class="ph-fill ph-caret-down filter-icon" data-col="22"></i></th>
+                                <th>PAL. <i class="ph-fill ph-caret-down filter-icon" data-col="23"></i></th>
+                                <th>QTD <i class="ph-fill ph-caret-down filter-icon" data-col="24"></i></th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -277,9 +312,9 @@
 
         <section id="view-notas" class="view-section">
             <header class="header">
-                <h2>🧾 Notas Fiscais <span id="save-indicator-notas" class="save-indicator">Salvo ✓</span></h2>
+                <h2><i class="ph ph-receipt" style="color:var(--accent);"></i> Notas Fiscais <span id="save-indicator-notas" class="save-indicator">Salvo ✓</span></h2>
                 <div class="header-controls">
-                    <button class="btn btn-warning" onclick="abrirModalAcoesLote()">⚡ Ações em Lote</button>
+                    <button class="btn btn-warning" onclick="window.abrirModalAcoesLote()"><i class="ph ph-lightning"></i> Ações em Lote</button>
                     <div style="border-left: 1px solid var(--border-color); height: 30px; margin: 0 5px;"></div>
                     <input type="date" id="notas-data-select">
                     <button class="btn btn-primary" id="btn-carregar-notas">Buscar</button>
@@ -292,30 +327,30 @@
                             <col style="width: 5%;"> <col style="width: 5%;"> <col style="width: 4%;"> <col style="width: 5%;">
                             <col style="width: 4%;"> <col style="width: 3%;"> <col style="width: 10%;"> <col style="width: 7%;">
                             <col style="width: 7%;"> <col style="width: 10%;"> <col style="width: 5%;"> <col style="width: 6%;">
-                            <col style="width: 6%;"> <col style="width: 7%;"> <col style="width: 4%;"> <col style="width: 4%;">
+                            <col style="width: 6%;"> <col style="width: 8%;"> <col style="width: 4%;"> <col style="width: 4%;">
                             <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 4%;">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th class="th-placa">NF <span class="filter-icon" data-col="0">▼</span></th>
-                                <th class="th-placa">VIAG <span class="filter-icon" data-col="1">▼</span></th>
-                                <th class="th-placa">ORD <span class="filter-icon" data-col="2">▼</span></th>
-                                <th class="th-placa">DATA <span class="filter-icon" data-col="3">▼</span></th>
-                                <th class="th-nf">PESO <span class="filter-icon" data-col="4">▼</span></th>
-                                <th class="th-nf">QTD <span class="filter-icon" data-col="5">▼</span></th>
-                                <th class="th-regiao">CLIENTE <span class="filter-icon" data-col="6">▼</span></th>
-                                <th class="th-regiao">CIDADE <span class="filter-icon" data-col="7">▼</span></th>
-                                <th class="th-regiao">BAIRRO <span class="filter-icon" data-col="8">▼</span></th>
-                                <th class="th-regiao">ENDEREÇO <span class="filter-icon" data-col="9">▼</span></th>
-                                <th class="th-placa">PLACA <span class="filter-icon" data-col="10">▼</span></th>
-                                <th class="th-motorista">MOT. <span class="filter-icon" data-col="11">▼</span></th>
-                                <th class="th-motorista">TEL. <span class="filter-icon" data-col="12">▼</span></th>
-                                <th class="th-rota">STATUS <span class="filter-icon" data-col="13">▼</span></th>
-                                <th class="th-dev">CHEG. <span class="filter-icon" data-col="14">▼</span></th>
-                                <th class="th-dev">SAÍDA <span class="filter-icon" data-col="15">▼</span></th>
-                                <th class="th-dev">OBS <span class="filter-icon" data-col="16">▼</span></th>
-                                <th class="th-motorista">NºPARC. <span class="filter-icon" data-col="17">▼</span></th>
-                                <th class="th-app">APP <span class="filter-icon" data-col="18">▼</span></th>
+                                <th>NF <i class="ph-fill ph-caret-down filter-icon" data-col="0"></i></th>
+                                <th>VIAG <i class="ph-fill ph-caret-down filter-icon" data-col="1"></i></th>
+                                <th>ORD <i class="ph-fill ph-caret-down filter-icon" data-col="2"></i></th>
+                                <th>DATA <i class="ph-fill ph-caret-down filter-icon" data-col="3"></i></th>
+                                <th>PESO <i class="ph-fill ph-caret-down filter-icon" data-col="4"></i></th>
+                                <th>QTD <i class="ph-fill ph-caret-down filter-icon" data-col="5"></i></th>
+                                <th>CLIENTE <i class="ph-fill ph-caret-down filter-icon" data-col="6"></i></th>
+                                <th>CIDADE <i class="ph-fill ph-caret-down filter-icon" data-col="7"></i></th>
+                                <th>BAIRRO <i class="ph-fill ph-caret-down filter-icon" data-col="8"></i></th>
+                                <th>ENDEREÇO <i class="ph-fill ph-caret-down filter-icon" data-col="9"></i></th>
+                                <th>PLACA <i class="ph-fill ph-caret-down filter-icon" data-col="10"></i></th>
+                                <th>MOT. <i class="ph-fill ph-caret-down filter-icon" data-col="11"></i></th>
+                                <th>TEL. <i class="ph-fill ph-caret-down filter-icon" data-col="12"></i></th>
+                                <th>STATUS <i class="ph-fill ph-caret-down filter-icon" data-col="13"></i></th>
+                                <th>CHEG. <i class="ph-fill ph-caret-down filter-icon" data-col="14"></i></th>
+                                <th>SAÍDA <i class="ph-fill ph-caret-down filter-icon" data-col="15"></i></th>
+                                <th>OBS <i class="ph-fill ph-caret-down filter-icon" data-col="16"></i></th>
+                                <th>NºPARC. <i class="ph-fill ph-caret-down filter-icon" data-col="17"></i></th>
+                                <th>APP <i class="ph-fill ph-caret-down filter-icon" data-col="18"></i></th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -333,8 +368,10 @@
 
         <section id="view-canhotos" class="view-section">
             <header class="header">
-                <h2>📋 Gestão de Canhotos (Auditoria de Anexos)</h2>
+                <h2><i class="ph ph-files" style="color:var(--accent);"></i> Gestão de Canhotos (Auditoria de Anexos)</h2>
                 <div class="header-controls">
+                    <button class="btn btn-success" onclick="window.abrirModalExportarCanhotos()"><i class="ph ph-file-xls"></i> Exportar Excel</button>
+                    <div style="border-left: 1px solid var(--border-color); height: 30px; margin: 0 5px;"></div>
                     <input type="month" id="canhotos-month-select">
                     <button class="btn btn-primary" id="btn-carregar-canhotos">Buscar Mês</button>
                 </div>
@@ -356,22 +393,124 @@
             </div>
         </section>
 
+        <section id="view-ocorrencias" class="view-section">
+            <header class="header">
+                <h2><i class="ph ph-warning" style="color:var(--danger);"></i> Gerador de Ocorrências</h2>
+            </header>
+            <div class="content-container" style="flex-direction: row; gap: 20px;">
+                <div style="flex: 1; background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                    <div style="display:flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="date" id="oco-data" style="flex:1;">
+                        <button class="btn btn-primary" id="btn-buscar-oco">Buscar Frota</button>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Veículo (Placa):</label>
+                        <select id="oco-placa" style="width:100%; padding: 8px;"><option value="">-- Selecione a Data Primeiro --</option></select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Notas Fiscais (Segure CTRL para selecionar várias):</label>
+                        <select id="oco-nota" multiple style="width:100%; border: 1px solid var(--border-color); border-radius: 6px;"></select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Motivo da Ocorrência:</label>
+                        <input type="text" id="oco-motivo" placeholder="Ex: Produto Descongelado, Cliente ausente..." style="width:100%;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Ação Corretiva / Observação:</label>
+                        <textarea id="oco-obs" rows="3" style="width:100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-panel); color: var(--text-main); font-family: inherit; font-size: 0.85rem;" placeholder="Detalhes do ocorrido..."></textarea>
+                    </div>
+                    <button class="btn btn-success" id="btn-gerar-texto-oco" style="width:100%; padding: 12px;"><i class="ph ph-file-text"></i> Gerar Texto para E-mail</button>
+                </div>
+
+                <div style="flex: 1; background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; box-shadow: var(--shadow-sm);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 10px; align-items: center;">
+                        <h3 style="font-size: 1rem; color: var(--text-main); font-weight: 700;">Texto Gerado</h3>
+                        <button class="btn btn-sm btn-secondary" id="btn-copy-oco"><i class="ph ph-copy"></i> Copiar Texto</button>
+                    </div>
+                    <textarea id="oco-resultado" style="flex:1; width:100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-main); color: var(--text-main); font-family: monospace; font-size: 13px; resize: none;" readonly placeholder="Preencha os dados e clique em 'Gerar Texto' para visualizar o modelo de e-mail aqui."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-prestacao" class="view-section">
+            <header class="header">
+                <h2><i class="ph ph-currency-circle-dollar" style="color:var(--success);"></i> Prestação de Contas</h2>
+            </header>
+            <div class="content-container">
+                <div style="background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                    <div style="display:flex; gap:15px; margin-bottom:15px; align-items:flex-end;">
+                        <div style="flex:1;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Data da Operação:</label>
+                            <input type="date" id="pc-data" style="width:100%;">
+                        </div>
+                        <button class="btn btn-primary" id="btn-buscar-pc-placas" style="height:35px;"><i class="ph ph-magnifying-glass"></i> Carregar Veículos</button>
+                    </div>
+                    <div style="display:flex; gap:15px; margin-bottom:15px; flex-wrap: wrap;">
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Veículo (Placa):</label>
+                            <select id="pc-placa" style="width:100%; padding: 8px;"><option value="">Selecione a Data Primeiro</option></select>
+                        </div>
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Ajudante (Opcional):</label>
+                            <input type="text" id="pc-nome-ajudante" placeholder="Nome do ajudante" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Valor da Carga (R$):</label>
+                            <input type="number" id="pc-valor-carga" placeholder="Ex: 15000.00" style="width:100%;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap: wrap;">
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Descarga (R$):</label>
+                            <input type="number" id="pc-descarga" placeholder="Ex: 50.00" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Pedágio (R$):</label>
+                            <input type="number" id="pc-pedagio" placeholder="Ex: 25.50" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width: 150px;">
+                            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">2º Ajudante (R$):</label>
+                            <input type="number" id="pc-ajudante" placeholder="Ex: 80.00" style="width:100%;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Observações / Ocorrências:</label>
+                        <textarea id="pc-observacoes" rows="2" style="width:100%;" placeholder="Detalhes para o acerto..."></textarea>
+                    </div>
+                    <div style="display:flex; gap:15px;">
+                        <button class="btn btn-success" id="btn-pc-pdf" style="flex:1; padding:12px;"><i class="ph ph-file-pdf"></i> Gerar PDF / Imprimir</button>
+                        <button class="btn btn-primary" id="btn-pc-excel" style="flex:1; padding:12px;"><i class="ph ph-file-xls"></i> Exportar Dados (Excel)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="view-montar-painel" class="view-section">
-            <header class="header"><h2>🛠️ Montar Painel Diário</h2></header>
+            <header class="header">
+                <h2><i class="ph ph-wrench" style="color:var(--accent);"></i> Montar Painel Diário</h2>
+                <div class="header-controls">
+                    <button class="btn btn-danger" onclick="window.abrirModalExcluirPeriodo('painel')"><i class="ph ph-trash"></i> Excluir Período</button>
+                </div>
+            </header>
             <div class="content-container" style="justify-content: center; align-items: center; background: var(--bg-panel); border-radius: 8px; box-shadow: var(--shadow-sm);">
-                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('manual')">Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorPainel('importar')">Importar Excel</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('editar')">Editar Dia</button></div>
+                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('manual')"><i class="ph ph-hand-pointing" style="font-size:1.5rem;"></i> Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorPainel('importar')"><i class="ph ph-file-xls" style="font-size:1.5rem;"></i> Importar Excel</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('editar')"><i class="ph ph-pencil-simple" style="font-size:1.5rem;"></i> Editar Dia</button></div>
             </div>
         </section>
 
         <section id="view-montar-notas" class="view-section">
-            <header class="header"><h2>⚙️ Montar Notas Fiscais</h2></header>
+            <header class="header">
+                <h2><i class="ph ph-gear" style="color:var(--accent);"></i> Montar Notas Fiscais</h2>
+                <div class="header-controls">
+                    <button class="btn btn-danger" onclick="window.abrirModalExcluirPeriodo('notas')"><i class="ph ph-trash"></i> Excluir Período</button>
+                </div>
+            </header>
             <div class="content-container" style="justify-content: center; align-items: center; background: var(--bg-panel); border-radius: 8px; box-shadow: var(--shadow-sm);">
-                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('manual')">Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorNotas('importar')">Importar Base</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('editar')">Editar Dia</button></div>
+                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('manual')"><i class="ph ph-hand-pointing" style="font-size:1.5rem;"></i> Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorNotas('importar')"><i class="ph ph-file-xls" style="font-size:1.5rem;"></i> Importar Base</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('editar')"><i class="ph ph-pencil-simple" style="font-size:1.5rem;"></i> Editar Dia</button></div>
             </div>
         </section>
 
         <section id="view-placas" class="view-section">
-            <header class="header"><h2>🚚 Frota</h2></header>
+            <header class="header"><h2><i class="ph ph-truck" style="color:var(--accent);"></i> Frota</h2></header>
             <div class="content-container">
                 <div class="controls-bar" style="justify-content: space-between;">
                     <div style="display: flex; gap: 10px;"><button class="btn btn-primary" onclick="abrirModalPlaca('')">+ Adicionar Veículo</button><button class="btn btn-secondary" onclick="document.getElementById('import-placas-file').click()">Importar Planilha</button><input type="file" id="import-placas-file" accept=".xlsx, .xls, .csv" style="display: none;"></div>
@@ -382,6 +521,68 @@
         </section>
 
         <section id="view-dashboard" class="view-section"><div class="content-container" style="background:var(--bg-panel); border-radius: 8px; text-align:center; padding:50px; font-weight: 600; color: var(--text-muted); font-size: 1.1rem;">Dashboard em construção...</div></section>
+        
+        <section id="print-area-wrapper">
+            <div class="print-header-box">
+                <h2>RELATÓRIO DE PRESTAÇÃO DE CONTAS</h2>
+                <h3>Icaphi Transportes LTDA</h3>
+            </div>
+            
+            <div class="print-grid">
+                <div class="print-box">
+                    <div class="print-box-title">INFORMAÇÕES DA ROTA</div>
+                    <div class="print-box-content">
+                        <div class="print-row"><span>Data da Operação:</span> <strong id="print-data"></strong></div>
+                        <div class="print-row"><span>Veículo (Placa):</span> <strong id="print-placa"></strong></div>
+                        <div class="print-row"><span>Motorista:</span> <strong id="print-motorista"></strong></div>
+                        <div class="print-row"><span>Ajudante:</span> <strong id="print-ajudante"></strong></div>
+                    </div>
+                </div>
+
+                <div class="print-box">
+                    <div class="print-box-title">TOTAIS DA ROTA</div>
+                    <div class="print-box-content">
+                        <div class="print-row"><span>Total de Entregas (NFs):</span> <strong id="print-total-nfs"></strong></div>
+                        <div class="print-row"><span>Total Devolução (NFs):</span> <strong id="print-total-dev"></strong></div>
+                        <div class="print-row"><span>Total Reentrega (NFs):</span> <strong id="print-total-reen"></strong></div>
+                        <div class="print-row"><span>Peso Total:</span> <strong id="print-peso"></strong></div>
+                        <div class="print-row"><span>Valor da Carga:</span> <strong id="print-valor-carga"></strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="print-box" style="margin-bottom: 15px;">
+                <div class="print-box-title">DESPESAS EXTRAS</div>
+                <div class="print-box-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <div class="print-row"><span>Descarga:</span> <strong id="print-v-descarga"></strong></div>
+                        <div class="print-row"><span>Pedágio:</span> <strong id="print-v-pedagio"></strong></div>
+                        <div class="print-row"><span>2º Ajudante:</span> <strong id="print-v-ajudante"></strong></div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 20px;">
+                        <span style="font-size: 14px; margin-right: 10px;"><strong>TOTAL DESPESAS:</strong></span> 
+                        <strong id="print-v-total" style="font-size: 16px;"></strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="print-box print-obs-box">
+                <div class="print-box-title">OCORRÊNCIAS / OBSERVAÇÕES</div>
+                <div class="print-obs-content" id="print-obs"></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th style="width: 12%;">NF</th><th style="width: 30%;">CLIENTE</th><th style="width: 15%;">CIDADE</th><th style="width: 18%;">BAIRRO</th><th style="width: 10%;">PESO</th><th style="width: 15%;">STATUS</th></tr>
+                </thead>
+                <tbody id="print-table-body"></tbody>
+            </table>
+
+            <div class="print-signatures">
+                <div class="print-sig-box">Assinatura do Motorista</div>
+                <div class="print-sig-box">Acerto / Conferência (Icaphi)</div>
+            </div>
+        </section>
     </main>
 
     <div class="modal-overlay" id="modal-acoes-lote">
@@ -389,10 +590,13 @@
             <div class="modal-header"><h3>⚡ Ações em Lote (Notas)</h3><button class="btn-close" onclick="document.getElementById('modal-acoes-lote').classList.remove('active')">×</button></div>
             <div class="modal-body">
                 <div style="background: rgba(16,185,129,0.1); border: 1px solid var(--success); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                    <h4 style="color: var(--success); font-size: 13px; margin-bottom: 5px;">Poder 1: Automação Inteligente</h4><p style="font-size: 11.5px; color: var(--text-main); margin-bottom: 12px; line-height: 1.4;">Varre todas as notas e muda para <b>ENTREGUE</b> aquelas que possuírem qualquer anexo.</p><button class="btn btn-success" style="width: 100%;" onclick="executarLoteAppEntregue()">Marcar como ENTREGUE por Anexo</button>
+                    <h4 style="color: var(--success); font-size: 13px; margin-bottom: 5px;">Poder 1: Automação Inteligente</h4><p style="font-size: 11.5px; color: var(--text-main); margin-bottom: 12px; line-height: 1.4;">Varre todas as notas e muda para <b>ENTREGUE</b> aquelas que possuírem qualquer anexo.</p>
+                    <button class="btn btn-success" style="width: 100%;" onclick="window.executarLoteAppEntregue()">Marcar como ENTREGUE por Anexo</button>
                 </div><hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 5px 0;">
-                <div style="background: var(--bg-table-header); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
-                    <h4 style="color: var(--text-main); font-size: 13px; margin-bottom: 5px;">Poder 2: Alteração em Massa</h4><p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">Muda o status de TODAS as notas que estão <b>visíveis na tela neste momento</b>.</p><select id="select-lote-status" style="width: 100%; margin-bottom: 12px; font-weight: 600; background: var(--bg-panel); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;"><option value="">-- Selecione o Status --</option><option value="AGUARDANDO">AGUARDANDO</option><option value="DESCARREGANDO">DESCARREGANDO</option><option value="DEVOLUÇÃO">DEVOLUÇÃO</option><option value="ENTREGUE">ENTREGUE</option><option value="NÃO EMBARCADA">NÃO EMBARCADA</option><option value="PERNOITE">PERNOITE</option><option value="REENTREGA">REENTREGA</option><option value="TRAFEGANDO">TRAFEGANDO</option><option value="PARADA">PARADA</option><option value="SINISTRADA">SINISTRADA</option></select><button class="btn btn-primary" style="width: 100%;" onclick="executarLoteStatusVisiveis()">Aplicar Status na Tela</button>
+                <div style="background: var(--bg-table-row-alt); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--text-main); font-size: 13px; margin-bottom: 5px;">Poder 2: Alteração em Massa</h4><p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">Muda o status de TODAS as notas que estão <b>visíveis na tela neste momento</b>.</p>
+                    <select id="select-lote-status" style="width: 100%; margin-bottom: 12px; font-weight: 600; background: var(--bg-panel); color: var(--text-main); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;"><option value="">-- Selecione o Status --</option><option value="AGUARDANDO">AGUARDANDO</option><option value="DESCARREGANDO">DESCARREGANDO</option><option value="DEVOLUÇÃO">DEVOLUÇÃO</option><option value="ENTREGUE">ENTREGUE</option><option value="NÃO EMBARCADA">NÃO EMBARCADA</option><option value="PERNOITE">PERNOITE</option><option value="REENTREGA">REENTREGA</option><option value="TRAFEGANDO">TRAFEGANDO</option><option value="PARADA">PARADA</option><option value="SINISTRADA">SINISTRADA</option></select>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="window.executarLoteStatusVisiveis()">Aplicar Status na Tela</button>
                 </div>
             </div>
         </div>
@@ -401,7 +605,68 @@
     <div class="modal-overlay" id="modal-atualizar-apps">
         <div class="modal-content" style="width: 420px;">
             <div class="modal-header"><h3>📱 Atualizar Apps</h3><button class="btn-close" onclick="document.getElementById('modal-atualizar-apps').classList.remove('active')">×</button></div>
-            <div class="modal-body"><p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">Selecione a data da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema preencherá a coluna APP automaticamente.</p><div style="margin-top: 10px; background: var(--bg-table-header); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);"><label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px;">Data da Operação:</label><input type="date" id="apps-data-select" style="width:100%;"></div><button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;" onclick="document.getElementById('file-import-apps').click()">Importar Planilha de Anexos</button><input type="file" id="file-import-apps" accept=".xlsx, .xls, .csv" style="display: none;"></div>
+            <div class="modal-body"><p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">Selecione a data da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema preencherá a coluna APP automaticamente.</p><div style="margin-top: 10px; background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);"><label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px;">Data da Operação:</label><input type="date" id="apps-data-select" style="width:100%;"></div><button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;" onclick="document.getElementById('file-import-apps').click()"><i class="ph ph-upload-simple"></i> Importar Planilha de Anexos</button><input type="file" id="file-import-apps" accept=".xlsx, .xls, .csv" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-exportar-canhotos">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header"><h3><i class="ph ph-file-xls"></i> Exportar Pendências</h3><button class="btn-close" onclick="document.getElementById('modal-exportar-canhotos').classList.remove('active')">×</button></div>
+            <div class="modal-body">
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">Exporte a relação de todas as notas fiscais ENTREGUES que não possuem anexo no app.</p>
+                <div style="background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 5px;">Mês Alvo:</label>
+                        <input type="month" id="export-canhotos-month" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            <input type="checkbox" id="export-canhotos-todos">
+                            Exportar Todo o Histórico (Ignorar mês)
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-success" style="width:100%; padding:12px; margin-top:15px;" onclick="window.exportarCanhotosPendentes()"><i class="ph ph-download-simple"></i> Baixar Planilha</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-excluir-periodo">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header"><h3><i class="ph ph-trash" style="color:var(--danger);"></i> Excluir Período</h3><button class="btn-close" onclick="document.getElementById('modal-excluir-periodo').classList.remove('active')">×</button></div>
+            <div class="modal-body">
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">Atenção: Esta ação apagará definitivamente as informações do banco de dados no intervalo selecionado.</p>
+                <input type="hidden" id="exc-tipo">
+                <div style="background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 5px;">Data Início:</label>
+                        <input type="date" id="exc-data-inicio" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 5px;">Data Fim:</label>
+                        <input type="date" id="exc-data-fim" style="width:100%;">
+                    </div>
+                </div>
+                <button class="btn btn-danger" id="btn-confirmar-exclusao" style="width:100%; padding:12px; margin-top:15px;">Confirmar Exclusão</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-config">
+        <div class="modal-content" style="width: 350px;">
+            <div class="modal-header"><h3>⚙️ Configurações</h3><button class="btn-close" onclick="document.getElementById('modal-config').classList.remove('active')">×</button></div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                    <div>
+                        <strong style="display: block; font-size: 14px;">Modo Lite</strong>
+                        <span style="font-size: 11px; color: var(--text-muted);">Desativa animações para PCs lentos.</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-lite-mode">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -475,7 +740,7 @@
     <div class="modal-overlay" id="modal-detalhes">
         <div class="modal-content" style="width: 85%; max-height: 85%;">
             <div class="modal-header"><h3 id="detalhes-titulo" style="font-weight: 800; font-size: 1.2rem;">Detalhes</h3><button class="btn-close" onclick="document.getElementById('modal-detalhes').classList.remove('active')">×</button></div>
-            <div style="background: var(--bg-table-header); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px; font-weight: 700;" id="detalhes-resumo"></div>
+            <div style="background: var(--bg-table-row-alt); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px; font-weight: 700;" id="detalhes-resumo"></div>
             <div class="modal-body" style="padding: 15px; overflow: hidden; display: flex; flex-direction: column;">
                 <div class="table-wrapper" style="box-shadow: none;">
                     <table id="tabela-detalhes" style="min-width: 800px;"><thead id="detalhes-thead"></thead><tbody id="detalhes-tbody"></tbody></table>
@@ -484,7 +749,6 @@
         </div>
     </div>
 
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -492,9 +756,14 @@
         const app = initializeApp({ apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y", authDomain: "monitoramento-bc533.firebaseapp.com", projectId: "monitoramento-bc533", storageBucket: "monitoramento-bc533.firebasestorage.app", messagingSenderId: "70745510419", appId: "1:70745510419:web:7c21a45dcff85c1f8de5e6" });
         const db = getFirestore(app);
 
-        let placasCache = {}; let motoristasHistoricoCache = {};
-        window.notasOperacaoAtiva = []; window.dataOperacaoAtiva = "";
+        // Separação de Caches para garantir independência entre as telas
+        window.placasCache = {}; 
+        window.motoristasHistoricoCache = {};
+        window.notasOperacaoAtiva = []; 
+        window.dataOperacaoAtiva = "";
         window.canhotosCache = {};
+        window.ocoNotasDataCache = [];
+        window.pcNotasCache = [];
 
         const loader = document.getElementById('loader'); const showLoader = () => loader.style.display = 'flex'; const hideLoader = () => loader.style.display = 'none';
         
@@ -506,11 +775,31 @@
         function formatarDataBR(dataIso) {
             if(!dataIso) return "";
             const partes = dataIso.split('-');
+            if(partes.length < 3) return dataIso;
             const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             return `${partes[2]} ${meses[parseInt(partes[1])-1]}`;
         }
 
-        // ====== ENGINE DE CORES INTELIGENTES (SUPORTE AO DARK MODE) ======
+        function excelToDateStr(excelDate) {
+            if (!excelDate) return "";
+            if (!isNaN(excelDate) && typeof excelDate === 'number') {
+                const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = date.getFullYear();
+                return `${y}-${m}-${d}`;
+            }
+            return excelDate;
+        }
+
+        function formataDataParaEmail(dataIso) {
+            if(!dataIso) return "";
+            const partes = dataIso.split('-');
+            if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            return dataIso;
+        }
+
         const getStRotaStyle = (status) => {
             const s = trimUpper(status);
             switch(s) {
@@ -526,7 +815,7 @@
                 case 'DEVOLUÇÃO': return 'background: var(--st-dev-bg); color: var(--st-dev-txt); border: 1px solid var(--st-dev-bd);'; 
                 case 'REENTREGA': return 'background: var(--st-reen-bg); color: var(--st-reen-txt); border: 1px solid var(--st-reen-bd);'; 
                 case 'ENTREGUE': case 'REALIZADA': return 'background: var(--st-entregue-bg); color: var(--st-entregue-txt); border: 1px solid var(--st-entregue-bd);'; 
-                default: return 'background: var(--bg-table-header); color: var(--text-muted); border: 1px solid var(--border-color);';
+                default: return 'background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);';
             }
         };
 
@@ -552,19 +841,393 @@
             return `<span style="${getStRotaStyle(status)} padding:4px 8px; border-radius:6px; font-weight:700; font-size:9.5px; letter-spacing:0.3px; display:inline-block; box-shadow: var(--shadow-sm);">${status}</span>`;
         };
 
-        // ====== THEME TOGGLE (DARK MODE) ======
+        // ====== MODAIS GLOBAIS ======
+        window.abrirModalAtualizarApps = () => { document.getElementById('apps-data-select').value = document.getElementById('notas-data-select').value || hoje; document.getElementById('modal-atualizar-apps').classList.add('active'); };
+        window.abrirModalAcoesLote = () => { const d = document.getElementById('notas-data-select').value; if(!d) return alert("Selecione a data e busque as notas primeiro."); document.getElementById('modal-acoes-lote').classList.add('active'); };
+        window.abrirModalConfig = () => { document.getElementById('modal-config').classList.add('active'); };
+        window.abrirModalExportarCanhotos = () => { document.getElementById('export-canhotos-month').value = document.getElementById('canhotos-month-select').value; document.getElementById('modal-exportar-canhotos').classList.add('active'); };
+        
+        window.abrirModalExcluirPeriodo = (tipo) => { 
+            document.getElementById('exc-tipo').value = tipo;
+            document.getElementById('modal-excluir-periodo').classList.add('active');
+        };
+
+        // ====== LÓGICA EXCLUIR PERÍODO ======
+        document.getElementById('btn-confirmar-exclusao').addEventListener('click', async () => {
+            const inicio = document.getElementById('exc-data-inicio').value;
+            const fim = document.getElementById('exc-data-fim').value;
+            const tipo = document.getElementById('exc-tipo').value;
+            
+            if(!inicio || !fim) return alert("Por favor, selecione as datas de início e fim.");
+            
+            const nomeModulo = tipo === 'notas' ? 'Notas Fiscais' : 'Painel Diário';
+            if(confirm(`Tem certeza ABSOLUTA que deseja EXCLUIR TODOS OS DADOS de ${nomeModulo} do dia ${formatarDataBR(inicio)} até ${formatarDataBR(fim)}?\n\nEsta ação não pode ser desfeita.`)) {
+                showLoader();
+                try {
+                    let currentDate = new Date(inicio);
+                    const endDate = new Date(fim);
+                    const collectionName = tipo === 'notas' ? 'notas_fiscais_diario' : 'painel_diario';
+
+                    while(currentDate <= endDate) {
+                        const dateStr = currentDate.toISOString().split('T')[0];
+                        await deleteDoc(doc(db, collectionName, dateStr));
+                        currentDate.setUTCDate(currentDate.getUTCDate() + 1); // Avança 1 dia UTC
+                    }
+                    alert(`${nomeModulo}: Período excluído com sucesso!`);
+                    document.getElementById('modal-excluir-periodo').classList.remove('active');
+                    
+                    if(tipo === 'notas' && document.getElementById('editor-notas-data').value >= inicio && document.getElementById('editor-notas-data').value <= fim) {
+                        document.querySelector('#tabela-editor-notas tbody').innerHTML = "";
+                    } else if (tipo === 'painel' && document.getElementById('editor-painel-data').value >= inicio && document.getElementById('editor-painel-data').value <= fim) {
+                        document.querySelector('#tabela-editor-painel tbody').innerHTML = "";
+                    }
+
+                } catch(e) {
+                    console.error(e);
+                    alert("Erro ao excluir período. Tente novamente.");
+                }
+                hideLoader();
+            }
+        });
+
+        // ====== LÓGICA OCORRÊNCIAS ======
+        document.getElementById('btn-buscar-oco').addEventListener('click', async () => {
+            const dataSel = document.getElementById('oco-data').value; if(!dataSel) return;
+            showLoader();
+            try {
+                const snap = await getDoc(doc(db, "notas_fiscais_diario", dataSel));
+                if(snap.exists()) {
+                    window.ocoNotasDataCache = snap.data().notas || [];
+                    const placasUnicas = [...new Set(window.ocoNotasDataCache.map(n => n.placa))].filter(p => p);
+                    const selPlaca = document.getElementById('oco-placa');
+                    selPlaca.innerHTML = `<option value="">-- Selecione o Veículo --</option>` + placasUnicas.map(p => `<option value="${p}">${p}</option>`).join('');
+                    document.getElementById('oco-nota').innerHTML = ``;
+                } else {
+                    alert("Não existem notas importadas para a data selecionada.");
+                    window.ocoNotasDataCache = [];
+                }
+            } catch(e) { console.error("Erro na busca de ocorrências:", e); }
+            hideLoader();
+        });
+
+        document.getElementById('oco-placa').addEventListener('change', (e) => {
+            const placa = e.target.value;
+            const notasDaPlaca = window.ocoNotasDataCache.filter(n => n.placa === placa);
+            const selNota = document.getElementById('oco-nota');
+            selNota.innerHTML = notasDaPlaca.map(n => `<option value="${n.nf}">${cleanNF(n.nf)} - ${n.cliente}</option>`).join('');
+        });
+
+        document.getElementById('btn-gerar-texto-oco').addEventListener('click', () => {
+            const selectNotas = document.getElementById('oco-nota');
+            const notasSelecionadas = Array.from(selectNotas.selectedOptions).map(opt => opt.value);
+            if(notasSelecionadas.length === 0) return alert("Por favor, selecione ao menos uma nota fiscal.");
+            
+            const notasArray = window.ocoNotasDataCache.filter(n => notasSelecionadas.includes(n.nf));
+            const notaBase = notasArray[0];
+            
+            let arrayNFs = []; let somaPeso = 0; let somaQtde = 0;
+            notasArray.forEach(n => {
+                arrayNFs.push(cleanNF(n.nf));
+                somaPeso += parseFloat(n.peso) || 0;
+                somaQtde += parseInt(n.qtde) || 0;
+            });
+
+            const motivo = document.getElementById('oco-motivo').value.trim() || (notaBase.status ? notaBase.status : "Não informado");
+            const obs = document.getElementById('oco-obs').value.trim() || "Nenhuma observação informada.";
+
+            const hora = new Date().getHours();
+            let saudacao = "Bom Dia!";
+            if(hora >= 12 && hora < 18) saudacao = "Boa Tarde!";
+            else if(hora >= 18) saudacao = "Boa Noite!";
+
+            const dataOrigem = notaBase.data_nf || document.getElementById('oco-data').value;
+            const dataFormatada = formataDataParaEmail(dataOrigem);
+            const dataCarregamento = formataDataParaEmail(document.getElementById('oco-data').value);
+
+            const repFormatado = notaBase.repres || "0";
+            const supFormatado = notaBase.sup || "";
+
+            const emailText = `${saudacao}\nPARA CIÊNCIA DE TODOS! \nAPÓS VINTE MINUTOS CONTANDO DO DISPARO DESSE EMAIL, CASO NÃO OCORRA TRATATIVA DA OCORRÊNCIA O VEÍCULO SEGUIRÁ ROTA.\nCLIENTE: ${notaBase.cliente}\nCIDADE: ${notaBase.cidade}\nNF: ${arrayNFs.join(', ')}\nPESO: ${formatNumber(somaPeso)}\nVOLUME: ${somaQtde}\nDATA NF: ${dataFormatada}\nENTREGAS: ${somaQtde}\nDATA CARREGAMENTO: ${dataCarregamento}\nVALOR: \nRCA: ${repFormatado}\nCOORDENADOR: @${supFormatado}\nOCORRÊNCIA: ${motivo} - ${obs}\n`;
+
+            document.getElementById('oco-resultado').value = emailText;
+        });
+
+        document.getElementById('btn-copy-oco').addEventListener('click', () => {
+            const text = document.getElementById('oco-resultado').value;
+            if(!text) return; navigator.clipboard.writeText(text);
+            const btn = document.getElementById('btn-copy-oco'); const original = btn.innerHTML;
+            btn.innerHTML = "<i class='ph ph-check-circle'></i> Copiado!";
+            setTimeout(() => { btn.innerHTML = original; }, 2000);
+        });
+
+        // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
+        document.getElementById('btn-buscar-pc-placas').addEventListener('click', async () => {
+            const data = document.getElementById('pc-data').value;
+            if(!data) return alert("Selecione a data da operação.");
+            showLoader();
+            try {
+                const sNotas = await getDoc(doc(db, "notas_fiscais_diario", data));
+                window.pcNotasCache = sNotas.exists() ? sNotas.data().notas : [];
+
+                const placas = [...new Set(window.pcNotasCache.map(n => n.placa))].filter(p => p);
+                document.getElementById('pc-placa').innerHTML = `<option value="">Selecione o Veículo</option>` + placas.map(p => `<option value="${p}">${p}</option>`).join('');
+                
+                if(placas.length === 0) alert("Nenhuma placa com notas encontrada nesta data.");
+            } catch(e) { console.error("Erro buscar Placas PC", e); }
+            hideLoader();
+        });
+
+        document.getElementById('btn-pc-pdf').addEventListener('click', () => {
+            const placa = document.getElementById('pc-placa').value;
+            if(!placa) return alert("Selecione a placa para gerar o relatório.");
+            const notas = window.pcNotasCache.filter(n => n.placa === placa);
+            
+            document.getElementById('print-data').innerText = formatarDataBR(document.getElementById('pc-data').value);
+            document.getElementById('print-placa').innerText = placa;
+            
+            const motoristaRef = notas.find(n => n.motorista) || notas[0];
+            document.getElementById('print-motorista').innerText = motoristaRef ? motoristaRef.motorista : "Não informado";
+            
+            const ajudante = document.getElementById('pc-nome-ajudante').value || "Não informado";
+            document.getElementById('print-ajudante').innerText = ajudante.toUpperCase();
+
+            const totalEntregas = notas.length;
+            const totalDevolucao = notas.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+            const totalReentrega = notas.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+            const pesoTotal = notas.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+            
+            document.getElementById('print-total-nfs').innerText = totalEntregas;
+            document.getElementById('print-total-dev').innerText = totalDevolucao;
+            document.getElementById('print-total-reen').innerText = totalReentrega;
+            document.getElementById('print-peso').innerText = formatNumber(pesoTotal) + " kg";
+            
+            const valorCargaNum = parseFloat(document.getElementById('pc-valor-carga').value);
+            document.getElementById('print-valor-carga').innerText = isNaN(valorCargaNum) ? "R$ 0.00" : "R$ " + valorCargaNum.toFixed(2);
+
+            const valDescarga = parseFloat(document.getElementById('pc-descarga').value) || 0;
+            const valPedagio = parseFloat(document.getElementById('pc-pedagio').value) || 0;
+            const valAjudante = parseFloat(document.getElementById('pc-ajudante').value) || 0;
+            const valTotal = valDescarga + valPedagio + valAjudante;
+
+            document.getElementById('print-v-descarga').innerText = "R$ " + valDescarga.toFixed(2);
+            document.getElementById('print-v-pedagio').innerText = "R$ " + valPedagio.toFixed(2);
+            document.getElementById('print-v-ajudante').innerText = "R$ " + valAjudante.toFixed(2);
+            document.getElementById('print-v-total').innerText = "R$ " + valTotal.toFixed(2);
+
+            const obsText = document.getElementById('pc-observacoes').value || "Nenhuma ocorrência registrada.";
+            document.getElementById('print-obs').innerText = obsText;
+
+            let tbodyHtml = "";
+            notas.forEach(n => {
+                tbodyHtml += `<tr><td style="font-weight:bold;">${cleanNF(n.nf)}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td>${formatNumber(n.peso)}</td><td style="font-weight:bold;">${n.status}</td></tr>`;
+            });
+            document.getElementById('print-table-body').innerHTML = tbodyHtml;
+
+            window.print();
+        });
+
+        document.getElementById('btn-pc-excel').addEventListener('click', () => {
+            const placa = document.getElementById('pc-placa').value;
+            if(!placa) return alert("Selecione a placa para exportar.");
+            const notas = window.pcNotasCache.filter(n => n.placa === placa);
+            if(notas.length === 0) return alert("Nenhuma nota encontrada para esta placa.");
+
+            const exportData = notas.map(n => ({
+                "NF": cleanNF(n.nf), "VIAGEM": n.viagem, "ORDEM": n.ordem, "DATA": n.data_nf,
+                "PESO": formatNumber(n.peso), "QTDE": n.qtde, "CLIENTE": n.cliente, "CIDADE": n.cidade,
+                "BAIRRO": n.bairro, "ENDEREÇO": n.endereco, "PLACA": n.placa, "MOTORISTA": n.motorista,
+                "TELEFONE": n.telefone, "STATUS": n.status, "CHEGADA": n.chegada, "SAÍDA": n.saida,
+                "OBS": n.obs, "Nº PARCIAL": n.parcial, "APP": n.app
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Prestacao_Contas");
+            XLSX.writeFile(wb, `Prestacao_${placa}_${document.getElementById('pc-data').value}.xlsx`);
+        });
+
+        // ====== LÓGICA EXPORTAR CANHOTOS PENDENTES ======
+        window.exportarCanhotosPendentes = async () => {
+            const checkTodos = document.getElementById('export-canhotos-todos').checked;
+            const mes = document.getElementById('export-canhotos-month').value;
+            if(!checkTodos && !mes) return alert("Selecione um mês ou marque 'Todo o Histórico'.");
+
+            showLoader();
+            try {
+                const snap = await getDocs(collection(db, "notas_fiscais_diario"));
+                let exportData = [];
+
+                snap.forEach(doc => {
+                    const dataStr = doc.id;
+                    if(checkTodos || dataStr.startsWith(mes)) {
+                        const notas = doc.data().notas || [];
+                        let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
+                        let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
+
+                        pendentes.forEach(p => {
+                            exportData.push({
+                                "Data Operacao": formatarDataBR(dataStr),
+                                "Placa": p.placa,
+                                "Motorista": p.motorista,
+                                "NF": cleanNF(p.nf),
+                                "Cliente": p.cliente,
+                                "Peso": formatNumber(p.peso),
+                                "Status": p.status,
+                                "App_Atual": p.app || "VAZIO"
+                            });
+                        });
+                    }
+                });
+
+                if(exportData.length === 0) {
+                    alert("Nenhuma pendência de canhotos encontrada para o filtro selecionado.");
+                } else {
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Pendencias_App");
+                    XLSX.writeFile(wb, `Pendencias_Canhotos_${checkTodos ? 'Historico_Completo' : mes}.xlsx`);
+                }
+            } catch(e) { console.error(e); alert("Erro ao exportar. Tente novamente."); }
+            hideLoader();
+            document.getElementById('modal-exportar-canhotos').classList.remove('active');
+        };
+
+        // ====== LÓGICA ATUALIZAR APPS ======
+        document.getElementById('file-import-apps').addEventListener('change', async function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const dSel = document.getElementById('apps-data-select').value;
+            if(!dSel) return alert("Selecione a data da operação!");
+            showLoader();
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, {type: 'array'});
+                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+
+                    let hIdx = -1;
+                    for (let i = 0; i < raw.length; i++) { if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºNFE"))) { hIdx = i; break; } }
+                    if (hIdx === -1) { alert("Cabeçalho da planilha (NºNFe) não encontrado."); hideLoader(); return; }
+
+                    const headers = raw[hIdx].map(x => String(x).toUpperCase().trim());
+                    const colNf = headers.indexOf("NºNFE");
+                    const colAssin = headers.findIndex(h => h.includes("ASSIN."));
+
+                    if (colAssin === -1) { alert("Coluna de Assinatura (ASSIN.) não encontrada. Exporte a planilha completa do app."); hideLoader(); return; }
+
+                    const snap = await getDoc(doc(db, "notas_fiscais_diario", dSel));
+                    if(snap.exists()) {
+                        let notasDB = snap.data().notas;
+                        let notasAlteradasCount = 0;
+
+                        for (let i = hIdx + 1; i < raw.length; i++) {
+                            const row = raw[i];
+                            if (!row || !row[colNf]) continue;
+                            const nfVal = cleanNF(row[colNf]);
+                            const assinVal = row[colAssin] ? String(row[colAssin]).trim() : "";
+
+                            let notaTarget = notasDB.find(n => cleanNF(n.nf) === nfVal);
+                            if(notaTarget) {
+                                if(assinVal.includes("@SI@")) {
+                                    notaTarget.app = "ASSINATURA";
+                                    notasAlteradasCount++;
+                                } else if (assinVal !== "") {
+                                    notaTarget.app = "FOTO";
+                                    notasAlteradasCount++;
+                                }
+                            }
+                        }
+                        await setDoc(doc(db, "notas_fiscais_diario", dSel), { notas: notasDB });
+                        alert(`Apps atualizados com sucesso! ${notasAlteradasCount} notas receberam anexos na base de dados.`);
+                        if(document.getElementById('notas-data-select').value === dSel) {
+                            document.getElementById('btn-carregar-notas').click();
+                        }
+                    } else {
+                        alert("Não existem notas fiscais importadas no sistema para a data selecionada.");
+                    }
+                } catch(err) {
+                    alert("Erro ao processar planilha: " + err.message);
+                }
+                hideLoader();
+                document.getElementById('modal-atualizar-apps').classList.remove('active');
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        });
+
+        // ====== LÓGICA AÇÕES EM LOTE ======
+        window.executarLoteAppEntregue = () => {
+            let alteradas = 0;
+            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                const appCell = tr.querySelector('[data-live="app"]');
+                const selectCell = tr.querySelector('.live-status-select');
+                if(!appCell || !selectCell) return;
+                
+                if(appCell.textContent.trim() !== "" && selectCell.value !== "ENTREGUE") {
+                    selectCell.value = "ENTREGUE";
+                    selectCell.style.cssText = getStRotaStyle("ENTREGUE");
+                    tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE");
+                    alteradas++;
+                }
+            });
+            if(alteradas > 0) {
+                autoSaveNotasSilencioso();
+                alert(`${alteradas} notas foram atualizadas para ENTREGUE automaticamente.`);
+            } else {
+                alert("Nenhuma nota precisava de atualização.");
+            }
+            document.getElementById('modal-acoes-lote').classList.remove('active');
+        };
+
+        window.executarLoteStatusVisiveis = () => {
+            const novoStatus = document.getElementById('select-lote-status').value;
+            if(!novoStatus) return alert("Selecione um status para aplicar.");
+            let alteradas = 0;
+            
+            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                if(tr.style.display !== 'none' && tr.querySelector('.live-status-select')) {
+                    const selectCell = tr.querySelector('.live-status-select');
+                    if(selectCell.value !== novoStatus) {
+                        selectCell.value = novoStatus;
+                        selectCell.style.cssText = getStRotaStyle(novoStatus);
+                        tr.style.backgroundColor = getRowBackgroundStyle(novoStatus);
+                        alteradas++;
+                    }
+                }
+            });
+            if(alteradas > 0) {
+                autoSaveNotasSilencioso();
+                alert(`Status aplicado com sucesso a ${alteradas} notas visíveis!`);
+            } else {
+                alert("Nenhuma nota foi alterada.");
+            }
+            document.getElementById('modal-acoes-lote').classList.remove('active');
+            document.getElementById('select-lote-status').value = "";
+        };
+
+        // ====== THEME TOGGLE E LITE MODE ======
         const themeBtn = document.getElementById('btn-theme-toggle');
         const applyTheme = (isDark) => {
-            if (isDark) { document.body.classList.add('dark-mode'); themeBtn.innerText = '☀️'; localStorage.setItem('theme', 'dark'); } 
-            else { document.body.classList.remove('dark-mode'); themeBtn.innerText = '🌙'; localStorage.setItem('theme', 'light'); }
+            if (isDark) { document.body.classList.add('dark-mode'); themeBtn.innerHTML = '<i class="ph ph-sun"></i>'; localStorage.setItem('theme', 'dark'); } 
+            else { document.body.classList.remove('dark-mode'); themeBtn.innerHTML = '<i class="ph ph-moon"></i>'; localStorage.setItem('theme', 'light'); }
         };
         themeBtn.addEventListener('click', () => applyTheme(!document.body.classList.contains('dark-mode')));
         if (localStorage.getItem('theme') === 'dark') applyTheme(true);
+
+        const liteModeToggle = document.getElementById('toggle-lite-mode');
+        const applyLiteMode = (isLite) => {
+            if (isLite) { document.body.classList.add('lite-mode'); localStorage.setItem('liteMode', 'true'); liteModeToggle.checked = true; } 
+            else { document.body.classList.remove('lite-mode'); localStorage.setItem('liteMode', 'false'); liteModeToggle.checked = false; }
+        };
+        liteModeToggle.addEventListener('change', (e) => applyLiteMode(e.target.checked));
+        if (localStorage.getItem('liteMode') === 'true') applyLiteMode(true);
+
 
         const hoje = new Date().toISOString().split('T')[0];
         document.querySelectorAll('input[type="date"]').forEach(el => el.value = hoje);
         const mesAtual = hoje.substring(0, 7);
         document.getElementById('canhotos-month-select').value = mesAtual;
+        document.getElementById('export-canhotos-month').value = mesAtual;
 
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -572,6 +1235,7 @@
                 document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active')); target.classList.add('active');
                 document.querySelectorAll('.view-section').forEach(view => { view.classList.remove('active'); void view.offsetWidth; });
                 const targetId = target.getAttribute('data-target'); document.getElementById(targetId).classList.add('active');
+                
                 if(targetId === 'view-monitoramento' && document.getElementById('mon-data-select').value) { document.getElementById('btn-carregar-painel').click(); } 
                 else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
                 else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
@@ -581,56 +1245,44 @@
         async function initApp() { await carregarDadosGlobais(); document.getElementById('btn-carregar-painel').click(); }
         async function carregarDadosGlobais() {
             try {
-                const snapPlacas = await getDocs(collection(db, "placas")); placasCache = {}; snapPlacas.forEach(d => { placasCache[d.id] = d.data(); }); renderizarTabelaPlacas();
-                const snapMot = await getDocs(collection(db, "motoristas_historico")); motoristasHistoricoCache = {}; snapMot.forEach(d => { motoristasHistoricoCache[d.id] = d.data(); });
+                const snapPlacas = await getDocs(collection(db, "placas")); window.placasCache = {}; snapPlacas.forEach(d => { window.placasCache[d.id] = d.data(); }); renderizarTabelaPlacas();
+                const snapMot = await getDocs(collection(db, "motoristas_historico")); window.motoristasHistoricoCache = {}; snapMot.forEach(d => { window.motoristasHistoricoCache[d.id] = d.data(); });
             } catch (e) { console.error("Erro banco", e); }
         }
 
-        // ================= CANHOTOS LÓGICA CORE =================
+        // ================= CANHOTOS (AUDITORIA APP) =================
         document.getElementById('btn-carregar-canhotos').addEventListener('click', async () => {
             const monthSel = document.getElementById('canhotos-month-select').value; if(!monthSel) return;
             showLoader(); window.canhotosCache = {};
             try {
-                // Buscamos a collection de notas. (Para um DB pequeno/médio, getAll e filtrar localmente é super rápido).
                 const snap = await getDocs(collection(db, "notas_fiscais_diario"));
-                let diasNoMes = [];
-                let tEntregasMes = 0; let tSemAnexoMes = 0;
-
-                const hojeStr = new Date().toISOString().split('T')[0];
-                const hojeTime = new Date(hojeStr).getTime();
+                let diasNoMes = []; let tEntregasMes = 0; let tSemAnexoMes = 0;
+                const hojeStr = new Date().toISOString().split('T')[0]; const hojeTime = new Date(hojeStr).getTime();
 
                 snap.forEach(doc => {
                     const dataStr = doc.id;
                     if(dataStr.startsWith(monthSel)) {
                         const notas = doc.data().notas || [];
                         let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
-                        
                         if(entregues.length > 0) {
                             let cAssinatura = entregues.filter(n => trimUpper(n.app) === 'ASSINATURA').length;
                             let cFoto = entregues.filter(n => trimUpper(n.app) === 'FOTO').length;
                             let cAnexado = entregues.filter(n => trimUpper(n.app) === 'ANEXADO').length;
-                            
-                            // Quem foi entregue mas a APP está vazia ou não é um dos 3 padrões
                             let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
                             
-                            const dataOpTime = new Date(dataStr).getTime();
-                            const diffTime = hojeTime - dataOpTime;
-                            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            if (diffDays < 0) diffDays = 0;
+                            const diffTime = hojeTime - new Date(dataStr).getTime();
+                            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); if (diffDays < 0) diffDays = 0;
 
-                            tEntregasMes += entregues.length;
-                            tSemAnexoMes += pendentes.length;
+                            tEntregasMes += entregues.length; tSemAnexoMes += pendentes.length;
                             window.canhotosCache[dataStr] = pendentes;
-
                             diasNoMes.push({ data: dataStr, totalEntregues: entregues.length, assinatura: cAssinatura, foto: cFoto, anexado: cAnexado, semAnexo: pendentes.length, atraso: diffDays });
                         }
                     }
                 });
 
                 diasNoMes.sort((a, b) => a.data.localeCompare(b.data));
-
                 const tbody = document.querySelector('#tabela-canhotos tbody'); let html = "";
-                if(diasNoMes.length === 0) { html = `<tr><td colspan="8" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum faturamento encontrado para este mês.</td></tr>`; }
+                if(diasNoMes.length === 0) { html = `<tr><td colspan="8" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum faturamento encontrado.</td></tr>`; }
                 else {
                     diasNoMes.forEach(d => {
                         let styleAtraso = "color: var(--text-muted); font-weight: 600;"; let iconAtraso = "";
@@ -638,248 +1290,40 @@
                             if (d.atraso >= 7) { styleAtraso = "color: var(--danger); font-weight: 800;"; iconAtraso = " 🚨 CRÍTICO"; }
                             else if (d.atraso >= 5) { styleAtraso = "color: var(--warning); font-weight: 800;"; iconAtraso = " ⚠️ ALERTA"; }
                         }
-                        
-                        let btnHtml = d.semAnexo > 0 ? `<button class="btn btn-sm btn-primary" onclick="abrirDetalhesCanhotos('${d.data}')">🔎 Ver Notas</button>` : `<span style="color:var(--success); font-weight:700;">OK ✓</span>`;
-
-                        html += `<tr>
-                            <td style="font-weight:700;">${formatarDataBR(d.data)}</td>
-                            <td style="font-weight:700; color:var(--accent);">${d.totalEntregues}</td>
-                            <td>${d.assinatura}</td><td>${d.foto}</td><td>${d.anexado}</td>
-                            <td style="font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:11px;">${d.semAnexo}</td>
-                            <td style="${styleAtraso}">${d.atraso} Dias${iconAtraso}</td>
-                            <td align="center">${btnHtml}</td>
-                        </tr>`;
+                        let btnHtml = d.semAnexo > 0 ? `<button class="btn btn-sm btn-primary" onclick="window.abrirDetalhesCanhotos('${d.data}')"><i class="ph ph-magnifying-glass"></i> Ver Notas</button>` : `<span style="color:var(--success); font-weight:700;">OK ✓</span>`;
+                        html += `<tr><td style="font-weight:700;">${formatarDataBR(d.data)}</td><td style="font-weight:700; color:var(--accent);">${d.totalEntregues}</td><td>${d.assinatura}</td><td>${d.foto}</td><td>${d.anexado}</td><td style="font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:11px;">${d.semAnexo}</td><td style="${styleAtraso}">${d.atraso} Dias${iconAtraso}</td><td align="center">${btnHtml}</td></tr>`;
                     });
                 }
                 tbody.innerHTML = html;
-                
-                // Resumo do Mês
-                document.getElementById('canhotos-summary').innerHTML = `
-                    <div class="summary-block">📅 Faturamento Mês: ${monthSel}</div>
-                    <div class="summary-block">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div>
-                    <div class="summary-block" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>
-                `;
-
-            } catch(e) { console.error("Erro Canhotos:", e); }
-            hideLoader();
+                document.getElementById('canhotos-summary').innerHTML = `<div class="summary-block">📅 Faturamento Mês: ${monthSel}</div><div class="summary-block">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div><div class="summary-block" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>`;
+            } catch(e) { console.error(e); } hideLoader();
         });
 
         window.abrirDetalhesCanhotos = (dataStr) => {
             const pendentes = window.canhotosCache[dataStr] || [];
             document.getElementById('detalhes-titulo').innerText = `Auditoria Faltantes - ${formatarDataBR(dataStr)}`;
-            document.getElementById('detalhes-resumo').innerHTML = `<span>❌ Notas Entregues sem Anexo (App Vazio): <span style="color:var(--danger);">${pendentes.length}</span></span>`;
-            
+            document.getElementById('detalhes-resumo').innerHTML = `<span>❌ Notas Entregues sem Anexo: <span style="color:var(--danger);">${pendentes.length}</span></span>`;
             const thead = document.getElementById('detalhes-thead'); const tbody = document.getElementById('detalhes-tbody');
             thead.innerHTML = `<tr><th>PLACA</th><th>MOTORISTA</th><th>NF</th><th>PESO</th><th>CLIENTE</th><th>STATUS</th><th>APP (ATUAL)</th></tr>`;
-            
             let trHTML = "";
-            pendentes.forEach(n => {
-                trHTML += `<tr>
-                    <td style="font-weight:700;">${n.placa}</td><td style="color:var(--accent);">${n.motorista}</td><td style="font-weight:700;">${cleanNF(n.nf)}</td>
-                    <td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td>${getStRotaPill(n.status)}</td><td style="color:var(--danger); font-weight:700;">${n.app || 'VAZIO'}</td>
-                </tr>`;
-            });
+            pendentes.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${n.placa}</td><td style="color:var(--accent);">${n.motorista}</td><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td>${getStRotaPill(n.status)}</td><td style="color:var(--danger); font-weight:700;">${n.app || 'VAZIO'}</td></tr>`; });
             tbody.innerHTML = trHTML || "<tr><td colspan='7' align='center'>Nenhuma pendência.</td></tr>";
             document.getElementById('modal-detalhes').classList.add('active');
         };
 
-        // ================= GESTÃO PLACAS =================
-        function renderizarTabelaPlacas() {
-            const tbody = document.querySelector('#tabela-placas tbody'); let htmlBuffer = ""; document.getElementById('placas-count').innerText = `${Object.keys(placasCache).length} Veículos Cadastrados`;
-            for (const [placa, dados] of Object.entries(placasCache)) { htmlBuffer += `<tr><td><strong style="color:var(--accent);">${placa}</strong></td><td>${dados.perfil}</td><td>${dados.tipo}</td><td style="text-align: center;"><button class="btn btn-sm btn-secondary" onclick="abrirModalPlaca('${placa}')">Editar</button> <button class="btn btn-sm btn-danger" onclick="excluirPlaca('${placa}')">X</button></td></tr>`; }
-            tbody.innerHTML = htmlBuffer;
-        }
-        document.getElementById('import-placas-file').addEventListener('change', async function(e) {
-            const file = e.target.files[0]; if (!file) return; showLoader(); const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-                    let headerIndex = -1; for (let i = 0; i < rawData.length; i++) { if (rawData[i] && rawData[i].some(cell => String(cell).toUpperCase().includes("PLACA"))) { headerIndex = i; break; } }
-                    if (headerIndex === -1) { alert("Sem coluna PLACA."); hideLoader(); return; }
-                    const headers = rawData[headerIndex].map(h => String(h).toUpperCase().trim());
-                    const colPlaca = headers.findIndex(h => h.includes("PLACA") || h.includes("EMPLACAMENTO")); const colPerfil = headers.findIndex(h => h.includes("PERFIL")); const colTipo = headers.findIndex(h => h.includes("TIPO"));
-                    const promessas = [];
-                    for (let i = headerIndex + 1; i < rawData.length; i++) {
-                        const row = rawData[i]; if (!row || !row[colPlaca]) continue; const placa = String(row[colPlaca]).toUpperCase().trim(); if (placa === "" || placasCache[placa]) continue;
-                        const perfil = colPerfil !== -1 && row[colPerfil] ? String(row[colPerfil]).toUpperCase().trim() : "NÃO CADASTRADO"; const tipo = colTipo !== -1 && row[colTipo] ? String(row[colTipo]).toUpperCase().trim() : "NÃO CADASTRADO";
-                        placasCache[placa] = { perfil, tipo }; promessas.push(setDoc(doc(db, "placas", placa), { perfil, tipo }));
-                    }
-                    await Promise.all(promessas); renderizarTabelaPlacas(); alert(`Importação OK.`);
-                } catch (err) { alert("Erro: " + err.message); } hideLoader();
-            }; reader.readAsArrayBuffer(file); e.target.value = '';
-        });
-        window.abrirModalPlaca = (placaId) => { document.getElementById('input-placa').value = placaId || ''; document.getElementById('input-perfil').value = placaId ? placasCache[placaId].perfil : ''; document.getElementById('input-tipo').value = placaId ? placasCache[placaId].tipo : ''; document.getElementById('input-placa').disabled = !!placaId; document.getElementById('modal-placa').classList.add('active'); }
-        window.excluirPlaca = async (placa) => { if(confirm(`Excluir o veículo ${placa}?`)) { showLoader(); await deleteDoc(doc(db, "placas", placa)); await carregarDadosGlobais(); hideLoader(); } }
-        document.getElementById('btn-salvar-placa').addEventListener('click', async () => {
-            const p = document.getElementById('input-placa').value.toUpperCase().trim(); const per = document.getElementById('input-perfil').value.toUpperCase().trim(); const t = document.getElementById('input-tipo').value.toUpperCase().trim();
-            if(!p) return; showLoader(); await setDoc(doc(db, "placas", p), { perfil: per, tipo: t }); await carregarDadosGlobais(); document.getElementById('modal-placa').classList.remove('active'); hideLoader();
-        });
-
-        // ================= EDITOR PAINEL =================
-        const tbodyPainel = document.querySelector('#tabela-editor-painel tbody');
-        window.abrirSuperEditorPainel = (modo) => { 
-            tbodyPainel.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-painel'); const boxImport = document.getElementById('controles-importacao-painel');
-            if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; adicionarLinhaPainel(); } else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; } else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 20px;">Busque a data para editar.</td></tr>`; }
-            document.getElementById('modal-editor-painel').classList.add('active');
+        // ================= FUNÇÕES DRILL DOWN & MAPAS =================
+        window.abrirMapaLogistico = (endereco, bairro, cidade) => {
+            const query = decodeURIComponent(endereco) + ', ' + decodeURIComponent(bairro) + ', ' + decodeURIComponent(cidade);
+            document.getElementById('map-placa-title').innerText = `(${query})`; 
+            const container = document.getElementById('map-cities-container'); container.innerHTML = ""; 
+            const iframe = document.getElementById('iframe-mapa'); 
+            iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+            document.getElementById('modal-mapa').classList.add('active');
         };
-        window.adicionarLinhaPainel = (dados = {}) => {
-            const placa = dados.placa || ""; const info = placasCache[placa] || { perfil: "", tipo: "" }; const tr = document.createElement('tr'); tr.draggable = true;
-            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"]; const statusAtual = dados.status || "Saida Dia";
-            const optionsHTML = statuses.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
-            const cssStatus = getStRotaStyle(statusAtual);
 
-            tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="placa" contenteditable="true" style="font-weight:700;">${placa}</td><td data-col="troca" contenteditable="true">${dados.troca||""}</td><td data-col="perfil">${info.perfil}</td><td data-col="tipo">${info.tipo}</td><td data-col="oc" contenteditable="true">${dados.oc||""}</td><td data-col="transporte" contenteditable="true">${dados.transporte||""}</td><td data-col="motorista" contenteditable="true">${dados.motorista||""}</td><td data-col="contato" contenteditable="true">${dados.contato||""}</td><td data-col="status"><select class="select-status" style="${cssStatus}">${optionsHTML}</select></td><td data-col="km" contenteditable="true">${formatNumber(dados.km||"0")}</td><td data-col="regiao" contenteditable="true">${dados.regiao||""}</td><td data-col="ajudante" contenteditable="true">${dados.ajudante||""}</td><td data-col="valepalete" contenteditable="true">${dados.vale_palete||"NÃO"}</td><td data-col="qtde" contenteditable="true">${dados.qtde||"0"}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
-            tr.querySelector('[data-col="placa"]').addEventListener('blur', function() { const val = this.innerText.toUpperCase().trim(); const infoL = placasCache[val] || { perfil: "-", tipo: "-" }; tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; });
-            configurarDragAndDrop(tr, tbodyPainel); tbodyPainel.appendChild(tr);
-        };
-        document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => { const d = document.getElementById('editor-painel-data').value; if(!d) return; showLoader(); tbodyPainel.innerHTML = ""; const s = await getDoc(doc(db, "painel_diario", d)); if(s.exists()) { s.data().rotas.forEach(r => adicionarLinhaPainel(r)); } hideLoader(); });
-        document.getElementById('btn-salvar-editor-painel').addEventListener('click', async () => {
-            const d = document.getElementById('editor-painel-data').value; if(!d) return; showLoader(); const rotas = [];
-            document.querySelectorAll('#tabela-editor-painel tbody tr').forEach(tr => { if(!tr.querySelector('[data-col="placa"]')) return;
-                rotas.push({ placa: tr.querySelector('[data-col="placa"]').innerText.trim().toUpperCase(), troca: tr.querySelector('[data-col="troca"]').innerText.trim(), perfil: tr.querySelector('[data-col="perfil"]').innerText.trim(), tipo: tr.querySelector('[data-col="tipo"]').innerText.trim(), oc: tr.querySelector('[data-col="oc"]').innerText.trim(), transporte: tr.querySelector('[data-col="transporte"]').innerText.trim(), motorista: tr.querySelector('[data-col="motorista"]').innerText.trim(), contato: tr.querySelector('[data-col="contato"]').innerText.trim(), status: tr.querySelector('.select-status').value, km: tr.querySelector('[data-col="km"]').innerText.trim(), regiao: tr.querySelector('[data-col="regiao"]').innerText.trim(), ajudante: tr.querySelector('[data-col="ajudante"]').innerText.trim(), vale_palete: tr.querySelector('[data-col="valepalete"]').innerText.trim(), qtde: tr.querySelector('[data-col="qtde"]').innerText.trim() });
-            });
-            await setDoc(doc(db, "painel_diario", d), { rotas }); if(document.getElementById('mon-data-select').value === d) { document.getElementById('btn-carregar-painel').click(); } alert("Painel Salvo com sucesso!"); document.getElementById('modal-editor-painel').classList.remove('active'); hideLoader();
-        });
-        
-        document.addEventListener('change', (e) => {
-            if(e.target.classList.contains('select-status')) {
-                const val = e.target.value; e.target.style.cssText = getStRotaStyle(val);
-                const tr = e.target.closest('tr'); 
-                if(tr && tr.closest('#tabela-operacao-notas')) { tr.style.backgroundColor = getRowBackgroundStyle(val); }
-            }
-        });
-
-        document.getElementById('file-import-painel').addEventListener('change', function(e) {
-            const file = e.target.files[0]; if (!file) return; showLoader(); const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'}); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-                let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && raw[i].includes("EMPLACAMENTO")) { hIdx = i; break; } }
-                if (hIdx === -1) { alert("Sem EMPLACAMENTO."); hideLoader(); return; } tbodyPainel.innerHTML = ''; const h = raw[hIdx];
-                const cols = { placa: h.indexOf("EMPLACAMENTO"), troca: h.indexOf("TROCA"), regiao: h.indexOf("Cidades"), oc: h.indexOf("NUMEROS O.C"), km: h.indexOf("KM ROTA"), ajudante: h.indexOf("AJUDANTE") };
-                for (let i = hIdx + 1; i < raw.length; i++) { 
-                    const r = raw[i]; if (!r || !r[cols.placa]) continue; 
-                    const pOriginal = String(r[cols.placa]).trim().toUpperCase(); if (pOriginal==="" || pOriginal.includes("1899")) continue;
-                    const pTroca = cols.troca !== -1 && r[cols.troca] ? String(r[cols.troca]).trim().toUpperCase() : "";
-                    let placaAtiva = pOriginal; let textoTroca = "";
-                    if (pTroca && pTroca !== pOriginal && pTroca !== "1899-12-31" && pTroca.length >= 7) { placaAtiva = pTroca; textoTroca = pOriginal; } 
-                    else if (pTroca && pTroca !== "1899-12-31") { textoTroca = pTroca; }
-                    adicionarLinhaPainel({ placa: placaAtiva, troca: textoTroca, oc: cols.oc!==-1?r[cols.oc]:"", km: cols.km!==-1?r[cols.km]:"0", regiao: cols.regiao!==-1?r[cols.regiao]:"", ajudante: cols.ajudante!==-1?r[cols.ajudante]:"" });
-                } hideLoader();
-            }; reader.readAsArrayBuffer(file);
-        });
-
-        // ================= PAINEL DE MONITORAMENTO =================
-        document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
-            const dataSel = document.getElementById('mon-data-select').value; if(!dataSel) return; showLoader(); 
-            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
-            const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "painel_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "painel_diario", dataOntem)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
-
-            const tbody = document.querySelector('#tabela-monitoramento tbody');
-            let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
-            let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
-
-            // Limpa o status Pernoite para não rolar infinito
-            if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasDoDia.push({...no, status: ""}); } }); }
-            if(snapOntemPainel.exists()) { snapOntemPainel.data().rotas.forEach(ro => { if(trimUpper(ro.status).includes('PERNOITE') && !rotasParaProcessar.find(r => r.placa === ro.placa)) { rotasParaProcessar.push({...ro, status: "", isRollover: true}); } }); }
-
-            window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
-            let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
-
-            if(rotasParaProcessar.length > 0) {
-                rotasParaProcessar.forEach(rota => {
-                    const infoViva = placasCache[rota.placa] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
-                    const notasPlaca = notasDoDia.filter(n => n.placa === rota.placa);
-
-                    let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
-                    if(notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
-
-                    let qtd_nf = notasPlaca.length;
-                    let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
-                    let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
-                    let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                    let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
-                    let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
-                    let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-                    const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
-                    let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
-
-                    const isParada = trimUpper(rota.status) === 'PARADA';
-                    const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
-                    const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
-                    const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
-                    const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
-                    const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
-
-                    let stRotaCalc = "";
-                    if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
-
-                    if(stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
-                    const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
-                    if(stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
-
-                    let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'DEVOLUÇÃO')">${devolucao}</span>` : ""; 
-                    let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'REENTREGA')">${reentrega}</span>` : ""; 
-                    let vParcial = teveParcialBool ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'PARCIAL')">SIM</span>` : "";
-                    let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="abrirModalDetalhes('${rota.placa}', 'PENDENTE')">${pendente}</span>` : ""; 
-                    let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
-                    let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
-                    let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
-
-                    const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
-                    let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                    let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-                    let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                    let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌"; }
-
-                    let linhaHtml = `<tr>
-                        <td style="font-weight:700;">${rota.placa}</td><td>${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
-                        <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
-                        <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td><td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
-                        <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
-                        <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
-                        <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
-                        <td style="color:var(--accent); font-weight:700;">${vParcial}</td><td>${getStRotaPill(stRotaCalc)}</td>
-                        <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
-                        <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
-                    </tr>`;
-
-                    const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
-                    linhasRenderizadas.push({ isPernoite: isPernoiteRoute, html: linhaHtml });
-                });
-
-                linhasRenderizadas.sort((a,b) => (a.isPernoite ? 1 : 0) - (b.isPernoite ? 1 : 0));
-                tbody.innerHTML = linhasRenderizadas.map(r => r.html).join('');
-            } else { tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; }
-
-            const totalCarros = rotasParaProcessar.length;
-            const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
-            document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
-            document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
-            document.getElementById('progress-truck').style.left = `${porcentagem}%`;
-
-            let htmlSummary = `
-                <div class="summary-block"><span style="color:var(--accent);">📅</span> ${formatarDataBR(dataSel)}</div>
-                <div class="summary-block"><span style="color:var(--text-muted);">🚚</span> Veículos: ${rotasParaProcessar.length}</div>
-                <div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>
-            `;
-            for(const [status, count] of Object.entries(statusCounts)) {
-                if(count > 0 && status !== "") {
-                    htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">
-                        ${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span>
-                    </div>`;
-                }
-            }
-            document.getElementById('painel-summary').innerHTML = htmlSummary;
-            hideLoader();
-        });
-
-        // ================= FUNÇÕES DRILL DOWN =================
         window.abrirModalRegiao = (regioesStr, placa) => {
-            document.getElementById('map-placa-title').innerText = `(${placa})`;
-            const container = document.getElementById('map-cities-container'); container.innerHTML = "";
-            const iframe = document.getElementById('iframe-mapa'); iframe.src = "";
+            document.getElementById('map-placa-title').innerText = `(${placa})`; const container = document.getElementById('map-cities-container'); container.innerHTML = ""; const iframe = document.getElementById('iframe-mapa'); iframe.src = "";
             const cidades = regioesStr.split('-').map(c => c.trim()).filter(c => c !== "");
-            
             cidades.forEach((cidade, index) => {
                 const btn = document.createElement('button'); btn.className = 'btn-city' + (index === 0 ? ' active' : ''); btn.innerText = cidade;
                 btn.onclick = function() { document.querySelectorAll('.btn-city').forEach(b => b.classList.remove('active')); this.classList.add('active'); iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidade + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`; };
@@ -890,30 +1334,17 @@
         };
 
         window.abrirModalDetalhes = (placa, tipo) => {
-            const notasDaPlaca = window.notasOperacaoAtiva.filter(n => trimUpper(n.placa) === trimUpper(placa));
-            let notasFiltradas = []; let theadHTML = ""; let trHTML = "";
-            
+            const notasDaPlaca = window.notasOperacaoAtiva.filter(n => trimUpper(n.placa) === trimUpper(placa)); let notasFiltradas = []; let theadHTML = ""; let trHTML = "";
             const tbody = document.getElementById('detalhes-tbody'); const thead = document.getElementById('detalhes-thead'); const resumo = document.getElementById('detalhes-resumo');
             document.getElementById('detalhes-titulo').innerText = `${tipo} - Veículo: ${placa}`;
 
-            if(tipo === 'PARCIAL') {
-                notasFiltradas = notasDaPlaca.filter(n => n.parcial && n.parcial.trim() !== "");
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>INFORMAÇÃO PARCIAL</th></tr>`;
-                notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td style="color:var(--danger); font-weight:600;">${n.parcial}</td></tr>`; });
-            } 
-            else if(tipo === 'PERNOITE' || tipo === 'DEVOLUÇÃO' || tipo === 'REENTREGA') {
-                notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === tipo);
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>QTD</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th></tr>`;
-                notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.qtde}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td>${n.endereco}</td></tr>`; });
-            }
+            if(tipo === 'PARCIAL') { notasFiltradas = notasDaPlaca.filter(n => n.parcial && n.parcial.trim() !== ""); theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>INFORMAÇÃO PARCIAL</th></tr>`; notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td style="color:var(--danger); font-weight:600;">${n.parcial}</td></tr>`; }); } 
+            else if(tipo === 'PERNOITE' || tipo === 'DEVOLUÇÃO' || tipo === 'REENTREGA') { notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === tipo); theadHTML = `<tr><th>NF</th><th>PESO</th><th>QTD</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th></tr>`; notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.qtde}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td>${n.endereco}</td></tr>`; }); }
             else if(tipo === 'PENDENTE') {
                 const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
                 notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status)));
                 theadHTML = `<tr><th>NF</th><th>PESO</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th><th>ATUALIZAR STATUS</th></tr>`;
-                notasFiltradas.forEach(n => {
-                    const statusAtual = trimUpper(n.status); const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
-                    trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td><td><select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;"><option value="" ${statusAtual===""?'selected':''}>-</option>${optHTML}</select></td></tr>`;
-                });
+                notasFiltradas.forEach(n => { const statusAtual = trimUpper(n.status); const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join(''); trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td><td><select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;"><option value="" ${statusAtual===""?'selected':''}>-</option>${optHTML}</select></td></tr>`; });
             }
 
             const totalPeso = notasFiltradas.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2);
@@ -933,67 +1364,150 @@
 
         // ================= FILTRO EXCEL =================
         let activeFilters = { 'tabela-monitoramento': {}, 'tabela-operacao-notas': {} }; 
-        const filterPopup = document.getElementById('excel-filter-popup'); const filterSearch = document.getElementById('excel-filter-search'); const filterList = document.getElementById('excel-filter-list');
-        let activeColIndex = -1; let activeTableId = '';
-
+        const filterPopup = document.getElementById('excel-filter-popup'); const filterSearch = document.getElementById('excel-filter-search'); const filterList = document.getElementById('excel-filter-list'); let activeColIndex = -1; let activeTableId = '';
         document.querySelectorAll('.filter-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
                 e.stopPropagation(); activeColIndex = parseInt(icon.getAttribute('data-col')); activeTableId = icon.closest('table').id;
                 const rect = icon.getBoundingClientRect(); filterPopup.style.left = `${rect.left}px`; filterPopup.style.top = `${rect.bottom + 8}px`; filterPopup.style.display = 'flex';
-                const uniqueValues = new Set();
-                document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { 
-                    if(!tr.children[activeColIndex]) return; let val = tr.children[activeColIndex].textContent.trim();
-                    if(activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } uniqueValues.add(val);
-                });
-                let checksHtml = ''; [...uniqueValues].sort().forEach(val => { checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; });
-                filterList.innerHTML = checksHtml; filterSearch.value = ''; document.getElementById('excel-filter-select-all').checked = true;
+                const uniqueValues = new Set(); document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { if(!tr.children[activeColIndex]) return; let val = tr.children[activeColIndex].textContent.trim(); if(activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } uniqueValues.add(val); });
+                let checksHtml = ''; [...uniqueValues].sort().forEach(val => { checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; }); filterList.innerHTML = checksHtml; filterSearch.value = ''; document.getElementById('excel-filter-select-all').checked = true;
             });
         });
+        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { filterList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = e.target.checked); }); filterSearch.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { const val = lbl.textContent.toLowerCase(); lbl.style.display = val.includes(term) ? 'flex' : 'none'; }); }); document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none'); document.getElementById('btn-filter-apply').addEventListener('click', () => { const checkedValues = Array.from(filterList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value); activeFilters[activeTableId][activeColIndex] = checkedValues; document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); filterPopup.style.display = 'none'; applyFilters(activeTableId); });
+        function applyFilters(tableId) { const filters = activeFilters[tableId]; document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => { if(tr.children.length < 5) return; let show = true; for (let col in filters) { let val = tr.children[col].textContent.trim(); if(tableId === 'tabela-operacao-notas' && col == 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } if (!filters[col].includes(val)) { show = false; break; } } tr.style.display = show ? '' : 'none'; }); } document.addEventListener('click', (e) => { if(!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; });
 
-        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { filterList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = e.target.checked); });
-        filterSearch.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { const val = lbl.textContent.toLowerCase(); lbl.style.display = val.includes(term) ? 'flex' : 'none'; }); });
-        document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none');
-        document.getElementById('btn-filter-apply').addEventListener('click', () => { const checkedValues = Array.from(filterList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value); activeFilters[activeTableId][activeColIndex] = checkedValues; document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); filterPopup.style.display = 'none'; applyFilters(activeTableId); });
+        // ================= PAINEL DE MONITORAMENTO =================
+        document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
+            const dataSel = document.getElementById('mon-data-select').value; if(!dataSel) return; showLoader(); 
+            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
+            
+            try {
+                const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "painel_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "painel_diario", dataOntem)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
 
-        function applyFilters(tableId) {
-            const filters = activeFilters[tableId];
-            document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => {
-                if(tr.children.length < 5) return; let show = true;
-                for (let col in filters) { let val = tr.children[col].textContent.trim(); if(tableId === 'tabela-operacao-notas' && col == 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } if (!filters[col].includes(val)) { show = false; break; } } tr.style.display = show ? '' : 'none';
-            });
-        }
-        document.addEventListener('click', (e) => { if(!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; });
+                const tbody = document.querySelector('#tabela-monitoramento tbody');
+                let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
+
+                if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasDoDia.push({...no, status: ""}); } }); }
+                if(snapOntemPainel.exists()) { snapOntemPainel.data().rotas.forEach(ro => { if(trimUpper(ro.status).includes('PERNOITE') && !rotasParaProcessar.find(r => r.placa === ro.placa)) { rotasParaProcessar.push({...ro, status: "", isRollover: true}); } }); }
+
+                window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
+                let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
+
+                if(rotasParaProcessar.length > 0) {
+                    rotasParaProcessar.forEach(rota => {
+                        const infoViva = window.placasCache[rota.placa] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
+                        const notasPlaca = notasDoDia.filter(n => n.placa === rota.placa);
+
+                        let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
+                        if(notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
+
+                        let qtd_nf = notasPlaca.length;
+                        let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                        let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
+                        let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
+                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+                        const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
+                        let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
+
+                        const isParada = trimUpper(rota.status) === 'PARADA';
+                        const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
+                        const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
+                        const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
+                        const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
+                        const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
+
+                        let stRotaCalc = "";
+                        if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
+
+                        if(stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
+                        const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
+                        if(stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
+
+                        let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${rota.placa}', 'DEVOLUÇÃO')">${devolucao}</span>` : ""; 
+                        let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${rota.placa}', 'REENTREGA')">${reentrega}</span>` : ""; 
+                        let vParcial = teveParcialBool ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${rota.placa}', 'PARCIAL')">SIM</span>` : "";
+                        let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="window.abrirModalDetalhes('${rota.placa}', 'PENDENTE')">${pendente}</span>` : ""; 
+                        let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${rota.placa}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
+                        let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="window.abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
+                        let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
+
+                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
+                        let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                        let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+                        let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                        let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌"; }
+
+                        let linhaHtml = `<tr>
+                            <td style="font-weight:700;">${rota.placa}</td><td>${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
+                            <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
+                            <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td><td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
+                            <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
+                            <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
+                            <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
+                            <td style="color:var(--accent); font-weight:700;">${vParcial}</td><td>${getStRotaPill(stRotaCalc)}</td>
+                            <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
+                            <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
+                        </tr>`;
+
+                        const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
+                        linhasRenderizadas.push({ isPernoite: isPernoiteRoute, html: linhaHtml });
+                    });
+
+                    linhasRenderizadas.sort((a,b) => (a.isPernoite ? 1 : 0) - (b.isPernoite ? 1 : 0));
+                    tbody.innerHTML = linhasRenderizadas.map(r => r.html).join('');
+                } else { tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; }
+
+                const totalCarros = rotasParaProcessar.length;
+                const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
+                document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
+                document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
+                document.getElementById('progress-truck').style.left = `${porcentagem}%`;
+
+                let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
+                for(const [status, count] of Object.entries(statusCounts)) { if(count > 0 && status !== "") { htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span></div>`; } }
+                document.getElementById('painel-summary').innerHTML = htmlSummary; 
+            } catch(e) { console.error("Erro no painel:", e); }
+            hideLoader();
+        });
 
         // ================= OPERAÇÃO NOTAS =================
         const tbodyOperacaoNotas = document.querySelector('#tabela-operacao-notas tbody');
         document.getElementById('btn-carregar-notas').addEventListener('click', async () => {
             const dataSel = document.getElementById('notas-data-select').value; if(!dataSel) return; showLoader(); 
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
-            const [snapNotas, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
+            
+            try {
+                const [snapNotas, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
 
-            activeFilters['tabela-operacao-notas'] = {}; document.querySelectorAll('#tabela-operacao-notas .filter-icon').forEach(i => i.classList.remove('filter-active'));
-            let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
-            if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasRollover.push({...no, status: ""}); } }); }
+                activeFilters['tabela-operacao-notas'] = {}; document.querySelectorAll('#tabela-operacao-notas .filter-icon').forEach(i => i.classList.remove('filter-active'));
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
+                if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasRollover.push({...no, status: ""}); } }); }
 
-            let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = ""; 
-            if(notasParaProcessar.length > 0) {
-                notasParaProcessar.forEach(nota => {
-                    const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
-                    htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}">
-                        <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
-                        <td data-live="ordem">${nota.ordem}</td><td data-live="data">${nota.data_nf}</td>
-                        <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
-                        <td data-live="cliente" title="${nota.cliente}">${nota.cliente}</td><td data-live="cidade">${nota.cidade}</td>
-                        <td data-live="bairro">${nota.bairro}</td><td data-live="endereco" title="${nota.endereco}">${nota.endereco}</td>
-                        <td data-live="placa" class="live-edit" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${nota.placa}</td><td data-live="motorista" class="live-edit" contenteditable="true" title="${nota.motorista}">${nota.motorista}</td><td data-live="telefone" class="live-edit" contenteditable="true">${nota.telefone}</td>
-                        <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${getStRotaStyle(statusVal)}"><option value="" ${statusVal==="" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
-                        <td data-live="chegada" class="live-edit" contenteditable="true">${nota.chegada||""}</td><td data-live="saida" class="live-edit" contenteditable="true">${nota.saida||""}</td>
-                        <td data-live="obs" class="live-edit" contenteditable="true">${nota.obs||""}</td><td data-live="parcial" class="live-edit" contenteditable="true">${nota.parcial||""}</td>
-                        <td data-live="app" class="live-edit" contenteditable="true">${nota.app||""}</td>
-                    </tr>`;
-                });
-            } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem notas para esta data.</td></tr>`; }
-            tbodyOperacaoNotas.innerHTML = htmlBuffer; hideLoader();
+                let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = ""; 
+                if(notasParaProcessar.length > 0) {
+                    notasParaProcessar.forEach(nota => {
+                        const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
+                        htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}" data-codcli="${nota.codcli||''}" data-repres="${nota.repres||''}" data-sup="${nota.sup||''}">
+                            <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
+                            <td data-live="ordem">${nota.ordem}</td><td data-live="data">${nota.data_nf}</td>
+                            <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
+                            <td data-live="cliente" title="${nota.cliente}"><span class="clickable-cell" onclick="window.abrirMapaLogistico('${encodeURIComponent(nota.endereco||"")}', '${encodeURIComponent(nota.bairro||"")}', '${encodeURIComponent(nota.cidade||"")}')">${nota.cliente}</span></td>
+                            <td data-live="cidade">${nota.cidade}</td>
+                            <td data-live="bairro">${nota.bairro}</td><td data-live="endereco" title="${nota.endereco}">${nota.endereco}</td>
+                            <td data-live="placa" class="live-edit" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${nota.placa}</td><td data-live="motorista" class="live-edit" contenteditable="true" title="${nota.motorista}">${nota.motorista}</td><td data-live="telefone" class="live-edit" contenteditable="true">${nota.telefone}</td>
+                            <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${getStRotaStyle(statusVal)}"><option value="" ${statusVal==="" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
+                            <td data-live="chegada" class="live-edit" contenteditable="true">${nota.chegada||""}</td><td data-live="saida" class="live-edit" contenteditable="true">${nota.saida||""}</td>
+                            <td data-live="obs" class="live-edit" contenteditable="true">${nota.obs||""}</td><td data-live="parcial" class="live-edit" contenteditable="true">${nota.parcial||""}</td>
+                            <td data-live="app" style="font-weight:700; color:var(--accent);">${nota.app||""}</td>
+                        </tr>`;
+                    });
+                } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem notas para esta data.</td></tr>`; }
+                tbodyOperacaoNotas.innerHTML = htmlBuffer; 
+            } catch(e) { console.error("Erro nas notas:", e); }
+            hideLoader();
         });
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
@@ -1001,73 +1515,36 @@
             const dataSel = document.getElementById('notas-data-select').value; if(!dataSel) return;
             indSaveNotas.innerText = "Salvando..."; indSaveNotas.style.display = "inline"; const notas = [];
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => { if(!tr.querySelector('[data-live="nf"]')) return;
-                notas.push({ nf: cleanNF(tr.querySelector('[data-live="nf"]').textContent), viagem: tr.querySelector('[data-live="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-live="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-live="data"]').textContent.trim(), peso: tr.querySelector('[data-live="peso"]').textContent.trim(), qtde: tr.querySelector('[data-live="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-live="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-live="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-live="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-live="endereco"]').textContent.trim(), placa: tr.querySelector('[data-live="placa"]').textContent.trim().toUpperCase(), motorista: tr.querySelector('[data-live="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-live="telefone"]').textContent.trim(), status: tr.querySelector('.live-status-select').value.toUpperCase(), chegada: tr.querySelector('[data-live="chegada"]').textContent.trim(), saida: tr.querySelector('[data-live="saida"]').textContent.trim(), obs: tr.querySelector('[data-live="obs"]').textContent.trim(), parcial: tr.querySelector('[data-live="parcial"]').textContent.trim(), app: tr.querySelector('[data-live="app"]').textContent.trim() });
+                notas.push({ 
+                    nf: cleanNF(tr.querySelector('[data-live="nf"]').textContent), viagem: tr.querySelector('[data-live="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-live="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-live="data"]').textContent.trim(), peso: tr.querySelector('[data-live="peso"]').textContent.trim(), qtde: tr.querySelector('[data-live="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-live="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-live="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-live="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-live="endereco"]').textContent.trim(), placa: tr.querySelector('[data-live="placa"]').textContent.trim().toUpperCase(), motorista: tr.querySelector('[data-live="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-live="telefone"]').textContent.trim(), status: tr.querySelector('.live-status-select').value.toUpperCase(), chegada: tr.querySelector('[data-live="chegada"]').textContent.trim(), saida: tr.querySelector('[data-live="saida"]').textContent.trim(), obs: tr.querySelector('[data-live="obs"]').textContent.trim(), parcial: tr.querySelector('[data-live="parcial"]').textContent.trim(), app: tr.querySelector('[data-live="app"]').textContent.trim(),
+                    codcli: tr.dataset.codcli || "", repres: tr.dataset.repres || "", sup: tr.dataset.sup || "" 
+                });
             });
             try { await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas }); indSaveNotas.innerText = "Salvo ✓"; setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000); } catch(e) {}
         }
         
         tbodyOperacaoNotas.addEventListener('change', (e) => { if(e.target.classList.contains('live-status-select')) { const val = e.target.value; e.target.style.cssText = getStRotaStyle(val); const tr = e.target.closest('tr'); if(tr) tr.style.backgroundColor = getRowBackgroundStyle(val); autoSaveNotasSilencioso(); } });
-        tbodyOperacaoNotas.addEventListener('blur', (e) => { 
-            if(e.target.dataset.live === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-live="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-live="telefone"]').innerText = cache.telefone || ""; } }
-            if(e.target.classList.contains('live-edit')) autoSaveNotasSilencioso(); 
-        }, true);
-
-        // ================= AÇÕES LOTE =================
-        window.abrirModalAcoesLote = () => { const d = document.getElementById('notas-data-select').value; if(!d) return alert("Selecione a data e busque as notas primeiro."); document.getElementById('modal-acoes-lote').classList.add('active'); };
-        window.executarLoteAppEntregue = () => {
-            let alteradas = 0; document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
-                const appCell = tr.querySelector('[data-live="app"]'); const selectCell = tr.querySelector('.live-status-select'); if(!appCell || !selectCell) return;
-                if(appCell.textContent.trim() !== "" && selectCell.value !== "ENTREGUE") { selectCell.value = "ENTREGUE"; selectCell.style.cssText = getStRotaStyle("ENTREGUE"); tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE"); alteradas++; }
-            });
-            if(alteradas > 0) { autoSaveNotasSilencioso(); alert(`${alteradas} notas foram atualizadas para ENTREGUE automaticamente.`); } else { alert("Nenhuma nota precisava de atualização."); }
-            document.getElementById('modal-acoes-lote').classList.remove('active');
-        };
-        window.executarLoteStatusVisiveis = () => {
-            const novoStatus = document.getElementById('select-lote-status').value; if(!novoStatus) return alert("Selecione um status para aplicar."); let alteradas = 0;
-            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
-                if(tr.style.display !== 'none' && tr.querySelector('.live-status-select')) { const selectCell = tr.querySelector('.live-status-select'); if(selectCell.value !== novoStatus) { selectCell.value = novoStatus; selectCell.style.cssText = getStRotaStyle(novoStatus); tr.style.backgroundColor = getRowBackgroundStyle(novoStatus); alteradas++; } }
-            });
-            if(alteradas > 0) { autoSaveNotasSilencioso(); alert(`Status aplicado com sucesso a ${alteradas} notas visíveis!`); } else { alert("Nenhuma nota foi alterada."); }
-            document.getElementById('modal-acoes-lote').classList.remove('active'); document.getElementById('select-lote-status').value = "";
-        };
-
-        window.abrirModalAtualizarApps = () => { document.getElementById('apps-data-select').value = document.getElementById('notas-data-select').value || hoje; document.getElementById('modal-atualizar-apps').classList.add('active'); };
-        document.getElementById('file-import-apps').addEventListener('change', async function(e) {
-            const file = e.target.files[0]; if (!file) return; const dataSel = document.getElementById('apps-data-select').value; if (!dataSel) { alert("Data necessária."); e.target.value = ''; return; } showLoader();
-            try {
-                const snapNotas = await getDoc(doc(db, "notas_fiscais_diario", dataSel)); if (!snapNotas.exists()) { alert("Não há notas salvas para esta data."); hideLoader(); return; } const notasDB = snapNotas.data().notas;
-                const reader = new FileReader(); reader.onload = async function(event) {
-                    const data = new Uint8Array(event.target.result); const workbook = XLSX.read(data, {type: 'array'}); const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-                    let hIdx = -1; for (let i = 0; i < rawData.length; i++) { if (rawData[i] && (rawData[i].includes("NºNFe") || rawData[i].includes("NOTA"))) { hIdx = i; break; } }
-                    if (hIdx === -1) { alert("Cabeçalho NºNFe não encontrado."); hideLoader(); return; }
-                    const headers = rawData[hIdx].map(h => String(h).toUpperCase().trim()); const colNF = headers.findIndex(h => h === "NºNFE" || h === "NOTA"); const colAssin = headers.findIndex(h => h === "ASSIN." || h === "INFO.ASSIN.");
-                    if (colAssin === -1) { alert("Coluna 'Assin.' ou 'Info.Assin.' não encontrada."); hideLoader(); return; }
-                    const mapAnexos = {}; for (let i = hIdx + 1; i < rawData.length; i++) { const row = rawData[i]; if (!row || !row[colNF]) continue; const nf = cleanNF(row[colNF]); const assinCod = String(row[colAssin] || "").trim(); if (assinCod.includes("@SI@")) mapAnexos[nf] = "FOTO"; else if (assinCod.includes("@FM@")) mapAnexos[nf] = "ANEXADO"; else if (assinCod.includes("@0Q@")) mapAnexos[nf] = "ASSINATURA"; }
-                    let atualizadas = 0; notasDB.forEach(n => { if (mapAnexos[n.nf]) { n.app = mapAnexos[n.nf]; atualizadas++; } });
-                    await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas: notasDB }); document.getElementById('modal-atualizar-apps').classList.remove('active'); if(document.getElementById('notas-data-select').value === dataSel) { document.getElementById('btn-carregar-notas').click(); } alert(`Apps Atualizados!\n${atualizadas} notas receberam anexos.`); hideLoader();
-                }; reader.readAsArrayBuffer(file);
-            } catch(err) { alert("Erro: " + err); hideLoader(); } e.target.value = '';
-        });
+        tbodyOperacaoNotas.addEventListener('blur', (e) => { if(e.target.dataset.live === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = window.motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-live="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-live="telefone"]').innerText = cache.telefone || ""; } } if(e.target.classList.contains('live-edit')) autoSaveNotasSilencioso(); }, true);
 
         // ================= MONTAGEM BASE =================
         const tbodyEditorNotas = document.querySelector('#tabela-editor-notas tbody');
         window.abrirSuperEditorNotas = (modo) => {
             tbodyEditorNotas.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-notas'); const boxImport = document.getElementById('controles-importacao-notas');
-            if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; adicionarLinhaNotas(); } else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; } else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyEditorNotas.innerHTML = `<tr><td colspan="15" align="center" style="padding: 20px;">Busque a data.</td></tr>`; }
+            if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; window.adicionarLinhaNotas(); } else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; } else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyEditorNotas.innerHTML = `<tr><td colspan="15" align="center" style="padding: 20px;">Busque a data.</td></tr>`; }
             document.getElementById('modal-editor-notas').classList.add('active');
         };
         window.adicionarLinhaNotas = (dados = {}) => {
             const tr = document.createElement('tr'); tr.draggable = true; const placa = dados.placa || ""; let motorista = dados.motorista || ""; let telefone = dados.telefone || "";
-            if(placa && !motorista && motoristasHistoricoCache[placa]) { motorista = motoristasHistoricoCache[placa].motorista; telefone = motoristasHistoricoCache[placa].telefone; }
+            if(placa && !motorista && window.motoristasHistoricoCache[placa]) { motorista = window.motoristasHistoricoCache[placa].motorista; telefone = window.motoristasHistoricoCache[placa].telefone; }
+            
+            tr.dataset.codcli = dados.codcli || ""; tr.dataset.repres = dados.repres || ""; tr.dataset.sup = dados.sup || "";
+            
             tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="nf" contenteditable="true" style="font-weight:700;">${cleanNF(dados.nf)}</td><td data-col="viagem" contenteditable="true">${dados.viagem||""}</td><td data-col="ordem" contenteditable="true">${dados.ordem||""}</td><td data-col="data" contenteditable="true">${dados.data||""}</td><td data-col="peso" contenteditable="true">${formatNumber(dados.peso||"")}</td><td data-col="qtde" contenteditable="true">${dados.qtde||""}</td><td data-col="cliente" contenteditable="true">${dados.cliente||""}</td><td data-col="cidade" contenteditable="true">${dados.cidade||""}</td><td data-col="bairro" contenteditable="true">${dados.bairro||""}</td><td data-col="endereco" contenteditable="true">${dados.endereco||""}</td><td data-col="placa" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${placa}</td><td data-col="motorista" contenteditable="true">${motorista}</td><td data-col="telefone" contenteditable="true">${telefone}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
             configurarDragAndDrop(tr, tbodyEditorNotas); tbodyEditorNotas.appendChild(tr);
         };
         
-        tbodyEditorNotas.addEventListener('blur', (e) => { 
-            if(e.target.dataset.col === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-col="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-col="telefone"]').innerText = cache.telefone || ""; } }
-        }, true);
-
-        document.getElementById('btn-buscar-editor-notas').addEventListener('click', async () => { const d = document.getElementById('editor-notas-data').value; if(!d) return; showLoader(); tbodyEditorNotas.innerHTML = ""; const s = await getDoc(doc(db, "notas_fiscais_diario", d)); if(s.exists()) { s.data().notas.forEach(n => adicionarLinhaNotas(n)); } hideLoader(); });
+        tbodyEditorNotas.addEventListener('blur', (e) => { if(e.target.dataset.col === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = window.motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-col="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-col="telefone"]').innerText = cache.telefone || ""; } } }, true);
+        document.getElementById('btn-buscar-editor-notas').addEventListener('click', async () => { const d = document.getElementById('editor-notas-data').value; if(!d) return; showLoader(); tbodyEditorNotas.innerHTML = ""; const s = await getDoc(doc(db, "notas_fiscais_diario", d)); if(s.exists()) { s.data().notas.forEach(n => window.adicionarLinhaNotas(n)); } hideLoader(); });
         
         document.getElementById('btn-chamar-modal-motoristas').addEventListener('click', () => {
             const dataSel = document.getElementById('editor-notas-data').value; if(!dataSel) return alert("Selecione a data no topo."); const placasMap = {};
@@ -1077,18 +1554,21 @@
             });
             if(Object.keys(placasMap).length === 0) { document.getElementById('btn-confirmar-salvar-notas').click(); return; }
             const listaHtml = document.getElementById('lista-motoristas-modal'); listaHtml.innerHTML = '';
-            for(const placa in placasMap) { let cache = motoristasHistoricoCache[placa] || {}; let defMot = placasMap[placa].motorista || cache.motorista || ""; let defTel = placasMap[placa].telefone || cache.telefone || ""; listaHtml.innerHTML += `<div class="motorista-row" data-placa="${placa}" style="display:flex; gap:12px; margin-bottom:12px; align-items:center; background:var(--bg-panel); padding:15px; border-radius:8px; border:1px solid var(--border-color);"> <div style="font-weight:800; width:85px; color:var(--text-main);">${placa}</div> <input type="text" class="input-mot" placeholder="Motorista" value="${defMot}" style="flex:1;"> <input type="text" class="input-tel" placeholder="Telefone" value="${defTel}" style="width:130px;"> </div>`; }
+            for(const placa in placasMap) { let cache = window.motoristasHistoricoCache[placa] || {}; let defMot = placasMap[placa].motorista || cache.motorista || ""; let defTel = placasMap[placa].telefone || cache.telefone || ""; listaHtml.innerHTML += `<div class="motorista-row" data-placa="${placa}" style="display:flex; gap:12px; margin-bottom:12px; align-items:center; background:var(--bg-panel); padding:15px; border-radius:8px; border:1px solid var(--border-color);"> <div style="font-weight:800; width:85px; color:var(--text-main);">${placa}</div> <input type="text" class="input-mot" placeholder="Motorista" value="${defMot}" style="flex:1;"> <input type="text" class="input-tel" placeholder="Telefone" value="${defTel}" style="width:130px;"> </div>`; }
             document.getElementById('modal-motoristas').classList.add('active');
         });
 
         document.getElementById('btn-confirmar-salvar-notas').addEventListener('click', async () => {
             const d = document.getElementById('editor-notas-data').value; showLoader(); const updatesMap = {};
-            document.querySelectorAll('#lista-motoristas-modal .motorista-row').forEach(row => { const p = row.getAttribute('data-placa'); const m = row.querySelector('.input-mot').value.trim(); const t = row.querySelector('.input-tel').value.trim(); updatesMap[p] = { motorista: m, telefone: t }; if(m || t) { motoristasHistoricoCache[p] = { motorista: m, telefone: t }; setDoc(doc(db, "motoristas_historico", p), { motorista: m, telefone: t }); } });
+            document.querySelectorAll('#lista-motoristas-modal .motorista-row').forEach(row => { const p = row.getAttribute('data-placa'); const m = row.querySelector('.input-mot').value.trim(); const t = row.querySelector('.input-tel').value.trim(); updatesMap[p] = { motorista: m, telefone: t }; if(m || t) { window.motoristasHistoricoCache[p] = { motorista: m, telefone: t }; setDoc(doc(db, "motoristas_historico", p), { motorista: m, telefone: t }); } });
             const notas = [];
             document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
                 if(!tr.querySelector('[data-col="nf"]')) return; const placaBase = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase();
                 if(updatesMap[placaBase]) { tr.querySelector('[data-col="motorista"]').innerText = updatesMap[placaBase].motorista; tr.querySelector('[data-col="telefone"]').innerText = updatesMap[placaBase].telefone; }
-                notas.push({ nf: cleanNF(tr.querySelector('[data-col="nf"]').textContent), viagem: tr.querySelector('[data-col="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-col="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-col="data"]').textContent.trim(), peso: tr.querySelector('[data-col="peso"]').textContent.trim(), qtde: tr.querySelector('[data-col="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-col="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-col="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-col="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-col="endereco"]').textContent.trim(), placa: placaBase, motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(), status: "", chegada: "", saida: "", obs: "", parcial: "", app: "" });
+                notas.push({ 
+                    nf: cleanNF(tr.querySelector('[data-col="nf"]').textContent), viagem: tr.querySelector('[data-col="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-col="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-col="data"]').textContent.trim(), peso: tr.querySelector('[data-col="peso"]').textContent.trim(), qtde: tr.querySelector('[data-col="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-col="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-col="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-col="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-col="endereco"]').textContent.trim(), placa: placaBase, motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(), status: "", chegada: "", saida: "", obs: "", parcial: "", app: "",
+                    codcli: tr.dataset.codcli || "", repres: tr.dataset.repres || "", sup: tr.dataset.sup || ""
+                });
             });
             await setDoc(doc(db, "notas_fiscais_diario", d), { notas }); if(document.getElementById('notas-data-select').value === d) { document.getElementById('btn-carregar-notas').click(); } alert("Base de Notas Fiscais Salva com Sucesso!"); document.getElementById('modal-motoristas').classList.remove('active'); document.getElementById('modal-editor-notas').classList.remove('active'); hideLoader();
         });
@@ -1098,18 +1578,119 @@
             showLoader(); let transpMap = {};
             try { const sp = await getDoc(doc(db, "painel_diario", dSel)); if (sp.exists()) { sp.data().rotas.forEach(r => { if (r.transporte) { const n = String(r.transporte).match(/\d+/g); if (n) { n.forEach(nm => { transpMap[nm] = r.placa; }); } } }); } } catch(err) {}
             const reader = new FileReader(); reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'}); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array', raw: false}); 
+                const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                
                 let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºTransp."))) { hIdx = i; break; } }
                 if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; } tbodyEditorNotas.innerHTML = ''; const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
-                const cols = { nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"), data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"), cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"), endereco: h.indexOf("RUA") };
-                let qtd = 0; for (let i = hIdx + 1; i < raw.length; i++) { const row = raw[i]; if (!row || !row[cols.nf]) continue; const tRow = cols.viagem !== -1 ? String(row[cols.viagem]).trim() : ""; if (!transpMap[tRow]) continue; qtd++; adicionarLinhaNotas({ nf: cleanNF(row[cols.nf]), viagem: tRow, ordem: cols.ordem!==-1?row[cols.ordem]:"", data: cols.data!==-1?row[cols.data]:"", peso: cols.peso!==-1?row[cols.peso]:"", qtde: cols.qtde!==-1?row[cols.qtde]:"", cliente: cols.cliente!==-1?row[cols.cliente]:"", cidade: cols.cidade!==-1?row[cols.cidade]:"", bairro: cols.bairro!==-1?row[cols.bairro]:"", endereco: cols.endereco!==-1?row[cols.endereco]:"", placa: transpMap[tRow] }); } if (qtd === 0) alert("Nenhuma nota correspondente encontrada."); hideLoader();
+                
+                const cols = { 
+                    nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"), data: h.indexOf("DT.SAÍDA"), 
+                    peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"), cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), 
+                    bairro: h.indexOf("BAIRRO"), endereco: h.indexOf("RUA"),
+                    codcli: h.indexOf("COD.CLI."), repres: h.indexOf("REPRES."), sup: h.indexOf("SUPERVISOR")
+                };
+                
+                let qtd = 0; 
+                for (let i = hIdx + 1; i < raw.length; i++) { 
+                    const row = raw[i]; if (!row || !row[cols.nf]) continue; const tRow = cols.viagem !== -1 ? String(row[cols.viagem]).trim() : ""; if (!transpMap[tRow]) continue; qtd++; 
+                    
+                    let dSaida = cols.data !== -1 ? row[cols.data] : "";
+                    if (!isNaN(dSaida) && dSaida.toString().trim() !== "") {
+                        dSaida = excelToDateStr(parseFloat(dSaida));
+                    }
+                    
+                    window.adicionarLinhaNotas({ 
+                        nf: cleanNF(row[cols.nf]), viagem: tRow, ordem: cols.ordem!==-1?row[cols.ordem]:"", data: dSaida, 
+                        peso: cols.peso!==-1?row[cols.peso]:"", qtde: cols.qtde!==-1?row[cols.qtde]:"", cliente: cols.cliente!==-1?row[cols.cliente]:"", 
+                        cidade: cols.cidade!==-1?row[cols.cidade]:"", bairro: cols.bairro!==-1?row[cols.bairro]:"", endereco: cols.endereco!==-1?row[cols.endereco]:"", placa: transpMap[tRow],
+                        codcli: cols.codcli!==-1?row[cols.codcli]:"", repres: cols.repres!==-1?row[cols.repres]:"", sup: cols.sup!==-1?row[cols.sup]:""
+                    }); 
+                } 
+                if (qtd === 0) alert("Nenhuma nota correspondente encontrada."); hideLoader();
             }; reader.readAsArrayBuffer(file); e.target.value = '';
+        });
+
+        // ================= EDITOR PAINEL =================
+        const tbodyPainel = document.querySelector('#tabela-editor-painel tbody');
+        window.abrirSuperEditorPainel = (modo) => { 
+            tbodyPainel.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-painel'); const boxImport = document.getElementById('controles-importacao-painel');
+            if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; window.adicionarLinhaPainel(); } else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; } else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 20px;">Busque a data para editar.</td></tr>`; }
+            document.getElementById('modal-editor-painel').classList.add('active');
+        };
+        window.adicionarLinhaPainel = (dados = {}) => {
+            const placa = dados.placa || ""; const info = window.placasCache[placa] || { perfil: "", tipo: "" }; const tr = document.createElement('tr'); tr.draggable = true;
+            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"]; const statusAtual = dados.status || "Saida Dia";
+            const optionsHTML = statuses.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
+            tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="placa" contenteditable="true" style="font-weight:700;">${placa}</td><td data-col="troca" contenteditable="true">${dados.troca||""}</td><td data-col="perfil">${info.perfil}</td><td data-col="tipo">${info.tipo}</td><td data-col="oc" contenteditable="true">${dados.oc||""}</td><td data-col="transporte" contenteditable="true">${dados.transporte||""}</td><td data-col="motorista" contenteditable="true">${dados.motorista||""}</td><td data-col="contato" contenteditable="true">${dados.contato||""}</td><td data-col="status"><select class="select-status" style="${getStRotaStyle(statusAtual)}">${optionsHTML}</select></td><td data-col="km" contenteditable="true">${formatNumber(dados.km||"0")}</td><td data-col="regiao" contenteditable="true">${dados.regiao||""}</td><td data-col="ajudante" contenteditable="true">${dados.ajudante||""}</td><td data-col="valepalete" contenteditable="true">${dados.vale_palete||"NÃO"}</td><td data-col="qtde" contenteditable="true">${dados.qtde||"0"}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
+            tr.querySelector('[data-col="placa"]').addEventListener('blur', function() { const val = this.innerText.toUpperCase().trim(); const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; });
+            configurarDragAndDrop(tr, tbodyPainel); tbodyPainel.appendChild(tr);
+        };
+        document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => { const d = document.getElementById('editor-painel-data').value; if(!d) return; showLoader(); tbodyPainel.innerHTML = ""; const s = await getDoc(doc(db, "painel_diario", d)); if(s.exists()) { s.data().rotas.forEach(r => window.adicionarLinhaPainel(r)); } hideLoader(); });
+        document.getElementById('btn-salvar-editor-painel').addEventListener('click', async () => {
+            const d = document.getElementById('editor-painel-data').value; if(!d) return; showLoader(); const rotas = [];
+            document.querySelectorAll('#tabela-editor-painel tbody tr').forEach(tr => { if(!tr.querySelector('[data-col="placa"]')) return;
+                rotas.push({ placa: tr.querySelector('[data-col="placa"]').innerText.trim().toUpperCase(), troca: tr.querySelector('[data-col="troca"]').innerText.trim(), perfil: tr.querySelector('[data-col="perfil"]').innerText.trim(), tipo: tr.querySelector('[data-col="tipo"]').innerText.trim(), oc: tr.querySelector('[data-col="oc"]').innerText.trim(), transporte: tr.querySelector('[data-col="transporte"]').innerText.trim(), motorista: tr.querySelector('[data-col="motorista"]').innerText.trim(), contato: tr.querySelector('[data-col="contato"]').innerText.trim(), status: tr.querySelector('.select-status').value, km: tr.querySelector('[data-col="km"]').innerText.trim(), regiao: tr.querySelector('[data-col="regiao"]').innerText.trim(), ajudante: tr.querySelector('[data-col="ajudante"]').innerText.trim(), vale_palete: tr.querySelector('[data-col="valepalete"]').innerText.trim(), qtde: tr.querySelector('[data-col="qtde"]').innerText.trim() });
+            });
+            await setDoc(doc(db, "painel_diario", d), { rotas }); if(document.getElementById('mon-data-select').value === d) { document.getElementById('btn-carregar-painel').click(); } alert("Painel Salvo com sucesso!"); document.getElementById('modal-editor-painel').classList.remove('active'); hideLoader();
+        });
+        
+        document.addEventListener('change', (e) => {
+            if(e.target.classList.contains('select-status')) { const val = e.target.value; e.target.style.cssText = getStRotaStyle(val); const tr = e.target.closest('tr'); if(tr && tr.closest('#tabela-operacao-notas')) { tr.style.backgroundColor = getRowBackgroundStyle(val); } }
+        });
+
+        document.getElementById('file-import-painel').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return; showLoader(); const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'}); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && raw[i].includes("EMPLACAMENTO")) { hIdx = i; break; } }
+                if (hIdx === -1) { alert("Sem EMPLACAMENTO."); hideLoader(); return; } tbodyPainel.innerHTML = ''; const h = raw[hIdx];
+                const cols = { placa: h.indexOf("EMPLACAMENTO"), troca: h.indexOf("TROCA"), regiao: h.indexOf("Cidades"), oc: h.indexOf("NUMEROS O.C"), km: h.indexOf("KM ROTA"), ajudante: h.indexOf("AJUDANTE") };
+                for (let i = hIdx + 1; i < raw.length; i++) { 
+                    const r = raw[i]; if (!r || !r[cols.placa]) continue; const pOriginal = String(r[cols.placa]).trim().toUpperCase(); if (pOriginal==="" || pOriginal.includes("1899")) continue;
+                    const pTroca = cols.troca !== -1 && r[cols.troca] ? String(r[cols.troca]).trim().toUpperCase() : ""; let placaAtiva = pOriginal; let textoTroca = "";
+                    if (pTroca && pTroca !== pOriginal && pTroca !== "1899-12-31" && pTroca.length >= 7) { placaAtiva = pTroca; textoTroca = pOriginal; } else if (pTroca && pTroca !== "1899-12-31") { textoTroca = pTroca; }
+                    window.adicionarLinhaPainel({ placa: placaAtiva, troca: textoTroca, oc: cols.oc!==-1?r[cols.oc]:"", km: cols.km!==-1?r[cols.km]:"0", regiao: cols.regiao!==-1?r[cols.regiao]:"", ajudante: cols.ajudante!==-1?r[cols.ajudante]:"" });
+                } hideLoader();
+            }; reader.readAsArrayBuffer(file);
         });
 
         function configurarDragAndDrop(tr, container) {
             tr.addEventListener('dragstart', () => tr.classList.add('dragging')); tr.addEventListener('dragend', () => tr.classList.remove('dragging'));
             container.addEventListener('dragover', e => { e.preventDefault(); const drag = document.querySelector('.dragging'); if(!drag) return; const sib = [...container.querySelectorAll('tr:not(.dragging)')]; let next = sib.find(s => e.clientY <= s.getBoundingClientRect().top + s.offsetHeight / 2); container.insertBefore(drag, next); });
         }
+
+        // ================= GESTÃO PLACAS =================
+        function renderizarTabelaPlacas() {
+            const tbody = document.querySelector('#tabela-placas tbody'); let htmlBuffer = ""; document.getElementById('placas-count').innerText = `${Object.keys(window.placasCache).length} Veículos Cadastrados`;
+            for (const [placa, dados] of Object.entries(window.placasCache)) { htmlBuffer += `<tr><td><strong style="color:var(--accent);">${placa}</strong></td><td>${dados.perfil}</td><td>${dados.tipo}</td><td style="text-align: center;"><button class="btn btn-sm btn-secondary" onclick="window.abrirModalPlaca('${placa}')">Editar</button> <button class="btn btn-sm btn-danger" onclick="window.excluirPlaca('${placa}')">X</button></td></tr>`; }
+            tbody.innerHTML = htmlBuffer;
+        }
+        document.getElementById('import-placas-file').addEventListener('change', async function(e) {
+            const file = e.target.files[0]; if (!file) return; showLoader(); const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                    let headerIndex = -1; for (let i = 0; i < rawData.length; i++) { if (rawData[i] && rawData[i].some(cell => String(cell).toUpperCase().includes("PLACA"))) { headerIndex = i; break; } }
+                    if (headerIndex === -1) { alert("Sem coluna PLACA."); hideLoader(); return; }
+                    const headers = rawData[headerIndex].map(h => String(h).toUpperCase().trim());
+                    const colPlaca = headers.findIndex(h => h.includes("PLACA") || h.includes("EMPLACAMENTO")); const colPerfil = headers.findIndex(h => h.includes("PERFIL")); const colTipo = headers.findIndex(h => h.includes("TIPO"));
+                    const promessas = [];
+                    for (let i = headerIndex + 1; i < rawData.length; i++) {
+                        const row = rawData[i]; if (!row || !row[colPlaca]) continue; const placa = String(row[colPlaca]).toUpperCase().trim(); if (placa === "" || window.placasCache[placa]) continue;
+                        const perfil = colPerfil !== -1 && row[colPerfil] ? String(row[colPerfil]).toUpperCase().trim() : "NÃO CADASTRADO"; const tipo = colTipo !== -1 && row[colTipo] ? String(row[colTipo]).toUpperCase().trim() : "NÃO CADASTRADO";
+                        window.placasCache[placa] = { perfil, tipo }; promessas.push(setDoc(doc(db, "placas", placa), { perfil, tipo }));
+                    }
+                    await Promise.all(promessas); renderizarTabelaPlacas(); alert(`Importação OK.`);
+                } catch (err) { alert("Erro: " + err.message); } hideLoader();
+            }; reader.readAsArrayBuffer(file); e.target.value = '';
+        });
+        window.abrirModalPlaca = (placaId) => { document.getElementById('input-placa').value = placaId || ''; document.getElementById('input-perfil').value = placaId ? window.placasCache[placaId].perfil : ''; document.getElementById('input-tipo').value = placaId ? window.placasCache[placaId].tipo : ''; document.getElementById('input-placa').disabled = !!placaId; document.getElementById('modal-placa').classList.add('active'); }
+        window.excluirPlaca = async (placa) => { if(confirm(`Excluir o veículo ${placa}?`)) { showLoader(); await deleteDoc(doc(db, "placas", placa)); await carregarDadosGlobais(); hideLoader(); } }
+        document.getElementById('btn-salvar-placa').addEventListener('click', async () => {
+            const p = document.getElementById('input-placa').value.toUpperCase().trim(); const per = document.getElementById('input-perfil').value.toUpperCase().trim(); const t = document.getElementById('input-tipo').value.toUpperCase().trim();
+            if(!p) return; showLoader(); await setDoc(doc(db, "placas", p), { perfil: per, tipo: t }); await carregarDadosGlobais(); document.getElementById('modal-placa').classList.remove('active'); hideLoader();
+        });
 
         initApp();
     </script>
