@@ -3,157 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Icaphi Monitoramento</title>
+    <title>Icaphi Operacional PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* ================= PALETAS DE CORES (LIGHT / DARK) ================= */
         :root {
-            --bg-sidebar: #0f172a; --bg-main: #f1f5f9; --text-sidebar: #94a3b8;
-            --text-sidebar-hover: #ffffff; --border-color: #cbd5e1; --table-header: #f8fafc;
-            --table-text: #1e293b; --accent: #2563eb; --accent-hover: #1d4ed8; 
-            --success: #10b981; --danger: #ef4444; --drag-bg: #e2e8f0;
+            --bg-main: #f1f5f9; --bg-sidebar: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); 
+            --bg-panel: #ffffff; --bg-table-header: #f8fafc; --bg-table-row-alt: #f8fafc;
+            --text-main: #1e293b; --text-muted: #64748b; --text-sidebar: #94a3b8; --text-sidebar-hover: #ffffff; 
+            --border-color: #cbd5e1; --accent: #2563eb; --accent-hover: #1d4ed8; 
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --drag-bg: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            
+            /* Status Colors (Light) */
+            --st-vazio-bg: #eff6ff; --st-vazio-txt: #2563eb; --st-vazio-bd: #bfdbfe;
+            --st-pernoite-bg: #f5f5f4; --st-pernoite-txt: #78350f; --st-pernoite-bd: #d6d3d1;
+            --st-finalizado-bg: #fdf2f8; --st-finalizado-txt: #db2777; --st-finalizado-bd: #fbcfe8;
+            --st-prox-bg: #fefce8; --st-prox-txt: #ca8a04; --st-prox-bd: #fef08a;
+            --st-emrota-bg: #f8fafc; --st-emrota-txt: #64748b; --st-emrota-bd: #e2e8f0;
+            --st-aguardando-bg: #ecfeff; --st-aguardando-txt: #0891b2; --st-aguardando-bd: #a5f3fc;
+            --st-trafegando-bg: #fff7ed; --st-trafegando-txt: #ea580c; --st-trafegando-bd: #fed7aa;
+            --st-desc-bg: #faf5ff; --st-desc-txt: #9333ea; --st-desc-bd: #e9d5ff;
+            --st-parada-bg: #fef2f2; --st-parada-txt: #dc2626; --st-parada-bd: #fecaca;
+            --st-dev-bg: #fca5a5; --st-dev-txt: #7f1d1d; --st-dev-bd: #f87171;
+            --st-reen-bg: #fdba74; --st-reen-txt: #c2410c; --st-reen-bd: #fb923c;
+            --st-entregue-bg: #bbf7d0; --st-entregue-txt: #166534; --st-entregue-bd: #86efac;
+        }
+
+        body.dark-mode {
+            --bg-main: #020617; --bg-sidebar: linear-gradient(180deg, #020617 0%, #0f172a 100%); 
+            --bg-panel: #0f172a; --bg-table-header: #1e293b; --bg-table-row-alt: #161f31;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; 
+            --accent: #3b82f6; --accent-hover: #60a5fa; --drag-bg: #1e293b;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.5); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.6);
+
+            /* Status Colors (Dark) - Uses RGBA for blending with dark background */
+            --st-vazio-bg: rgba(37,99,235,0.15); --st-vazio-txt: #60a5fa; --st-vazio-bd: rgba(37,99,235,0.3);
+            --st-pernoite-bg: rgba(168,162,158,0.15); --st-pernoite-txt: #d6d3d1; --st-pernoite-bd: rgba(168,162,158,0.3);
+            --st-finalizado-bg: rgba(219,39,119,0.15); --st-finalizado-txt: #f472b6; --st-finalizado-bd: rgba(219,39,119,0.3);
+            --st-prox-bg: rgba(202,138,4,0.15); --st-prox-txt: #fde047; --st-prox-bd: rgba(202,138,4,0.3);
+            --st-emrota-bg: rgba(100,116,139,0.15); --st-emrota-txt: #94a3b8; --st-emrota-bd: rgba(100,116,139,0.3);
+            --st-aguardando-bg: rgba(8,145,178,0.15); --st-aguardando-txt: #22d3ee; --st-aguardando-bd: rgba(8,145,178,0.3);
+            --st-trafegando-bg: rgba(234,88,12,0.15); --st-trafegando-txt: #fb923c; --st-trafegando-bd: rgba(234,88,12,0.3);
+            --st-desc-bg: rgba(147,51,234,0.15); --st-desc-txt: #c084fc; --st-desc-bd: rgba(147,51,234,0.3);
+            --st-parada-bg: rgba(220,38,38,0.15); --st-parada-txt: #f87171; --st-parada-bd: rgba(220,38,38,0.3);
+            --st-dev-bg: rgba(220,38,38,0.25); --st-dev-txt: #fca5a5; --st-dev-bd: rgba(220,38,38,0.5);
+            --st-reen-bg: rgba(234,88,12,0.25); --st-reen-txt: #fdba74; --st-reen-bd: rgba(234,88,12,0.5);
+            --st-entregue-bg: rgba(22,165,52,0.15); --st-entregue-txt: #4ade80; --st-entregue-bd: rgba(22,165,52,0.3);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { display: flex; height: 100vh; overflow: hidden; background-color: var(--bg-main); color: var(--table-text); }
+        body { display: flex; height: 100vh; overflow: hidden; background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; transition: 0.2s;}
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; transition: 0.2s;}
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+        /* ========= SIDEBAR ========= */
         .sidebar-container { width: 65px; height: 100vh; position: relative; z-index: 50; flex-shrink: 0; }
-        .sidebar { width: 65px; height: 100%; background-color: var(--bg-sidebar); display: flex; flex-direction: column; color: white; padding: 20px 0; position: absolute; top: 0; left: 0; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; box-shadow: 4px 0 25px rgba(0,0,0,0.15); }
+        .sidebar { width: 65px; height: 100%; background: var(--bg-sidebar); display: flex; flex-direction: column; justify-content: space-between; color: white; position: absolute; top: 0; left: 0; transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; box-shadow: 4px 0 25px rgba(0,0,0,0.3); }
         .sidebar:hover { width: 230px; }
-        .brand { font-size: 1.2rem; font-weight: 800; text-align: left; padding: 0 15px 15px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; white-space: nowrap; opacity: 0; letter-spacing: -0.5px; display: flex; align-items: center;}
+        
+        .sidebar-top { display: flex; flex-direction: column; padding: 20px 10px; gap: 4px; flex: 1; overflow-y: auto; overflow-x: hidden;}
+        .sidebar-bottom { display: flex; flex-direction: column; padding: 15px 10px; gap: 4px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05); }
+
+        .brand { font-size: 1.2rem; font-weight: 800; text-align: left; padding: 0 5px 15px 5px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; white-space: nowrap; opacity: 0; letter-spacing: -0.5px; display: flex; align-items: center;}
         .sidebar:hover .brand { opacity: 1; transition: opacity 0.3s 0.1s; }
         .brand-icon { display: inline-block; width: 35px; text-align: center; margin-right: 5px; font-size: 1.3rem;}
         
-        .menu-section { display: flex; flex-direction: column; flex: 1; overflow-x: hidden; gap: 4px; padding: 0 10px; }
         .menu-item { padding: 10px 12px; border-radius: 8px; color: var(--text-sidebar); text-decoration: none; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; white-space: nowrap; transition: all 0.2s; border-left: 3px solid transparent;}
         .menu-item .menu-icon { font-size: 1.2rem; width: 25px; text-align: center; margin-right: 15px; flex-shrink: 0; transition: transform 0.2s;}
         .menu-item .menu-text { opacity: 0; transition: opacity 0.2s; }
         .sidebar:hover .menu-item .menu-text { opacity: 1; transition: opacity 0.3s 0.1s; }
         .menu-item:hover { color: var(--text-sidebar-hover); background-color: rgba(255,255,255,0.05); }
         .menu-item:hover .menu-icon { transform: scale(1.1); }
-        .menu-item.active { color: white; background-color: rgba(37,99,235,0.1); border-left: 3px solid var(--accent); font-weight: 600; }
-        .menu-bottom { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; margin-top: auto; border-radius: 0; }
+        .menu-item.active { color: white; background-color: rgba(37,99,235,0.15); border-left: 3px solid var(--accent); font-weight: 600; }
 
+        /* ========= CORE LAYOUT ========= */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; width: calc(100% - 65px); }
         .view-section { display: none; flex-direction: column; height: 100%; opacity: 0; }
         .view-section.active { display: flex; animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(12px) scale(0.995); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(12px) scale(0.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        .header { height: 60px; background-color: white; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .header h2 { font-size: 1.15rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;}
+        .header { height: 60px; background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; box-shadow: var(--shadow-sm); transition: 0.3s; }
+        .header h2 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;}
         .header-controls { display: flex; gap: 10px; align-items: center; }
         
-        input[type="date"], input[type="text"], select { padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; outline: none; transition: 0.2s; color: #334155; font-weight: 500; background: #fff;}
-        input[type="date"]:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        input[type="date"], input[type="month"], input[type="text"], select { padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; outline: none; transition: 0.2s; color: var(--text-main); font-weight: 500; background: var(--bg-panel);}
+        input[type="date"]:focus, input[type="month"]:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
         
         .content-container { flex: 1; padding: 15px; overflow: hidden; display: flex; flex-direction: column; gap: 15px; }
-        
-        /* BARRA DE PROGRESSO CAMINHÃO */
-        .progress-wrapper { background: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px;}
-        .progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase;}
-        .progress-track { background: #e2e8f0; height: 10px; border-radius: 10px; position: relative; width: 100%; }
+
+        /* ========= WIDGETS & TABLES ========= */
+        .progress-wrapper { background: var(--bg-panel); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; transition: 0.3s;}
+        .progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;}
+        .progress-track { background: var(--drag-bg); height: 10px; border-radius: 10px; position: relative; width: 100%; }
         .progress-fill { background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; width: 0%; border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
         .progress-truck { position: absolute; top: -14px; left: 0%; transform: scaleX(-1) translateX(50%); font-size: 22px; transition: left 1s cubic-bezier(0.4, 0, 0.2, 1); text-shadow: -2px 2px 4px rgba(0,0,0,0.2); z-index: 5;}
 
         #painel-summary { display: flex; gap: 10px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+        .summary-block { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 8px; font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 8px; white-space: nowrap; box-shadow: var(--shadow-sm); transition: 0.3s;}
         
-        .table-wrapper { background-color: white; border: 1px solid var(--border-color); border-radius: 8px; flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03), 0 2px 4px -1px rgba(0,0,0,0.02); }
+        .table-wrapper { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; box-shadow: var(--shadow-md); transition: 0.3s;}
         table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-        th, td { border-bottom: 1px solid var(--border-color); border-right: 1px solid #f1f5f9; padding: 6px 4px; text-align: left; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: 26px;}
-        th { font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; cursor: default; letter-spacing: 0.2px; border-bottom: 2px solid #94a3b8; border-right: 1px solid rgba(255,255,255,0.1);}
+        th, td { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--bg-main); padding: 6px 4px; text-align: left; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: 26px;}
+        th { font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; cursor: default; letter-spacing: 0.2px; border-bottom: 2px solid var(--text-muted); border-right: 1px solid rgba(255,255,255,0.05); background: var(--bg-table-header);}
         
-        #tabela-monitoramento tbody tr:nth-child(even), #tabela-placas tbody tr:nth-child(even), #tabela-editor-painel tbody tr:nth-child(even) { background-color: #f8fafc; }
-        tbody tr { transition: background-color 0.15s ease; }
-        tbody tr:hover { filter: brightness(0.95); }
+        /* Células de Cabeçalho Cores Fixas Excel - Ajustadas para DarkMode via Variáveis nulas no corpo */
+        .th-placa { background: #1e293b; color: #fff; }
+        .th-motorista { background: #f59e0b; color: #0f172a; }
+        .th-painel { background: #ea580c; color: #fff; }
+        .th-nf { background: #2563eb; color: #fff; }
+        .th-regiao { background: #334155; color: #fff; }
+        .th-dev { background: #475569; color: #fff; }
+        .th-rota { background: #0ea5e9; color: #fff; }
+        .th-app { background: #10b981; color: #fff; }
+
+        #tabela-monitoramento tbody tr:nth-child(even), #tabela-placas tbody tr:nth-child(even), #tabela-editor-painel tbody tr:nth-child(even), #tabela-canhotos tbody tr:nth-child(even) { background-color: var(--bg-table-row-alt); }
+        tbody tr { transition: background-color 0.15s ease; filter: brightness(1); }
+        tbody tr:hover { filter: brightness(0.9); }
+        .dark-mode tbody tr:hover { filter: brightness(1.2); }
 
         .filter-icon { cursor: pointer; margin-left: 3px; font-size: 9px; opacity: 0.6; padding: 2px; border-radius: 3px; transition: 0.2s; color: inherit;}
         .filter-icon:hover { opacity: 1; background: rgba(255,255,255,0.2); }
         .filter-active { opacity: 1; font-weight: 800; transform: scale(1.1); }
         
-        .excel-filter-popup { position: fixed; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 12px; z-index: 1000; display: none; flex-direction: column; gap: 10px; width: 220px; font-size: 11px; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; color: #0f172a;}
-        .excel-filter-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; background: #f8fafc;}
+        .excel-filter-popup { position: fixed; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); padding: 12px; z-index: 1000; display: none; flex-direction: column; gap: 10px; width: 220px; font-size: 11px; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; color: var(--text-main);}
+        .excel-filter-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid var(--border-color); padding: 5px; border-radius: 4px; background: var(--bg-main);}
         .excel-filter-item { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 3px; border-radius: 3px;}
-        .excel-filter-item:hover { background: #e2e8f0; }
+        .excel-filter-item:hover { background: var(--drag-bg); }
         .excel-filter-actions { display: flex; justify-content: space-between; margin-top: 5px; }
 
         td[contenteditable="true"] { cursor: text; outline: none; transition: all 0.2s; border: 1px solid transparent; border-radius: 4px;}
-        td[contenteditable="true"]:focus { background-color: #f0fdf4; border: 1px dashed var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
-        .drag-handle { cursor: grab; text-align: center; color: #cbd5e1; font-size: 12px; user-select: none; transition: color 0.2s;}
-        .drag-handle:hover { color: #64748b; }
+        td[contenteditable="true"]:focus { background-color: rgba(16,185,129,0.1); border: 1px dashed var(--success); box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+        .drag-handle { cursor: grab; text-align: center; color: var(--text-muted); font-size: 12px; user-select: none; transition: color 0.2s;}
         tr.dragging { opacity: 0.6; background-color: var(--drag-bg) !important; transform: scale(0.995);}
 
-        .controls-bar { display: flex; gap: 10px; background: white; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02);}
-        .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: white; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        /* ========= BOTÕES E CONTROLES ========= */
+        .controls-bar { display: flex; gap: 10px; background: var(--bg-panel); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; box-shadow: var(--shadow-sm);}
+        .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: white; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--shadow-sm); }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
         .btn:active { transform: translateY(0); box-shadow: none; }
         .btn-primary { background-color: var(--accent); } .btn-primary:hover { background-color: var(--accent-hover); }
         .btn-success { background-color: var(--success); } .btn-success:hover { background-color: #059669; }
         .btn-danger { background-color: var(--danger); } .btn-danger:hover { background-color: #dc2626; }
-        .btn-secondary { background-color: #64748b; } .btn-secondary:hover { background-color: #475569; }
-        .btn-warning { background-color: #f59e0b; color: white; } .btn-warning:hover { background-color: #d97706; }
+        .btn-secondary { background-color: var(--text-muted); } .btn-secondary:hover { background-color: #475569; }
+        .btn-warning { background-color: var(--warning); color: white; } .btn-warning:hover { background-color: #d97706; }
         .btn-sm { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; }
         .big-btn { width: 190px; height: 85px; font-size: 1.05rem; flex-direction: column; border-radius: 12px; gap: 10px; }
         
-        #loader { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); backdrop-filter: blur(3px); z-index: 2000; justify-content: center; align-items: center; font-weight: 700; color: var(--accent); flex-direction: column; gap: 12px; }
-        .spinner { border: 3px solid #e2e8f0; border-top: 3px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+        /* BOTÃO FLUTUANTE TEMA ESCURO */
+        .theme-toggle-btn { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%; background: var(--accent); color: white; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; cursor: pointer; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+        .theme-toggle-btn:hover { transform: scale(1.1) rotate(15deg); }
+
+        #loader { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); z-index: 2000; justify-content: center; align-items: center; font-weight: 700; color: var(--accent); flex-direction: column; gap: 12px; }
+        .spinner { border: 3px solid var(--border-color); border-top: 3px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .save-indicator { font-size: 0.8rem; font-weight: 700; color: var(--success); display: none; margin-left: 10px; background: #ecfdf5; padding: 4px 10px; border-radius: 12px; border: 1px solid #a7f3d0;}
+        .save-indicator { font-size: 0.8rem; font-weight: 700; color: var(--success); display: none; margin-left: 10px; background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--success);}
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(3px); z-index: 300; justify-content: center; align-items: center; }
+        /* ========= MODAIS ========= */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 300; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-content { background: var(--bg-panel); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; border: 1px solid var(--border-color); }
         
-        @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.96) translateY(15px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.96) translateY(15px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
-        .modal-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;}
-        .btn-close { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; transition: 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center;}
+        .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-table-header); }
+        .modal-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main);}
+        .btn-close { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: 0.2s; line-height: 1; display: flex; align-items: center; justify-content: center;}
         .btn-close:hover { color: var(--danger); transform: scale(1.15); }
         .modal-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
-        .modal-controls { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); justify-content: space-between; }
-        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: #f8fafc; gap: 10px;}
+        .modal-controls { display: flex; gap: 10px; align-items: center; background: var(--bg-table-header); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); justify-content: space-between; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; background: var(--bg-table-header); gap: 10px;}
         
         .select-status { width: 100%; padding: 4px 2px; border: 1px solid transparent; background: transparent; outline: none; cursor: pointer; font-weight: 700; font-size: 9.5px; border-radius: 4px; transition: all 0.2s;}
-        .select-status:hover { border-color: rgba(0,0,0,0.1); }
+        .select-status:hover { border-color: var(--border-color); }
 
-        /* CÉLULAS CLICÁVEIS DO PAINEL */
         .clickable-cell { cursor: pointer; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; transition: 0.2s; }
-        .clickable-cell:hover { background: rgba(37,99,235,0.1); color: var(--accent) !important; border-radius: 4px;}
+        .clickable-cell:hover { background: rgba(37,99,235,0.2); color: var(--accent) !important; border-radius: 4px;}
 
-        /* ESTILOS MAPA REGIÃO */
-        .btn-city { background: white; border: 1px solid #cbd5e1; color: #334155; padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);}
+        .btn-city { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);}
         .btn-city:hover, .btn-city.active { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.05); }
 
     </style>
 </head>
 <body>
 
+    <button class="theme-toggle-btn" id="btn-theme-toggle">🌙</button>
+
     <div class="sidebar-container">
         <nav class="sidebar">
-            <div>
+            <div class="sidebar-top">
                 <div class="brand"><span class="brand-icon">⚡</span>Icaphi</div>
-                <div class="menu-section">
-                    <a class="menu-item active" data-target="view-monitoramento"><span class="menu-icon">📊</span><span class="menu-text">Monitoramento</span></a>
-                    <a class="menu-item" data-target="view-notas"><span class="menu-icon">🧾</span><span class="menu-text">Notas Fiscais</span></a>
-                    <a class="menu-item" onclick="abrirModalAtualizarApps()"><span class="menu-icon">📱</span><span class="menu-text">Atualizar Apps</span></a>
-                    <a class="menu-item" data-target="view-canhotos"><span class="menu-icon">📋</span><span class="menu-text">Canhotos</span></a>
-                    <a class="menu-item" data-target="view-dashboard"><span class="menu-icon">📈</span><span class="menu-text">Dashboard</span></a>
-                </div>
+                <a class="menu-item active" data-target="view-monitoramento"><span class="menu-icon">📊</span><span class="menu-text">Monitoramento</span></a>
+                <a class="menu-item" data-target="view-notas"><span class="menu-icon">🧾</span><span class="menu-text">Notas Fiscais</span></a>
+                <a class="menu-item" onclick="abrirModalAtualizarApps()"><span class="menu-icon">📱</span><span class="menu-text">Atualizar Apps</span></a>
+                <a class="menu-item" data-target="view-canhotos"><span class="menu-icon">📋</span><span class="menu-text">Canhotos</span></a>
+                <a class="menu-item" data-target="view-dashboard"><span class="menu-icon">📈</span><span class="menu-text">Dashboard</span></a>
             </div>
-            <div class="menu-section menu-bottom">
+            <div class="sidebar-bottom">
                 <a class="menu-item" data-target="view-montar-painel"><span class="menu-icon">🛠️</span><span class="menu-text">Montar Painel</span></a>
                 <a class="menu-item" data-target="view-montar-notas"><span class="menu-icon">⚙️</span><span class="menu-text">Montar Notas</span></a>
                 <a class="menu-item" data-target="view-placas"><span class="menu-icon">🚚</span><span class="menu-text">Frota</span></a>
@@ -173,20 +224,11 @@
                 </div>
             </header>
             <div class="content-container">
-                
                 <div class="progress-wrapper">
-                    <div class="progress-labels">
-                        <span>Progresso da Operação</span>
-                        <span id="lbl-progresso-txt" style="color: var(--accent);">0 / 0 Veículos (0%)</span>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" id="progress-bar-fill"></div>
-                        <div class="progress-truck" id="progress-truck">🚚</div>
-                    </div>
+                    <div class="progress-labels"><span>Progresso da Operação</span><span id="lbl-progresso-txt" style="color: var(--accent);">0 / 0 Veículos (0%)</span></div>
+                    <div class="progress-track"><div class="progress-fill" id="progress-bar-fill"></div><div class="progress-truck" id="progress-truck">🚚</div></div>
                 </div>
-
                 <div id="painel-summary"></div>
-
                 <div class="table-wrapper">
                     <table id="tabela-monitoramento">
                         <colgroup>
@@ -200,31 +242,31 @@
                         </colgroup>
                         <thead>
                             <tr>
-                                <th style="background:#1e293b; color:#fff;">PLACA <span class="filter-icon" data-col="0">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">TROCA <span class="filter-icon" data-col="1">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">PERFIL <span class="filter-icon" data-col="2">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">TIPO <span class="filter-icon" data-col="3">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">O.C. <span class="filter-icon" data-col="4">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">TRANS. <span class="filter-icon" data-col="5">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">MOT. <span class="filter-icon" data-col="6">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">CONT. <span class="filter-icon" data-col="7">▼</span></th>
-                                <th style="background:#ea580c; color:#fff;">ST. PAINEL <span class="filter-icon" data-col="8">▼</span></th>
-                                <th style="background:#2563eb; color:#fff;">Q.NF <span class="filter-icon" data-col="9">▼</span></th>
-                                <th style="background:#2563eb; color:#fff;">PESO <span class="filter-icon" data-col="10">▼</span></th>
-                                <th style="background:#2563eb; color:#fff;">KM <span class="filter-icon" data-col="11">▼</span></th>
-                                <th style="background:#334155; color:#fff;">REGIÃO <span class="filter-icon" data-col="12">▼</span></th>
-                                <th style="background:#334155; color:#fff;">AJUDANTE <span class="filter-icon" data-col="13">▼</span></th>
-                                <th style="background:#475569; color:#fff;">DEV <span class="filter-icon" data-col="14">▼</span></th>
-                                <th style="background:#475569; color:#fff;">REEN <span class="filter-icon" data-col="15">▼</span></th>
-                                <th style="background:#475569; color:#fff;">P+Q <span class="filter-icon" data-col="16">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">PARC <span class="filter-icon" data-col="17">▼</span></th>
-                                <th style="background:#0ea5e9; color:#fff;">ST. ROTA <span class="filter-icon" data-col="18">▼</span></th>
-                                <th style="background:#0ea5e9; color:#fff;">PEN <span class="filter-icon" data-col="19">▼</span></th>
-                                <th style="background:#0ea5e9; color:#fff;">REAL <span class="filter-icon" data-col="20">▼</span></th>
-                                <th style="background:#10b981; color:#fff;">% APP <span class="filter-icon" data-col="21">▼</span></th>
-                                <th style="background:#10b981; color:#fff;">100% <span class="filter-icon" data-col="22">▼</span></th>
-                                <th style="background:#64748b; color:#fff;">PAL. <span class="filter-icon" data-col="23">▼</span></th>
-                                <th style="background:#64748b; color:#fff;">QTD <span class="filter-icon" data-col="24">▼</span></th>
+                                <th class="th-placa">PLACA <span class="filter-icon" data-col="0">▼</span></th>
+                                <th class="th-placa">TROCA <span class="filter-icon" data-col="1">▼</span></th>
+                                <th class="th-placa">PERFIL <span class="filter-icon" data-col="2">▼</span></th>
+                                <th class="th-placa">TIPO <span class="filter-icon" data-col="3">▼</span></th>
+                                <th class="th-placa">O.C. <span class="filter-icon" data-col="4">▼</span></th>
+                                <th class="th-placa">TRANS. <span class="filter-icon" data-col="5">▼</span></th>
+                                <th class="th-motorista">MOT. <span class="filter-icon" data-col="6">▼</span></th>
+                                <th class="th-motorista">CONT. <span class="filter-icon" data-col="7">▼</span></th>
+                                <th class="th-painel">ST. PAINEL <span class="filter-icon" data-col="8">▼</span></th>
+                                <th class="th-nf">Q.NF <span class="filter-icon" data-col="9">▼</span></th>
+                                <th class="th-nf">PESO <span class="filter-icon" data-col="10">▼</span></th>
+                                <th class="th-nf">KM <span class="filter-icon" data-col="11">▼</span></th>
+                                <th class="th-regiao">REGIÃO <span class="filter-icon" data-col="12">▼</span></th>
+                                <th class="th-regiao">AJUDANTE <span class="filter-icon" data-col="13">▼</span></th>
+                                <th class="th-dev">DEV <span class="filter-icon" data-col="14">▼</span></th>
+                                <th class="th-dev">REEN <span class="filter-icon" data-col="15">▼</span></th>
+                                <th class="th-dev">P+Q <span class="filter-icon" data-col="16">▼</span></th>
+                                <th class="th-motorista">PARC <span class="filter-icon" data-col="17">▼</span></th>
+                                <th class="th-rota">ST. ROTA <span class="filter-icon" data-col="18">▼</span></th>
+                                <th class="th-rota">PEN <span class="filter-icon" data-col="19">▼</span></th>
+                                <th class="th-rota">REAL <span class="filter-icon" data-col="20">▼</span></th>
+                                <th class="th-app">% APP <span class="filter-icon" data-col="21">▼</span></th>
+                                <th class="th-app">100% <span class="filter-icon" data-col="22">▼</span></th>
+                                <th class="th-dev">PAL. <span class="filter-icon" data-col="23">▼</span></th>
+                                <th class="th-dev">QTD <span class="filter-icon" data-col="24">▼</span></th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -238,7 +280,7 @@
                 <h2>🧾 Notas Fiscais <span id="save-indicator-notas" class="save-indicator">Salvo ✓</span></h2>
                 <div class="header-controls">
                     <button class="btn btn-warning" onclick="abrirModalAcoesLote()">⚡ Ações em Lote</button>
-                    <div style="border-left: 1px solid #cbd5e1; height: 30px; margin: 0 5px;"></div>
+                    <div style="border-left: 1px solid var(--border-color); height: 30px; margin: 0 5px;"></div>
                     <input type="date" id="notas-data-select">
                     <button class="btn btn-primary" id="btn-carregar-notas">Buscar</button>
                 </div>
@@ -255,28 +297,28 @@
                         </colgroup>
                         <thead>
                             <tr>
-                                <th style="background:#1e293b; color:#fff;">NF <span class="filter-icon" data-col="0">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">VIAG <span class="filter-icon" data-col="1">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">ORD <span class="filter-icon" data-col="2">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">DATA <span class="filter-icon" data-col="3">▼</span></th>
-                                <th style="background:#2563eb; color:#fff;">PESO <span class="filter-icon" data-col="4">▼</span></th>
-                                <th style="background:#2563eb; color:#fff;">QTD <span class="filter-icon" data-col="5">▼</span></th>
-                                <th style="background:#334155; color:#fff;">CLIENTE <span class="filter-icon" data-col="6">▼</span></th>
-                                <th style="background:#334155; color:#fff;">CIDADE <span class="filter-icon" data-col="7">▼</span></th>
-                                <th style="background:#334155; color:#fff;">BAIRRO <span class="filter-icon" data-col="8">▼</span></th>
-                                <th style="background:#334155; color:#fff;">ENDEREÇO <span class="filter-icon" data-col="9">▼</span></th>
-                                <th style="background:#1e293b; color:#fff;">PLACA <span class="filter-icon" data-col="10">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">MOT. <span class="filter-icon" data-col="11">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">TEL. <span class="filter-icon" data-col="12">▼</span></th>
-                                <th style="background:#0ea5e9; color:#fff;">STATUS <span class="filter-icon" data-col="13">▼</span></th>
-                                <th style="background:#475569; color:#fff;">CHEG. <span class="filter-icon" data-col="14">▼</span></th>
-                                <th style="background:#475569; color:#fff;">SAÍDA <span class="filter-icon" data-col="15">▼</span></th>
-                                <th style="background:#64748b; color:#fff;">OBS <span class="filter-icon" data-col="16">▼</span></th>
-                                <th style="background:#f59e0b; color:#0f172a;">NºPARC. <span class="filter-icon" data-col="17">▼</span></th>
-                                <th style="background:#10b981; color:#fff;">APP <span class="filter-icon" data-col="18">▼</span></th>
+                                <th class="th-placa">NF <span class="filter-icon" data-col="0">▼</span></th>
+                                <th class="th-placa">VIAG <span class="filter-icon" data-col="1">▼</span></th>
+                                <th class="th-placa">ORD <span class="filter-icon" data-col="2">▼</span></th>
+                                <th class="th-placa">DATA <span class="filter-icon" data-col="3">▼</span></th>
+                                <th class="th-nf">PESO <span class="filter-icon" data-col="4">▼</span></th>
+                                <th class="th-nf">QTD <span class="filter-icon" data-col="5">▼</span></th>
+                                <th class="th-regiao">CLIENTE <span class="filter-icon" data-col="6">▼</span></th>
+                                <th class="th-regiao">CIDADE <span class="filter-icon" data-col="7">▼</span></th>
+                                <th class="th-regiao">BAIRRO <span class="filter-icon" data-col="8">▼</span></th>
+                                <th class="th-regiao">ENDEREÇO <span class="filter-icon" data-col="9">▼</span></th>
+                                <th class="th-placa">PLACA <span class="filter-icon" data-col="10">▼</span></th>
+                                <th class="th-motorista">MOT. <span class="filter-icon" data-col="11">▼</span></th>
+                                <th class="th-motorista">TEL. <span class="filter-icon" data-col="12">▼</span></th>
+                                <th class="th-rota">STATUS <span class="filter-icon" data-col="13">▼</span></th>
+                                <th class="th-dev">CHEG. <span class="filter-icon" data-col="14">▼</span></th>
+                                <th class="th-dev">SAÍDA <span class="filter-icon" data-col="15">▼</span></th>
+                                <th class="th-dev">OBS <span class="filter-icon" data-col="16">▼</span></th>
+                                <th class="th-motorista">NºPARC. <span class="filter-icon" data-col="17">▼</span></th>
+                                <th class="th-app">APP <span class="filter-icon" data-col="18">▼</span></th>
                             </tr>
                         </thead>
-                        <tbody><tr><td colspan="19" style="text-align:center; padding: 30px; color: #64748b; font-weight: 500;">Busque as notas para iniciar a operação.</td></tr></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -284,35 +326,47 @@
 
         <div id="excel-filter-popup" class="excel-filter-popup">
             <input type="text" id="excel-filter-search" class="excel-filter-search" placeholder="Pesquisar...">
-            <div class="excel-filter-actions">
-                <label style="cursor: pointer; font-weight: 600;"><input type="checkbox" id="excel-filter-select-all" checked> (Selecionar Tudo)</label>
-            </div>
+            <div class="excel-filter-actions"><label style="cursor: pointer; font-weight: 600;"><input type="checkbox" id="excel-filter-select-all" checked> (Selecionar Tudo)</label></div>
             <div id="excel-filter-list" class="excel-filter-list"></div>
-            <div class="excel-filter-actions">
-                <button class="btn btn-sm btn-secondary" id="btn-filter-cancel">Cancelar</button>
-                <button class="btn btn-sm btn-primary" id="btn-filter-apply">OK</button>
-            </div>
+            <div class="excel-filter-actions"><button class="btn btn-sm btn-secondary" id="btn-filter-cancel">Cancelar</button><button class="btn btn-sm btn-primary" id="btn-filter-apply">OK</button></div>
         </div>
+
+        <section id="view-canhotos" class="view-section">
+            <header class="header">
+                <h2>📋 Gestão de Canhotos (Auditoria de Anexos)</h2>
+                <div class="header-controls">
+                    <input type="month" id="canhotos-month-select">
+                    <button class="btn btn-primary" id="btn-carregar-canhotos">Buscar Mês</button>
+                </div>
+            </header>
+            <div class="content-container">
+                <div id="canhotos-summary"></div>
+                <div class="table-wrapper">
+                    <table id="tabela-canhotos">
+                        <colgroup><col style="width:12%;"><col style="width:12%;"><col style="width:12%;"><col style="width:12%;"><col style="width:12%;"><col style="width:15%;"><col style="width:12%;"><col style="width:13%;"></colgroup>
+                        <thead>
+                            <tr>
+                                <th>DATA DA OPERAÇÃO</th><th>TOTAL ENTREGAS</th><th>C/ ASSINATURA</th><th>C/ FOTO</th><th>ANEXADO</th>
+                                <th style="color:var(--danger)">SEM ANEXO</th><th>DIAS EM ATRASO</th><th style="text-align:center;">AÇÃO</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="8" align="center" style="padding:30px; color:var(--text-muted); font-weight:500;">Selecione o mês para analisar as baixas.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
         <section id="view-montar-painel" class="view-section">
             <header class="header"><h2>🛠️ Montar Painel Diário</h2></header>
-            <div class="content-container" style="justify-content: center; align-items: center; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-                <div style="display: flex; gap: 25px;">
-                    <button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('manual')">Montar Manual</button>
-                    <button class="btn btn-primary big-btn" onclick="abrirSuperEditorPainel('importar')">Importar Excel</button>
-                    <button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('editar')">Editar Dia</button>
-                </div>
+            <div class="content-container" style="justify-content: center; align-items: center; background: var(--bg-panel); border-radius: 8px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('manual')">Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorPainel('importar')">Importar Excel</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorPainel('editar')">Editar Dia</button></div>
             </div>
         </section>
 
         <section id="view-montar-notas" class="view-section">
             <header class="header"><h2>⚙️ Montar Notas Fiscais</h2></header>
-            <div class="content-container" style="justify-content: center; align-items: center; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-                <div style="display: flex; gap: 25px;">
-                    <button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('manual')">Montar Manual</button>
-                    <button class="btn btn-primary big-btn" onclick="abrirSuperEditorNotas('importar')">Importar Base</button>
-                    <button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('editar')">Editar Dia</button>
-                </div>
+            <div class="content-container" style="justify-content: center; align-items: center; background: var(--bg-panel); border-radius: 8px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; gap: 25px;"><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('manual')">Montar Manual</button><button class="btn btn-primary big-btn" onclick="abrirSuperEditorNotas('importar')">Importar Base</button><button class="btn btn-secondary big-btn" onclick="abrirSuperEditorNotas('editar')">Editar Dia</button></div>
             </div>
         </section>
 
@@ -320,54 +374,25 @@
             <header class="header"><h2>🚚 Frota</h2></header>
             <div class="content-container">
                 <div class="controls-bar" style="justify-content: space-between;">
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="abrirModalPlaca('')">+ Adicionar Veículo</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('import-placas-file').click()">Importar Planilha</button>
-                        <input type="file" id="import-placas-file" accept=".xlsx, .xls, .csv" style="display: none;">
-                    </div>
-                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600;" id="placas-count">Carregando...</span>
+                    <div style="display: flex; gap: 10px;"><button class="btn btn-primary" onclick="abrirModalPlaca('')">+ Adicionar Veículo</button><button class="btn btn-secondary" onclick="document.getElementById('import-placas-file').click()">Importar Planilha</button><input type="file" id="import-placas-file" accept=".xlsx, .xls, .csv" style="display: none;"></div>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;" id="placas-count">Carregando...</span>
                 </div>
-                <div class="table-wrapper">
-                    <table id="tabela-placas">
-                        <colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:30%;"><col style="width:20%;"></colgroup>
-                        <thead><tr><th>PLACA</th><th>PERFIL</th><th>TIPO</th><th style="text-align: center;">AÇÕES</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <div class="table-wrapper"><table id="tabela-placas"><colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:30%;"><col style="width:20%;"></colgroup><thead><tr><th>PLACA</th><th>PERFIL</th><th>TIPO</th><th style="text-align: center;">AÇÕES</th></tr></thead><tbody></tbody></table></div>
             </div>
         </section>
 
-        <section id="view-canhotos" class="view-section"><div class="content-container" style="background:white; border-radius: 8px; text-align:center; padding:50px; font-weight: 600; color: #94a3b8; font-size: 1.1rem;">Módulo em construção...</div></section>
-        <section id="view-dashboard" class="view-section"><div class="content-container" style="background:white; border-radius: 8px; text-align:center; padding:50px; font-weight: 600; color: #94a3b8; font-size: 1.1rem;">Módulo em construção...</div></section>
+        <section id="view-dashboard" class="view-section"><div class="content-container" style="background:var(--bg-panel); border-radius: 8px; text-align:center; padding:50px; font-weight: 600; color: var(--text-muted); font-size: 1.1rem;">Dashboard em construção...</div></section>
     </main>
 
     <div class="modal-overlay" id="modal-acoes-lote">
         <div class="modal-content" style="width: 450px;">
-            <div class="modal-header"><h3>⚡ Ações em Lote (Notas Fiscais)</h3><button class="btn-close" onclick="document.getElementById('modal-acoes-lote').classList.remove('active')">&times;</button></div>
+            <div class="modal-header"><h3>⚡ Ações em Lote (Notas)</h3><button class="btn-close" onclick="document.getElementById('modal-acoes-lote').classList.remove('active')">×</button></div>
             <div class="modal-body">
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                    <h4 style="color: #166534; font-size: 13px; margin-bottom: 5px;">Poder 1: Automação Inteligente</h4>
-                    <p style="font-size: 11.5px; color: #14532d; margin-bottom: 12px; line-height: 1.4;">Varre todas as notas e muda para <b>ENTREGUE</b> aquelas que possuírem qualquer anexo na coluna APP.</p>
-                    <button class="btn btn-success" style="width: 100%;" onclick="executarLoteAppEntregue()">Marcar como ENTREGUE por Anexo</button>
-                </div>
-                <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 5px 0;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                    <h4 style="color: #334155; font-size: 13px; margin-bottom: 5px;">Poder 2: Alteração em Massa</h4>
-                    <p style="font-size: 11.5px; color: #64748b; margin-bottom: 12px; line-height: 1.4;">Muda o status de TODAS as notas que estão <b>visíveis na tela neste momento</b>.</p>
-                    <select id="select-lote-status" style="width: 100%; margin-bottom: 12px; font-weight: 600; background: white; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        <option value="">-- Selecione o Status --</option>
-                        <option value="AGUARDANDO">AGUARDANDO</option>
-                        <option value="DESCARREGANDO">DESCARREGANDO</option>
-                        <option value="DEVOLUÇÃO">DEVOLUÇÃO</option>
-                        <option value="ENTREGUE">ENTREGUE</option>
-                        <option value="NÃO EMBARCADA">NÃO EMBARCADA</option>
-                        <option value="PERNOITE">PERNOITE</option>
-                        <option value="REENTREGA">REENTREGA</option>
-                        <option value="TRAFEGANDO">TRAFEGANDO</option>
-                        <option value="PARADA">PARADA</option>
-                        <option value="SINISTRADA">SINISTRADA</option>
-                    </select>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="executarLoteStatusVisiveis()">Aplicar Status na Tela</button>
+                <div style="background: rgba(16,185,129,0.1); border: 1px solid var(--success); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                    <h4 style="color: var(--success); font-size: 13px; margin-bottom: 5px;">Poder 1: Automação Inteligente</h4><p style="font-size: 11.5px; color: var(--text-main); margin-bottom: 12px; line-height: 1.4;">Varre todas as notas e muda para <b>ENTREGUE</b> aquelas que possuírem qualquer anexo.</p><button class="btn btn-success" style="width: 100%;" onclick="executarLoteAppEntregue()">Marcar como ENTREGUE por Anexo</button>
+                </div><hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 5px 0;">
+                <div style="background: var(--bg-table-header); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--text-main); font-size: 13px; margin-bottom: 5px;">Poder 2: Alteração em Massa</h4><p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">Muda o status de TODAS as notas que estão <b>visíveis na tela neste momento</b>.</p><select id="select-lote-status" style="width: 100%; margin-bottom: 12px; font-weight: 600; background: var(--bg-panel); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;"><option value="">-- Selecione o Status --</option><option value="AGUARDANDO">AGUARDANDO</option><option value="DESCARREGANDO">DESCARREGANDO</option><option value="DEVOLUÇÃO">DEVOLUÇÃO</option><option value="ENTREGUE">ENTREGUE</option><option value="NÃO EMBARCADA">NÃO EMBARCADA</option><option value="PERNOITE">PERNOITE</option><option value="REENTREGA">REENTREGA</option><option value="TRAFEGANDO">TRAFEGANDO</option><option value="PARADA">PARADA</option><option value="SINISTRADA">SINISTRADA</option></select><button class="btn btn-primary" style="width: 100%;" onclick="executarLoteStatusVisiveis()">Aplicar Status na Tela</button>
                 </div>
             </div>
         </div>
@@ -375,22 +400,14 @@
 
     <div class="modal-overlay" id="modal-atualizar-apps">
         <div class="modal-content" style="width: 420px;">
-            <div class="modal-header"><h3>📱 Atualizar Apps (Anexos)</h3><button class="btn-close" onclick="document.getElementById('modal-atualizar-apps').classList.remove('active')">&times;</button></div>
-            <div class="modal-body">
-                <p style="font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.4;">Selecione a data da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema preencherá a coluna APP automaticamente.</p>
-                <div style="margin-top: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <label style="font-size: 12px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">Data da Operação:</label>
-                    <input type="date" id="apps-data-select" style="width:100%;">
-                </div>
-                <button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;" onclick="document.getElementById('file-import-apps').click()">Importar Planilha de Anexos</button>
-                <input type="file" id="file-import-apps" accept=".xlsx, .xls, .csv" style="display: none;">
-            </div>
+            <div class="modal-header"><h3>📱 Atualizar Apps</h3><button class="btn-close" onclick="document.getElementById('modal-atualizar-apps').classList.remove('active')">×</button></div>
+            <div class="modal-body"><p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">Selecione a data da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema preencherá a coluna APP automaticamente.</p><div style="margin-top: 10px; background: var(--bg-table-header); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);"><label style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px;">Data da Operação:</label><input type="date" id="apps-data-select" style="width:100%;"></div><button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;" onclick="document.getElementById('file-import-apps').click()">Importar Planilha de Anexos</button><input type="file" id="file-import-apps" accept=".xlsx, .xls, .csv" style="display: none;"></div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal-motoristas">
         <div class="modal-content" style="width: 500px;">
-            <div class="modal-header"><h3>Vincular Motoristas</h3><button class="btn-close" onclick="document.getElementById('modal-motoristas').classList.remove('active')">&times;</button></div>
+            <div class="modal-header"><h3>Vincular Motoristas</h3><button class="btn-close" onclick="document.getElementById('modal-motoristas').classList.remove('active')">×</button></div>
             <div class="modal-body" id="lista-motoristas-modal" style="overflow-y: auto; max-height: 400px; padding-right:5px;"></div>
             <div class="modal-footer"><button class="btn btn-success" id="btn-confirmar-salvar-notas" style="width: 100%; padding: 10px;">Confirmar e Salvar Base</button></div>
         </div>
@@ -398,21 +415,13 @@
 
     <div class="modal-overlay" id="modal-editor-painel">
         <div class="modal-content" style="width: 96%; height: 92%;">
-            <div class="modal-header"><h3 id="titulo-modal-painel">Editor de Painel</h3><button class="btn-close" onclick="document.getElementById('modal-editor-painel').classList.remove('active')">&times;</button></div>
+            <div class="modal-header"><h3 id="titulo-modal-painel">Editor de Painel</h3><button class="btn-close" onclick="document.getElementById('modal-editor-painel').classList.remove('active')">×</button></div>
             <div class="modal-body" style="padding: 15px;">
-                <div class="modal-controls">
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <input type="date" id="editor-painel-data">
-                        <button class="btn btn-primary btn-sm" id="btn-buscar-editor-painel" style="display: none; padding: 6px 15px;">Buscar</button>
-                        <div id="controles-importacao-painel" style="display:none;"><button class="btn btn-success btn-sm" onclick="document.getElementById('file-import-painel').click()" style="padding: 6px 15px;">Selecionar Planilha</button><input type="file" id="file-import-painel" accept=".xlsx, .xls, .csv" style="display: none;"></div>
-                    </div>
-                    <button class="btn btn-secondary btn-sm" onclick="adicionarLinhaPainel()" style="padding: 6px 15px;">+ Nova Linha</button>
-                </div>
+                <div class="modal-controls"><div style="display: flex; gap: 15px; align-items: center;"><input type="date" id="editor-painel-data"><button class="btn btn-primary btn-sm" id="btn-buscar-editor-painel" style="display: none; padding: 6px 15px;">Buscar</button><div id="controles-importacao-painel" style="display:none;"><button class="btn btn-success btn-sm" onclick="document.getElementById('file-import-painel').click()" style="padding: 6px 15px;">Selecionar Planilha</button><input type="file" id="file-import-painel" accept=".xlsx, .xls, .csv" style="display: none;"></div></div><button class="btn btn-secondary btn-sm" onclick="adicionarLinhaPainel()" style="padding: 6px 15px;">+ Nova Linha</button></div>
                 <div class="table-wrapper">
                     <table id="tabela-editor-painel">
                         <colgroup><col style="width:3%;"><col style="width:5%;"><col style="width:5%;"><col style="width:6%;"><col style="width:6%;"><col style="width:5%;"><col style="width:6%;"><col style="width:8%;"><col style="width:8%;"><col style="width:8%;"><col style="width:5%;"><col style="width:8%;"><col style="width:8%;"><col style="width:6%;"><col style="width:5%;"><col style="width:4%;"></colgroup>
-                        <thead><tr><th>☰</th><th style="background:#fef9c3;">PLACA ✏️</th><th style="background:#fef9c3;">TROCA ✏️</th><th>PERFIL</th><th>TIPO</th><th style="background:#fef9c3;">O.C. ✏️</th><th style="background:#fef9c3;">TRANS. ✏️</th><th style="background:#fef9c3;">MOT. ✏️</th><th style="background:#fef9c3;">CONTATO ✏️</th><th style="background:#fef9c3;">STATUS 🔽</th><th style="background:#fef9c3;">KM ✏️</th><th style="background:#fef9c3;">REGIÃO ✏️</th><th style="background:#fef9c3;">AJUD. ✏️</th><th style="background:#fef9c3;">PAL. ✏️</th><th style="background:#fef9c3;">QTD ✏️</th><th>AÇÃO</th></tr></thead>
-                        <tbody></tbody>
+                        <thead><tr><th>☰</th><th>PLACA ✏️</th><th>TROCA ✏️</th><th>PERFIL</th><th>TIPO</th><th>O.C. ✏️</th><th>TRANS. ✏️</th><th>MOT. ✏️</th><th>CONTATO ✏️</th><th>STATUS 🔽</th><th>KM ✏️</th><th>REGIÃO ✏️</th><th>AJUD. ✏️</th><th>PAL. ✏️</th><th>QTD ✏️</th><th>AÇÃO</th></tr></thead><tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -422,21 +431,13 @@
 
     <div class="modal-overlay" id="modal-editor-notas">
         <div class="modal-content" style="width: 96%; height: 92%;">
-            <div class="modal-header"><h3 id="titulo-modal-notas">Montagem Base Notas</h3><button class="btn-close" onclick="document.getElementById('modal-editor-notas').classList.remove('active')">&times;</button></div>
+            <div class="modal-header"><h3 id="titulo-modal-notas">Montagem Base Notas</h3><button class="btn-close" onclick="document.getElementById('modal-editor-notas').classList.remove('active')">×</button></div>
             <div class="modal-body" style="padding: 15px;">
-                <div class="modal-controls">
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <input type="date" id="editor-notas-data" title="Filtro de Transportes">
-                        <button class="btn btn-primary btn-sm" id="btn-buscar-editor-notas" style="display: none; padding: 6px 15px;">Buscar Base</button>
-                        <div id="controles-importacao-notas" style="display:none;"><button class="btn btn-success btn-sm" onclick="document.getElementById('file-import-notas').click()" style="padding: 6px 15px;">Selecionar Planilha</button><input type="file" id="file-import-notas" accept=".xlsx, .xls, .csv" style="display: none;"></div>
-                    </div>
-                    <button class="btn btn-secondary btn-sm" onclick="adicionarLinhaNotas()" style="padding: 6px 15px;">+ Nova Linha</button>
-                </div>
+                <div class="modal-controls"><div style="display: flex; gap: 15px; align-items: center;"><input type="date" id="editor-notas-data" title="Filtro de Transportes"><button class="btn btn-primary btn-sm" id="btn-buscar-editor-notas" style="display: none; padding: 6px 15px;">Buscar Base</button><div id="controles-importacao-notas" style="display:none;"><button class="btn btn-success btn-sm" onclick="document.getElementById('file-import-notas').click()" style="padding: 6px 15px;">Selecionar Planilha</button><input type="file" id="file-import-notas" accept=".xlsx, .xls, .csv" style="display: none;"></div></div><button class="btn btn-secondary btn-sm" onclick="adicionarLinhaNotas()" style="padding: 6px 15px;">+ Nova Linha</button></div>
                 <div class="table-wrapper">
                     <table id="tabela-editor-notas">
                         <colgroup><col style="width:3%;"><col style="width:6%;"><col style="width:6%;"><col style="width:4%;"><col style="width:6%;"><col style="width:5%;"><col style="width:4%;"><col style="width:12%;"><col style="width:10%;"><col style="width:10%;"><col style="width:12%;"><col style="width:6%;"><col style="width:8%;"><col style="width:8%;"><col style="width:4%;"></colgroup>
-                        <thead><tr><th>☰</th><th style="background:#fef9c3;">NF ✏️</th><th style="background:#fef9c3;">VIAGEM ✏️</th><th style="background:#fef9c3;">ORD ✏️</th><th style="background:#fef9c3;">DATA ✏️</th><th style="background:#fef9c3;">PESO ✏️</th><th style="background:#fef9c3;">QTD ✏️</th><th style="background:#fef9c3;">CLIENTE ✏️</th><th style="background:#fef9c3;">CIDADE ✏️</th><th style="background:#fef9c3;">BAIRRO ✏️</th><th style="background:#fef9c3;">ENDEREÇO ✏️</th><th style="background:#fef9c3;">PLACA ✏️</th><th style="background:#e0f2fe;">MOT. ✏️</th><th style="background:#e0f2fe;">TEL. ✏️</th><th>AÇÃO</th></tr></thead>
-                        <tbody></tbody>
+                        <thead><tr><th>☰</th><th>NF ✏️</th><th>VIAGEM ✏️</th><th>ORD ✏️</th><th>DATA ✏️</th><th>PESO ✏️</th><th>QTD ✏️</th><th>CLIENTE ✏️</th><th>CIDADE ✏️</th><th>BAIRRO ✏️</th><th>ENDEREÇO ✏️</th><th>PLACA ✏️</th><th>MOT. ✏️</th><th>TEL. ✏️</th><th>AÇÃO</th></tr></thead><tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -446,25 +447,25 @@
 
     <div class="modal-overlay" id="modal-placa">
         <div class="modal-content" style="width: 380px;">
-            <div class="modal-header"><h3 id="modal-placa-titulo">Placa</h3><button class="btn-close" onclick="document.getElementById('modal-placa').classList.remove('active')">&times;</button></div>
+            <div class="modal-header"><h3 id="modal-placa-titulo">Placa</h3><button class="btn-close" onclick="document.getElementById('modal-placa').classList.remove('active')">×</button></div>
             <div class="modal-body" style="gap: 15px; padding: 25px;">
-                <div><label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">PLACA</label><input type="text" id="input-placa" placeholder="ABC1D23" style="text-transform:uppercase; width: 100%;"></div>
-                <div><label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">PERFIL</label><input type="text" id="input-perfil" placeholder="EX: VAN, FIORINO..." style="text-transform:uppercase; width: 100%;"></div>
-                <div><label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">TIPO</label><input type="text" id="input-tipo" placeholder="EX: FIXO, AGREGADO..." style="text-transform:uppercase; width: 100%;"></div>
+                <div><label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">PLACA</label><input type="text" id="input-placa" placeholder="ABC1D23" style="text-transform:uppercase; width: 100%;"></div>
+                <div><label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">PERFIL</label><input type="text" id="input-perfil" placeholder="EX: VAN, FIORINO..." style="text-transform:uppercase; width: 100%;"></div>
+                <div><label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">TIPO</label><input type="text" id="input-tipo" placeholder="EX: FIXO, AGREGADO..." style="text-transform:uppercase; width: 100%;"></div>
             </div>
             <div class="modal-footer"><button class="btn btn-primary" id="btn-salvar-placa" style="width: 100%; padding: 10px;">Salvar Veículo</button></div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal-mapa">
-        <div class="modal-content" style="width: 80%; height: 85%; background: #0f172a;">
-            <div class="modal-header" style="background: #1e293b; border-bottom: 1px solid #334155;">
-                <h3 style="color: white; font-weight: 800; display:flex; align-items:center; gap:10px;">🗺️ Mapa Logístico <span id="map-placa-title" style="font-size:1rem; color:#f59e0b;"></span></h3>
-                <button class="btn-close" style="color: #94a3b8;" onclick="document.getElementById('modal-mapa').classList.remove('active')">&times;</button>
+        <div class="modal-content" style="width: 80%; height: 85%; background: var(--bg-panel);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
+                <h3 style="font-weight: 800; display:flex; align-items:center; gap:10px;">🗺️ Mapa Logístico <span id="map-placa-title" style="font-size:1rem; color:var(--warning);"></span></h3>
+                <button class="btn-close" onclick="document.getElementById('modal-mapa').classList.remove('active')">×</button>
             </div>
             <div class="modal-body" style="padding: 15px; gap: 10px;">
                 <div id="map-cities-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 5px;"></div>
-                <div style="flex:1; background:#1e293b; border-radius:12px; overflow:hidden; border: 1px solid #334155; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                <div style="flex:1; border-radius:12px; overflow:hidden; border: 1px solid var(--border-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.2);">
                     <iframe id="iframe-mapa" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
                 </div>
             </div>
@@ -473,22 +474,11 @@
 
     <div class="modal-overlay" id="modal-detalhes">
         <div class="modal-content" style="width: 85%; max-height: 85%;">
-            <div class="modal-header" style="background: #1e293b;">
-                <h3 id="detalhes-titulo" style="color: white; font-weight: 800; font-size: 1.2rem;">Detalhes</h3>
-                <button class="btn-close" style="color: white;" onclick="document.getElementById('modal-detalhes').classList.remove('active')">&times;</button>
-            </div>
-            
-            <div style="background: #f8fafc; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 20px; font-weight: 700; color: #334155;" id="detalhes-resumo">
-                </div>
-
+            <div class="modal-header"><h3 id="detalhes-titulo" style="font-weight: 800; font-size: 1.2rem;">Detalhes</h3><button class="btn-close" onclick="document.getElementById('modal-detalhes').classList.remove('active')">×</button></div>
+            <div style="background: var(--bg-table-header); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px; font-weight: 700;" id="detalhes-resumo"></div>
             <div class="modal-body" style="padding: 15px; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="table-wrapper" style="box-shadow: none; border: 1px solid #cbd5e1;">
-                    <table id="tabela-detalhes" style="min-width: 800px;">
-                        <thead id="detalhes-thead">
-                            </thead>
-                        <tbody id="detalhes-tbody">
-                             </tbody>
-                    </table>
+                <div class="table-wrapper" style="box-shadow: none;">
+                    <table id="tabela-detalhes" style="min-width: 800px;"><thead id="detalhes-thead"></thead><tbody id="detalhes-tbody"></tbody></table>
                 </div>
             </div>
         </div>
@@ -503,9 +493,8 @@
         const db = getFirestore(app);
 
         let placasCache = {}; let motoristasHistoricoCache = {};
-        // Cache da operação atual para os modais rápidos
-        window.notasOperacaoAtiva = []; 
-        window.dataOperacaoAtiva = "";
+        window.notasOperacaoAtiva = []; window.dataOperacaoAtiva = "";
+        window.canhotosCache = {};
 
         const loader = document.getElementById('loader'); const showLoader = () => loader.style.display = 'flex'; const hideLoader = () => loader.style.display = 'none';
         
@@ -521,49 +510,61 @@
             return `${partes[2]} ${meses[parseInt(partes[1])-1]}`;
         }
 
+        // ====== ENGINE DE CORES INTELIGENTES (SUPORTE AO DARK MODE) ======
         const getStRotaStyle = (status) => {
             const s = trimUpper(status);
             switch(s) {
-                case 'VEÍCULO VAZIO': return 'background:#eff6ff; color:#2563eb; border: 1px solid #bfdbfe;'; 
-                case 'PERNOITE': case 'PERNOITE/VIAGEM': return 'background:#f5f5f4; color:#78350f; border: 1px solid #d6d3d1;'; 
-                case 'FINALIZADO': return 'background:#fdf2f8; color:#db2777; border: 1px solid #fbcfe8;'; 
-                case 'PRÓXIMO DE TERMINAR': return 'background:#fefce8; color:#ca8a04; border: 1px solid #fef08a;'; 
-                case 'EM ROTA': return 'background:#f8fafc; color:#64748b; border: 1px solid #e2e8f0;'; 
-                case 'AGUARDANDO NO CLIENTE': case 'AGUARDANDO': return 'background:#ecfeff; color:#0891b2; border: 1px solid #a5f3fc;'; 
-                case 'TRAFEGANDO': return 'background:#fff7ed; color:#ea580c; border: 1px solid #fed7aa;'; 
-                case 'DESCARREGANDO': return 'background:#faf5ff; color:#9333ea; border: 1px solid #e9d5ff;'; 
-                case 'PARADA': case 'SINISTRADA': case 'SINISTRADO': return 'background:#fef2f2; color:#dc2626; border: 1px solid #fecaca;'; 
-                case 'DEVOLUÇÃO': return 'background:#fca5a5; color:#7f1d1d; border: 1px solid #f87171;'; 
-                case 'REENTREGA': return 'background:#fdba74; color:#c2410c; border: 1px solid #fb923c;'; 
-                case 'ENTREGUE': case 'REALIZADA': return 'background:#bbf7d0; color:#166534; border: 1px solid #86efac;'; 
-                default: return 'background:#f1f5f9; color:#475569; border: 1px solid #cbd5e1;';
+                case 'VEÍCULO VAZIO': return 'background: var(--st-vazio-bg); color: var(--st-vazio-txt); border: 1px solid var(--st-vazio-bd);'; 
+                case 'PERNOITE': case 'PERNOITE/VIAGEM': return 'background: var(--st-pernoite-bg); color: var(--st-pernoite-txt); border: 1px solid var(--st-pernoite-bd);'; 
+                case 'FINALIZADO': return 'background: var(--st-finalizado-bg); color: var(--st-finalizado-txt); border: 1px solid var(--st-finalizado-bd);'; 
+                case 'PRÓXIMO DE TERMINAR': return 'background: var(--st-prox-bg); color: var(--st-prox-txt); border: 1px solid var(--st-prox-bd);'; 
+                case 'EM ROTA': return 'background: var(--st-emrota-bg); color: var(--st-emrota-txt); border: 1px solid var(--st-emrota-bd);'; 
+                case 'AGUARDANDO NO CLIENTE': case 'AGUARDANDO': return 'background: var(--st-aguardando-bg); color: var(--st-aguardando-txt); border: 1px solid var(--st-aguardando-bd);'; 
+                case 'TRAFEGANDO': return 'background: var(--st-trafegando-bg); color: var(--st-trafegando-txt); border: 1px solid var(--st-trafegando-bd);'; 
+                case 'DESCARREGANDO': return 'background: var(--st-desc-bg); color: var(--st-desc-txt); border: 1px solid var(--st-desc-bd);'; 
+                case 'PARADA': case 'SINISTRADA': case 'SINISTRADO': return 'background: var(--st-parada-bg); color: var(--st-parada-txt); border: 1px solid var(--st-parada-bd);'; 
+                case 'DEVOLUÇÃO': return 'background: var(--st-dev-bg); color: var(--st-dev-txt); border: 1px solid var(--st-dev-bd);'; 
+                case 'REENTREGA': return 'background: var(--st-reen-bg); color: var(--st-reen-txt); border: 1px solid var(--st-reen-bd);'; 
+                case 'ENTREGUE': case 'REALIZADA': return 'background: var(--st-entregue-bg); color: var(--st-entregue-txt); border: 1px solid var(--st-entregue-bd);'; 
+                default: return 'background: var(--bg-table-header); color: var(--text-muted); border: 1px solid var(--border-color);';
             }
         };
 
         const getRowBackgroundStyle = (status) => {
             const s = trimUpper(status);
             switch(s) {
-                case 'AGUARDANDO': case 'AGUARDANDO NO CLIENTE': return '#ecfeff'; 
-                case 'DESCARREGANDO': return '#faf5ff'; 
-                case 'TRAFEGANDO': return '#fff7ed'; 
-                case 'EM ROTA': return '#f8fafc'; 
-                case 'PARADA': case 'SINISTRADA': case 'SINISTRADO': case 'DEVOLUÇÃO': return '#fef2f2'; 
-                case 'PERNOITE': case 'PERNOITE/VIAGEM': return '#f5f5f4'; 
-                case 'ENTREGUE': case 'REALIZADA': case 'VEÍCULO VAZIO': return '#eff6ff'; 
-                case 'FINALIZADO': return '#fdf2f8'; 
-                case 'PRÓXIMO DE TERMINAR': return '#fefce8'; 
-                case 'REENTREGA': return '#fff7ed'; 
+                case 'AGUARDANDO': case 'AGUARDANDO NO CLIENTE': return 'var(--st-aguardando-bg)'; 
+                case 'DESCARREGANDO': return 'var(--st-desc-bg)'; 
+                case 'TRAFEGANDO': return 'var(--st-trafegando-bg)'; 
+                case 'EM ROTA': return 'var(--st-emrota-bg)'; 
+                case 'PARADA': case 'SINISTRADA': case 'SINISTRADO': case 'DEVOLUÇÃO': return 'var(--st-parada-bg)'; 
+                case 'PERNOITE': case 'PERNOITE/VIAGEM': return 'var(--st-pernoite-bg)'; 
+                case 'ENTREGUE': case 'REALIZADA': case 'VEÍCULO VAZIO': return 'var(--st-vazio-bg)'; 
+                case 'FINALIZADO': return 'var(--st-finalizado-bg)'; 
+                case 'PRÓXIMO DE TERMINAR': return 'var(--st-prox-bg)'; 
+                case 'REENTREGA': return 'var(--st-trafegando-bg)'; 
                 default: return 'transparent';
             }
         };
 
         const getStRotaPill = (status) => {
             if (!status) return "";
-            return `<span style="${getStRotaStyle(status)} padding:4px 8px; border-radius:6px; font-weight:700; font-size:9.5px; letter-spacing:0.3px; display:inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">${status}</span>`;
+            return `<span style="${getStRotaStyle(status)} padding:4px 8px; border-radius:6px; font-weight:700; font-size:9.5px; letter-spacing:0.3px; display:inline-block; box-shadow: var(--shadow-sm);">${status}</span>`;
         };
+
+        // ====== THEME TOGGLE (DARK MODE) ======
+        const themeBtn = document.getElementById('btn-theme-toggle');
+        const applyTheme = (isDark) => {
+            if (isDark) { document.body.classList.add('dark-mode'); themeBtn.innerText = '☀️'; localStorage.setItem('theme', 'dark'); } 
+            else { document.body.classList.remove('dark-mode'); themeBtn.innerText = '🌙'; localStorage.setItem('theme', 'light'); }
+        };
+        themeBtn.addEventListener('click', () => applyTheme(!document.body.classList.contains('dark-mode')));
+        if (localStorage.getItem('theme') === 'dark') applyTheme(true);
 
         const hoje = new Date().toISOString().split('T')[0];
         document.querySelectorAll('input[type="date"]').forEach(el => el.value = hoje);
+        const mesAtual = hoje.substring(0, 7);
+        document.getElementById('canhotos-month-select').value = mesAtual;
 
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -573,6 +574,7 @@
                 const targetId = target.getAttribute('data-target'); document.getElementById(targetId).classList.add('active');
                 if(targetId === 'view-monitoramento' && document.getElementById('mon-data-select').value) { document.getElementById('btn-carregar-painel').click(); } 
                 else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
+                else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
             });
         });
 
@@ -584,6 +586,104 @@
             } catch (e) { console.error("Erro banco", e); }
         }
 
+        // ================= CANHOTOS LÓGICA CORE =================
+        document.getElementById('btn-carregar-canhotos').addEventListener('click', async () => {
+            const monthSel = document.getElementById('canhotos-month-select').value; if(!monthSel) return;
+            showLoader(); window.canhotosCache = {};
+            try {
+                // Buscamos a collection de notas. (Para um DB pequeno/médio, getAll e filtrar localmente é super rápido).
+                const snap = await getDocs(collection(db, "notas_fiscais_diario"));
+                let diasNoMes = [];
+                let tEntregasMes = 0; let tSemAnexoMes = 0;
+
+                const hojeStr = new Date().toISOString().split('T')[0];
+                const hojeTime = new Date(hojeStr).getTime();
+
+                snap.forEach(doc => {
+                    const dataStr = doc.id;
+                    if(dataStr.startsWith(monthSel)) {
+                        const notas = doc.data().notas || [];
+                        let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
+                        
+                        if(entregues.length > 0) {
+                            let cAssinatura = entregues.filter(n => trimUpper(n.app) === 'ASSINATURA').length;
+                            let cFoto = entregues.filter(n => trimUpper(n.app) === 'FOTO').length;
+                            let cAnexado = entregues.filter(n => trimUpper(n.app) === 'ANEXADO').length;
+                            
+                            // Quem foi entregue mas a APP está vazia ou não é um dos 3 padrões
+                            let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
+                            
+                            const dataOpTime = new Date(dataStr).getTime();
+                            const diffTime = hojeTime - dataOpTime;
+                            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays < 0) diffDays = 0;
+
+                            tEntregasMes += entregues.length;
+                            tSemAnexoMes += pendentes.length;
+                            window.canhotosCache[dataStr] = pendentes;
+
+                            diasNoMes.push({ data: dataStr, totalEntregues: entregues.length, assinatura: cAssinatura, foto: cFoto, anexado: cAnexado, semAnexo: pendentes.length, atraso: diffDays });
+                        }
+                    }
+                });
+
+                diasNoMes.sort((a, b) => a.data.localeCompare(b.data));
+
+                const tbody = document.querySelector('#tabela-canhotos tbody'); let html = "";
+                if(diasNoMes.length === 0) { html = `<tr><td colspan="8" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum faturamento encontrado para este mês.</td></tr>`; }
+                else {
+                    diasNoMes.forEach(d => {
+                        let styleAtraso = "color: var(--text-muted); font-weight: 600;"; let iconAtraso = "";
+                        if (d.semAnexo > 0) {
+                            if (d.atraso >= 7) { styleAtraso = "color: var(--danger); font-weight: 800;"; iconAtraso = " 🚨 CRÍTICO"; }
+                            else if (d.atraso >= 5) { styleAtraso = "color: var(--warning); font-weight: 800;"; iconAtraso = " ⚠️ ALERTA"; }
+                        }
+                        
+                        let btnHtml = d.semAnexo > 0 ? `<button class="btn btn-sm btn-primary" onclick="abrirDetalhesCanhotos('${d.data}')">🔎 Ver Notas</button>` : `<span style="color:var(--success); font-weight:700;">OK ✓</span>`;
+
+                        html += `<tr>
+                            <td style="font-weight:700;">${formatarDataBR(d.data)}</td>
+                            <td style="font-weight:700; color:var(--accent);">${d.totalEntregues}</td>
+                            <td>${d.assinatura}</td><td>${d.foto}</td><td>${d.anexado}</td>
+                            <td style="font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:11px;">${d.semAnexo}</td>
+                            <td style="${styleAtraso}">${d.atraso} Dias${iconAtraso}</td>
+                            <td align="center">${btnHtml}</td>
+                        </tr>`;
+                    });
+                }
+                tbody.innerHTML = html;
+                
+                // Resumo do Mês
+                document.getElementById('canhotos-summary').innerHTML = `
+                    <div class="summary-block">📅 Faturamento Mês: ${monthSel}</div>
+                    <div class="summary-block">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div>
+                    <div class="summary-block" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>
+                `;
+
+            } catch(e) { console.error("Erro Canhotos:", e); }
+            hideLoader();
+        });
+
+        window.abrirDetalhesCanhotos = (dataStr) => {
+            const pendentes = window.canhotosCache[dataStr] || [];
+            document.getElementById('detalhes-titulo').innerText = `Auditoria Faltantes - ${formatarDataBR(dataStr)}`;
+            document.getElementById('detalhes-resumo').innerHTML = `<span>❌ Notas Entregues sem Anexo (App Vazio): <span style="color:var(--danger);">${pendentes.length}</span></span>`;
+            
+            const thead = document.getElementById('detalhes-thead'); const tbody = document.getElementById('detalhes-tbody');
+            thead.innerHTML = `<tr><th>PLACA</th><th>MOTORISTA</th><th>NF</th><th>PESO</th><th>CLIENTE</th><th>STATUS</th><th>APP (ATUAL)</th></tr>`;
+            
+            let trHTML = "";
+            pendentes.forEach(n => {
+                trHTML += `<tr>
+                    <td style="font-weight:700;">${n.placa}</td><td style="color:var(--accent);">${n.motorista}</td><td style="font-weight:700;">${cleanNF(n.nf)}</td>
+                    <td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td>${getStRotaPill(n.status)}</td><td style="color:var(--danger); font-weight:700;">${n.app || 'VAZIO'}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = trHTML || "<tr><td colspan='7' align='center'>Nenhuma pendência.</td></tr>";
+            document.getElementById('modal-detalhes').classList.add('active');
+        };
+
+        // ================= GESTÃO PLACAS =================
         function renderizarTabelaPlacas() {
             const tbody = document.querySelector('#tabela-placas tbody'); let htmlBuffer = ""; document.getElementById('placas-count').innerText = `${Object.keys(placasCache).length} Veículos Cadastrados`;
             for (const [placa, dados] of Object.entries(placasCache)) { htmlBuffer += `<tr><td><strong style="color:var(--accent);">${placa}</strong></td><td>${dados.perfil}</td><td>${dados.tipo}</td><td style="text-align: center;"><button class="btn btn-sm btn-secondary" onclick="abrirModalPlaca('${placa}')">Editar</button> <button class="btn btn-sm btn-danger" onclick="excluirPlaca('${placa}')">X</button></td></tr>`; }
@@ -606,8 +706,7 @@
                     }
                     await Promise.all(promessas); renderizarTabelaPlacas(); alert(`Importação OK.`);
                 } catch (err) { alert("Erro: " + err.message); } hideLoader();
-            };
-            reader.readAsArrayBuffer(file); e.target.value = '';
+            }; reader.readAsArrayBuffer(file); e.target.value = '';
         });
         window.abrirModalPlaca = (placaId) => { document.getElementById('input-placa').value = placaId || ''; document.getElementById('input-perfil').value = placaId ? placasCache[placaId].perfil : ''; document.getElementById('input-tipo').value = placaId ? placasCache[placaId].tipo : ''; document.getElementById('input-placa').disabled = !!placaId; document.getElementById('modal-placa').classList.add('active'); }
         window.excluirPlaca = async (placa) => { if(confirm(`Excluir o veículo ${placa}?`)) { showLoader(); await deleteDoc(doc(db, "placas", placa)); await carregarDadosGlobais(); hideLoader(); } }
@@ -616,6 +715,7 @@
             if(!p) return; showLoader(); await setDoc(doc(db, "placas", p), { perfil: per, tipo: t }); await carregarDadosGlobais(); document.getElementById('modal-placa').classList.remove('active'); hideLoader();
         });
 
+        // ================= EDITOR PAINEL =================
         const tbodyPainel = document.querySelector('#tabela-editor-painel tbody');
         window.abrirSuperEditorPainel = (modo) => { 
             tbodyPainel.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-painel'); const boxImport = document.getElementById('controles-importacao-painel');
@@ -668,50 +768,22 @@
             }; reader.readAsArrayBuffer(file);
         });
 
-        // ================= INTELIGÊNCIA PAINEL MONITORAMENTO E ROLLOVER =================
+        // ================= PAINEL DE MONITORAMENTO =================
         document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
             const dataSel = document.getElementById('mon-data-select').value; if(!dataSel) return; showLoader(); 
-            
-            // Logica para achar ontem
-            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1);
-            const dataOntem = dObj.toISOString().split('T')[0];
-
-            const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([ 
-                getDoc(doc(db, "painel_diario", dataSel)), 
-                getDoc(doc(db, "notas_fiscais_diario", dataSel)),
-                getDoc(doc(db, "painel_diario", dataOntem)),
-                getDoc(doc(db, "notas_fiscais_diario", dataOntem))
-            ]);
+            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
+            const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "painel_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "painel_diario", dataOntem)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
 
             const tbody = document.querySelector('#tabela-monitoramento tbody');
             let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
             let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
 
-            // INJETA AS NOTAS PERNOITE DE ONTEM NO CÁLCULO DE HOJE
-            if(snapOntemNotas.exists()) {
-                snapOntemNotas.data().notas.forEach(no => {
-                    if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                        notasDoDia.push({...no, status: ""}); 
-                    }
-                });
-            }
+            // Limpa o status Pernoite para não rolar infinito
+            if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasDoDia.push({...no, status: ""}); } }); }
+            if(snapOntemPainel.exists()) { snapOntemPainel.data().rotas.forEach(ro => { if(trimUpper(ro.status).includes('PERNOITE') && !rotasParaProcessar.find(r => r.placa === ro.placa)) { rotasParaProcessar.push({...ro, status: "", isRollover: true}); } }); }
 
-            // INJETA AS ROTAS PERNOITE DE ONTEM NO PAINEL DE HOJE
-            if(snapOntemPainel.exists()) {
-                snapOntemPainel.data().rotas.forEach(ro => {
-                    if(trimUpper(ro.status).includes('PERNOITE') && !rotasParaProcessar.find(r => r.placa === ro.placa)) {
-                        rotasParaProcessar.push({...ro, isRollover: true}); 
-                    }
-                });
-            }
-
-            // ATUALIZA CACHE GLOBAL PARA OS MODAIS
-            window.notasOperacaoAtiva = notasDoDia;
-            window.dataOperacaoAtiva = dataSel;
-
-            let linhasRenderizadas = [];
-            let statusCounts = {};
-            let carrosFinalizados = 0;
+            window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
+            let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
 
             if(rotasParaProcessar.length > 0) {
                 rotasParaProcessar.forEach(rota => {
@@ -723,14 +795,11 @@
 
                     let qtd_nf = notasPlaca.length;
                     let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
-                    
                     let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
                     let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
                     let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
-                    
                     let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
                     let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-                    
                     const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
                     let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
 
@@ -742,45 +811,25 @@
                     const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
 
                     let stRotaCalc = "";
-                    if (qtd_nf === 0) { stRotaCalc = ""; } 
-                    else if (isParada) { stRotaCalc = "PARADA"; } 
-                    else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } 
-                    else if (hasPernoite) { stRotaCalc = "PERNOITE"; } 
-                    else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } 
-                    else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } 
-                    else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } 
-                    else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } 
-                    else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } 
-                    else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } 
-                    else { stRotaCalc = "EM ROTA"; }
+                    if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
 
                     if(stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
-
-                    // Verifica se o carro já concluiu o ciclo do dia
                     const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
                     if(stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
 
-                    // Strings visíveis e DRILL-DOWNS (Células Clicáveis)
                     let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'DEVOLUÇÃO')">${devolucao}</span>` : ""; 
                     let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'REENTREGA')">${reentrega}</span>` : ""; 
                     let vParcial = teveParcialBool ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'PARCIAL')">SIM</span>` : "";
                     let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="abrirModalDetalhes('${rota.placa}', 'PENDENTE')">${pendente}</span>` : ""; 
                     let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="abrirModalDetalhes('${rota.placa}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
-                    
-                    let vRealizada = realizada > 0 ? realizada : ""; 
-                    let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; 
-                    let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
                     let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
+                    let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
 
                     const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
                     let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
                     let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-                    
                     let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                    let cemPorcentoAss = "";
-                    if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") {
-                        cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
-                    }
+                    let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌"; }
 
                     let linhaHtml = `<tr>
                         <td style="font-weight:700;">${rota.placa}</td><td>${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
@@ -788,7 +837,7 @@
                         <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td><td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
                         <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
                         <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
-                        <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--accent); font-weight:700;">${vReentrega}</td><td style="color:var(--accent); font-weight:700;">${p_q_nfs}</td>
+                        <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
                         <td style="color:var(--accent); font-weight:700;">${vParcial}</td><td>${getStRotaPill(stRotaCalc)}</td>
                         <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
                         <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
@@ -800,62 +849,42 @@
 
                 linhasRenderizadas.sort((a,b) => (a.isPernoite ? 1 : 0) - (b.isPernoite ? 1 : 0));
                 tbody.innerHTML = linhasRenderizadas.map(r => r.html).join('');
-            } else { 
-                tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: #64748b; font-weight: 500;">Sem dados para esta data.</td></tr>`; 
-            }
+            } else { tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; }
 
-            // ATUALIZA BARRA DE PROGRESSO
             const totalCarros = rotasParaProcessar.length;
             const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
             document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
             document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
-            // Caminhãozinho acompanha
             document.getElementById('progress-truck').style.left = `${porcentagem}%`;
 
-
-            // GERAÇÃO DOS BLOCOS DE RESUMO DINÂMICOS
             let htmlSummary = `
-                <div style="background:white; border:1px solid var(--border-color); padding:10px 15px; border-radius:8px; font-weight:700; color:var(--accent); font-size:12px; display:flex; align-items:center; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                    📅 ${formatarDataBR(dataSel)}
-                </div>
-                <div style="background:white; border:1px solid var(--border-color); padding:10px 15px; border-radius:8px; font-weight:700; color:#334155; font-size:12px; display:flex; align-items:center; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                    🚚 Veículos: ${rotasParaProcessar.length}
-                </div>
-                <div style="width: 2px; background: #e2e8f0; margin: 0 5px;"></div>
+                <div class="summary-block"><span style="color:var(--accent);">📅</span> ${formatarDataBR(dataSel)}</div>
+                <div class="summary-block"><span style="color:var(--text-muted);">🚚</span> Veículos: ${rotasParaProcessar.length}</div>
+                <div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>
             `;
             for(const [status, count] of Object.entries(statusCounts)) {
                 if(count > 0 && status !== "") {
-                    htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                        ${status} <span style="background:rgba(255,255,255,0.6); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">${count}</span>
+                    htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">
+                        ${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span>
                     </div>`;
                 }
             }
             document.getElementById('painel-summary').innerHTML = htmlSummary;
-
             hideLoader();
         });
 
-
-        // ================= FUNÇÕES DRILL DOWN (MODAIS INTERATIVOS) =================
+        // ================= FUNÇÕES DRILL DOWN =================
         window.abrirModalRegiao = (regioesStr, placa) => {
             document.getElementById('map-placa-title').innerText = `(${placa})`;
             const container = document.getElementById('map-cities-container'); container.innerHTML = "";
             const iframe = document.getElementById('iframe-mapa'); iframe.src = "";
-            
             const cidades = regioesStr.split('-').map(c => c.trim()).filter(c => c !== "");
             
             cidades.forEach((cidade, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-city' + (index === 0 ? ' active' : '');
-                btn.innerText = cidade;
-                btn.onclick = function() {
-                    document.querySelectorAll('.btn-city').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidade + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
-                };
+                const btn = document.createElement('button'); btn.className = 'btn-city' + (index === 0 ? ' active' : ''); btn.innerText = cidade;
+                btn.onclick = function() { document.querySelectorAll('.btn-city').forEach(b => b.classList.remove('active')); this.classList.add('active'); iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidade + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`; };
                 container.appendChild(btn);
             });
-            
             if(cidades.length > 0) { iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidades[0] + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`; }
             document.getElementById('modal-mapa').classList.add('active');
         };
@@ -864,9 +893,7 @@
             const notasDaPlaca = window.notasOperacaoAtiva.filter(n => trimUpper(n.placa) === trimUpper(placa));
             let notasFiltradas = []; let theadHTML = ""; let trHTML = "";
             
-            const tbody = document.getElementById('detalhes-tbody');
-            const thead = document.getElementById('detalhes-thead');
-            const resumo = document.getElementById('detalhes-resumo');
+            const tbody = document.getElementById('detalhes-tbody'); const thead = document.getElementById('detalhes-thead'); const resumo = document.getElementById('detalhes-resumo');
             document.getElementById('detalhes-titulo').innerText = `${tipo} - Veículo: ${placa}`;
 
             if(tipo === 'PARCIAL') {
@@ -883,52 +910,28 @@
                 const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
                 notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status)));
                 theadHTML = `<tr><th>NF</th><th>PESO</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th><th>ATUALIZAR STATUS</th></tr>`;
-                
                 notasFiltradas.forEach(n => {
-                    const statusAtual = trimUpper(n.status);
-                    const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
-                    trHTML += `<tr>
-                        <td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td>
-                        <td>
-                            <select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;">
-                                <option value="" ${statusAtual===""?'selected':''}>-</option>${optHTML}
-                            </select>
-                        </td>
-                    </tr>`;
+                    const statusAtual = trimUpper(n.status); const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
+                    trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td><td><select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;"><option value="" ${statusAtual===""?'selected':''}>-</option>${optHTML}</select></td></tr>`;
                 });
             }
 
-            // Calculo de Totais
             const totalPeso = notasFiltradas.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2);
-            const totalNotas = notasFiltradas.length;
-            resumo.innerHTML = `<span>📋 Total de Notas: <span style="color:var(--accent);">${totalNotas}</span></span> <span>⚖️ Peso Total: <span style="color:var(--accent);">${totalPeso} KG</span></span>`;
-
+            resumo.innerHTML = `<span>📋 Total de Notas: <span style="color:var(--accent);">${notasFiltradas.length}</span></span> <span>⚖️ Peso Total: <span style="color:var(--accent);">${totalPeso} KG</span></span>`;
             thead.innerHTML = theadHTML; tbody.innerHTML = trHTML || "<tr><td colspan='7' align='center'>Nenhuma nota encontrada.</td></tr>";
             document.getElementById('modal-detalhes').classList.add('active');
 
-            // Listeners para a edição rápida de status no Drill Down
             document.querySelectorAll('.quick-status-update').forEach(select => {
                 select.addEventListener('change', async (e) => {
-                    const nfTarget = e.target.getAttribute('data-nf'); const novoStatus = e.target.value;
-                    e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;";
-                    
-                    // Atualiza cache e salva
-                    const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget);
-                    if(notaRef) { notaRef.status = novoStatus; }
-                    
-                    showLoader();
-                    try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } 
-                    catch(err) { console.error(err); }
-                    hideLoader();
-                    
-                    // Dispara reload invisível do painel
+                    const nfTarget = e.target.getAttribute('data-nf'); const novoStatus = e.target.value; e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;";
+                    const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget); if(notaRef) { notaRef.status = novoStatus; }
+                    showLoader(); try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } catch(err) {} hideLoader();
                     document.getElementById('btn-carregar-painel').click();
                 });
             });
         };
 
-
-        // ================= FILTRO EXCEL UNIVERSAL ULTRA-RÁPIDO =================
+        // ================= FILTRO EXCEL =================
         let activeFilters = { 'tabela-monitoramento': {}, 'tabela-operacao-notas': {} }; 
         const filterPopup = document.getElementById('excel-filter-popup'); const filterSearch = document.getElementById('excel-filter-search'); const filterList = document.getElementById('excel-filter-list');
         let activeColIndex = -1; let activeTableId = '';
@@ -937,15 +940,11 @@
             icon.addEventListener('click', (e) => {
                 e.stopPropagation(); activeColIndex = parseInt(icon.getAttribute('data-col')); activeTableId = icon.closest('table').id;
                 const rect = icon.getBoundingClientRect(); filterPopup.style.left = `${rect.left}px`; filterPopup.style.top = `${rect.bottom + 8}px`; filterPopup.style.display = 'flex';
-                
                 const uniqueValues = new Set();
                 document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { 
-                    if(!tr.children[activeColIndex]) return;
-                    let val = tr.children[activeColIndex].textContent.trim();
-                    if(activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; }
-                    uniqueValues.add(val);
+                    if(!tr.children[activeColIndex]) return; let val = tr.children[activeColIndex].textContent.trim();
+                    if(activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } uniqueValues.add(val);
                 });
-                
                 let checksHtml = ''; [...uniqueValues].sort().forEach(val => { checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; });
                 filterList.innerHTML = checksHtml; filterSearch.value = ''; document.getElementById('excel-filter-select-all').checked = true;
             });
@@ -954,133 +953,79 @@
         document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { filterList.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = e.target.checked); });
         filterSearch.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { const val = lbl.textContent.toLowerCase(); lbl.style.display = val.includes(term) ? 'flex' : 'none'; }); });
         document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none');
-        document.getElementById('btn-filter-apply').addEventListener('click', () => {
-            const checkedValues = Array.from(filterList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value); 
-            activeFilters[activeTableId][activeColIndex] = checkedValues;
-            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); 
-            filterPopup.style.display = 'none'; applyFilters(activeTableId);
-        });
+        document.getElementById('btn-filter-apply').addEventListener('click', () => { const checkedValues = Array.from(filterList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value); activeFilters[activeTableId][activeColIndex] = checkedValues; document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); filterPopup.style.display = 'none'; applyFilters(activeTableId); });
 
         function applyFilters(tableId) {
             const filters = activeFilters[tableId];
             document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => {
-                if(tr.children.length < 5) return;
-                let show = true;
-                for (let col in filters) {
-                    let val = tr.children[col].textContent.trim();
-                    if(tableId === 'tabela-operacao-notas' && col == 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; }
-                    if (!filters[col].includes(val)) { show = false; break; }
-                }
-                tr.style.display = show ? '' : 'none';
+                if(tr.children.length < 5) return; let show = true;
+                for (let col in filters) { let val = tr.children[col].textContent.trim(); if(tableId === 'tabela-operacao-notas' && col == 13) { const sel = tr.querySelector('.select-status'); if(sel) val = sel.value; } if (!filters[col].includes(val)) { show = false; break; } } tr.style.display = show ? '' : 'none';
             });
         }
         document.addEventListener('click', (e) => { if(!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; });
 
-
-        // ================= OPERAÇÃO AO VIVO (NOTAS) COM ROLLOVER =================
+        // ================= OPERAÇÃO NOTAS =================
         const tbodyOperacaoNotas = document.querySelector('#tabela-operacao-notas tbody');
         document.getElementById('btn-carregar-notas').addEventListener('click', async () => {
             const dataSel = document.getElementById('notas-data-select').value; if(!dataSel) return; showLoader(); 
-            
-            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1);
-            const dataOntem = dObj.toISOString().split('T')[0];
-
-            const [snapNotas, snapOntemNotas] = await Promise.all([
-                getDoc(doc(db, "notas_fiscais_diario", dataSel)),
-                getDoc(doc(db, "notas_fiscais_diario", dataOntem))
-            ]);
+            const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
+            const [snapNotas, snapOntemNotas] = await Promise.all([ getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataOntem)) ]);
 
             activeFilters['tabela-operacao-notas'] = {}; document.querySelectorAll('#tabela-operacao-notas .filter-icon').forEach(i => i.classList.remove('filter-active'));
-            
-            let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
-            let notasRollover = [];
+            let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
+            if(snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasRollover.push({...no, status: ""}); } }); }
 
-            if(snapOntemNotas.exists()) {
-                snapOntemNotas.data().notas.forEach(no => {
-                    if(trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                        notasRollover.push({...no, status: ""});
-                    }
-                });
-            }
-
-            let notasParaProcessar = [...notasRollover, ...notasDoDia];
-
-            let htmlBuffer = ""; 
+            let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = ""; 
             if(notasParaProcessar.length > 0) {
                 notasParaProcessar.forEach(nota => {
                     const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
-                    const cssStatus = getStRotaStyle(statusVal);
-                    const rowBgColor = getRowBackgroundStyle(statusVal);
-
-                    htmlBuffer += `<tr style="background-color: ${rowBgColor}">
+                    htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}">
                         <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
                         <td data-live="ordem">${nota.ordem}</td><td data-live="data">${nota.data_nf}</td>
                         <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
                         <td data-live="cliente" title="${nota.cliente}">${nota.cliente}</td><td data-live="cidade">${nota.cidade}</td>
                         <td data-live="bairro">${nota.bairro}</td><td data-live="endereco" title="${nota.endereco}">${nota.endereco}</td>
                         <td data-live="placa" class="live-edit" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${nota.placa}</td><td data-live="motorista" class="live-edit" contenteditable="true" title="${nota.motorista}">${nota.motorista}</td><td data-live="telefone" class="live-edit" contenteditable="true">${nota.telefone}</td>
-                        <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${cssStatus}"><option value="" ${statusVal==="" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
+                        <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${getStRotaStyle(statusVal)}"><option value="" ${statusVal==="" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
                         <td data-live="chegada" class="live-edit" contenteditable="true">${nota.chegada||""}</td><td data-live="saida" class="live-edit" contenteditable="true">${nota.saida||""}</td>
                         <td data-live="obs" class="live-edit" contenteditable="true">${nota.obs||""}</td><td data-live="parcial" class="live-edit" contenteditable="true">${nota.parcial||""}</td>
                         <td data-live="app" class="live-edit" contenteditable="true">${nota.app||""}</td>
                     </tr>`;
                 });
-            } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: #64748b; font-weight: 500;">Sem notas para esta data.</td></tr>`; }
+            } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem notas para esta data.</td></tr>`; }
             tbodyOperacaoNotas.innerHTML = htmlBuffer; hideLoader();
         });
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
         async function autoSaveNotasSilencioso() {
             const dataSel = document.getElementById('notas-data-select').value; if(!dataSel) return;
-            indSaveNotas.innerText = "Salvando..."; indSaveNotas.style.color = "#f59e0b"; indSaveNotas.style.background = "#fffbeb"; indSaveNotas.style.borderColor = "#fcd34d"; indSaveNotas.style.display = "inline";
-            const notas = [];
+            indSaveNotas.innerText = "Salvando..."; indSaveNotas.style.display = "inline"; const notas = [];
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => { if(!tr.querySelector('[data-live="nf"]')) return;
                 notas.push({ nf: cleanNF(tr.querySelector('[data-live="nf"]').textContent), viagem: tr.querySelector('[data-live="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-live="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-live="data"]').textContent.trim(), peso: tr.querySelector('[data-live="peso"]').textContent.trim(), qtde: tr.querySelector('[data-live="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-live="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-live="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-live="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-live="endereco"]').textContent.trim(), placa: tr.querySelector('[data-live="placa"]').textContent.trim().toUpperCase(), motorista: tr.querySelector('[data-live="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-live="telefone"]').textContent.trim(), status: tr.querySelector('.live-status-select').value.toUpperCase(), chegada: tr.querySelector('[data-live="chegada"]').textContent.trim(), saida: tr.querySelector('[data-live="saida"]').textContent.trim(), obs: tr.querySelector('[data-live="obs"]').textContent.trim(), parcial: tr.querySelector('[data-live="parcial"]').textContent.trim(), app: tr.querySelector('[data-live="app"]').textContent.trim() });
             });
-            try { await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas }); indSaveNotas.innerText = "Salvo ✓"; indSaveNotas.style.color = "var(--success)"; indSaveNotas.style.background = "#ecfdf5"; indSaveNotas.style.borderColor = "#a7f3d0"; setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000); } catch(e) { console.error("Erro Auto-Save:", e); }
+            try { await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas }); indSaveNotas.innerText = "Salvo ✓"; setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000); } catch(e) {}
         }
         
-        tbodyOperacaoNotas.addEventListener('change', (e) => { 
-            if(e.target.classList.contains('live-status-select')) {
-                const val = e.target.value; e.target.style.cssText = getStRotaStyle(val);
-                const tr = e.target.closest('tr'); if(tr) tr.style.backgroundColor = getRowBackgroundStyle(val);
-                autoSaveNotasSilencioso(); 
-            }
-        });
+        tbodyOperacaoNotas.addEventListener('change', (e) => { if(e.target.classList.contains('live-status-select')) { const val = e.target.value; e.target.style.cssText = getStRotaStyle(val); const tr = e.target.closest('tr'); if(tr) tr.style.backgroundColor = getRowBackgroundStyle(val); autoSaveNotasSilencioso(); } });
         tbodyOperacaoNotas.addEventListener('blur', (e) => { 
-            if(e.target.dataset.live === 'placa') {
-                const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca];
-                if (cache) { tr.querySelector('[data-live="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-live="telefone"]').innerText = cache.telefone || ""; }
-            }
+            if(e.target.dataset.live === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-live="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-live="telefone"]').innerText = cache.telefone || ""; } }
             if(e.target.classList.contains('live-edit')) autoSaveNotasSilencioso(); 
         }, true);
 
-
-        window.abrirModalAcoesLote = () => {
-            const d = document.getElementById('notas-data-select').value;
-            if(!d) return alert("Selecione a data e busque as notas primeiro.");
-            document.getElementById('modal-acoes-lote').classList.add('active');
-        };
+        // ================= AÇÕES LOTE =================
+        window.abrirModalAcoesLote = () => { const d = document.getElementById('notas-data-select').value; if(!d) return alert("Selecione a data e busque as notas primeiro."); document.getElementById('modal-acoes-lote').classList.add('active'); };
         window.executarLoteAppEntregue = () => {
-            let alteradas = 0;
-            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
-                const appCell = tr.querySelector('[data-live="app"]'); const selectCell = tr.querySelector('.live-status-select');
-                if(!appCell || !selectCell) return;
-                if(appCell.textContent.trim() !== "" && selectCell.value !== "ENTREGUE") {
-                    selectCell.value = "ENTREGUE"; selectCell.style.cssText = getStRotaStyle("ENTREGUE"); tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE"); alteradas++;
-                }
+            let alteradas = 0; document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                const appCell = tr.querySelector('[data-live="app"]'); const selectCell = tr.querySelector('.live-status-select'); if(!appCell || !selectCell) return;
+                if(appCell.textContent.trim() !== "" && selectCell.value !== "ENTREGUE") { selectCell.value = "ENTREGUE"; selectCell.style.cssText = getStRotaStyle("ENTREGUE"); tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE"); alteradas++; }
             });
             if(alteradas > 0) { autoSaveNotasSilencioso(); alert(`${alteradas} notas foram atualizadas para ENTREGUE automaticamente.`); } else { alert("Nenhuma nota precisava de atualização."); }
             document.getElementById('modal-acoes-lote').classList.remove('active');
         };
         window.executarLoteStatusVisiveis = () => {
-            const novoStatus = document.getElementById('select-lote-status').value; if(!novoStatus) return alert("Selecione um status para aplicar.");
-            let alteradas = 0;
+            const novoStatus = document.getElementById('select-lote-status').value; if(!novoStatus) return alert("Selecione um status para aplicar."); let alteradas = 0;
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
-                if(tr.style.display !== 'none' && tr.querySelector('.live-status-select')) {
-                    const selectCell = tr.querySelector('.live-status-select');
-                    if(selectCell.value !== novoStatus) { selectCell.value = novoStatus; selectCell.style.cssText = getStRotaStyle(novoStatus); tr.style.backgroundColor = getRowBackgroundStyle(novoStatus); alteradas++; }
-                }
+                if(tr.style.display !== 'none' && tr.querySelector('.live-status-select')) { const selectCell = tr.querySelector('.live-status-select'); if(selectCell.value !== novoStatus) { selectCell.value = novoStatus; selectCell.style.cssText = getStRotaStyle(novoStatus); tr.style.backgroundColor = getRowBackgroundStyle(novoStatus); alteradas++; } }
             });
             if(alteradas > 0) { autoSaveNotasSilencioso(); alert(`Status aplicado com sucesso a ${alteradas} notas visíveis!`); } else { alert("Nenhuma nota foi alterada."); }
             document.getElementById('modal-acoes-lote').classList.remove('active'); document.getElementById('select-lote-status').value = "";
@@ -1088,45 +1033,23 @@
 
         window.abrirModalAtualizarApps = () => { document.getElementById('apps-data-select').value = document.getElementById('notas-data-select').value || hoje; document.getElementById('modal-atualizar-apps').classList.add('active'); };
         document.getElementById('file-import-apps').addEventListener('change', async function(e) {
-            const file = e.target.files[0]; if (!file) return; const dataSel = document.getElementById('apps-data-select').value;
-            if (!dataSel) { alert("Data necessária."); e.target.value = ''; return; } showLoader();
+            const file = e.target.files[0]; if (!file) return; const dataSel = document.getElementById('apps-data-select').value; if (!dataSel) { alert("Data necessária."); e.target.value = ''; return; } showLoader();
             try {
-                const snapNotas = await getDoc(doc(db, "notas_fiscais_diario", dataSel));
-                if (!snapNotas.exists()) { alert("Não há notas salvas para esta data."); hideLoader(); return; }
-                const notasDB = snapNotas.data().notas;
-
-                const reader = new FileReader();
-                reader.onload = async function(event) {
+                const snapNotas = await getDoc(doc(db, "notas_fiscais_diario", dataSel)); if (!snapNotas.exists()) { alert("Não há notas salvas para esta data."); hideLoader(); return; } const notasDB = snapNotas.data().notas;
+                const reader = new FileReader(); reader.onload = async function(event) {
                     const data = new Uint8Array(event.target.result); const workbook = XLSX.read(data, {type: 'array'}); const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
                     let hIdx = -1; for (let i = 0; i < rawData.length; i++) { if (rawData[i] && (rawData[i].includes("NºNFe") || rawData[i].includes("NOTA"))) { hIdx = i; break; } }
                     if (hIdx === -1) { alert("Cabeçalho NºNFe não encontrado."); hideLoader(); return; }
-                    
-                    const headers = rawData[hIdx].map(h => String(h).toUpperCase().trim());
-                    const colNF = headers.findIndex(h => h === "NºNFE" || h === "NOTA");
-                    const colAssin = headers.findIndex(h => h === "ASSIN." || h === "INFO.ASSIN.");
-                    
+                    const headers = rawData[hIdx].map(h => String(h).toUpperCase().trim()); const colNF = headers.findIndex(h => h === "NºNFE" || h === "NOTA"); const colAssin = headers.findIndex(h => h === "ASSIN." || h === "INFO.ASSIN.");
                     if (colAssin === -1) { alert("Coluna 'Assin.' ou 'Info.Assin.' não encontrada."); hideLoader(); return; }
-
-                    const mapAnexos = {};
-                    for (let i = hIdx + 1; i < rawData.length; i++) {
-                        const row = rawData[i]; if (!row || !row[colNF]) continue;
-                        const nf = cleanNF(row[colNF]); const assinCod = String(row[colAssin] || "").trim();
-                        if (assinCod.includes("@SI@")) mapAnexos[nf] = "FOTO";
-                        else if (assinCod.includes("@FM@")) mapAnexos[nf] = "ANEXADO";
-                        else if (assinCod.includes("@0Q@")) mapAnexos[nf] = "ASSINATURA";
-                    }
-
-                    let atualizadas = 0;
-                    notasDB.forEach(n => { if (mapAnexos[n.nf]) { n.app = mapAnexos[n.nf]; atualizadas++; } });
-
-                    await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas: notasDB });
-                    document.getElementById('modal-atualizar-apps').classList.remove('active');
-                    if(document.getElementById('notas-data-select').value === dataSel) { document.getElementById('btn-carregar-notas').click(); }
-                    alert(`Apps Atualizados!\n${atualizadas} notas receberam anexos.`); hideLoader();
+                    const mapAnexos = {}; for (let i = hIdx + 1; i < rawData.length; i++) { const row = rawData[i]; if (!row || !row[colNF]) continue; const nf = cleanNF(row[colNF]); const assinCod = String(row[colAssin] || "").trim(); if (assinCod.includes("@SI@")) mapAnexos[nf] = "FOTO"; else if (assinCod.includes("@FM@")) mapAnexos[nf] = "ANEXADO"; else if (assinCod.includes("@0Q@")) mapAnexos[nf] = "ASSINATURA"; }
+                    let atualizadas = 0; notasDB.forEach(n => { if (mapAnexos[n.nf]) { n.app = mapAnexos[n.nf]; atualizadas++; } });
+                    await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas: notasDB }); document.getElementById('modal-atualizar-apps').classList.remove('active'); if(document.getElementById('notas-data-select').value === dataSel) { document.getElementById('btn-carregar-notas').click(); } alert(`Apps Atualizados!\n${atualizadas} notas receberam anexos.`); hideLoader();
                 }; reader.readAsArrayBuffer(file);
             } catch(err) { alert("Erro: " + err); hideLoader(); } e.target.value = '';
         });
 
+        // ================= MONTAGEM BASE =================
         const tbodyEditorNotas = document.querySelector('#tabela-editor-notas tbody');
         window.abrirSuperEditorNotas = (modo) => {
             tbodyEditorNotas.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-notas'); const boxImport = document.getElementById('controles-importacao-notas');
@@ -1141,73 +1064,45 @@
         };
         
         tbodyEditorNotas.addEventListener('blur', (e) => { 
-            if(e.target.dataset.col === 'placa') {
-                const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca];
-                if (cache) { tr.querySelector('[data-col="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-col="telefone"]').innerText = cache.telefone || ""; }
-            }
+            if(e.target.dataset.col === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-col="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-col="telefone"]').innerText = cache.telefone || ""; } }
         }, true);
 
         document.getElementById('btn-buscar-editor-notas').addEventListener('click', async () => { const d = document.getElementById('editor-notas-data').value; if(!d) return; showLoader(); tbodyEditorNotas.innerHTML = ""; const s = await getDoc(doc(db, "notas_fiscais_diario", d)); if(s.exists()) { s.data().notas.forEach(n => adicionarLinhaNotas(n)); } hideLoader(); });
         
         document.getElementById('btn-chamar-modal-motoristas').addEventListener('click', () => {
-            const dataSel = document.getElementById('editor-notas-data').value;
-            if(!dataSel) return alert("Selecione a data no topo.");
-            const placasMap = {};
+            const dataSel = document.getElementById('editor-notas-data').value; if(!dataSel) return alert("Selecione a data no topo."); const placasMap = {};
             document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                if(!tr.querySelector('[data-col="nf"]')) return;
-                const placa = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase();
+                if(!tr.querySelector('[data-col="nf"]')) return; const placa = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase();
                 if(placa) { const mot = tr.querySelector('[data-col="motorista"]').textContent.trim(); const tel = tr.querySelector('[data-col="telefone"]').textContent.trim(); if(!placasMap[placa]) placasMap[placa] = { motorista: mot, telefone: tel }; }
             });
             if(Object.keys(placasMap).length === 0) { document.getElementById('btn-confirmar-salvar-notas').click(); return; }
             const listaHtml = document.getElementById('lista-motoristas-modal'); listaHtml.innerHTML = '';
-            for(const placa in placasMap) {
-                let cache = motoristasHistoricoCache[placa] || {}; let defMot = placasMap[placa].motorista || cache.motorista || ""; let defTel = placasMap[placa].telefone || cache.telefone || "";
-                listaHtml.innerHTML += `<div class="motorista-row" data-placa="${placa}" style="display:flex; gap:12px; margin-bottom:12px; align-items:center; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"> <div style="font-weight:800; width:85px; color:#0f172a;">${placa}</div> <input type="text" class="input-mot" placeholder="Motorista" value="${defMot}" style="flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; outline:none;"> <input type="text" class="input-tel" placeholder="Telefone" value="${defTel}" style="width:130px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; outline:none;"> </div>`;
-            }
+            for(const placa in placasMap) { let cache = motoristasHistoricoCache[placa] || {}; let defMot = placasMap[placa].motorista || cache.motorista || ""; let defTel = placasMap[placa].telefone || cache.telefone || ""; listaHtml.innerHTML += `<div class="motorista-row" data-placa="${placa}" style="display:flex; gap:12px; margin-bottom:12px; align-items:center; background:var(--bg-panel); padding:15px; border-radius:8px; border:1px solid var(--border-color);"> <div style="font-weight:800; width:85px; color:var(--text-main);">${placa}</div> <input type="text" class="input-mot" placeholder="Motorista" value="${defMot}" style="flex:1;"> <input type="text" class="input-tel" placeholder="Telefone" value="${defTel}" style="width:130px;"> </div>`; }
             document.getElementById('modal-motoristas').classList.add('active');
         });
 
         document.getElementById('btn-confirmar-salvar-notas').addEventListener('click', async () => {
             const d = document.getElementById('editor-notas-data').value; showLoader(); const updatesMap = {};
-            document.querySelectorAll('#lista-motoristas-modal .motorista-row').forEach(row => {
-                const p = row.getAttribute('data-placa'); const m = row.querySelector('.input-mot').value.trim(); const t = row.querySelector('.input-tel').value.trim();
-                updatesMap[p] = { motorista: m, telefone: t };
-                if(m || t) { motoristasHistoricoCache[p] = { motorista: m, telefone: t }; setDoc(doc(db, "motoristas_historico", p), { motorista: m, telefone: t }); }
-            });
-
+            document.querySelectorAll('#lista-motoristas-modal .motorista-row').forEach(row => { const p = row.getAttribute('data-placa'); const m = row.querySelector('.input-mot').value.trim(); const t = row.querySelector('.input-tel').value.trim(); updatesMap[p] = { motorista: m, telefone: t }; if(m || t) { motoristasHistoricoCache[p] = { motorista: m, telefone: t }; setDoc(doc(db, "motoristas_historico", p), { motorista: m, telefone: t }); } });
             const notas = [];
             document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                if(!tr.querySelector('[data-col="nf"]')) return;
-                const placaBase = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase();
+                if(!tr.querySelector('[data-col="nf"]')) return; const placaBase = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase();
                 if(updatesMap[placaBase]) { tr.querySelector('[data-col="motorista"]').innerText = updatesMap[placaBase].motorista; tr.querySelector('[data-col="telefone"]').innerText = updatesMap[placaBase].telefone; }
-
-                notas.push({ 
-                    nf: cleanNF(tr.querySelector('[data-col="nf"]').textContent), viagem: tr.querySelector('[data-col="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-col="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-col="data"]').textContent.trim(), peso: tr.querySelector('[data-col="peso"]').textContent.trim(), qtde: tr.querySelector('[data-col="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-col="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-col="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-col="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-col="endereco"]').textContent.trim(), 
-                    placa: placaBase, motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(), 
-                    status: "", chegada: "", saida: "", obs: "", parcial: "", app: "" 
-                });
+                notas.push({ nf: cleanNF(tr.querySelector('[data-col="nf"]').textContent), viagem: tr.querySelector('[data-col="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-col="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-col="data"]').textContent.trim(), peso: tr.querySelector('[data-col="peso"]').textContent.trim(), qtde: tr.querySelector('[data-col="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-col="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-col="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-col="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-col="endereco"]').textContent.trim(), placa: placaBase, motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(), status: "", chegada: "", saida: "", obs: "", parcial: "", app: "" });
             });
-
-            await setDoc(doc(db, "notas_fiscais_diario", d), { notas }); 
-            if(document.getElementById('notas-data-select').value === d) { document.getElementById('btn-carregar-notas').click(); } 
-            alert("Base de Notas Fiscais Salva com Sucesso!"); document.getElementById('modal-motoristas').classList.remove('active'); document.getElementById('modal-editor-notas').classList.remove('active'); hideLoader();
+            await setDoc(doc(db, "notas_fiscais_diario", d), { notas }); if(document.getElementById('notas-data-select').value === d) { document.getElementById('btn-carregar-notas').click(); } alert("Base de Notas Fiscais Salva com Sucesso!"); document.getElementById('modal-motoristas').classList.remove('active'); document.getElementById('modal-editor-notas').classList.remove('active'); hideLoader();
         });
 
         document.getElementById('file-import-notas').addEventListener('change', async function(e) {
             const file = e.target.files[0]; if (!file) return; const dSel = document.getElementById('editor-notas-data').value; if (!dSel) { alert("Selecione Data do Painel!"); e.target.value = ''; return; }
             showLoader(); let transpMap = {};
             try { const sp = await getDoc(doc(db, "painel_diario", dSel)); if (sp.exists()) { sp.data().rotas.forEach(r => { if (r.transporte) { const n = String(r.transporte).match(/\d+/g); if (n) { n.forEach(nm => { transpMap[nm] = r.placa; }); } } }); } } catch(err) {}
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            const reader = new FileReader(); reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, {type: 'array'}); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                 let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºTransp."))) { hIdx = i; break; } }
                 if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; } tbodyEditorNotas.innerHTML = ''; const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
                 const cols = { nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"), data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"), cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"), endereco: h.indexOf("RUA") };
-                let qtd = 0;
-                for (let i = hIdx + 1; i < raw.length; i++) {
-                    const row = raw[i]; if (!row || !row[cols.nf]) continue; const tRow = cols.viagem !== -1 ? String(row[cols.viagem]).trim() : ""; if (!transpMap[tRow]) continue; qtd++;
-                    adicionarLinhaNotas({ nf: cleanNF(row[cols.nf]), viagem: tRow, ordem: cols.ordem!==-1?row[cols.ordem]:"", data: cols.data!==-1?row[cols.data]:"", peso: cols.peso!==-1?row[cols.peso]:"", qtde: cols.qtde!==-1?row[cols.qtde]:"", cliente: cols.cliente!==-1?row[cols.cliente]:"", cidade: cols.cidade!==-1?row[cols.cidade]:"", bairro: cols.bairro!==-1?row[cols.bairro]:"", endereco: cols.endereco!==-1?row[cols.endereco]:"", placa: transpMap[tRow] });
-                } if (qtd === 0) alert("Nenhuma nota correspondente encontrada."); hideLoader();
+                let qtd = 0; for (let i = hIdx + 1; i < raw.length; i++) { const row = raw[i]; if (!row || !row[cols.nf]) continue; const tRow = cols.viagem !== -1 ? String(row[cols.viagem]).trim() : ""; if (!transpMap[tRow]) continue; qtd++; adicionarLinhaNotas({ nf: cleanNF(row[cols.nf]), viagem: tRow, ordem: cols.ordem!==-1?row[cols.ordem]:"", data: cols.data!==-1?row[cols.data]:"", peso: cols.peso!==-1?row[cols.peso]:"", qtde: cols.qtde!==-1?row[cols.qtde]:"", cliente: cols.cliente!==-1?row[cols.cliente]:"", cidade: cols.cidade!==-1?row[cols.cidade]:"", bairro: cols.bairro!==-1?row[cols.bairro]:"", endereco: cols.endereco!==-1?row[cols.endereco]:"", placa: transpMap[tRow] }); } if (qtd === 0) alert("Nenhuma nota correspondente encontrada."); hideLoader();
             }; reader.readAsArrayBuffer(file); e.target.value = '';
         });
 
