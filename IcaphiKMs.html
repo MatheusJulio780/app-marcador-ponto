@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -31,6 +32,17 @@
             }
         }
     </script>
+
+    <style>
+        /* MODO LITE: Elimina todas as animações, transições e rolagens suaves do sistema inteiro */
+        body.lite-mode *,
+        body.lite-mode *::before,
+        body.lite-mode *::after {
+            animation: none !important;
+            transition: none !important;
+            scroll-behavior: auto !important;
+        }
+    </style>
 
     <style>
         /* ================= DESIGN OTIMIZADO (PREMIUM & LEVE) ================= */
@@ -852,7 +864,7 @@
                 <div class="relative">
                     <label
                         class="absolute -top-2 left-4 bg-white dark:bg-[#121214] px-1.5 text-[10px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest z-10">Motorista</label>
-                    <input type="text" id="motorista" onkeyup="autoSave()" placeholder="Nome"
+                    <input type="text" id="motorista" onkeyup="autoSave()" placeholder="Nome Completo"
                         class="w-full bg-gray-50/50 dark:bg-[#0a0a0c] border border-gray-200 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm text-gray-800 dark:text-zinc-100 outline-none focus:border-cyan-500 transition-colors font-bold uppercase placeholder-gray-300 dark:placeholder-zinc-700">
                 </div>
 
@@ -1050,6 +1062,11 @@
                 </div>
             </div>
         </div>
+
+        <button id="btn-lite-app" onclick="toggleLiteMode()"
+            class="fixed bottom-6 right-6 z-50 w-12 h-12 bg-gray-800 dark:bg-zinc-900 text-gray-400 rounded-full flex items-center justify-center shadow-lg border border-gray-700 dark:border-zinc-800">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+        </button>
     </div>
 
     <div id="view-admin"
@@ -1202,6 +1219,17 @@
                         de Preços</span>
                 </button>
             </nav>
+
+            <button onclick="toggleLiteMode()"
+                class="group/btn relative flex items-center h-12 w-16 hover:w-[200px] bg-transparent hover:bg-zinc-950 dark:hover:bg-[#0a0a0c] rounded-r-full liquid-hover z-[60] overflow-hidden hover:shadow-[12px_0_20px_-5px_rgba(0,0,0,0.5)] dark:hover:shadow-[12px_0_20px_-5px_rgba(0,0,0,0.8)]">
+                <div class="w-16 flex justify-center flex-shrink-0">
+                    <i id="icon-lite-admin" data-lucide="zap" class="w-5 h-5 text-gray-400"></i>
+                </div>
+                <span id="txt-lite-admin"
+                    class="font-bold text-sm text-gray-400 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 delay-100">
+                    Modo Lite: OFF
+                </span>
+            </button>
 
             <div
                 class="py-4 border-t border-zinc-900 dark:border-zinc-800/50 w-full flex flex-col gap-2 z-20 bg-zinc-950 dark:bg-[#0a0a0c]">
@@ -1500,37 +1528,49 @@
 
     <div id="modal-suporte" class="viewer-overlay">
         <div class="modal-box" style="max-width: 600px;">
-            <button class="modal-close-btn" onclick="el('modal-suporte').classList.remove('active')"><i data-lucide="x"
-                    class="w-4 h-4"></i></button>
-            <h3 class="font-bold mb-4 flex gap-2 dark:text-zinc-100 text-lg"><i data-lucide="alert-circle"
-                    class="text-pink-500"></i> Auditoria de Dados</h3>
-            <div class="grid-suporte">
-                <button class="btn-sup" onclick="renderizarSuporte('meta')"><i data-lucide="target"
-                        class="w-4 h-4 text-cyan-500"></i>META<div id="badge-meta" class="sup-badge">0</div></button>
-                <button class="btn-sup" onclick="renderizarSuporte('perfil')"><i data-lucide="truck"
-                        class="w-4 h-4 text-purple-500"></i>PERFIL<div id="badge-perfil" class="sup-badge">0</div>
-                </button>
-                <button class="btn-sup" onclick="renderizarSuporte('app')"><i data-lucide="smartphone"
-                        class="w-4 h-4 text-green-500"></i>APP<div id="badge-app" class="sup-badge">0</div></button>
-                <button class="btn-sup" onclick="renderizarSuporte('web')"><i data-lucide="globe"
-                        class="w-4 h-4 text-gray-500"></i>WEB<div id="badge-web" class="sup-badge">0</div></button>
-                <button class="btn-sup" onclick="renderizarSuporte('gps_ini')"><i data-lucide="map-pin"
-                        class="w-4 h-4 text-orange-500"></i>GPS INI<div id="badge-gps-ini" class="sup-badge">0</div>
-                </button>
-                <button class="btn-sup" onclick="renderizarSuporte('gps_fim')"><i data-lucide="map-pin"
-                        class="w-4 h-4 text-red-500"></i>GPS FIM<div id="badge-gps-fim" class="sup-badge">0</div>
-                </button>
-                <button class="btn-sup" onclick="renderizarSuporte('foto_ini')"><i data-lucide="camera"
-                        class="w-4 h-4 text-teal-500"></i>FOTO INI<div id="badge-foto-ini" class="sup-badge">0</div>
-                </button>
-                <button class="btn-sup" onclick="renderizarSuporte('foto_fim')"><i data-lucide="camera"
-                        class="w-4 h-4 text-indigo-500"></i>FOTO FIM<div id="badge-foto-fim" class="sup-badge">0</div>
-                </button>
-            </div>
-            <div id="lista-suporte"
-                class="bg-gray-50 dark:bg-zinc-900/50 rounded-lg p-2 max-h-60 overflow-y-auto border border-gray-200 dark:border-zinc-800">
-                <p class="text-center text-xs text-gray-400 dark:text-zinc-500 p-4">Selecione uma categoria acima para
-                    auditar falhas.</p>
+            <button class="modal-close-btn" onclick="el('modal-suporte').classList.remove('active')">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <h3 class="font-bold mb-4 flex gap-2 dark:text-zinc-100 text-lg">
+                <i data-lucide="alert-circle" class="text-pink-500"></i> Auditoria de Dados
+            </h3>
+
+            <div class="mt-4 border-t border-gray-200 dark:border-zinc-800 pt-4">
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-4">
+                    <button class="btn-sup" onclick="renderizarSuporte('meta')"><i data-lucide="target"
+                            class="w-4 h-4 text-cyan-500"></i>META<div id="badge-meta" class="sup-badge">0</div>
+                    </button>
+                    <button class="btn-sup" onclick="renderizarSuporte('perfil')"><i data-lucide="truck"
+                            class="w-4 h-4 text-purple-500"></i>PERFIL<div id="badge-perfil" class="sup-badge">0</div>
+                    </button>
+                    <button class="btn-sup" onclick="renderizarSuporte('app')"><i data-lucide="smartphone"
+                            class="w-4 h-4 text-green-500"></i>APP<div id="badge-app" class="sup-badge">0</div></button>
+                    <button class="btn-sup" onclick="renderizarSuporte('web')"><i data-lucide="globe"
+                            class="w-4 h-4 text-gray-500"></i>WEB<div id="badge-web" class="sup-badge">0</div></button>
+                    <button class="btn-sup" onclick="renderizarSuporte('gps_ini')"><i data-lucide="map-pin"
+                            class="w-4 h-4 text-orange-500"></i>GPS INI<div id="badge-gps-ini" class="sup-badge">0</div>
+                    </button>
+                    <button class="btn-sup" onclick="renderizarSuporte('gps_fim')"><i data-lucide="map-pin"
+                            class="w-4 h-4 text-red-500"></i>GPS FIM<div id="badge-gps-fim" class="sup-badge">0</div>
+                    </button>
+                    <button class="btn-sup" onclick="renderizarSuporte('foto_ini')"><i data-lucide="camera"
+                            class="w-4 h-4 text-teal-500"></i>FOTO INI<div id="badge-foto-ini" class="sup-badge">0</div>
+                    </button>
+                    <button class="btn-sup" onclick="renderizarSuporte('foto_fim')"><i data-lucide="camera"
+                            class="w-4 h-4 text-indigo-500"></i>FOTO FIM<div id="badge-foto-fim" class="sup-badge">0
+                        </div></button>
+
+                    <button class="btn-sup border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/10"
+                        onclick="abrirPainelAuditoriaVisual()">
+                        <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i>AUDITORIA KM
+                    </button>
+                </div>
+
+                <div id="lista-suporte"
+                    class="bg-gray-50 dark:bg-zinc-900/50 rounded-lg p-4 max-h-[400px] overflow-y-auto border border-gray-200 dark:border-zinc-800 custom-scrollbar">
+                    <p class="text-center text-xs text-gray-400 dark:text-zinc-500 p-4">Selecione uma categoria acima
+                        para auditar falhas.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -1700,6 +1740,16 @@
             </div>
             <div id="mapa-container" class="w-full h-full relative z-0 bg-gray-100 dark:bg-zinc-900"></div>
         </div>
+    </div>
+
+    <div id="modal-zoom-foto"
+        class="fixed inset-0 z-[99999] bg-black/95 hidden flex-col items-center justify-center backdrop-blur-md">
+        <button
+            onclick="document.getElementById('modal-zoom-foto').classList.add('hidden'); document.getElementById('modal-zoom-foto').classList.remove('flex');"
+            class="absolute top-6 right-6 bg-white/10 hover:bg-red-500 text-white rounded-full p-2 transition-colors">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <img id="zoom-foto-img" src="" class="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl">
     </div>
 
     <script>
@@ -3486,44 +3536,44 @@
         window.cancelarViagemMotorista = function () {
             // 1. Puxa o ID da viagem de forma segura (Memória ou Cache)
             const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
-            
+
             if (!idViagem) {
                 alert("Erro: Não foi possível identificar a viagem atual para cancelar.");
                 return;
             }
 
             if (confirm("Deseja realmente cancelar esta viagem?")) {
-                
+
                 // 2. Atualiza no Firebase (Usando a data oficial do servidor)
-                db.collection('viagens').doc(idViagem).update({ 
-                    status: 'cancelada', 
-                    dataFim: firebase.firestore.FieldValue.serverTimestamp() 
+                db.collection('viagens').doc(idViagem).update({
+                    status: 'cancelada',
+                    dataFim: firebase.firestore.FieldValue.serverTimestamp()
                 })
-                .then(() => {
-                    
-                    // 3. Tenta parar o rastreio Web (Com try/catch para não quebrar o código se der erro)
-                    if (typeof window.pararRastreamentoWeb === "function") {
-                        try { window.pararRastreamentoWeb(); } catch(e) { console.log("Erro rastreio web:", e); }
-                    } else if (typeof window.pararRastreioContinuo === "function") {
-                        try { window.pararRastreioContinuo(); } catch(e) { console.log("Erro rastreio continuo:", e); }
-                    }
+                    .then(() => {
 
-                    // 4. Tenta parar o rastreio no App Android (Com try/catch)
-                    if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === "function") {
-                        try { window.AndroidInterface.stopTracking(); } catch(e) { console.log("Erro Android:", e); }
-                    }
+                        // 3. Tenta parar o rastreio Web (Com try/catch para não quebrar o código se der erro)
+                        if (typeof window.pararRastreamentoWeb === "function") {
+                            try { window.pararRastreamentoWeb(); } catch (e) { console.log("Erro rastreio web:", e); }
+                        } else if (typeof window.pararRastreioContinuo === "function") {
+                            try { window.pararRastreioContinuo(); } catch (e) { console.log("Erro rastreio continuo:", e); }
+                        }
 
-                    // 5. Limpa a memória do celular e volta pra tela inicial
-                    localStorage.removeItem('v_id'); 
-                    window.viagemAtualId = null; 
-                    
-                    alert("Viagem cancelada com sucesso!");
-                    location.reload();
-                    
-                }).catch(e => {
-                    console.error("Erro ao cancelar no Firebase:", e);
-                    alert("Erro de conexão. Não foi possível cancelar a viagem agora.");
-                });
+                        // 4. Tenta parar o rastreio no App Android (Com try/catch)
+                        if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === "function") {
+                            try { window.AndroidInterface.stopTracking(); } catch (e) { console.log("Erro Android:", e); }
+                        }
+
+                        // 5. Limpa a memória do celular e volta pra tela inicial
+                        localStorage.removeItem('v_id');
+                        window.viagemAtualId = null;
+
+                        alert("Viagem cancelada com sucesso!");
+                        location.reload();
+
+                    }).catch(e => {
+                        console.error("Erro ao cancelar no Firebase:", e);
+                        alert("Erro de conexão. Não foi possível cancelar a viagem agora.");
+                    });
             }
         };
 
@@ -3874,21 +3924,21 @@
         // ==========================================
         // FUNÇÕES DA TELA DE BOAS-VINDAS
         // ==========================================
-        window.escolherMotorista = function() {
+        window.escolherMotorista = function () {
             // Esconde o modal suavemente e libera a tela do motorista que já está no fundo
             const overlay = document.getElementById('welcome-overlay');
-            if(overlay) {
+            if (overlay) {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 300);
             }
         };
 
-        window.escolherAdmin = function() {
+        window.escolherAdmin = function () {
             // 1. Esconde a tela de boas vindas com animação
             const overlay = document.getElementById('welcome-overlay');
-            if(overlay) {
+            if (overlay) {
                 overlay.style.opacity = '0';
-                
+
                 // 2. Espera a tela sumir (300ms) e chama a sua função original intacta
                 setTimeout(() => {
                     overlay.remove();
@@ -3904,7 +3954,466 @@
             }
         };
 
+        // ==========================================
+        // RENDERIZAÇÃO DO PAINEL OCR DENTRO DA LISTA
+        // ==========================================
+        window.abrirPainelOCR = function () {
+            const container = document.getElementById('lista-suporte');
+            container.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="scan-line" class="w-5 h-5 text-blue-500"></i>
+                    <h3 class="font-black text-gray-800 dark:text-zinc-100 text-sm tracking-wide uppercase">Varredura de Imagens (Tesseract)</h3>
+                </div>
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 mb-4 font-bold">O robô processa o Base64 das fotos e cruza com os dados do Firebase.</p>
+                
+                <div class="flex flex-col sm:flex-row items-end gap-2 bg-white dark:bg-[#0a0a0c] p-3 rounded-xl border border-gray-200 dark:border-zinc-800 mb-4">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Início</label>
+                        <input type="date" id="ocr-data-ini" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-zinc-100 outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Fim</label>
+                        <input type="date" id="ocr-data-fim" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-zinc-100 outline-none focus:border-blue-500">
+                    </div>
+                    <button id="btn-run-ocr" onclick="executarAuditoriaOCR()" class="w-full sm:w-auto px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg transition-colors text-xs tracking-widest flex items-center justify-center gap-1 h-[32px]">
+                        <i data-lucide="play" class="w-3 h-3"></i> EXECUTAR
+                    </button>
+                </div>
+
+                <div id="ocr-status-container" class="hidden text-center mb-4">
+                    <span id="ocr-status-text" class="text-xs font-bold text-blue-600 dark:text-blue-400 animate-pulse">Iniciando...</span>
+                </div>
+
+                <div id="ocr-resultados" class="flex flex-col gap-3"></div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+        };
+
+        // ==========================================
+        // FUNÇÃO DE ZOOM DA IMAGEM
+        // ==========================================
+        window.abrirZoomFoto = function (elementoImg) {
+            const src = elementoImg.src;
+            if (!src || !src.includes('data:image')) return;
+            const modal = document.getElementById('modal-zoom-foto');
+            const img = document.getElementById('zoom-foto-img');
+            if (modal && img) {
+                img.src = src;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        };
+
+        // ==========================================
+        // LÓGICA DO ROBÔ (ATUALIZADA E INTELIGENTE)
+        // ==========================================
+
+        window.isOcrRunning = false; // Trava para não duplicar se clicar 2x
+
+        // ==========================================
+        // LÓGICA DO ROBÔ (VISÃO COMPUTACIONAL AVANÇADA)
+        // ==========================================
+
+        window.isOcrRunning = false;
+
+        // 1. Função que coloca "Óculos de Grau" no robô (Inverte cores e tira ruído)
+        window.preProcessarImagemParaOCR = function (base64) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+
+                    // Magia aqui: Deixa preto e branco, aumenta contraste no máximo e inverte as cores.
+                    // O painel escuro vira branco, e os números de luz viram pretos. O Tesseract ama isso.
+                    ctx.filter = 'grayscale(100%) contrast(300%) invert(100%)';
+                    ctx.drawImage(img, 0, 0);
+
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                };
+                img.src = base64;
+            });
+        };
+
+        // ==========================================
+        // AUDITORIA VISUAL EXPRESSA (FILTRO DISPERSÃO > 50KM)
+        // ==========================================
+
+        window.abrirPainelAuditoriaVisual = function () {
+            const container = document.getElementById('lista-suporte');
+            container.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
+                    <h3 class="font-black text-gray-800 dark:text-zinc-100 text-sm tracking-wide uppercase">Auditoria Visual Rápida</h3>
+                </div>
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 mb-4 font-bold">Mostra apenas viagens com erro de digitação ou dispersão de KM maior que 50.</p>
+                
+                <div class="flex flex-col sm:flex-row items-end gap-2 bg-white dark:bg-[#0a0a0c] p-3 rounded-xl border border-gray-200 dark:border-zinc-800 mb-4">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Início</label>
+                        <input type="date" id="vis-data-ini" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-zinc-100 outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Fim</label>
+                        <input type="date" id="vis-data-fim" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 dark:text-zinc-100 outline-none focus:border-blue-500">
+                    </div>
+                    <button id="btn-run-vis" onclick="executarAuditoriaVisual()" class="w-full sm:w-auto px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg transition-colors text-xs tracking-widest flex items-center justify-center gap-1 h-[32px]">
+                        <i data-lucide="filter" class="w-3 h-3"></i> FILTRAR
+                    </button>
+                </div>
+
+                <div id="vis-status-container" class="hidden text-center mb-4">
+                    <span id="vis-status-text" class="text-xs font-bold text-blue-600 dark:text-blue-400 animate-pulse">Buscando viagens suspeitas...</span>
+                </div>
+
+                <div id="vis-resultados" class="flex flex-col gap-4"></div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+        };
+
+        // ==========================================
+        // AUDITORIA VISUAL EXPRESSA (POR MÊS + VERIFICAÇÃO DE OK)
+        // ==========================================
+
+        // 1. ABRIR PAINEL (Carregamento Automático do Mês Atual)
+        window.abrirPainelAuditoriaVisual = function () {
+            const container = document.getElementById('lista-suporte');
+
+            // Puxa o mês e ano atuais no formato 'YYYY-MM'
+            const hoje = new Date();
+            const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+
+            container.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
+                    <h3 class="font-black text-gray-800 dark:text-zinc-100 text-sm tracking-wide uppercase">Auditoria de KM</h3>
+                </div>
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 mb-4 font-bold">Inspecione as divergências. Clique em "OK" para remover a viagem da lista.</p>
+                
+                <div class="flex items-center gap-2 bg-white dark:bg-[#0a0a0c] p-3 rounded-xl border border-gray-200 dark:border-zinc-800 mb-4">
+                    <div class="flex-1">
+                        <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Mês de Auditoria</label>
+                        <input type="month" id="vis-mes" value="${mesAtual}" onchange="executarAuditoriaVisual()" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-black text-gray-800 dark:text-zinc-100 outline-none focus:border-blue-500 uppercase">
+                    </div>
+                    <button id="btn-run-vis" onclick="executarAuditoriaVisual()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg transition-colors text-xs tracking-widest flex items-center justify-center gap-1 h-[32px] mt-4">
+                        <i data-lucide="search" class="w-3 h-3"></i> BUSCAR
+                    </button>
+                </div>
+
+                <div id="vis-status-container" class="text-center mb-4">
+                    <span id="vis-status-text" class="text-xs font-bold text-blue-600 dark:text-blue-400 animate-pulse">Carregando pendências...</span>
+                </div>
+
+                <div id="vis-resultados" class="flex flex-col gap-4"></div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+
+            // Ao abrir o painel, ele já roda a busca sozinho!
+            window.executarAuditoriaVisual();
+        };
+
+        // 2. EXECUTAR A BUSCA (Dupla e Ignorando os "OKs")
+        window.executarAuditoriaVisual = async function () {
+            const mesValue = document.getElementById('vis-mes').value;
+            const btn = document.getElementById('btn-run-vis');
+            const statusText = document.getElementById('vis-status-text');
+            const resultadosDiv = document.getElementById('vis-resultados');
+
+            if (!mesValue) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+            statusText.innerText = "Buscando viagens pendentes...";
+            statusText.className = "text-xs font-bold text-blue-600 dark:text-blue-400 animate-pulse";
+            resultadosDiv.innerHTML = '';
+            if (window.lucide) window.lucide.createIcons();
+
+            try {
+                // Matemática de Datas: Pega o primeiro e o último dia do mês selecionado
+                const [ano, mes] = mesValue.split('-');
+                const start = new Date(ano, mes - 1, 1, 0, 0, 0);
+                const end = new Date(ano, mes, 0, 23, 59, 59);
+
+                const startStr = start.toISOString();
+                const endStr = end.toISOString();
+
+                // Ataque Duplo (Timestamp e String)
+                const snapTimestamp = await db.collection('viagens').where('dataInicio', '>=', start).where('dataInicio', '<=', end).get();
+                const snapString = await db.collection('viagens').where('dataInicio', '>=', startStr).where('dataInicio', '<=', endStr).get();
+
+                const mapaViagens = new Map();
+                snapTimestamp.forEach(doc => mapaViagens.set(doc.id, { id: doc.id, ...doc.data() }));
+                snapString.forEach(doc => mapaViagens.set(doc.id, { id: doc.id, ...doc.data() }));
+
+                let suspeitas = 0;
+
+                mapaViagens.forEach(v => {
+                    // A MÁGICA DE LIMPEZA: Se a viagem já tem a marcação de OK (auditado), o robô ignora ela e pula pra próxima!
+                    if (v.auditado === true) return;
+
+                    const extrairNumero = (valor) => {
+                        if (valor === undefined || valor === null) return 0;
+                        const limpo = String(valor).replace(/[^0-9.-]/g, '');
+                        return Number(limpo) || 0;
+                    };
+
+                    const kmIni = extrairNumero(v.kmInicio);
+                    const kmFim = extrairNumero(v.kmFim);
+                    const meta = extrairNumero(v.metaKm || v.meta);
+
+                    if (kmFim > 0) {
+                        const kmRodado = kmFim - kmIni;
+                        const diferenca = kmRodado - meta;
+
+                        let temErro = false;
+                        let tituloErro = "";
+                        let corErro = "bg-orange-500";
+                        let corTextoErro = "text-orange-500";
+
+                        if (kmRodado < 0) {
+                            temErro = true;
+                            tituloErro = "KM Negativo (Erro)";
+                            corErro = "bg-red-600";
+                            corTextoErro = "text-red-500";
+                        }
+                        else if (meta > 0 && diferenca >= 50) {
+                            temErro = true;
+                            tituloErro = `+${diferenca.toFixed(0)} KM da meta`;
+                            corErro = "bg-purple-500";
+                            corTextoErro = "text-purple-500";
+                        }
+                        else if (meta > 0 && diferenca <= -50) {
+                            temErro = true;
+                            tituloErro = `Faltou ${Math.abs(diferenca).toFixed(0)} KM`;
+                            corErro = "bg-orange-500";
+                            corTextoErro = "text-orange-500";
+                        }
+
+                        if (temErro) {
+                            suspeitas++;
+
+                            resultadosDiv.innerHTML += `
+                                <div class="card-auditoria bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 p-3 rounded-xl flex flex-col gap-3 shadow-sm relative overflow-hidden transition-all duration-300">
+                                    <div class="absolute top-0 left-0 w-1 h-full ${corErro}"></div>
+                                    
+                                    <div class="flex justify-between items-center border-b border-red-200/50 dark:border-red-500/20 pb-2 pl-2">
+                                        <div>
+                                            <span class="block text-[9px] font-black ${corTextoErro} uppercase tracking-widest">
+                                                ALERTA: ${tituloErro}
+                                            </span>
+                                            <b class="text-gray-800 dark:text-zinc-100 text-xs">${v.nome} | ${v.placa}</b>
+                                        </div>
+                                        <span class="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold px-2 py-1 rounded">Meta: ${meta} / Rodou: ${kmRodado}</span>
+                                    </div>
+                                    
+                                    <div class="flex gap-4 pl-2">
+                                        <div class="flex-1 flex flex-col gap-2 border-r border-red-200/50 dark:border-red-500/20 pr-4">
+                                            <span class="text-[10px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-widest">Foto Inicial</span>
+                                            <div class="h-20 w-full border border-gray-200 dark:border-zinc-700 rounded bg-black flex items-center justify-center cursor-pointer group relative">
+                                                ${v.fotoInicio ? `<img src="${v.fotoInicio}" class="max-w-full max-h-full object-contain group-hover:opacity-50 transition" onclick="abrirZoomFoto(this)">` : '<span class="text-[9px] text-gray-500">Sem Foto</span>'}
+                                                <i data-lucide="zoom-in" class="w-4 h-4 text-white absolute pointer-events-none opacity-0 group-hover:opacity-100"></i>
+                                            </div>
+                                            <div class="flex items-center gap-1 mt-1">
+                                                <input type="number" id="edit-ini-${v.id}" value="${kmIni}" class="w-full bg-white dark:bg-[#0a0a0c] border border-gray-200 dark:border-zinc-800 rounded px-2 py-1 text-xs font-black text-gray-800 dark:text-zinc-100 text-center">
+                                                <button onclick="salvarCorrecaoKm('${v.id}', 'Inicio', 'edit-ini-${v.id}', this)" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition">
+                                                    <i data-lucide="save" class="w-3 h-3"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex-1 flex flex-col gap-2">
+                                            <span class="text-[10px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-widest">Foto Final</span>
+                                            <div class="h-20 w-full border border-gray-200 dark:border-zinc-700 rounded bg-black flex items-center justify-center cursor-pointer group relative">
+                                                ${v.fotoFim ? `<img src="${v.fotoFim}" class="max-w-full max-h-full object-contain group-hover:opacity-50 transition" onclick="abrirZoomFoto(this)">` : '<span class="text-[9px] text-gray-500">Sem Foto</span>'}
+                                                <i data-lucide="zoom-in" class="w-4 h-4 text-white absolute pointer-events-none opacity-0 group-hover:opacity-100"></i>
+                                            </div>
+                                            <div class="flex items-center gap-1 mt-1">
+                                                <input type="number" id="edit-fim-${v.id}" value="${kmFim}" class="w-full bg-white dark:bg-[#0a0a0c] border border-gray-200 dark:border-zinc-800 rounded px-2 py-1 text-xs font-black text-gray-800 dark:text-zinc-100 text-center">
+                                                <button onclick="salvarCorrecaoKm('${v.id}', 'Fim', 'edit-fim-${v.id}', this)" class="bg-emerald-600 text-white p-1.5 rounded hover:bg-emerald-700 transition">
+                                                    <i data-lucide="save" class="w-3 h-3"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-2 pl-2">
+                                        <button onclick="marcarViagemOk('${v.id}', this)" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                            <i data-lucide="check-circle" class="w-4 h-4"></i> MARCAR COMO OK (VERIFICADO)
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+
+                statusText.innerText = suspeitas > 0 ? `Foram encontradas ${suspeitas} viagens para auditar.` : `Tudo limpo! Nenhuma pendência neste mês.`;
+                statusText.className = suspeitas > 0 ? 'text-xs font-bold text-orange-500' : 'text-xs font-bold text-emerald-500';
+
+            } catch (error) {
+                console.error("Erro na busca visual:", error);
+                statusText.innerText = "Erro ao puxar dados do banco.";
+                statusText.className = 'text-xs font-bold text-red-500';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="search" class="w-3 h-3"></i> BUSCAR';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+        // 3. NOVA FUNÇÃO: SALVAR OK E SUMIR COM O CARD
+        window.marcarViagemOk = async function (idViagem, btn) {
+            const card = btn.closest('.card-auditoria');
+            const conteudoOriginal = btn.innerHTML;
+
+            try {
+                btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> SALVANDO...';
+                btn.disabled = true;
+                if (window.lucide) window.lucide.createIcons();
+
+                // Grava no Firebase que foi verificado
+                await db.collection('viagens').doc(idViagem).update({
+                    auditado: true
+                });
+
+                // Efeito visual ninja: Some com a viagem da tela
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+
+                setTimeout(() => {
+                    card.remove(); // Tira o card do HTML
+
+                    // Atualiza o contador lá em cima pra você ver seu trabalho diminuindo
+                    const painelStatus = document.getElementById('vis-status-text');
+                    const cardsRestantes = document.querySelectorAll('.card-auditoria').length;
+
+                    if (cardsRestantes === 0) {
+                        painelStatus.innerText = "Tudo limpo! Nenhuma pendência neste mês.";
+                        painelStatus.className = 'text-xs font-bold text-emerald-500';
+                    } else {
+                        painelStatus.innerText = `Restam ${cardsRestantes} viagens para auditar.`;
+                    }
+                }, 300);
+
+            } catch (error) {
+                console.error("Erro ao marcar como OK:", error);
+                alert("Erro ao confirmar. Tente novamente.");
+                btn.innerHTML = conteudoOriginal;
+                btn.disabled = false;
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+        // Função de salvar (Você já tem essa, mas deixei aqui por segurança caso tenha apagado)
+        window.salvarCorrecaoKm = async function (idViagem, tipo, idInput, btn) {
+            const novoKm = document.getElementById(idInput).value;
+            if (!novoKm || isNaN(novoKm)) return alert("Digite um KM válido.");
+
+            const campoAtulizar = tipo === 'Inicio' ? 'kmInicio' : 'kmFim';
+            const htmlAnterior = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+            if (window.lucide) window.lucide.createIcons();
+
+            try {
+                await db.collection('viagens').doc(idViagem).update({ [campoAtulizar]: Number(novoKm) });
+                btn.classList.replace('bg-blue-600', 'bg-gray-400');
+                btn.classList.replace('bg-emerald-600', 'bg-gray-400');
+                btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
+                btn.disabled = true;
+            } catch (error) {
+                alert("Erro ao salvar correção.");
+                btn.innerHTML = htmlAnterior;
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+
+        // Função para o botão "Corrigir" do card salvar direto no banco
+        window.salvarCorrecaoKm = async function (idViagem, tipo, idInput, btn) {
+            const novoKm = document.getElementById(idInput).value;
+            if (!novoKm || isNaN(novoKm)) return alert("Digite um KM válido.");
+
+            const campoAtulizar = tipo === 'Inicio' ? 'kmInicio' : 'kmFim';
+
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+            if (window.lucide) window.lucide.createIcons();
+
+            try {
+                await db.collection('viagens').doc(idViagem).update({
+                    [campoAtulizar]: Number(novoKm)
+                });
+
+                // Transforma o botão em sucesso e trava ele
+                btn.classList.replace('bg-emerald-500', 'bg-gray-300');
+                btn.classList.replace('dark:bg-emerald-500', 'dark:bg-zinc-700');
+                btn.innerHTML = '<i data-lucide="check-check" class="w-3 h-3 text-green-700 dark:text-green-400"></i> Salvo';
+                btn.disabled = true;
+
+            } catch (error) {
+                console.error("Erro ao atualizar KM:", error);
+                alert("Erro ao salvar correção.");
+                btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i> Corrigir';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+        // ==========================================
+        // SISTEMA MODO LITE (DESEMPENHO)
+        // ==========================================
+
+        window.toggleLiteMode = function () {
+            const isAtivo = document.body.classList.toggle('lite-mode');
+            localStorage.setItem('icaphi_lite_mode', isAtivo);
+            atualizarIconesLiteMode(isAtivo);
+        };
+
+        window.atualizarIconesLiteMode = function(isAtivo) {
+            // Atualiza Botão do Painel Admin (se existir na tela)
+            const btnAdminTxt = document.getElementById('txt-lite-admin');
+            const btnAdminIcon = document.getElementById('icon-lite-admin');
+            
+            if (btnAdminTxt && btnAdminIcon) {
+                btnAdminTxt.innerText = isAtivo ? "Modo Lite: ON" : "Modo Lite: OFF";
+                btnAdminIcon.setAttribute('data-lucide', isAtivo ? 'zap-off' : 'zap');
+                
+                // Gerencia as cores do botão estilo "Sanfona"
+                if (isAtivo) {
+                    btnAdminIcon.classList.replace('text-gray-400', 'text-yellow-500');
+                    btnAdminTxt.classList.replace('text-gray-400', 'text-yellow-500');
+                } else {
+                    btnAdminIcon.classList.replace('text-yellow-500', 'text-gray-400');
+                    btnAdminTxt.classList.replace('text-yellow-500', 'text-gray-400');
+                }
+            }
+
+            // Atualiza Botão Flutuante do APP Motorista (se existir na tela)
+            const btnApp = document.getElementById('btn-lite-app');
+            if (btnApp) {
+                btnApp.innerHTML = isAtivo ? '<i data-lucide="zap-off" class="w-5 h-5"></i>' : '<i data-lucide="zap" class="w-5 h-5"></i>';
+                btnApp.className = isAtivo 
+                    ? "fixed bottom-6 right-6 z-50 w-12 h-12 bg-yellow-500 text-white rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.4)] border border-yellow-400"
+                    : "fixed bottom-6 right-6 z-50 w-12 h-12 bg-gray-800 dark:bg-zinc-900 text-gray-400 rounded-full flex items-center justify-center shadow-lg border border-gray-700 dark:border-zinc-800";
+            }
+            
+            if(window.lucide) window.lucide.createIcons();
+        };
+
+        // Ao carregar a página, verifica se o usuário já tinha ativado antes
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAtivo = localStorage.getItem('icaphi_lite_mode') === 'true';
+            if (isAtivo) {
+                document.body.classList.add('lite-mode');
+            }
+            // Dá um pequeno atraso de 100ms para garantir que os botões já foram renderizados no HTML
+            setTimeout(() => atualizarIconesLiteMode(isAtivo), 100);
+        });
+
     </script>
+
+
+
 </body>
 
 </html>
