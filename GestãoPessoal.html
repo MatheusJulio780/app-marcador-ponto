@@ -570,6 +570,12 @@
                     <div id="user-profile" style="font-weight: 800; font-size: 18px;"></div>
                     <button class="btn btn-danger btn-sm" style="width: 100%;" onclick="window.logout()">Desconectar Conta Segura</button>
                 </div>
+
+                <div class="grid-cards" id="admin-panel" style="display:none; grid-template-columns: 1fr;">
+                    <div class="cat-card" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05);" onclick="window.openModal('modal-admin-bancos')">
+                        <h3 style="display:flex; align-items:center; justify-content:center; gap:10px; color: var(--warning);"><span class="material-symbols-outlined">admin_panel_settings</span> Gerenciar Bancos (Acesso Admin)</h3>
+                    </div>
+                </div>
                 
                 <div class="card">
                     <h3 style="margin-bottom: 10px;">Preferências</h3>
@@ -665,49 +671,57 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-admin-bancos">
+        <div class="modal-content">
+            <span class="material-symbols-outlined modal-close" onclick="window.closeModals()">close</span>
+            <h3 style="text-align: center; margin-bottom: 15px; color: var(--warning);">Moldes de Bancos Globais</h3>
+            <p style="font-size:12px; opacity:0.8; margin-bottom:15px; text-align:center;">Esses bancos aparecerão para os usuários escolherem.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <div class="form-group" style="margin:0;"><label>Nome do Banco (Ex: Nubank)</label><input type="text" id="adm-banco-nome" class="form-control"></div>
+                <div class="form-group" style="margin:0;"><label>Link do App (Opcional)</label><input type="text" id="adm-banco-link" class="form-control" placeholder="https://..."></div>
+                <div class="form-group" style="margin:0;"><label>Cor Oficial do Cartão</label><input type="color" id="adm-banco-cor" class="form-control" style="padding: 5px; height: 50px; border-radius: 12px; cursor: pointer;" value="#8A05BE"></div>
+                <button type="button" class="btn btn-warning" style="height: 48px; color:white;" onclick="window.salvarBancoDireto(this)">Salvar Banco Global</button>
+            </div>
+            
+            <h4 style="margin-top:25px; font-size: 14px; opacity: 0.8; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Bancos Cadastrados:</h4>
+            <ul id="lista-admin-bancos" style="list-style: none; display:flex; flex-direction:column; gap:10px; margin-top:15px; max-height: 200px; overflow-y: auto; padding-right:5px;"></ul>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-add-cartao">
         <div class="modal-content">
             <span class="material-symbols-outlined modal-close" onclick="window.closeModals()">close</span>
-            <h3 style="margin-bottom: 15px;">Adicionar Cartão</h3>
-            <form id="form-novo-cartao">
-                <div class="form-group">
-                    <label>Nome do Cartão/Banco</label>
-                    <input type="text" id="cc-nome" class="form-control" required>
+            <h3 style="margin-bottom: 15px;">Adicionar à Carteira</h3>
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <div class="form-group" style="margin:0;">
+                    <label>Selecione a Instituição (Banco)</label>
+                    <select id="cc-banco-id" class="form-control"></select>
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <div class="form-group" style="flex:1"><label>Vencimento</label><input type="number" id="cc-venc" class="form-control" min="1" max="31" required></div>
-                    <div class="form-group" style="flex:1"><label>Fechamento</label><input type="number" id="cc-fechamento" class="form-control" min="1" max="31" required></div>
+                    <div class="form-group" style="flex:1; margin:0;"><label>Vencimento (Dia)</label><input type="number" id="cc-venc" class="form-control" min="1" max="31"></div>
+                    <div class="form-group" style="flex:1; margin:0;"><label>Fechamento (Dia)</label><input type="number" id="cc-fechamento" class="form-control" min="1" max="31"></div>
                 </div>
-                <div class="form-group">
-                    <label>Link do App do Banco (Opcional)</label>
-                    <input type="text" id="cc-link" class="form-control" placeholder="Ex: https://nubank.com.br...">
-                </div>
-                <div class="form-group">
-                    <label>Cor da Identidade</label>
-                    <input type="color" id="cc-cor" class="form-control" style="padding: 5px; height: 50px; border-radius: 12px; cursor: pointer;" value="#6366f1">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%; height: 48px;">Criar Cartão</button>
-            </form>
+                <button type="button" class="btn btn-primary" style="width:100%; height: 48px; margin-top: 5px;" onclick="window.salvarCartaoDireto(this)">Adicionar Cartão</button>
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal-edit-cartao">
         <div class="modal-content">
             <span class="material-symbols-outlined modal-close" onclick="window.closeModals()">close</span>
-            <h3 style="margin-bottom:15px;">Editar Cartão</h3>
+            <h3 style="margin-bottom:15px;">Editar Fatura</h3>
             <form id="form-edit-cartao">
                 <input type="hidden" id="edit-cc-id">
-                <div class="form-group"><label>Nome</label><input type="text" id="edit-cc-nome" class="form-control" required></div>
+                <div class="form-group">
+                    <label>Instituição</label>
+                    <select id="edit-cc-banco-id" class="form-control"></select>
+                </div>
                 <div style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1"><label>Vencimento</label><input type="number" id="edit-cc-venc" class="form-control" min="1" max="31" required></div>
                     <div class="form-group" style="flex:1"><label>Fechamento</label><input type="number" id="edit-cc-fechamento" class="form-control" min="1" max="31" required></div>
                 </div>
-                <div class="form-group">
-                    <label>Link do App do Banco</label>
-                    <input type="text" id="edit-cc-link" class="form-control" placeholder="Ex: https://...">
-                </div>
-                <div class="form-group"><label>Cor</label><input type="color" id="edit-cc-cor" class="form-control" style="padding: 5px; height: 50px; border-radius: 12px;"></div>
-                <button type="submit" class="btn btn-primary" style="width:100%; height: 48px;">Salvar Alterações</button>
+                <button type="submit" class="btn btn-primary" style="width:100%; height: 48px; margin-top: 10px;">Salvar Alterações</button>
             </form>
         </div>
     </div>
@@ -734,6 +748,11 @@
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
+        // ========================================================
+        // DEFINA AQUI O SEU EMAIL QUE TERÁ ACESSO AO PAINEL ADMIN
+        // ========================================================
+        const ADMIN_EMAILS = ['matheusjulio780@gmail.com']; // <-- COLOQUE SEU EMAIL AQUI
+
         const firebaseConfig = { 
             apiKey: "AIzaSyAUqb57KyMA2EL15D3uQUdGf1PqUrkO_qQ", 
             authDomain: "gestao-pessoal-9bffc.firebaseapp.com", 
@@ -742,20 +761,23 @@
             messagingSenderId: "640546421425", 
             appId: "1:640546421425:web:18bcfdc497ebe94d2a8090" 
         };
+        
         const app = initializeApp(firebaseConfig); 
         const db = getFirestore(app); 
         const auth = getAuth(app); 
         const provider = new GoogleAuthProvider();
 
+        // Variáveis globais declaradas APENAS UMA VEZ
         let currentUser = null; 
         let categorias = []; 
         let cartoes = []; 
         let lancamentos = []; 
+        let bancosGlobais = [];
         let cartaoFocadoId = null; 
         let cartaoFocadoIndex = 0; 
         let isDetailsVisible = false;
 
-        const mesInput = document.getElementById('mes-global'); 
+        const mesInput = document.getElementById('mes-global');
         const hoje = new Date();
         mesInput.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
         document.getElementById('sal-data').valueAsDate = hoje;
@@ -826,6 +848,13 @@
                 document.getElementById('login-screen').style.display = 'none'; 
                 document.getElementById('app-content').style.display = 'flex'; 
                 document.getElementById('user-profile').innerText = `Conta: ${user.displayName || user.email}`;
+
+                // ADICIONE ISTO AQUI: Libera o botão Admin se o email bater
+                if(ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('admin-panel').style.display = 'grid';
+                } else {
+                    document.getElementById('admin-panel').style.display = 'none';
+                }
                 
                 if (!sessionStorage.getItem('welcomeAnimShown')) {
                     const overlay = document.getElementById('welcome-overlay'); 
@@ -897,46 +926,68 @@
 
         // COMUNICAÇÃO FIRESTORE
         async function carregarDadosIniciais() {
-            document.getElementById('status-text').innerText = "Sincronizando..."; 
-            document.getElementById('status-text').style.color = "var(--warning)";
+            document.getElementById('status-text').innerText = "Sincronizando..."; document.getElementById('status-text').style.color = "var(--warning)";
             try {
                 const uid = currentUser.uid;
-                const [catSnap, cardSnap, lancSnap] = await Promise.all([
+                const [catSnap, cardSnap, lancSnap, bancosSnap] = await Promise.all([
                     getDocs(query(collection(db, "categorias"), where("userId", "==", uid))), 
                     getDocs(query(collection(db, "cartoes"), where("userId", "==", uid))), 
-                    getDocs(query(collection(db, "lancamentos"), where("userId", "==", uid)))
+                    getDocs(query(collection(db, "lancamentos"), where("userId", "==", uid))),
+                    getDocs(collection(db, "bancos_globais")) // <-- BUSCA OS BANCOS DO ADMIN NO FIREBASE
                 ]);
                 
                 categorias = catSnap.docs.map(d => ({ id: d.id, ...d.data() })); 
                 cartoes = cardSnap.docs.map(d => ({ id: d.id, ...d.data() })); 
                 lancamentos = lancSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                bancosGlobais = bancosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
                 window.renderTudo();
-            } catch (error) { 
-                document.getElementById('status-text').innerText = "Erro DB."; 
-                document.getElementById('status-text').style.color = "var(--danger)"; 
-            }
-            document.getElementById('status-text').innerText = "Sincronizado"; 
-            document.getElementById('status-text').style.color = "var(--primary)";
+            } catch (error) { document.getElementById('status-text').innerText = "Erro DB."; document.getElementById('status-text').style.color = "var(--danger)"; }
+            document.getElementById('status-text').innerText = "Sincronizado"; document.getElementById('status-text').style.color = "var(--primary)";
         }
 
         window.atualizarMesGlobal = function() { window.renderTudo(); }
         
         window.renderTudo = function() {
+            renderBancosGlobais(); // <-- ISSO GARANTE QUE A LISTA E OS SELECTS SEJAM ATUALIZADOS
             renderCategoriasConfig(); 
             renderCardsLancamentos(); 
             renderRelatorioFlip(); 
             renderCarteiraAppleStyle(); 
             renderSalarios(); 
             calcularDashboard();
-            
             if(cartaoFocadoId) { 
                 const currentIdx = cartoes.findIndex(c => c.id === cartaoFocadoId); 
                 if(currentIdx !== -1) window.focarCartaoIndex(currentIdx, false); 
                 else window.focarCartaoIndex(0, false); 
-            } else if(cartoes.length > 0) {
-                window.focarCartaoIndex(0, false);
+            } else if(cartoes.length > 0) { 
+                window.focarCartaoIndex(0, false); 
             }
+        };
+
+        function renderBancosGlobais() {
+            const listaAdmin = document.getElementById('lista-admin-bancos');
+            if(listaAdmin) {
+                listaAdmin.innerHTML = '';
+                bancosGlobais.forEach(b => {
+                    listaAdmin.innerHTML += `<li class="list-item" style="border-left-color: ${b.cor};"><div style="flex:1;"><strong style="font-size: 15px;">${b.nome}</strong><div style="font-size:11px; opacity:0.6; margin-top:2px;">${b.linkBanco ? 'Tem App Link' : 'Sem Link'}</div></div><button class="btn btn-sm btn-danger" style="padding: 6px;" onclick="window.deletarBancoGlobal('${b.id}')"><span class="material-symbols-outlined" style="font-size: 16px;">delete</span></button></li>`;
+                });
+            }
+
+            const selAdd = document.getElementById('cc-banco-id'); 
+            const selEdit = document.getElementById('edit-cc-banco-id');
+            let optionsHtml = '<option value="">Selecione um Banco...</option>';
+            
+            if(bancosGlobais.length === 0) {
+                optionsHtml = '<option value="">Nenhum banco foi cadastrado pelo Admin.</option>';
+            } else {
+                bancosGlobais.forEach(b => { 
+                    optionsHtml += `<option value="${b.id}">${b.nome}</option>`; 
+                });
+            }
+            
+            if (selAdd) selAdd.innerHTML = optionsHtml; 
+            if (selEdit) selEdit.innerHTML = optionsHtml;
         }
 
         // ================= RENDERIZADORES =================
@@ -1454,29 +1505,54 @@
             window.openModal('modal-add-fatura'); 
         };
 
-        // CRUD CARTÕES E AJUSTES MANUAIS
-        document.getElementById('form-novo-cartao').addEventListener('submit', async (e) => { 
+        window.deletarBancoGlobal = async function(id) { if(!confirm("Tem certeza? Usuários não poderão mais adicionar este banco.")) return; await deleteDoc(doc(db, "bancos_globais", id)); bancosGlobais = bancosGlobais.filter(b => b.id !== id); window.renderTudo(); };
+
+        
+        // --- SUBSTITUIR BLOCO: EDITAR CARTÃO ---
+        document.getElementById('form-edit-cartao').addEventListener('submit', async (e) => { 
             e.preventDefault(); 
-            const nomeInput = document.getElementById('cc-nome').value.trim(); 
-            if (cartoes.some(c => c.nome.toLowerCase() === nomeInput.toLowerCase())) { alert("Já existe um cartão com esse nome."); return; } 
+            const ccId = document.getElementById('edit-cc-id').value; 
+            const bancoId = document.getElementById('edit-cc-banco-id').value; 
             
-            const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Processando..."; btn.disabled = true; 
-            const novoCartao = { 
-                userId: currentUser.uid, 
-                nome: nomeInput, 
-                vencimento: document.getElementById('cc-venc').value, 
-                fechamento: document.getElementById('cc-fechamento').value, 
-                linkBanco: document.getElementById('cc-link').value,
-                cor: document.getElementById('cc-cor').value 
+            if(!bancoId) { 
+                alert("⚠️ Por favor, selecione uma instituição válida."); 
+                return; 
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]'); 
+            const textoOriginal = btn.innerText;
+            btn.innerText = "Atualizando..."; btn.disabled = true;
+
+            const bancoDefinido = bancosGlobais.find(b => b.id === bancoId);
+            const novosDados = { 
+                bancoId: bancoDefinido.id, 
+                nome: bancoDefinido.nome, 
+                cor: bancoDefinido.cor, 
+                linkBanco: bancoDefinido.linkBanco || '', 
+                vencimento: document.getElementById('edit-cc-venc').value, 
+                fechamento: document.getElementById('edit-cc-fechamento').value 
             }; 
             
-            try { 
-                const docRef = await addDoc(collection(db, "cartoes"), novoCartao); 
-                cartoes.push({ id: docRef.id, ...novoCartao }); 
+            try {
+                await updateDoc(doc(db, "cartoes", ccId), novosDados); 
+                const index = cartoes.findIndex(c => c.id === ccId); 
+                cartoes[index] = { ...cartoes[index], ...novosDados }; 
                 window.closeModals(); 
                 window.renderTudo(); 
-            } catch(err) { alert("Erro ao adicionar: " + err.message); } finally { btn.innerText = originalText; btn.disabled = false; e.target.reset(); } 
+            } catch(err) {
+                alert("Erro ao editar: " + err.message);
+            } finally {
+                btn.innerText = textoOriginal; btn.disabled = false;
+            }
         });
+
+        window.acionarMenuEdicaoCartao = function() { 
+            if(!cartaoFocadoId) return; const cc = cartoes.find(c => c.id === cartaoFocadoId); 
+            document.getElementById('edit-cc-id').value = cc.id; 
+            document.getElementById('edit-cc-banco-id').value = cc.bancoId || ''; 
+            document.getElementById('edit-cc-venc').value = cc.vencimento; document.getElementById('edit-cc-fechamento').value = cc.fechamento; 
+            window.openModal('modal-edit-cartao'); 
+        };
         
         document.getElementById('form-edit-cartao').addEventListener('submit', async (e) => { 
             e.preventDefault(); 
@@ -1580,6 +1656,105 @@
         const savedLite = localStorage.getItem('liteMode') === 'true'; 
         if(savedLite) { document.body.classList.add('lite-mode'); } 
         document.getElementById('toggle-lite').checked = savedLite;
+
+        // ================= FUNÇÃO BLINDADA: SALVAR CARTÃO =================
+        window.salvarCartaoDireto = async function() { 
+            const bancoId = document.getElementById('cc-banco-id').value; 
+            const venc = document.getElementById('cc-venc').value; 
+            const fech = document.getElementById('cc-fechamento').value; 
+            
+            if(!bancoId) { alert("⚠️ Selecione uma Instituição!"); return; }
+            if(!venc || !fech) { alert("⚠️ Preencha os dias de vencimento e fechamento!"); return; }
+            
+            const bancoDefinido = bancosGlobais.find(b => b.id === bancoId); 
+            if(!bancoDefinido) { alert("⚠️ Erro: Banco não encontrado no sistema."); return; }
+            
+            if(cartoes.some(c => c.bancoId === bancoId)) { 
+                alert("⚠️ Você já tem um cartão cadastrado dessa instituição."); return; 
+            }
+            
+            try { 
+                const novoCartao = { 
+                    userId: currentUser.uid, 
+                    bancoId: bancoDefinido.id, 
+                    nome: bancoDefinido.nome, 
+                    vencimento: venc, 
+                    fechamento: fech, 
+                    linkBanco: bancoDefinido.linkBanco || '', 
+                    cor: bancoDefinido.cor 
+                }; 
+                
+                const docRef = await addDoc(collection(db, "cartoes"), novoCartao); 
+                cartoes.push({ id: docRef.id, ...novoCartao }); 
+                alert("✅ Cartão adicionado com sucesso!"); 
+                
+                document.getElementById('form-novo-cartao').reset(); 
+                window.closeModals(); 
+                window.renderTudo(); 
+            } catch(err) { 
+                alert("❌ Erro ao salvar no banco de dados: " + err.message); 
+            } 
+        };
+
+        // ================= FUNÇÃO: SALVAR BANCO (ADMIN) =================
+        window.salvarBancoDireto = async function(btn) {
+            const txtOri = btn.innerText;
+            const nome = document.getElementById('adm-banco-nome').value.trim();
+            const cor = document.getElementById('adm-banco-cor').value;
+            const link = document.getElementById('adm-banco-link').value.trim();
+            
+            if(!nome) { alert("⚠️ Digite o nome do banco!"); return; }
+            
+            btn.innerText = "Salvando Banco..."; btn.disabled = true;
+            
+            try { 
+                const novoBanco = { nome: nome, cor: cor, linkBanco: link };
+                const docRef = await addDoc(collection(db, "bancos_globais"), novoBanco); 
+                bancosGlobais.push({ id: docRef.id, ...novoBanco }); 
+                
+                alert("✅ Banco Global salvo! Ele já aparece na lista para você criar os cartões.");
+                document.getElementById('adm-banco-nome').value = '';
+                document.getElementById('adm-banco-link').value = '';
+                window.renderTudo(); 
+            } catch(err) { 
+                alert("❌ Erro ao salvar banco: " + err.message); 
+            } finally {
+                btn.innerText = txtOri; btn.disabled = false;
+            }
+        };
+
+        // ================= FUNÇÃO: SALVAR CARTÃO NA CARTEIRA =================
+        window.salvarCartaoDireto = async function(btn) { 
+            const txtOri = btn.innerText;
+            const bancoId = document.getElementById('cc-banco-id').value; 
+            const venc = document.getElementById('cc-venc').value; 
+            const fech = document.getElementById('cc-fechamento').value; 
+            
+            if(!bancoId) { alert("⚠️ Selecione uma Instituição na lista!"); return; }
+            if(!venc || !fech) { alert("⚠️ Preencha os dias de vencimento e fechamento!"); return; }
+            
+            const bancoDefinido = bancosGlobais.find(b => b.id === bancoId); 
+            if(!bancoDefinido) { alert("⚠️ Erro: Banco não encontrado."); return; }
+            if(cartoes.some(c => c.bancoId === bancoId)) { alert("⚠️ Você já tem um cartão dessa instituição na carteira."); return; }
+            
+            btn.innerText = "Adicionando à Carteira..."; btn.disabled = true;
+            
+            try { 
+                const novoCartao = { userId: currentUser.uid, bancoId: bancoDefinido.id, nome: bancoDefinido.nome, vencimento: venc, fechamento: fech, linkBanco: bancoDefinido.linkBanco || '', cor: bancoDefinido.cor }; 
+                const docRef = await addDoc(collection(db, "cartoes"), novoCartao); 
+                cartoes.push({ id: docRef.id, ...novoCartao }); 
+                
+                alert("✅ Cartão adicionado com sucesso à sua carteira!"); 
+                document.getElementById('cc-venc').value = '';
+                document.getElementById('cc-fechamento').value = '';
+                window.closeModals(); 
+                window.renderTudo(); 
+            } catch(err) { 
+                alert("❌ Erro ao salvar cartão: " + err.message); 
+            } finally {
+                btn.innerText = txtOri; btn.disabled = false;
+            }
+        };
 
     </script>
 </body>
