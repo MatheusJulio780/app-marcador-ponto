@@ -4477,64 +4477,70 @@
             return R * c;
         };
 
-        // COLE ESTA VERSÃO NOVA NO LUGAR:
-        let map, circle, markerBase;
+        // ==========================================
+        // SISTEMA DE MAPA E RAIO (VERSÃO DEFINITIVA)
+        // ==========================================
+        
+        let map, circle, markerBase; // Declarado APENAS UMA VEZ!
 
-        window.configurarRaioBase = function () {
-            // Abre a tela do mapa
+        // FUNÇÃO 1: ABRIR O MAPA
+        window.configurarRaioBase = function() {
             document.getElementById('modal-map-picker').classList.add('active');
+            
+            const baseRaw = localStorage.getItem('icaphi_base_coords') || "-22.6688044, -43.2772497";
+            const coordsSalvas = baseRaw.split(',').map(c => parseFloat(c.trim()));
+            const raioSalvo = parseFloat(localStorage.getItem('icaphi_raio_max') || "0.5");
 
-            // Só carrega o mapa se for a primeira vez que clica
-            if (!map) {
-                const coordsSalvas = localStorage.getItem('icaphi_base_coords')?.split(',') || [-22.67, -43.27];
-                map = L.map('map').setView(coordsSalvas, 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-                const raioSalvo = parseFloat(localStorage.getItem('icaphi_raio_max') || "0.5");
-
-                markerBase = L.marker(coordsSalvas, { draggable: true }).addTo(map);
-                circle = L.circle(coordsSalvas, { radius: raioSalvo * 1000, color: '#f97316', fillOpacity: 0.2 }).addTo(map);
-
-                // Quando arrastar o pino, o círculo vai junto
-                markerBase.on('drag', function (e) {
-                    circle.setLatLng(e.target.getLatLng());
-                });
-
-                // Quando clicar no mapa, o pino e o círculo vão para o clique
-                map.on('click', function (e) {
-                    markerBase.setLatLng(e.latlng);
-                    circle.setLatLng(e.latlng);
-                });
+            const slider = document.getElementById('input-raio-slider');
+            const label = document.getElementById('label-raio');
+            if (slider && label) {
+                slider.value = raioSalvo;
+                label.innerText = raioSalvo + " KM";
             }
-            if (window.lucide) window.lucide.createIcons();
+            
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('map').setView(coordsSalvas, 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                    markerBase = L.marker(coordsSalvas).addTo(map);
+                    circle = L.circle(coordsSalvas, {radius: raioSalvo * 1000, color: '#f97316', fillOpacity: 0.2}).addTo(map);
+
+                    map.on('move', function () {
+                        const centro = map.getCenter();
+                        markerBase.setLatLng(centro);
+                        circle.setLatLng(centro);
+                    });
+                } else {
+                    map.setView(coordsSalvas, 14);
+                    markerBase.setLatLng(coordsSalvas);
+                    circle.setLatLng(coordsSalvas);
+                    circle.setRadius(raioSalvo * 1000);
+                }
+                
+                map.invalidateSize();
+            }, 100); 
+            
+            if(window.lucide) window.lucide.createIcons();
         };
 
-        window.atualizarCirculoRaio = function (val) {
+        // FUNÇÃO 2: ATUALIZAR VISUAL DO CÍRCULO
+        window.atualizarCirculoRaio = function(val) {
             document.getElementById('label-raio').innerText = val + " KM";
             if (circle) circle.setRadius(val * 1000);
         };
 
-        window.salvarConfiguracaoMapa = function () {
-            const latlng = markerBase.getLatLng();
+        // FUNÇÃO 3: SALVAR A CONFIGURAÇÃO
+        window.salvarConfiguracaoMapa = function() {
+            const centro = map.getCenter();
             const raio = document.getElementById('input-raio-slider').value;
-            localStorage.setItem('icaphi_base_coords', `${latlng.lat}, ${latlng.lng}`);
+            
+            localStorage.setItem('icaphi_base_coords', centro.lat + ',' + centro.lng);
             localStorage.setItem('icaphi_raio_max', raio);
+            
             document.getElementById('modal-map-picker').classList.remove('active');
-            alert("Base e Raio definidos com sucesso!");
-        };
-
-        window.atualizarCirculoRaio = function (val) {
-            document.getElementById('label-raio').innerText = val + " KM";
-            circle.setRadius(val * 1000);
-        };
-
-        window.salvarConfiguracaoMapa = function () {
-            const latlng = markerBase.getLatLng();
-            const raio = document.getElementById('input-raio-slider').value;
-            localStorage.setItem('base_coords', `${latlng.lat}, ${latlng.lng}`);
-            localStorage.setItem('raio_km', raio);
-            document.getElementById('modal-map-picker').classList.remove('active');
-            alert("Base e Raio definidos com sucesso!");
+            
+            alert(`📍 Nova Base salva com sucesso!\n\nCoordenadas: ${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)}\nRaio permitido: ${raio} KM`);
         };
 
         // 2. CORREÇÃO DA UI: Garantir que o botão RAIO apareça
