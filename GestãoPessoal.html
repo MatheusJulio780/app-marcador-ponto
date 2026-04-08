@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gestão Pessoal</title>
 
     <link rel="manifest" href="manifest.json">
@@ -69,12 +70,20 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        /* TRAVA DE ROLAGEM HORIZONTAL PARA iOS */
+        html,
+        body {
+            overflow-x: hidden;
+            position: relative;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
         body {
             background: var(--bg-gradient);
             background-attachment: fixed;
             color: var(--text-color);
             transition: var(--transition);
-            overflow-x: hidden;
             min-height: 100vh;
         }
 
@@ -402,6 +411,11 @@
         }
 
         .month-selector {
+            -webkit-appearance: none;
+            /* Mata o botão nativo do iPhone */
+            appearance: none;
+            width: 100%;
+            max-width: 100%;
             background: var(--input-bg);
             border: 1px solid var(--glass-border);
             color: var(--text-color);
@@ -636,6 +650,9 @@
         }
 
         .form-control {
+            -webkit-appearance: none;
+            /* Mata o botão nativo do iPhone */
+            appearance: none;
             width: 100%;
             padding: 12px 15px;
             border-radius: 12px;
@@ -644,6 +661,14 @@
             color: var(--text-color);
             outline: none;
             font-size: 16px !important;
+        }
+
+        /* Força as alturas dos inputs de data no iPhone */
+        input[type="date"],
+        input[type="month"] {
+            min-height: 44px;
+            align-items: center;
+            display: flex;
         }
 
         .form-control:focus {
@@ -713,7 +738,9 @@
             user-select: none;
         }
 
-        .cc-container:hover { filter: brightness(1.1); }
+        .cc-container:hover {
+            filter: brightness(1.1);
+        }
 
         .cc-name {
             font-size: 22px;
@@ -845,7 +872,7 @@
             }
 
             #box-filtros {
-                flex-direction: row !important;
+                flex-direction: column !important;
                 display: flex;
                 gap: 10px;
                 width: 100%;
@@ -1804,15 +1831,15 @@
         }
 
         // ================= MOTOR DO CAROUSEL HORIZONTAL E TOGGLE =================
-        let startX = 0; 
-        let swipeAdicionado = false; 
+        let startX = 0;
+        let swipeAdicionado = false;
         let isSwiping = false; // Trava para diferenciar Clique de Deslize
 
-        window.renderCarteiraAppleStyle = function() {
-            const wallet = document.getElementById('wallet-ui'); 
+        window.renderCarteiraAppleStyle = function () {
+            const wallet = document.getElementById('wallet-ui');
             wallet.innerHTML = '';
-            
-            if(cartoes.length === 0) {
+
+            if (cartoes.length === 0) {
                 document.getElementById('cartao-details-wrapper').classList.remove('show');
                 return;
             }
@@ -1832,62 +1859,62 @@
                 wallet.addEventListener('touchstart', e => {
                     startX = e.touches[0].clientX;
                     isSwiping = false; // Zera a trava ao iniciar o toque
-                }, {passive: true});
+                }, { passive: true });
 
                 // Se o dedo moveu na tela, ativa a trava de deslize
                 wallet.addEventListener('touchmove', e => {
                     let currentX = e.touches[0].clientX;
                     if (Math.abs(startX - currentX) > 15) {
-                        isSwiping = true; 
+                        isSwiping = true;
                     }
-                }, {passive: true});
+                }, { passive: true });
 
                 wallet.addEventListener('touchend', e => {
                     let endX = e.changedTouches[0].clientX;
                     let diff = startX - endX;
-                    
+
                     if (isSwiping && diff > 50 && cartaoFocadoIndex < cartoes.length - 1) {
-                        window.focarCartaoIndex(cartaoFocadoIndex + 1, false); 
+                        window.focarCartaoIndex(cartaoFocadoIndex + 1, false);
                     } else if (isSwiping && diff < -50 && cartaoFocadoIndex > 0) {
-                        window.focarCartaoIndex(cartaoFocadoIndex - 1, false); 
+                        window.focarCartaoIndex(cartaoFocadoIndex - 1, false);
                     }
-                    
+
                     // Mantém a trava ativa por 50ms para engolir o "clique fantasma" do celular
                     setTimeout(() => { isSwiping = false; }, 50);
-                }, {passive: true});
-                
-                swipeAdicionado = true; 
+                }, { passive: true });
+
+                swipeAdicionado = true;
             }
         };
 
-        window.cliqueCartao = function(index) {
+        window.cliqueCartao = function (index) {
             // Se o usuário estava arrastando o dedo, ignora o clique
-            if (isSwiping) return; 
+            if (isSwiping) return;
 
             if (cartaoFocadoIndex === index) {
                 isDetailsVisible = !isDetailsVisible;
                 const wrapper = document.getElementById('cartao-details-wrapper');
-                if(isDetailsVisible) wrapper.classList.add('show');
+                if (isDetailsVisible) wrapper.classList.add('show');
                 else wrapper.classList.remove('show');
             } else {
                 window.focarCartaoIndex(index, true);
             }
         };
 
-        window.focarCartaoIndex = function(index, forceShowDetails = false) {
-            if(index < 0 || index >= cartoes.length) return;
+        window.focarCartaoIndex = function (index, forceShowDetails = false) {
+            if (index < 0 || index >= cartoes.length) return;
             cartaoFocadoIndex = index;
-            
+
             const ccSelecionado = cartoes[index];
             cartaoFocadoId = ccSelecionado.id;
 
             const cards = document.querySelectorAll('.cc-container');
-            
+
             cards.forEach((card, i) => {
                 const diff = i - cartaoFocadoIndex;
-                
+
                 // Distância ajustada (85) para os cartões ficarem bem isolados nas laterais
-                let translateX = diff * 85; 
+                let translateX = diff * 85;
                 let scale = 1 - Math.abs(diff) * 0.15;
                 let zIndex = 100 - Math.abs(diff);
                 let opacity = Math.abs(diff) > 2 ? 0 : 1;
@@ -1898,7 +1925,7 @@
             });
 
             window.atualizarViewInferiorCartao(cartaoFocadoId);
-            
+
             const wrapper = document.getElementById('cartao-details-wrapper');
             if (forceShowDetails) {
                 isDetailsVisible = true;
