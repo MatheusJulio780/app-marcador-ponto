@@ -3252,107 +3252,75 @@
         // ==========================================
 
         // 1. VERIFICADOR DE SESSÃO E RECUPERADOR DE DADOS (Roda no início do app)
+        // 1. VERIFICADOR DE SESSÃO (Roda no início do app)
         window.verificarSessaoMotorista = async function() {
             const idViagemAtiva = localStorage.getItem('v_id') || localStorage.getItem('viagemId');
             
-            // --- PARTE A: O BLOQUEIO OFFLINE (Timeout de 5 segundos no Firebase) ---
             if (idViagemAtiva) {
+                // Viagem Offline
                 if (idViagemAtiva.startsWith('local_')) {
-                    console.warn("Sem internet. Confiando no cache de viagem ativa offline.");
-                    if (window.mudarTelaMotorista) window.mudarTelaMotorista('em_curso');
-                    if (window.preencherTelaEmCurso) window.preencherTelaEmCursoFromLocal(idViagemAtiva);
+                    const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa'));
+                    window.reconstruirTelaEmCurso(dadosLocais, idViagemAtiva);
                     return;
                 }
 
+                // Viagem Online
                 try {
-                    // Trava de 5 segundos no Firebase para destravar offline
                     const docReq = await Promise.race([
                         db.collection('viagens').doc(idViagemAtiva).get(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firebase")), 5000))
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
                     ]);
                     
                     if (docReq.exists && docReq.data().status === 'em_curso') {
-                        console.log("Viagem ativa confirmada no sistema.");
-                        if (window.mudarTelaMotorista) window.mudarTelaMotorista('em_curso');
+                        const dadosFirebase = docReq.data();
+                        // Atualiza o backup de segurança
+                        localStorage.setItem('dados_viagem_ativa', JSON.stringify(dadosFirebase));
+                        if (dadosFirebase.dataInicio && dadosFirebase.dataInicio.toMillis) {
+                            localStorage.setItem('hora_inicio_viagem', dadosFirebase.dataInicio.toMillis());
+                        }
+                        window.reconstruirTelaEmCurso(dadosFirebase, idViagemAtiva);
                     } else {
-                        // Viagem já acabou no sistema, limpa o celular
+                        // Faxina total
                         localStorage.removeItem('v_id');
-                        localStorage.removeItem('auto_tipo_servico');
-                        localStorage.removeItem('auto_motorista');
-                        localStorage.removeItem('auto_placa');
-                        localStorage.removeItem('auto_km_inicio');
-                        localStorage.removeItem('temp_foto_ini_b64');
+                        localStorage.removeItem('dados_viagem_ativa');
+                        localStorage.removeItem('hora_inicio_viagem');
                         if (window.mudarTelaMotorista) window.mudarTelaMotorista('inicio');
                     }
                 } catch (e) {
-                    console.warn("Sem internet ou timeout Firebase. Confiando no cache de viagem ativa.");
-                    if (window.mudarTelaMotorista) window.mudarTelaMotorista('em_curso');
-                    // Tenta preencher a tela a partir de cache se tiver
-                    if (window.preencherTelaEmCurso) window.preencherTelaEmCursoFromCache(idViagemAtiva);
+                    // Sem internet, puxa o último backup salvo na memória!
+                    const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa'));
+                    window.reconstruirTelaEmCurso(dadosLocais, idViagemAtiva);
                 }
             } else {
-                // --- PARTE B: O SALVAMENTO AUTOMÁTICO (Recuperar dados e foto se o app morreu na câmera) ---
-                console.log("Nenhuma viagem ativa. Restaurando rascunho de nova viagem (se houver)...");
                 if (window.mudarTelaMotorista) window.mudarTelaMotorista('inicio');
-
-                // Recupera os textos digitados
-                const servicoSalvo = localStorage.getItem('auto_tipo_servico');
-                const motoristaSalvo = localStorage.getItem('auto_motorista');
-                const placaSalva = localStorage.getItem('auto_placa');
-                const kmSalvo = localStorage.getItem('auto_km_inicio');
-
-                if (servicoSalvo) document.getElementById('tipo-servico').value = servicoSalvo;
-                if (motoristaSalvo) document.getElementById('motorista').value = motoristaSalvo;
-                if (placaSalva) document.getElementById('placa').value = placaSalva;
-                if (kmSalvo) document.getElementById('km-inicio').value = kmSalvo;
-
-                // Recupera a FOTO que foi espremida na memória
-                const fotoSalvaStr = localStorage.getItem('temp_foto_ini_b64');
-                if (fotoSalvaStr) {
-                    window.fotoInicioBase64 = fotoSalvaStr; // Põe na variável global
-                    
-                    // Coloca a tela verde de "FOTO ANEXADA" de volta na tela
-                    const containerIni = document.getElementById('container-foto-ini');
-                    if (containerIni) {
-                        const overlay = containerIni.querySelector('.file-success-overlay');
-                        if (overlay) {
-                            overlay.classList.remove('hidden');
-                        }
-                    }
-                    console.log("Foto de rascunho recuperada com sucesso!");
-                }
             }
         };
 
-        // 2. FUNÇÃO INTELIGENTE DE INICIAR VIAGEM (COM LOADER E TIMEOUT DE 8S)
+        // 2. FUNÇÃO INICIAR VIAGEM
         window.iniciarViagem = async function () {
-            // Puxa os dados digitados na tela
             const servico = document.getElementById('tipo-servico').value;
             const motor = document.getElementById('motorista').value;
             const plac = document.getElementById('placa').value;
             const kmIni = document.getElementById('km-inicio').value;
             const fotoIniStr = window.fotoInicioBase64 || localStorage.getItem('temp_foto_ini_b64');
 
-            // Validação
             if (!motor || !plac || !kmIni || !fotoIniStr) {
                 alert("Preencha todos os campos obrigatórios e tire a foto!");
                 return;
             }
 
-            // --- PARTE A: MOSTRAR O LOADER (Feedback visual) ---
             const loader = document.getElementById('main-loader');
             const textoLoader = document.getElementById('texto-loader');
             
             if (loader) {
                 loader.classList.remove('hidden');
-                loader.style.display = 'flex'; // Garante que nada bloqueie a exibição
+                loader.style.display = 'flex'; 
                 if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
             }
 
-            await new Promise(resolve => setTimeout(resolve, 100)); // Respiro pro navegador
+            await new Promise(resolve => setTimeout(resolve, 100)); 
 
             try {
-                // Tenta pegar o GPS. Se demorar 10s, desiste e vai sem GPS.
                 let locIni = "";
                 try {
                     locIni = await Promise.race([
@@ -3363,7 +3331,6 @@
 
                 if (textoLoader) textoLoader.innerText = "Salvando no sistema central...";
 
-                // Monta o pacote de dados base
                 const novaViagem = {
                     tipoServico: servico,
                     nome: motor.toUpperCase(),
@@ -3374,75 +3341,116 @@
                     status: 'em_curso',
                     origem: 'WEB',
                     metaKm: 0,
-                    dataInicioCelular: new Date().toISOString() // Backup de tempo real offline
+                    dataInicioCelular: new Date().toISOString()
                 };
 
                 let idViagemGerado = "";
 
-                // --- PARTE B: O MOTOR OFFLINE COM TIMEOUT DE 8S ---
                 try {
                     if (!navigator.onLine) throw new Error("Offline nativo detectado");
 
-                    // Tenta enviar pro Firebase. Se demorar 8s, dá erro e cai no CATCH.
                     const docRef = await Promise.race([
                         db.collection('viagens').add({
                             ...novaViagem,
-                            dataInicio: firebase.firestore.FieldValue.serverTimestamp() // Timestamp oficial do servidor
+                            dataInicio: firebase.firestore.FieldValue.serverTimestamp()
                         }),
                         new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firebase")), 8000))
                     ]);
 
                     idViagemGerado = docRef.id;
-                    console.log("Viagem iniciada online com ID:", idViagemGerado);
-
                 } catch (erroRede) {
-                    console.warn("Internet fraca ou inexistente. Salvando viagem na memória do celular.");
-                    
-                    // Gera um ID Falso/Local para o aplicativo continuar funcionando
                     idViagemGerado = "local_ini_" + Date.now();
                     novaViagem.idLocal = idViagemGerado;
 
-                    // Adiciona na fila de espera do botão vermelho
                     let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
                     filaIni.push(novaViagem);
                     localStorage.setItem('icaphi_pendencias_ini', JSON.stringify(filaIni));
 
-                    // Atualiza o botão vermelho na tela
                     if (window.verificarPendenciasOffline) window.verificarPendenciasOffline();
                 }
 
-                // SALVA O ID E VAI PRA TELA DE CORRIDA
+                // Salva os dados na memória para recuperar em caso de reload
                 localStorage.setItem('v_id', idViagemGerado);
                 window.viagemAtualId = idViagemGerado;
+                localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
+                localStorage.setItem('hora_inicio_viagem', Date.now());
 
-                if (window.iniciarRastreioContinuo) {
-                    window.iniciarRastreioContinuo(idViagemGerado);
-                }
+                if (window.iniciarRastreioContinuo) window.iniciarRastreioContinuo(idViagemGerado);
 
-                // Preenche os dados visuais na tela
-                if (window.preencherTelaEmCurso) window.preencherTelaEmCurso(novaViagem);
-                if (window.iniciarCronometroMotorista) window.iniciarCronometroMotorista(new Date());
+                // Desenha a tela e liga o cronômetro
+                window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
 
-                // Faxina e vai pra tela "em curso"
-                resetarRascunhoFormulario();
+                // Faxina
+                localStorage.removeItem('auto_tipo_servico');
+                localStorage.removeItem('auto_motorista');
+                localStorage.removeItem('auto_placa');
+                localStorage.removeItem('auto_km_inicio');
+                localStorage.removeItem('temp_foto_ini_b64');
+                window.fotoInicioBase64 = null;
                 
-                // --- PARTE C: ESCONDER O LOADER (Fim bem-sucedido) ---
                 if (loader) {
                     loader.classList.add('hidden');
-                    loader.style.display = ''; // Limpa o display:flex
+                    loader.style.display = '';
                 }
                 
-                mudarTelaMotorista('em-curso');
-
             } catch (erro) {
                 console.error("Erro ao iniciar viagem:", erro);
-                // --- PARTE D: ESCONDER O LOADER (Em caso de erro fatal) ---
                 if (loader) {
                     loader.classList.add('hidden');
-                    loader.style.display = ''; // Limpa o display:flex
+                    loader.style.display = ''; 
                 }
                 alert("Erro ao iniciar viagem. Tente novamente.");
             }
+        };
+
+        // ==========================================
+        // RECONSTRUTOR DE TELA (SOBREVIVE A RELOADS)
+        // ==========================================
+        window.reconstruirTelaEmCurso = function(dados, idViagem) {
+            if (!dados) return;
+
+            // 1. Injeta o HTML com os dados
+            const infoEl = document.getElementById('info-viagem-corrente');
+            if (infoEl) {
+                infoEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 text-left">
+                        <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Placa</span>
+                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.placa || 'N/D'}</b>
+                        </div>
+                        <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">KM Início</span>
+                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.kmInicio || 'N/D'}</b>
+                        </div>
+                        <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Motorista</span>
+                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.nome || 'N/D'}</b>
+                        </div>
+                        <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Rota (Via Sistema)</span>
+                            <b class="text-cyan-600 dark:text-cyan-400 text-[11px] font-black uppercase truncate block">${idViagem && idViagem.startsWith('local_') ? 'AGUARDANDO SINAL...' : 'Sincronizado'}</b>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. Recupera o tempo e liga o cronômetro
+            const horaSalva = localStorage.getItem('hora_inicio_viagem');
+            window.dataInicioViagemAtual = horaSalva ? parseInt(horaSalva) : Date.now();
+            
+            if (window.cronometroInterval) clearInterval(window.cronometroInterval);
+            const cronoEl = document.getElementById('cronometro-motorista');
+            
+            window.cronometroInterval = setInterval(() => {
+                const diff = Date.now() - window.dataInicioViagemAtual;
+                const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                if (cronoEl) cronoEl.innerText = `${h}:${m}:${s}`;
+            }, 1000);
+
+            // 3. Muda pra tela certa (COM TRAÇO EM VEZ DE UNDERLINE!)
+            if (window.mudarTelaMotorista) window.mudarTelaMotorista('em-curso');
         };
 
         // Função auxiliar de limpeza de rascunho
