@@ -5114,23 +5114,38 @@
         };
 
         async function iniciarStreamCamera(video) {
-            // Se já tiver uma câmera ligada, desliga antes de mudar
+            // Desliga a anterior se tiver
             if (window.streamCamera) {
                 window.streamCamera.getTracks().forEach(track => track.stop());
             }
-
+            
             const modo = window.usandoCameraTraseira ? "environment" : "user";
-
+            
             try {
+                // TENTATIVA 1: Tenta abrir a câmera traseira em HD
                 window.streamCamera = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: modo, width: { ideal: 1280 }, height: { ideal: 720 } },
                     audio: false
                 });
                 video.srcObject = window.streamCamera;
+                
             } catch (err) {
-                console.error("Erro na câmera:", err);
-                alert("Erro ao abrir a câmera. Verifique se o aplicativo tem permissão.");
-                fecharCameraInterna();
+                console.warn("Câmera preferida falhou. Tentando modo de segurança...", err);
+                
+                try {
+                    // TENTATIVA 2 (PLANO B): Força a abertura de literalmente QUALQUER câmera disponível
+                    window.streamCamera = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+                    video.srcObject = window.streamCamera;
+                    
+                } catch (err2) {
+                    // Se falhar o Plano B, mostra o erro REAL que o Android está cuspindo
+                    console.error("Erro fatal na câmera:", err2);
+                    alert("Erro Técnico do Android: " + err2.name + "\nDetalhe: " + err2.message);
+                    fecharCameraInterna();
+                }
             }
         }
 
