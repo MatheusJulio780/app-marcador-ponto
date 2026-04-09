@@ -1,26 +1,28 @@
-// O CACHE DO APLICATIVO (Faz a tela abrir sem internet)
-const CACHE_NAME = 'logistica-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  // Se você tiver arquivos CSS ou JS separados, adicione o nome deles aqui embaixo, ex:
-  // '/style.css',
-  // '/scripts.js'
-];
+const CACHE_NAME = 'icaphi-esponja-v1';
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+    self.skipWaiting(); // Ativa na hora
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      // Retorna a tela salva no celular se não tiver internet
-      return response || fetch(event.request);
-    }).catch(() => {
-      return caches.match('/index.html');
-    })
-  );
+    // ESTRATÉGIA ESPONJA: Tenta a internet primeiro. Se falhar, puxa da memória.
+    event.respondWith(
+        fetch(event.request)
+        .then(respostaRede => {
+            // Se tem internet, ele salva uma cópia silenciosa na memória pra usar depois
+            if (respostaRede && respostaRede.status === 200 && event.request.method === 'GET') {
+                const copia = respostaRede.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, copia));
+            }
+            return respostaRede;
+        })
+        .catch(() => {
+            // Caiu a internet? Ele entrega a cópia da memória!
+            return caches.match(event.request);
+        })
+    );
 });
