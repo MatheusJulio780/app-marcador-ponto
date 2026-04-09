@@ -3297,7 +3297,6 @@
             }
         };
 
-        // 2. FUNÇÃO INICIAR VIAGEM
         window.iniciarViagem = async function () {
             const servico = document.getElementById('tipo-servico').value;
             const motor = document.getElementById('motorista').value;
@@ -3319,6 +3318,7 @@
                 if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
             }
 
+            // O SEGREDO: Dá tempo do navegador desenhar o loader antes de processar o GPS
             await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
@@ -3370,18 +3370,15 @@
                     if (window.verificarPendenciasOffline) window.verificarPendenciasOffline();
                 }
 
-                // Salva os dados na memória para recuperar em caso de reload
                 localStorage.setItem('v_id', idViagemGerado);
                 window.viagemAtualId = idViagemGerado;
                 localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
                 localStorage.setItem('hora_inicio_viagem', Date.now());
 
                 if (window.iniciarRastreioContinuo) window.iniciarRastreioContinuo(idViagemGerado);
-
-                // Desenha a tela e liga o cronômetro
                 window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
 
-                // Faxina
+                // Limpeza de campos de rascunho
                 localStorage.removeItem('auto_tipo_servico');
                 localStorage.removeItem('auto_motorista');
                 localStorage.removeItem('auto_placa');
@@ -3396,10 +3393,7 @@
 
             } catch (erro) {
                 console.error("Erro ao iniciar viagem:", erro);
-                if (loader) {
-                    loader.classList.add('hidden');
-                    loader.style.display = '';
-                }
+                if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
                 alert("Erro ao iniciar viagem. Tente novamente.");
             }
         };
@@ -3613,7 +3607,6 @@
             }
         };
 
-        // 1. FINALIZAR VIAGEM (COM PROTEÇÃO OFFLINE DE 8 SEGUNDOS)
         window.encerrarViagem = async function () {
             const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
 
@@ -3622,7 +3615,7 @@
                 return;
             }
 
-            // ADICIONE ESTA LINHA AQUI (Salva o ID pro Zap não se perder depois)
+            // Salva o ID para o WhatsApp conseguir puxar o relatório mesmo após a limpeza
             localStorage.setItem('ultimo_id_zap', idViagem);
 
             const kmFim = document.getElementById('km-fim').value;
@@ -3645,7 +3638,6 @@
             await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
-                // Tenta pegar o GPS. Se a internet estiver horrível e demorar mais de 10s, passa com GPS em branco.
                 let locFim = "";
                 try {
                     locFim = await Promise.race([
@@ -3661,10 +3653,9 @@
                     fotoFim: fotoFimStr,
                     locFim: locFim || "",
                     status: 'finalizada',
-                    dataFimCelular: new Date().toISOString() // Guarda a hora exata offline
+                    dataFimCelular: new Date().toISOString()
                 };
 
-                // A GRANDE MÁGICA: Tenta enviar pro Firebase, se demorar 8 segundos, aborta e salva no celular!
                 try {
                     if (!navigator.onLine) throw new Error("Sem rede");
                     await Promise.race([
@@ -3675,43 +3666,31 @@
                         new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
                     ]);
                 } catch (erroRede) {
-                    console.warn("Internet fraca. Salvando viagem na memória do celular.");
-
-                    // Salva na fila de pendências
+                    console.warn("Salvando encerramento offline.");
                     let fila = JSON.parse(localStorage.getItem('icaphi_pendencias_fim') || '[]');
                     fila.push({ id: idViagem, dados: payloadFim });
                     localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(fila));
-
-                    // Salva uma cópia pro Zap ler imediatamente
                     localStorage.setItem('zap_temp_' + idViagem, JSON.stringify(payloadFim));
 
                     if (window.verificarPendenciasOffline) window.verificarPendenciasOffline();
                 }
 
+                // Parar processos de fundo
                 if (window.pararRastreioContinuo) window.pararRastreioContinuo();
                 if (window.cronometroInterval) clearInterval(window.cronometroInterval);
 
-                if (loader) {
-                    loader.classList.add('hidden');
-                    loader.style.display = '';
-                }
-                mudarTelaMotorista('sucesso');
-
-                if (window.pararRastreioContinuo) window.pararRastreioContinuo();
-                if (window.cronometroInterval) clearInterval(window.cronometroInterval);
-
-                if (loader) {
-                    loader.classList.add('hidden');
-                    loader.style.display = '';
-                }
-
-                // ==========================================
-                // FAXINA FINAL (ADICIONE ESTAS 4 LINHAS)
-                // ==========================================
-                localStorage.removeItem('v_id');           // Apaga a viagem atual da memória
-                window.viagemAtualId = null;               // Zera a variável global
-                localStorage.removeItem('temp_foto_fim_b64'); // Limpa a foto pesada do cache
+                // Limpeza de variáveis e cache de viagem ativa
+                localStorage.removeItem('v_id');
+                localStorage.removeItem('dados_viagem_ativa');
+                localStorage.removeItem('hora_inicio_viagem');
+                localStorage.removeItem('temp_foto_fim_b64');
+                window.viagemAtualId = null;
                 window.fotoFimBase64 = null;
+
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.display = '';
+                }
 
                 mudarTelaMotorista('sucesso');
 
@@ -5118,9 +5097,9 @@
             if (window.streamCamera) {
                 window.streamCamera.getTracks().forEach(track => track.stop());
             }
-            
+
             const modo = window.usandoCameraTraseira ? "environment" : "user";
-            
+
             try {
                 // TENTATIVA 1: Tenta abrir a câmera traseira em HD
                 window.streamCamera = await navigator.mediaDevices.getUserMedia({
@@ -5128,10 +5107,10 @@
                     audio: false
                 });
                 video.srcObject = window.streamCamera;
-                
+
             } catch (err) {
                 console.warn("Câmera preferida falhou. Tentando modo de segurança...", err);
-                
+
                 try {
                     // TENTATIVA 2 (PLANO B): Força a abertura de literalmente QUALQUER câmera disponível
                     window.streamCamera = await navigator.mediaDevices.getUserMedia({
@@ -5139,7 +5118,7 @@
                         audio: false
                     });
                     video.srcObject = window.streamCamera;
-                    
+
                 } catch (err2) {
                     // Se falhar o Plano B, mostra o erro REAL que o Android está cuspindo
                     console.error("Erro fatal na câmera:", err2);
