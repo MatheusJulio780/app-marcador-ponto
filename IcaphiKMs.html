@@ -3568,6 +3568,9 @@
                 return;
             }
 
+            // ADICIONE ESTA LINHA AQUI (Salva o ID pro Zap não se perder depois)
+            localStorage.setItem('ultimo_id_zap', idViagem);
+
             const kmFim = document.getElementById('km-fim').value;
             const fotoFimStr = window.fotoFimBase64 || localStorage.getItem('temp_foto_fim_b64');
 
@@ -3959,7 +3962,9 @@
 
         // 2. ENVIAR ZAP (AGORA LÊ DADOS OFFLINE TAMBÉM)
         window.enviarZapMotoristaAtual = async function (btn) {
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            // Agora ele procura o ID principal, e se não achar, puxa o Backup do Zap
+            const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('ultimo_id_zap');
+            
             if (!idViagem) {
                 alert("Erro ao resgatar os dados da viagem.");
                 return;
