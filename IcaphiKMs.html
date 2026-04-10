@@ -3309,6 +3309,19 @@
                 return;
             }
 
+            // --- IDENTIFICAÇÃO AUTOMÁTICA DE ORIGEM E VERSÃO ---
+            // Detecta se é o WebView do Android (APK)
+            const isAPK = /Android.+AppleWebKit.+Version\/[0-9]/.test(navigator.userAgent);
+
+            // Captura o texto do seu Header (Ex: "Matheus Julio V9")
+            const headerVersion = document.querySelector('header span')?.innerText || "";
+            // Extrai apenas o "V9" ou similar usando Regex
+            const matchVersao = headerVersion.match(/V\d+/);
+            const versaoFinal = matchVersao ? matchVersao[0] : "V?";
+
+            // Define a string final: "APP V9" ou "WEB V9"
+            const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
+
             const loader = document.getElementById('main-loader');
             const textoLoader = document.getElementById('texto-loader');
 
@@ -3318,7 +3331,6 @@
                 if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
             }
 
-            // O SEGREDO: Dá tempo do navegador desenhar o loader antes de processar o GPS
             await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
@@ -3340,7 +3352,7 @@
                     fotoInicio: fotoIniStr,
                     locInicio: locIni || "",
                     status: 'em_curso',
-                    origem: 'WEB',
+                    origem: origemIdentificada, // <--- AGORA USA A IDENTIFICAÇÃO DINÂMICA
                     metaKm: 0,
                     dataInicioCelular: new Date().toISOString()
                 };
@@ -3378,7 +3390,6 @@
                 if (window.iniciarRastreioContinuo) window.iniciarRastreioContinuo(idViagemGerado);
                 window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
 
-                // Limpeza de campos de rascunho
                 localStorage.removeItem('auto_tipo_servico');
                 localStorage.removeItem('auto_motorista');
                 localStorage.removeItem('auto_placa');
