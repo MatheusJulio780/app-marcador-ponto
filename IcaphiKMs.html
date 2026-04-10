@@ -2224,11 +2224,20 @@
                 bgSt = '#ef4444';
             }
 
-            let origemTag = v.origem === 'APP'
-                ? `<span class="border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1"><i data-lucide="smartphone" class="w-3 h-3"></i> APP</span>`
-                : `<span class="border border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> WEB</span>`;
+            // --- LÓGICA INTELIGENTE DE ETIQUETA (APP vs WEB) ---
+            let origemTag = '';
+            const origemStr = (v.origem || 'WEB').toUpperCase();
 
-            // SELO DE ALERTA SE TIVER OBSERVAÇÃO
+            if (origemStr.includes('APP')) {
+                origemTag = `<span class="border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1" title="${origemStr}">
+                                <i data-lucide="smartphone" class="w-3 h-3"></i> ${origemStr}
+                             </span>`;
+            } else {
+                origemTag = `<span class="border border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 text-[9px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1" title="${origemStr}">
+                                <i data-lucide="globe" class="w-3 h-3"></i> ${origemStr}
+                             </span>`;
+            }
+            
             let alertBadge = (v.observacoes && v.observacoes.length > 0)
                 ? `<span class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-[9px] px-1.5 py-0.5 rounded-md font-black flex items-center gap-1 animate-pulse shadow-sm shadow-red-500/20" title="Contém Ocorrências"><i data-lucide="alert-triangle" class="w-3 h-3"></i> OBS</span>`
                 : '';
@@ -2375,6 +2384,9 @@
                                 </div>
                                 <div class="flex justify-between border-b border-gray-200 dark:border-zinc-800/50 pb-1.5">
                                     <span class="font-bold opacity-70">Rota:</span> <span class="dark:text-zinc-200 text-right max-w-[150px] leading-tight">${v.rotaCidades || 'N/D'}</span>
+                                </div>
+                                <div class="flex justify-between border-b border-gray-200 dark:border-zinc-800/50 pb-1.5">
+                                    <span class="font-bold opacity-70">Origem:</span> <span class="dark:text-zinc-200 font-bold">${v.origem || 'WEB'}</span>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-2 mt-2 pt-2">
@@ -3309,19 +3321,31 @@
                 return;
             }
 
-            // --- IDENTIFICAÇÃO AUTOMÁTICA DE ORIGEM E VERSÃO ---
-            // Detecta se é o WebView do Android (APK)
-            const isAPK = /Android.+AppleWebKit.+Version\/[0-9]/.test(navigator.userAgent);
+            // ==========================================
+            // VALIDAÇÃO DE PLACA (Padrão Antigo e Mercosul)
+            // ==========================================
+            const placaFormatada = plac.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            const regexPlaca = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+            if (!regexPlaca.test(placaFormatada)) {
+                alert("Placa inválida! Digite no formato correto (Ex: ABC1234 ou ABC1D23).");
+                return;
+            }
 
-            // Captura o texto do seu Header (Ex: "Matheus Julio V9")
-            const headerVersion = document.querySelector('header span')?.innerText || "";
-            // Extrai apenas o "V9" ou similar usando Regex
-            const matchVersao = headerVersion.match(/V\d+/);
-            const versaoFinal = matchVersao ? matchVersao[0] : "V?";
-
-            // Define a string final: "APP V9" ou "WEB V9"
+            // ==========================================
+            // IDENTIFICAÇÃO AUTOMÁTICA DE ORIGEM E VERSÃO
+            // ==========================================
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
+            
+            const headerText = document.querySelector('header')?.innerText || "";
+            const matchVersao = headerText.match(/V\d+/i);
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V?";
+            
             const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
 
+            // ==========================================
+            // LOADER VISUAL
+            // ==========================================
             const loader = document.getElementById('main-loader');
             const textoLoader = document.getElementById('texto-loader');
 
@@ -3347,12 +3371,12 @@
                 const novaViagem = {
                     tipoServico: servico,
                     nome: motor.toUpperCase(),
-                    placa: plac.toUpperCase(),
+                    placa: placaFormatada,
                     kmInicio: Number(kmIni),
                     fotoInicio: fotoIniStr,
                     locInicio: locIni || "",
                     status: 'em_curso',
-                    origem: origemIdentificada, // <--- AGORA USA A IDENTIFICAÇÃO DINÂMICA
+                    origem: origemIdentificada, 
                     metaKm: 0,
                     dataInicioCelular: new Date().toISOString()
                 };
@@ -3415,32 +3439,50 @@
         window.reconstruirTelaEmCurso = function (dados, idViagem) {
             if (!dados) return;
 
-            // 1. Injeta o HTML com os dados
+            // ==========================================
+            // IDENTIFICAÇÃO PARA O CARD VISUAL
+            // ==========================================
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
+            
+            const headerText = document.querySelector('header')?.innerText || "";
+            const matchVersao = headerText.match(/V\d+/i);
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V?";
+            
+            const origemDisplay = dados.origem || (isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`);
+
+            // ==========================================
+            // INJEÇÃO DO HTML
+            // ==========================================
             const infoEl = document.getElementById('info-viagem-corrente');
             if (infoEl) {
                 infoEl.innerHTML = `
-                    <div class="grid grid-cols-2 gap-2 text-left">
-                        <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Placa</span>
-                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.placa || 'N/D'}</b>
-                        </div>
-                        <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">KM Início</span>
-                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.kmInicio || 'N/D'}</b>
-                        </div>
-                        <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Motorista</span>
-                            <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.nome || 'N/D'}</b>
-                        </div>
-                        <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Rota (Via Sistema)</span>
-                            <b class="text-cyan-600 dark:text-cyan-400 text-[11px] font-black uppercase truncate block">${idViagem && idViagem.startsWith('local_') ? 'AGUARDANDO SINAL...' : 'Sincronizado'}</b>
-                        </div>
+                <div class="grid grid-cols-2 gap-2 text-left">
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Placa</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.placa || 'N/D'}</b>
                     </div>
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">KM Início</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.kmInicio || 'N/D'}</b>
+                    </div>
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Motorista</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.nome || 'N/D'}</b>
+                    </div>
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Dispositivo / Versão</span>
+                        <b class="text-cyan-600 dark:text-cyan-400 text-[11px] font-black uppercase truncate block">
+                            ${idViagem && idViagem.startsWith('local_') ? 'AGUARDANDO SINAL...' : origemDisplay}
+                        </b>
+                    </div>
+                </div>
                 `;
             }
 
-            // 2. Recupera o tempo e liga o cronômetro
+            // ==========================================
+            // RESTAURAÇÃO DE CRONÔMETRO
+            // ==========================================
             const horaSalva = localStorage.getItem('hora_inicio_viagem');
             window.dataInicioViagemAtual = horaSalva ? parseInt(horaSalva) : Date.now();
 
@@ -3455,7 +3497,6 @@
                 if (cronoEl) cronoEl.innerText = `${h}:${m}:${s}`;
             }, 1000);
 
-            // 3. Muda pra tela certa (COM TRAÇO EM VEZ DE UNDERLINE!)
             if (window.mudarTelaMotorista) window.mudarTelaMotorista('em-curso');
         };
 
