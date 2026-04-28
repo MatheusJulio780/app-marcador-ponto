@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Consulta - Icaphi</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #2563eb; 
+            --bg-color: #f1f5f9; 
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .hidden { display: none !important; }
+
+        /* HEADER GLASSMORPHISM */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(255,255,255,0.5); 
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { background: var(--primary); color: white; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
+        .logo-text h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+
+        /* SELETOR TOPO */
+        .placa-selector {
+            background: var(--card-bg); border: 1px solid var(--border-color); 
+            border-radius: 10px; padding: 8px 12px; font-size: 14px; 
+            font-weight: 700; color: var(--primary); outline: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02); text-transform: uppercase;
+        }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; width: 100%; flex-grow: 1; }
+
+        /* CARD PRINCIPAL (Último Abastecimento) */
+        .main-card {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            border-radius: 24px; padding: 25px; color: white;
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.25);
+            margin-bottom: 15px; position: relative; overflow: hidden;
+        }
+        .main-card::after {
+            content: ''; position: absolute; top: -50%; right: -20%;
+            width: 200px; height: 200px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; filter: blur(20px);
+        }
+        .mc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 2; }
+        .mc-tag { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;}
+        .mc-placa { font-size: 32px; font-weight: 900; margin: 0; letter-spacing: 2px; line-height: 1;}
+        .mc-time-ago { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+        
+        .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; position: relative; z-index: 2; }
+        .mc-item { display: flex; flex-direction: column; }
+        .mc-item label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px; text-transform: uppercase; }
+        .mc-item span { font-size: 16px; font-weight: 800; }
+        .mc-item span.highlight { font-size: 22px; color: #fde047; } 
+
+        .btn-reportar {
+            width: 100%; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 16px; border-radius: 16px; font-weight: 800; font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; margin-bottom: 25px;
+            display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        .btn-reportar:active { transform: scale(0.98); background: var(--bg-color); }
+
+        .section-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+
+        /* LISTA HISTÓRICO */
+        .history-list { display: flex; flex-direction: column; gap: 12px; }
+        .history-card {
+            background: var(--card-bg); border-radius: 16px; padding: 15px;
+            border: 1px solid var(--border-color); display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+        .history-card:active { transform: scale(0.98); }
+        .hc-date { display: flex; flex-direction: column; }
+        .hc-date strong { font-size: 14px; font-weight: 800; color: var(--text-main); }
+        .hc-date span { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .hc-details { text-align: right; }
+        .hc-details strong { display: block; font-size: 16px; font-weight: 800; color: var(--danger); }
+        .hc-details span { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state span { font-size: 40px; display: block; margin-bottom: 10px; }
+        .empty-state p { font-size: 14px; font-weight: 600; margin: 0; }
+
+        .loader { text-align: center; padding: 50px; font-weight: 800; color: var(--primary); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* MODAL DE OCORRÊNCIA */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); display: flex; align-items: flex-end; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); transition: opacity 0.3s; }
+        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2); animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .form-group label { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background-color: var(--bg-color); font-size: 14px; color: var(--text-main); font-weight: 600; outline: none; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); background-color: var(--card-bg); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        
+        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; font-size: 14px; cursor: pointer; text-transform: uppercase; color: white; margin-top: 10px; }
+        .btn-primary { background: var(--primary); }
+        .btn-secondary { background: var(--border-color); color: var(--text-main); margin-top: 10px;}
+
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-icon">I</div>
+        <div class="logo-text"><h1>Veículo Info | By: Matheus Julio</h1></div>
+    </div>
+    <select id="selectPlaca" class="placa-selector hidden" onchange="mudarPlaca()">
+        <option value="">Selecionar...</option>
+    </select>
+</header>
+
+<div class="container" id="mainContainer">
+    <div id="loader" class="loader">Analisando registros do veículo...</div>
+    <div id="content" class="hidden"></div>
+</div>
+
+<div id="modal-ocorrencia" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-weight: 800; font-size: 18px;">Registrar Ocorrência</h3>
+            <button onclick="fecharModalOcorrencia()" style="background:none; border:none; font-size:20px; color:var(--text-main); cursor:pointer;">✖</button>
+        </div>
+
+        <div class="form-group">
+            <label>Tipo de Registro</label>
+            <select id="ocoTipo">
+                <option value="Problema Mecânico">🛠️ Problema Mecânico</option>
+                <option value="Fluídos / Óleo">🛢️ Reposição de Fluídos / Óleo</option>
+                <option value="Elétrica / Iluminação">⚡ Elétrica / Iluminação</option>
+                <option value="Pneus / Borracharia">🛞 Pneus / Borracharia</option>
+                <option value="Outra Manutenção">📝 Outra Manutenção</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Motivo Principal</label>
+            <input type="text" id="ocoMotivo" placeholder="Ex: Óleo Hidráulico, Pneu furado, etc." required>
+        </div>
+
+        <div class="form-group">
+            <label>Descrição Detalhada</label>
+            <textarea id="ocoDescricao" placeholder="Ex: Precisando repor o óleo hidráulico da caçamba pois está acabando rápido..." required></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btnSalvarOcorrencia" onclick="salvarOcorrencia()">Enviar Registro</button>
+        <button class="btn btn-secondary" onclick="fecharModalOcorrencia()">Cancelar</button>
+    </div>
+</div>
+
+<script type="module">
+    // INICIALIZAÇÃO FIREBASE
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
+        authDomain: "gestao-abastecimento.firebaseapp.com",
+        projectId: "gestao-abastecimento",
+        storageBucket: "gestao-abastecimento.firebasestorage.app",
+        messagingSenderId: "462798250454",
+        appId: "1:462798250454:web:f56cf50bd2c0223459c477"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let placaRequisitada = urlParams.get('placa') ? urlParams.get('placa').toUpperCase() : null;
+
+    function dataBR(dataIso) {
+        if(!dataIso || !dataIso.includes('-')) return dataIso;
+        const p = dataIso.split('-');
+        if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+        return dataIso;
+    }
+
+    // Lógica para tempo decorrido preciso
+    function calcularTempoAtras(timestampIso, dataYMD) {
+        if (!timestampIso && !dataYMD) return "recentemente";
+        const agora = new Date();
+        const dataAlvo = timestampIso ? new Date(timestampIso) : new Date(dataYMD + "T12:00:00");
+        
+        const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+        const alvo = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+        
+        const diffTempo = hoje - alvo;
+        const diffDias = Math.floor(diffTempo / (1000 * 60 * 60 * 24));
+        
+        if (diffDias === 0) return "hoje";
+        if (diffDias === 1) return "ontem";
+        if (diffDias > 1) return `há ${diffDias} dias`;
+        return "recentemente"; 
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        await carregarListaPlacas();
+        if (placaRequisitada) {
+            document.getElementById('selectPlaca').value = placaRequisitada;
+            await carregarHistoricoVeiculo(placaRequisitada);
+        } else {
+            document.getElementById('loader').classList.add('hidden');
+            renderizarEstadoVazio("Nenhum veículo escaneado", "Selecione uma placa no menu acima ou escaneie um QR Code.");
+        }
+    });
+
+    async function carregarListaPlacas() {
+        try {
+            const configSnap = await getDoc(doc(db, "configuracoes", "gerais"));
+            if (configSnap.exists()) {
+                const placas = configSnap.data().placas || [];
+                const select = document.getElementById('selectPlaca');
+                placas.sort().forEach(p => { select.innerHTML += `<option value="${p}">${p}</option>`; });
+                select.classList.remove('hidden');
+            }
+        } catch (error) { console.error("Erro ao carregar placas:", error); }
+    }
+
+    window.mudarPlaca = function() {
+        const novaPlaca = document.getElementById('selectPlaca').value;
+        if(novaPlaca) window.location.href = `?placa=${novaPlaca}`;
+    }
+
+    async function carregarHistoricoVeiculo(placa) {
+        const container = document.getElementById('content');
+        try {
+            const querySnapshot = await getDocs(collection(db, "abastecimentos"));
+            let registros = [];
+            
+            querySnapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                if (d.placa === placa && !d.apagado) registros.push({ id: docSnap.id, ...d });
+            });
+
+            document.getElementById('loader').classList.add('hidden');
+            container.classList.remove('hidden');
+
+            if (registros.length === 0) {
+                renderizarEstadoVazio("Sem Histórico", `Nenhum abastecimento encontrado para a placa ${placa}.`);
+                return;
+            }
+
+            registros.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
+            const ultimoRegistro = registros[0];
+            const historicoAnterior = registros.slice(1, 6);
+
+            renderizarTela(ultimoRegistro, historicoAnterior);
+
+        } catch (error) {
+            console.error("Erro:", error); document.getElementById('loader').innerHTML = "Erro de conexão. Tente recarregar.";
+        }
+    }
+
+    function renderizarEstadoVazio(titulo, subtitulo) {
+        document.getElementById('content').innerHTML = `<div class="empty-state"><span>🚛</span><p style="font-size: 18px; margin-bottom: 5px;">${titulo}</p><p style="font-weight: 500;">${subtitulo}</p></div>`;
+        document.getElementById('content').classList.remove('hidden');
+    }
+
+    function renderizarTela(ultimo, historico) {
+        const content = document.getElementById('content');
+        const tempoAtrasText = calcularTempoAtras(ultimo.timestamp, ultimo.data);
+        
+        let html = `
+            <div class="main-card">
+                <div class="mc-header">
+                    <div>
+                        <h2 class="mc-placa">${ultimo.placa}</h2>
+                        <div class="mc-time-ago">⏳ Abastecido ${tempoAtrasText}</div>
+                    </div>
+                    <span class="mc-tag">Último</span>
+                </div>
+                
+                <div class="mc-grid">
+                    <div class="mc-item"><label>Data</label><span>${dataBR(ultimo.data)}</span></div>
+                    <div class="mc-item"><label>Horário</label><span>${ultimo.horario || '--:--'}</span></div>
+                    <div class="mc-item"><label>Qtd. Litros</label><span class="highlight">${ultimo.litros} L</span></div>
+                    <div class="mc-item"><label>Quilometragem</label><span>${ultimo.km ? ultimo.km + ' KM' : 'Não info.'}</span></div>
+                    <div class="mc-item" style="grid-column: span 2;"><label>Motorista</label><span>${ultimo.motorista}</span></div>
+                </div>
+            </div>
+            
+            <button onclick="abrirModalOcorrencia()" class="btn-reportar">⚠️ Registrar Ocorrência / Manutenção</button>
+        `;
+
+        if (historico.length > 0) {
+            html += `<h3 class="section-title">🕒 Histórico Recente</h3><div class="history-list">`;
+            historico.forEach(d => {
+                html += `
+                    <div class="history-card">
+                        <div class="hc-date">
+                            <strong>${dataBR(d.data)}</strong>
+                            <span>${d.horario || '-'} • ${d.motorista.split(' ')[0]}</span>
+                        </div>
+                        <div class="hc-details">
+                            <strong>${d.litros} L</strong>
+                            <span>KM: ${d.km || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        content.innerHTML = html;
+    }
+
+    // --- FUNÇÕES DA OCORRÊNCIA ---
+    window.abrirModalOcorrencia = function() {
+        if(!placaRequisitada) { alert("Nenhuma placa selecionada."); return; }
+        document.getElementById('modal-ocorrencia').classList.remove('hidden');
+    }
+
+    window.fecharModalOcorrencia = function() {
+        document.getElementById('modal-ocorrencia').classList.add('hidden');
+        document.getElementById('ocoMotivo').value = "";
+        document.getElementById('ocoDescricao').value = "";
+    }
+
+    window.salvarOcorrencia = async function() {
+        const btn = document.getElementById('btnSalvarOcorrencia');
+        const tipo = document.getElementById('ocoTipo').value;
+        const motivo = document.getElementById('ocoMotivo').value.trim();
+        const descricao = document.getElementById('ocoDescricao').value.trim();
+
+        if(!motivo || !descricao) { alert("Por favor, preencha o motivo e a descrição."); return; }
+
+        btn.innerText = "Enviando..."; btn.disabled = true;
+
+        const dadosOcorrencia = {
+            placa: placaRequisitada,
+            tipo: tipo,
+            motivo: motivo,
+            descricao: descricao,
+            dataHoraLocal: new Date().toLocaleString('pt-BR'),
+            timestamp: new Date().toISOString(),
+            status: "Pendente" // Para controle futuro no painel Admin
+        };
+
+        try {
+            await addDoc(collection(db, "ocorrencias_frota"), dadosOcorrencia);
+            alert("Ocorrência registrada com sucesso! O setor responsável será notificado.");
+            fecharModalOcorrencia();
+        } catch(e) {
+            console.error("Erro ao registrar:", e);
+            alert("Erro de conexão ao salvar a ocorrência.");
+        } finally {
+            btn.innerText = "Enviar Registro"; btn.disabled = false;
+        }
+    }
+
+</script>
+</body>
+</html>
