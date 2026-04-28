@@ -446,6 +446,35 @@
         
         .quick-item-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
         .quick-item-card:hover { background: var(--card-bg); }
+        /* ESTILOS DA ABA DE MANUTENÇÃO (OCORRÊNCIAS) */
+        .oco-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            display: flex; flex-direction: column; gap: 12px;
+            position: relative; overflow: hidden; transition: transform 0.2s;
+        }
+        .oco-card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.06); }
+        .oco-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--warning); border-radius: 4px 0 0 4px; }
+        .oco-card.mecanico::before { background: var(--danger); } 
+        .oco-card.fluidos::before { background: var(--primary); } 
+        .oco-card.eletrica::before { background: #eab308; } 
+        .oco-card.pneus::before { background: var(--success); } 
+        
+        .oco-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .oco-placa { font-size: 20px; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: 1px;}
+        .oco-data { font-size: 11px; color: var(--text-muted); font-weight: 600; background: var(--bg-color); padding: 4px 8px; border-radius: 8px; margin-top: 4px; display: inline-block;}
+        .oco-icon { font-size: 24px; background: var(--bg-color); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        
+        .oco-body { flex-grow: 1; margin-top: 5px;}
+        .oco-motivo { font-size: 14px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; text-transform: uppercase;}
+        .oco-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; font-weight: 500; }
+        
+        .oco-footer { margin-top: 10px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+        .btn-resolvido { width: 100%; background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-resolvido:hover { background: var(--success); color: white; transform: scale(0.98);}
     </style>
 </head>
 <body>
@@ -714,7 +743,7 @@
         
         <div class="nav-item" id="navItemApagados" onclick="solicitarSenhaApagados()"><span class="nav-icon">🗑️</span> <span class="nav-text" style="display: flex; align-items: center;">Apagados <span id="badgeApagados" class="badge-apagados">0</span></span></div>
 
-        <div class="nav-item" onclick="mudarAbaAdmin('extra')"><span class="nav-icon">🧩</span> <span class="nav-text">Aba Extra</span></div>
+        <div class="nav-item" onclick="mudarAbaAdmin('extra')"><span class="nav-icon">🛠️</span> <span class="nav-text">Manutenções e Ocorrências</span></div>
 
         <div style="flex-grow: 1;"></div>
         <div class="nav-item" id="btnExitAdmin" style="color: #ef4444;"><span class="nav-icon">🚪</span> <span class="nav-text">Sair</span></div>
@@ -731,9 +760,14 @@
         </div>
 
         <div id="aba-extra" class="admin-aba hidden">
-            <h2 style="margin-top:0; font-weight: 800;"><button class="menu-toggle" onclick="toggleSidebar()" style="display:inline-block;">☰</button> Nova Aba</h2>
-            <div class="table-responsive" style="padding: 25px;">
-                <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">Botão criado no sidebar conforme solicitado. O que você deseja configurar aqui dentro?</p>
+            <h2 style="margin-top:0; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                <button class="menu-toggle" onclick="toggleSidebar()" style="display:inline-block;">☰</button> 
+                Manutenção e Ocorrências
+            </h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 25px; background: rgba(37, 99, 235, 0.05); padding: 15px; border-radius: 12px; border-left: 4px solid var(--primary); font-weight: 500;">Painel de gestão de ordens e alertas reportados via QR Code pelos operadores.</p>
+            
+            <div id="ocorrencias-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                <p style="color: var(--text-muted); font-size: 14px; font-weight: 500;">Carregando ocorrências...</p>
             </div>
         </div>
 
@@ -945,9 +979,29 @@
     </div>
 </div>
 
+<div id="modal-alerta-entrada" class="modal-overlay hidden" style="z-index: 10000; align-items: center;">
+    <div class="modal-content" style="border-radius: 24px; max-width: 400px; padding: 30px; text-align: center;">
+        <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+        <h2 style="margin: 0 0 10px 0; font-weight: 800; color: var(--text-main);">Atenção!</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px; font-weight: 500;">Existem ocorrências e manutenções pendentes na frota que requerem atenção da gestão.</p>
+        <button onclick="abrirListaOcorrenciasGlobal()" style="width: 100%; padding: 14px; background: var(--danger); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; margin-bottom: 10px;">📋 Ver Ocorrências</button>
+        <button onclick="document.getElementById('modal-alerta-entrada').classList.add('hidden')" style="width: 100%; padding: 14px; background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; font-weight: 800; cursor: pointer;">Continuar para o App</button>
+    </div>
+</div>
+
+<div id="modal-lista-global" class="modal-overlay hidden" style="z-index: 10001; align-items: flex-end;">
+    <div class="modal-content">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-weight: 800;">Ocorrências Pendentes</h3>
+            <button onclick="document.getElementById('modal-lista-global').classList.add('hidden')" style="background:none; border:none; font-size:20px; color:var(--text-main); cursor:pointer;">✖</button>
+        </div>
+        <div id="lista-global-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, deleteField } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, deleteField, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const logoIcaphiBase64 = ""; 
 
@@ -1104,7 +1158,10 @@
         if(screenId === 'admin-panel') {
             document.querySelector('.mobile-container').classList.add('hidden'); document.getElementById('app-header').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden'); document.getElementById('fabThemeAdmin').classList.remove('hidden'); 
-            carregarRelatoriosAdmin(); atualizarInputsAdmin(); carregarRecebimentosBanco();
+            
+            // AQUI ESTAVA O ERRO. ADICIONEI A CHAMADA DAS OCORRÊNCIAS:
+            carregarRelatoriosAdmin(); atualizarInputsAdmin(); carregarRecebimentosBanco(); carregarOcorrenciasBanco();
+            
         } else {
             document.querySelector('.mobile-container').classList.remove('hidden'); document.getElementById('app-header').classList.remove('hidden');
             document.getElementById('admin-panel').classList.add('hidden'); document.getElementById('fabThemeAdmin').classList.add('hidden'); 
@@ -1119,6 +1176,9 @@
         const now = new Date(); document.getElementById('dataAbastecimento').valueAsDate = now; document.getElementById('recDataChegada').valueAsDate = now; 
         await carregarConfiguracoesIniciais(); 
         carregarRelatoriosAdmin(); // Carrega silenciosamente o banco para a pesquisa rápida funcionar na home
+        
+        // GATILHO DO POP-UP ADICIONADO AQUI:
+        verificarAlertasGlobais(); 
     });
 
     // SISTEMA DE CONSULTA RÁPIDA (BOTÃO LUPA)
@@ -1642,6 +1702,7 @@
         }, (e) => { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; });
     }
 
+    // 1. ESSA PARTE VOCÊ MANTÉM INTACTA (Não mexe)
     let unsubRecebimentos = null;
     function carregarRecebimentosBanco() {
         const container = document.getElementById('recebimentos-table-container'); if (unsubRecebimentos) return;
@@ -1651,6 +1712,82 @@
             window.dadosRecebimentosLista.sort((a,b) => new Date(b.timestamp || b.dataChegada) - new Date(a.timestamp || a.dataChegada));
             atualizarDashboard(); if (!document.getElementById('aba-recebimento').classList.contains('hidden')) { aplicarFiltroRecebimento(); }
         }, (e) => { console.error(e); container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; });
+    }
+
+    // === SISTEMA DE OCORRÊNCIAS (VERSÃO DIAGNÓSTICO) ===
+    let unsubOcorrencias = null;
+    function carregarOcorrenciasBanco() {
+        const container = document.getElementById('ocorrencias-container');
+        if (!container) return; // Segurança caso o ID esteja errado
+        if (unsubOcorrencias) return;
+        
+        console.log("Iniciando escuta da coleção: ocorrencias_frota...");
+        const q = query(collection(db, "ocorrencias_frota"));
+        
+        unsubOcorrencias = onSnapshot(q, (querySnapshot) => {
+            console.log("Dados recebidos do Firebase! Quantidade:", querySnapshot.size);
+            let ocorrencias = [];
+            querySnapshot.forEach(docSnap => {
+                ocorrencias.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            
+            ocorrencias.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            renderTabelaOcorrencias(ocorrencias, container);
+        }, (e) => {
+            console.error("Erro no Snapshot de Ocorrências:", e);
+            container.innerHTML = "<p style='color:red;'>Erro de permissão ou conexão.</p>";
+        });
+    }
+
+    function renderTabelaOcorrencias(dados, container) {
+        if (dados.length === 0) {
+            container.innerHTML = "<div style='grid-column: 1 / -1; text-align: center; padding: 60px 20px;'><span style='font-size: 50px; display:block; margin-bottom:15px;'>✨</span><h3 style='margin:0; font-weight:800;'>Tudo 100% </h3><p style='color: var(--text-muted); font-weight: 600; font-size:13px;'>Nenhuma ocorrência pendente.</p></div>";
+            return;
+        }
+
+        let html = "";
+        dados.forEach(d => {
+            let icone = "📝"; let classeCor = "";
+            const tipo = d.tipo || ""; 
+            
+            if(tipo.includes("Mecânico")) { icone = "🛠️"; classeCor = "mecanico"; }
+            else if(tipo.includes("Fluídos") || tipo.includes("Óleo")) { icone = "🛢️"; classeCor = "fluidos"; }
+            else if(tipo.includes("Elétrica")) { icone = "⚡"; classeCor = "eletrica"; }
+            else if(tipo.includes("Pneus")) { icone = "🛞"; classeCor = "pneus"; }
+
+            html += `
+            <div class="oco-card ${classeCor}">
+                <div class="oco-header">
+                    <div>
+                        <h3 class="oco-placa">${d.placa || 'S/ PLACA'}</h3>
+                        <span class="oco-data">${d.dataHoraLocal || 'Data não info.'}</span>
+                    </div>
+                    <div class="oco-icon">${icone}</div>
+                </div>
+                <div class="oco-body">
+                    <div style="color: var(--primary); font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">👤 Condutor: ${d.motorista || 'Não informado'}</div>
+                    <div class="oco-motivo">${d.motivo || 'Motivo não informado'}</div>
+                    <div class="oco-desc">${d.descricao || 'Sem descrição'}</div>
+                </div>
+                <div class="oco-footer">
+                    <button class="btn-resolvido" onclick="resolverOcorrencia('${d.id}')">✅ Marcar como Resolvido</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // A FUNÇÃO QUE FALTAVA PARA O BOTÃO FUNCIONAR
+    window.resolverOcorrencia = async function(id) {
+        if(confirm("Confirmar resolução? O alerta será apagado do sistema e a placa voltará a ficar limpa.")) {
+            try {
+                // A função deleteDoc já está importada no topo do seu arquivo, então vai funcionar direto.
+                await deleteDoc(doc(db, "ocorrencias_frota", id));
+            } catch(e) {
+                console.error("Erro ao resolver ocorrência:", e);
+                alert("Falha ao remover. Verifique sua conexão.");
+            }
+        }
     }
 
     window.apagarRegistro = async function(id) {
@@ -1884,6 +2021,76 @@
         const worksheet = XLSX.utils.json_to_sheet(dadosExcel); worksheet['!cols'] = [ {wch: 12}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 25}, {wch: 15}, {wch: 15}, {wch: 20} ];
         const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Abastecimentos"); XLSX.writeFile(workbook, `Icaphi_Abastecimentos.xlsx`);
     }
+
+    // === SISTEMA GLOBAL DE ALERTAS ===
+    window.compartilharOcorrenciaWA = function(placa, motorista, tipo, motivo, desc, data) {
+        const txt = `🚨 *ALERTA DE FROTA - OCORRÊNCIA* 🚨\n\n🚛 *Placa:* ${placa}\n👤 *Condutor:* ${motorista}\n📅 *Data:* ${data}\n\n🛠️ *Tipo:* ${tipo}\n⚠️ *Motivo:* ${motivo}\n📝 *Detalhes:* ${desc}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+    }
+
+    window.abrirListaOcorrenciasGlobal = async function() {
+        document.getElementById('modal-alerta-entrada').classList.add('hidden'); // Esconde o aviso principal
+        const container = document.getElementById('lista-global-content');
+        container.innerHTML = "<p style='text-align:center;'>Buscando registros...</p>";
+        document.getElementById('modal-lista-global').classList.remove('hidden');
+        
+        try {
+            const querySnapshot = await getDocs(collection(db, "ocorrencias_frota"));
+            let ocos = [];
+            querySnapshot.forEach(docSnap => ocos.push(docSnap.data()));
+            ocos.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if(ocos.length === 0) { container.innerHTML = "<p style='text-align:center; color:var(--text-muted);'>Nenhuma ocorrência encontrada.</p>"; return; }
+            
+            let html = "";
+            ocos.forEach(d => {
+                html += `
+                <div style="background:var(--bg-color); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                        <span style="font-weight:900; font-size:16px; color:var(--primary);">${d.placa}</span>
+                        <span style="font-size:10px; font-weight:800; color:var(--text-muted);">${d.dataHoraLocal}</span>
+                    </div>
+                    <div style="font-weight:800; font-size:13px; color:var(--danger); margin-bottom:4px;">${d.tipo} - ${d.motivo}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height: 1.4;">${d.descricao}</div>
+                    <button onclick="compartilharOcorrenciaWA('${d.placa}', '${d.motorista}', '${d.tipo}', '${d.motivo}', '${d.descricao}', '${d.dataHoraLocal}')" style="width:100%; background:#25D366; color:white; border:none; border-radius:8px; padding:12px; font-weight:800; font-size:13px; cursor:pointer;">📲 Compartilhar no WhatsApp</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        } catch(e) { container.innerHTML = "<p style='color:red;'>Erro ao carregar.</p>"; }
+    }
+
+    // Gatilho que dispara automaticamente quando a página carregar
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, "ocorrencias_frota"));
+            if(querySnapshot.size > 0) {
+                // Se houver qualquer ocorrência não resolvida, mostra o popup de alerta
+                document.getElementById('modal-alerta-entrada').classList.remove('hidden');
+            }
+        } catch(e) { console.log("Erro ao checar ocorrências globais na entrada:", e); }
+    });
+
+    window.verificarAlertasGlobais = async function() {
+        try {
+            console.log("🔍 Verificando ocorrências no banco de dados...");
+            const querySnapshot = await getDocs(collection(db, "ocorrencias_frota"));
+            
+            if(querySnapshot.size > 0) {
+                console.log(`⚠️ ${querySnapshot.size} ocorrência(s) encontrada(s)! Exibindo Pop-up.`);
+                const modal = document.getElementById('modal-alerta-entrada');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                } else {
+                    console.error("❌ ERRO: O HTML do 'modal-alerta-entrada' não foi encontrado no arquivo.");
+                }
+            } else {
+                console.log("✅ Frota limpa. Nenhuma ocorrência pendente.");
+            }
+        } catch(e) { 
+            console.error("❌ Erro ao checar ocorrências globais na entrada:", e); 
+        }
+    }
+
 </script>
 </body>
 </html>
