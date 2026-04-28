@@ -155,6 +155,11 @@
         </div>
 
         <div class="form-group">
+            <label>Nome do Condutor</label>
+            <input type="text" id="ocoMotorista" placeholder="Quem está reportando?" required>
+        </div>
+
+        <div class="form-group">
             <label>Motivo Principal</label>
             <input type="text" id="ocoMotivo" placeholder="Ex: Óleo Hidráulico, Pneu furado, etc." required>
         </div>
@@ -166,6 +171,26 @@
 
         <button class="btn btn-primary" id="btnSalvarOcorrencia" onclick="salvarOcorrencia()">Enviar Registro</button>
         <button class="btn btn-secondary" onclick="fecharModalOcorrencia()">Cancelar</button>
+    </div>
+</div>
+
+<div id="modal-sucesso-ocorrencia" class="modal-overlay hidden" style="align-items: center;">
+    <div class="modal-content" style="border-radius: 24px; text-align: center; max-width: 350px;">
+        <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
+        <h3 style="margin: 0 0 10px 0; font-weight: 800;">Registrado!</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">A ocorrência foi salva no banco de dados da frota.</p>
+        <button id="btnShareWAAtual" class="btn" style="background: #25D366; margin-bottom: 10px;">📲 Enviar para o WhatsApp</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-sucesso-ocorrencia').classList.add('hidden')">Fechar</button>
+    </div>
+</div>
+
+<div id="modal-lista-ocorrencias" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-weight: 800; font-size: 18px;">Histórico da Placa</h3>
+            <button onclick="document.getElementById('modal-lista-ocorrencias').classList.add('hidden')" style="background:none; border:none; font-size:20px; color:var(--text-main); cursor:pointer;">✖</button>
+        </div>
+        <div id="lista-ocorrencias-content" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
     </div>
 </div>
 
@@ -302,7 +327,10 @@
                 </div>
             </div>
             
-            <button onclick="abrirModalOcorrencia()" class="btn-reportar">⚠️ Registrar Ocorrência / Manutenção</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                <button onclick="abrirModalOcorrencia()" class="btn-reportar" style="margin-bottom: 0; flex: 1; padding: 12px; font-size: 12px; background: var(--warning); color: white; border: none;">⚠️ Add Ocorrência</button>
+                <button onclick="abrirListaOcorrencias()" class="btn-reportar" style="margin-bottom: 0; flex: 1; padding: 12px; font-size: 12px; background: var(--bg-color);">📋 Ver Histórico</button>
+            </div>
         `;
 
         if (historico.length > 0) {
@@ -339,36 +367,86 @@
         document.getElementById('ocoDescricao').value = "";
     }
 
+    window.compartilharOcorrenciaWA = function(placa, motorista, tipo, motivo, desc, data) {
+        const txt = `🚨 *ALERTA DE FROTA - OCORRÊNCIA* 🚨\n\n🚛 *Placa:* ${placa}\n👤 *Condutor:* ${motorista}\n📅 *Data:* ${data}\n\n🛠️ *Tipo:* ${tipo}\n⚠️ *Motivo:* ${motivo}\n📝 *Detalhes:* ${desc}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+    }
+
     window.salvarOcorrencia = async function() {
         const btn = document.getElementById('btnSalvarOcorrencia');
         const tipo = document.getElementById('ocoTipo').value;
+        const motorista = document.getElementById('ocoMotorista').value.trim();
         const motivo = document.getElementById('ocoMotivo').value.trim();
         const descricao = document.getElementById('ocoDescricao').value.trim();
 
-        if(!motivo || !descricao) { alert("Por favor, preencha o motivo e a descrição."); return; }
+        if(!motorista || !motivo || !descricao) { alert("Preencha todos os campos obrigatórios."); return; }
 
         btn.innerText = "Enviando..."; btn.disabled = true;
+        const dataAtual = new Date().toLocaleString('pt-BR');
 
-        const dadosOcorrencia = {
-            placa: placaRequisitada,
-            tipo: tipo,
-            motivo: motivo,
-            descricao: descricao,
-            dataHoraLocal: new Date().toLocaleString('pt-BR'),
-            timestamp: new Date().toISOString(),
-            status: "Pendente" // Para controle futuro no painel Admin
-        };
+        const dadosOcorrencia = { placa: placaRequisitada, motorista: motorista, tipo: tipo, motivo: motivo, descricao: descricao, dataHoraLocal: dataAtual, timestamp: new Date().toISOString(), status: "Pendente" };
 
         try {
+            // 1. Grava no Firebase
             await addDoc(collection(db, "ocorrencias_frota"), dadosOcorrencia);
-            alert("Ocorrência registrada com sucesso! O setor responsável será notificado.");
             fecharModalOcorrencia();
-        } catch(e) {
-            console.error("Erro ao registrar:", e);
-            alert("Erro de conexão ao salvar a ocorrência.");
-        } finally {
-            btn.innerText = "Enviar Registro"; btn.disabled = false;
+            
+            // 2. Dispara Notificação Push via ntfy
+            // ATENÇÃO: Altere 'icaphi_alertas_frota_seguro_123' para um código secreto seu.
+            const ntfyTopic = "icaphi_alertas_frota_seguro_123"; 
+            
+            fetch(`https://ntfy.sh/${ntfyTopic}`, {
+                method: 'POST',
+                body: `Condutor: ${motorista}\nTipo: ${tipo}\nMotivo: ${motivo}\nDetalhes: ${descricao}`,
+                headers: {
+                    'Title': `⚠️ Ocorrência: ${placaRequisitada}`,
+                    'Priority': 'urgent', // Tenta furar o modo "Não Perturbe" do celular
+                    'Tags': 'warning,truck' // Ícones nativos do ntfy
+                }
+            }).catch(err => console.error("Erro ntfy (silenciado para não travar UX):", err));
+
+            // 3. Configura e abre modal de sucesso pro motorista
+            document.getElementById('btnShareWAAtual').onclick = () => compartilharOcorrenciaWA(placaRequisitada, motorista, tipo, motivo, descricao, dataAtual);
+            document.getElementById('modal-sucesso-ocorrencia').classList.remove('hidden');
+            document.getElementById('ocoMotorista').value = ""; document.getElementById('ocoMotivo').value = ""; document.getElementById('ocoDescricao').value = "";
+            
+        } catch(e) { 
+            console.error(e); alert("Erro de conexão."); 
+        } finally { 
+            btn.innerText = "Enviar Registro"; btn.disabled = false; 
         }
+    }
+
+    window.abrirListaOcorrencias = async function() {
+        if(!placaRequisitada) return;
+        const container = document.getElementById('lista-ocorrencias-content');
+        container.innerHTML = "<p style='text-align:center; font-weight:700;'>Buscando no banco de dados...</p>";
+        document.getElementById('modal-lista-ocorrencias').classList.remove('hidden');
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "ocorrencias_frota"));
+            let ocos = [];
+            querySnapshot.forEach(docSnap => {
+                const d = docSnap.data(); if(d.placa === placaRequisitada) ocos.push(d);
+            });
+            ocos.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if(ocos.length === 0) { container.innerHTML = "<p style='text-align:center; color: var(--text-muted);'>Nenhuma ocorrência registrada para esta placa.</p>"; return; }
+            
+            let html = "";
+            ocos.forEach(d => {
+                html += `
+                <div style="background:var(--bg-color); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border-color);">
+                    <div style="font-weight:800; font-size:14px; margin-bottom:4px; color:var(--danger);">${d.tipo} - ${d.motivo}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height: 1.4;">${d.descricao}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:10px; font-weight:800;">${d.dataHoraLocal}</span>
+                        <button onclick="compartilharOcorrenciaWA('${d.placa}', '${d.motorista}', '${d.tipo}', '${d.motivo}', '${d.descricao}', '${d.dataHoraLocal}')" style="background:#25D366; color:white; border:none; border-radius:8px; padding:8px 12px; font-weight:800; font-size:11px; cursor:pointer;">📲 WhatsApp</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        } catch(e) { container.innerHTML = "<p style='color:red;'>Erro ao carregar dados.</p>"; }
     }
 
 </script>
