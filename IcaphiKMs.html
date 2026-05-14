@@ -1789,6 +1789,46 @@
         </div>
     </div>
 
+    <div id="modal-compartilhar-zap"
+        class="hidden fixed inset-0 z-[10005] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300">
+        <div
+            class="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-3xl shadow-2xl border border-gray-200 dark:border-zinc-800 p-6 flex flex-col gap-4 transform transition-all animate-[slideDown_0.3s_ease-out]">
+
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
+                        <i data-lucide="message-circle" class="w-4 h-4 text-green-500"></i>
+                    </div>
+                    <h3 class="font-black text-gray-800 dark:text-zinc-100 text-sm tracking-widest uppercase">
+                        Compartilhar Relatório</h3>
+                </div>
+                <button onclick="document.getElementById('modal-compartilhar-zap').classList.add('hidden')"
+                    class="p-2 bg-gray-50 dark:bg-[#121214] hover:bg-red-50 dark:hover:bg-red-900/30 border border-gray-200 dark:border-zinc-800 text-gray-500 hover:text-red-500 rounded-xl transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="relative mt-2">
+                <span
+                    class="absolute -top-2 left-3 bg-white dark:bg-[#18181b] px-1 text-[9px] font-black text-green-500 uppercase tracking-widest z-10">Texto
+                    do Relatório</span>
+                <textarea id="texto-zap-preview" rows="8" readonly
+                    class="w-full bg-gray-50 dark:bg-[#121214] border border-gray-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-xs text-gray-700 dark:text-zinc-300 outline-none resize-none font-mono focus:border-green-500 transition-colors"></textarea>
+            </div>
+
+            <div class="flex gap-2 w-full mt-2">
+                <button onclick="window.copiarTextoZap()"
+                    class="flex-1 py-3.5 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-black rounded-xl transition-all text-[11px] tracking-widest flex items-center justify-center gap-2 shadow-sm active:scale-95">
+                    <i data-lucide="copy" class="w-4 h-4"></i> COPIAR TEXTO
+                </button>
+                <button onclick="window.abrirZapDireto()"
+                    class="flex-1 py-3.5 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl transition-all text-[11px] tracking-widest flex items-center justify-center gap-2 shadow-[0_5px_15px_rgba(34,197,94,0.3)] active:scale-95">
+                    WHATSAPP <i data-lucide="external-link" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
@@ -2017,12 +2057,17 @@
             }
         }
 
+        // Variável de controle para saber se é o primeiro carregamento
+        let primeiraCargaAdmin = true;
+
         function carregarViagensDb() {
             db.collection('viagens').onSnapshot(snapshot => {
                 if (ignorarSnapshot) return;
                 todasViagens = [];
                 snapshot.forEach(doc => { const data = doc.data(); data.id = doc.id; todasViagens.push(data); });
+
                 renderizarAdmin();
+
                 if (el('modal-dash').classList.contains('active')) carregarDash();
                 if (el('modal-mapa').classList.contains('active')) carregarMapa();
                 if (el('modal-view-extrato').classList.contains('active')) renderizarExtrato();
@@ -2177,7 +2222,6 @@
         function renderizarAdmin() {
             const lista = el('lista-viagens');
             if (!lista) return;
-            lista.innerHTML = '';
 
             const buscaEl = el('busca-admin');
             const busca = buscaEl ? buscaEl.value.toLowerCase() : '';
@@ -2186,10 +2230,12 @@
             const ini = iniEl ? iniEl.value : '';
             const fim = fimEl ? fimEl.value : '';
 
-            const modoEdit = modoEditGlobal;
+            const modoEdit = typeof modoEditGlobal !== 'undefined' ? modoEditGlobal : false;
 
             let filtrados = todasViagens.filter(v => {
-                if (filtroAdminAtual !== 'todos' && v.status !== filtroAdminAtual) return false;
+                const filtroAtual = typeof filtroAdminAtual !== 'undefined' ? filtroAdminAtual : 'todos';
+                if (filtroAtual !== 'todos' && v.status !== filtroAtual) return false;
+
                 const d = safeDate(v.dataInicio);
                 if (d) {
                     const dStr = getLocalYMD(d);
@@ -2209,28 +2255,40 @@
             });
 
             const total = filtrados.length;
-            const totalPags = Math.ceil(total / itensPorPaginaAdmin) || 1;
-            if (paginaAtualAdmin > totalPags) paginaAtualAdmin = totalPags;
-            const start = (paginaAtualAdmin - 1) * itensPorPaginaAdmin;
-            const end = start + itensPorPaginaAdmin;
+            // Fallback de segurança caso a variável global não esteja definida no momento
+            const limit = typeof itensPorPaginaAdmin !== 'undefined' ? itensPorPaginaAdmin : 10;
+            let pagAtual = typeof paginaAtualAdmin !== 'undefined' ? paginaAtualAdmin : 1;
+
+            const totalPags = Math.ceil(total / limit) || 1;
+            if (pagAtual > totalPags) pagAtual = totalPags;
+            const start = (pagAtual - 1) * limit;
+            const end = start + limit;
             const paginaCards = filtrados.slice(start, end);
 
             if (paginaCards.length === 0) {
                 lista.innerHTML = '<p class="col-span-full text-center text-gray-400 dark:text-zinc-600 py-16 font-bold text-lg"><i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>Nenhuma viagem encontrada.</p>';
             } else {
-                paginaCards.forEach(v => lista.innerHTML += renderizarCardViagem(v, modoEdit));
+                // ==========================================
+                // OTIMIZAÇÃO DE ALTA PERFORMANCE (DOM BATCHING)
+                // ==========================================
+                let htmlBuffer = '';
+                paginaCards.forEach(v => {
+                    htmlBuffer += renderizarCardViagem(v, modoEdit);
+                });
+                // Injeta na tela uma única vez, eliminando o travamento do navegador
+                lista.innerHTML = htmlBuffer;
             }
 
             const pagEl = el('controles-paginacao');
             if (pagEl) {
                 pagEl.classList.remove('hidden');
                 el('info-paginacao').innerText = `Mostrando ${start + (total > 0 ? 1 : 0)} a ${Math.min(end, total)} de ${total}`;
-                el('btn-pag-ant').disabled = paginaAtualAdmin === 1;
-                el('btn-pag-prox').disabled = paginaAtualAdmin === totalPags;
+                el('btn-pag-ant').disabled = pagAtual === 1;
+                el('btn-pag-prox').disabled = pagAtual === totalPags;
             }
 
-            atualizarProgressoDiario();
-            lucide.createIcons();
+            if (typeof atualizarProgressoDiario === 'function') atualizarProgressoDiario();
+            if (window.lucide) lucide.createIcons();
         }
 
         window.abrirGps = function (loc) {
@@ -3412,7 +3470,98 @@
             return `RELATÓRIO\n---------------------------\n🚗 Veículo: ${v.placa}\n👤 Condutor: ${v.nome}\n📝 Tipo: ${v.tipoServico}\n📅 Data: ${fmtData(dIni)}\n⏰ Saída: ${fmtHora(dIni)}\n🏁 Chegada: ${fmtHora(dFim)}\n---------------------------\n▶ KM Inicial: ${Math.round(v.kmInicio)}\n⏹ KM Final: ${Math.round(v.kmFim)}\n📏 Total: ${kmT} km\n⏱ Duração: ${dur}\n🎯 Meta: ${Math.round(v.metaKm || 0)} km\n📊 Dif: ${diff > 0 ? '+' : ''}${diff} km\n🏙️ Rota: ${v.rotaCidades || 'N/D'}`;
         }
 
-        window.enviarZap = function (viagem) { window.open(`https://wa.me/?text=${encodeURIComponent(gerarTextoZap(viagem))}`, '_blank'); }
+        // Substitua sua função window.enviarZap existente por esta:
+        window.enviarZap = function (v) {
+            if (!v) return;
+
+            // 1. RECONSTRUÇÃO DA SUA LÓGICA ORIGINAL DE FORMATAÇÃO
+            const dIni = safeDate(v.dataInicio);
+            const dFim = safeDate(v.dataFim) || new Date();
+
+            let dur = '--:--:--';
+            if (dIni && dFim) {
+                dur = new Date(dFim - dIni).toISOString().substr(11, 8);
+            }
+
+            const kmIni = Math.round(v.kmInicio || 0);
+            const kmFim = Math.round(v.kmFim || 0);
+            const metaKm = Math.round(v.metaKm || 0);
+
+            const kmT = kmFim - kmIni;
+            const diff = kmT - metaKm;
+
+            // Monta o texto exatamente igual ao seu original
+            let texto = `RELATÓRIO\n---------------------------\n`;
+            texto += `🚗 Veículo: ${v.placa}\n`;
+            texto += `👤 Condutor: ${v.nome}\n`;
+            texto += `📝 Tipo: ${v.tipoServico}\n`;
+            texto += `📅 Data: ${dIni ? fmtData(dIni) : 'N/D'}\n`;
+            texto += `⏰ Saída: ${dIni ? fmtHora(dIni) : 'N/D'}\n`;
+            texto += `🏁 Chegada: ${v.status === 'em_curso' ? '---' : fmtHora(dFim)}\n`;
+            texto += `---------------------------\n`;
+            texto += `▶️ KM Inicial: ${kmIni}\n`;
+            texto += `⏹️ KM Final: ${v.status === 'em_curso' ? '---' : kmFim}\n`;
+            texto += `📏 Total: ${v.status === 'em_curso' ? '---' : kmT + ' km'}\n`;
+            texto += `⏱️ Duração: ${v.status === 'em_curso' ? '---' : dur}\n`;
+            texto += `🎯 Meta: ${metaKm} km\n`;
+            texto += `📊 Dif: ${v.status === 'em_curso' ? '---' : (diff > 0 ? '+' : '') + diff + ' km'}\n`;
+            texto += `🏙️ Rota: ${v.rotaCidades || 'N/D'}`;
+
+            // Adiciona as observações caso existam (opcional, útil para a auditoria)
+            if (v.status === 'cancelada' && v.motivoCancelamento) {
+                texto += `\n\n❌ CANCELADA: ${v.motivoCancelamento}`;
+            }
+
+            // ==========================================
+            // 2. DETECTOR INTELIGENTE DE DISPOSITIVO
+            // ==========================================
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // CELULAR: Pula o modal e abre o WhatsApp direto
+                const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+                window.open(url, '_blank');
+            } else {
+                // COMPUTADOR: Levanta o Modal de Prévia
+                const modal = document.getElementById('modal-compartilhar-zap');
+                const textarea = document.getElementById('texto-zap-preview');
+
+                textarea.value = texto;
+                modal.classList.remove('hidden');
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+        // Função do botão "COPIAR TEXTO"
+        window.copiarTextoZap = function () {
+            const textarea = document.getElementById('texto-zap-preview');
+
+            // Usa a API moderna da área de transferência (Clipboard)
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                // Feedback visual trocando o texto do botão temporariamente
+                const btn = event.currentTarget;
+                const innerOriginal = btn.innerHTML;
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> COPIADO!`;
+                btn.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-400');
+                if (window.lucide) window.lucide.createIcons();
+
+                setTimeout(() => {
+                    btn.innerHTML = innerOriginal;
+                    btn.classList.remove('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-400');
+                    if (window.lucide) window.lucide.createIcons();
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro ao copiar', err);
+                alert("Ocorreu um erro. Selecione o texto e copie manualmente.");
+            });
+        };
+
+        // Função do botão "WHATSAPP"
+        window.abrirZapDireto = function () {
+            const texto = document.getElementById('texto-zap-preview').value;
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        };
 
         window.acessoAdmin = function () {
             setTimeout(() => {
@@ -5491,12 +5640,12 @@
                 modalCamera.classList.add('hidden');
                 modalCamera.classList.remove('flex');
             }
-            
+
             imgPrevia.src = base64Reduzido;
             modalPrevia.classList.remove('hidden');
 
             // AÇÃO 1: MOTORISTA REJEITOU A FOTO (Tirar Novamente)
-            btnRefazer.onclick = function() {
+            btnRefazer.onclick = function () {
                 modalPrevia.classList.add('hidden');
                 // Reabre a câmera imediatamente (o stream de vídeo não foi desligado, a volta é instantânea)
                 if (modalCamera) {
@@ -5506,7 +5655,7 @@
             };
 
             // AÇÃO 2: MOTORISTA CONFIRMOU A FOTO (Ficou Boa)
-            btnConfirmar.onclick = function() {
+            btnConfirmar.onclick = function () {
                 modalPrevia.classList.add('hidden');
 
                 // 4. Salva no lugar certo baseado de onde o motorista clicou
