@@ -5,436 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Icaphi Hub</title>
     
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/11529/11529094.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/11529/11529094.png">
+    
+    <meta name="theme-color" content="#020617">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/5974/5974636.png" type="image/png">
 
     <style>
-        /* --- VARIÁVEIS LIQUID THEME --- */
         :root {
             --bg-base: #020617; 
-            --bg-card: rgba(15, 23, 42, 0.4); 
-            --bg-modal-glass: rgba(2, 6, 23, 0.65); 
             --text-main: #f8fafc; 
             --text-muted: #94a3b8;
             --accent: #06b6d4; 
-            --accent-glow: rgba(6, 182, 212, 0.5); 
+            --accent-glow: rgba(6, 182, 212, 0.4); 
             --accent-dark: #0891b2;
-            --border-light: rgba(255, 255, 255, 0.1); 
-            --border-strong: rgba(255, 255, 255, 0.2);
             --danger: #f43f5e; 
-            --glass-blur: blur(24px);
-
-            /* MOTOR DE LAYOUT */
-            --grid-cols: 4;
-            --grid-gap: 2.5rem;
-            --card-radius: 24px;
-            --card-direction: column;
-            --card-padding: 2.5rem 1rem;
-            --card-ratio: auto;
-            --icon-size: 3.5rem;
-            --icon-margin: 0 0 1rem 0;
-            --label-display: block;
-            --card-align: center;
-            --card-justify: center;
+            
+            /* Bubble 3D Colors */
+            --bubble-highlight: rgba(255, 255, 255, 0.25);
+            --bubble-shadow: rgba(0, 0, 0, 0.6);
+            --bubble-bg: rgba(15, 23, 42, 0.4);
         }
 
         [data-theme="light"] {
-            --bg-base: #f8fafc; 
-            --bg-card: rgba(255, 255, 255, 0.6); 
-            --bg-modal-glass: rgba(255, 255, 255, 0.75); 
+            --bg-base: #f1f5f9; 
             --text-main: #0f172a; 
             --text-muted: #475569;
             --accent: #0ea5e9; 
-            --accent-glow: rgba(14, 165, 233, 0.4); 
+            --accent-glow: rgba(14, 165, 233, 0.3); 
             --accent-dark: #0284c7;
-            --border-light: rgba(0, 0, 0, 0.05); 
-            --border-strong: rgba(0, 0, 0, 0.15);
+            
+            --bubble-highlight: rgba(255, 255, 255, 0.8);
+            --bubble-shadow: rgba(0, 0, 0, 0.15);
+            --bubble-bg: rgba(255, 255, 255, 0.5);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-base); color: var(--text-main); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
+        body { background-color: var(--bg-base); color: var(--text-main); min-height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; transition: background 0.3s; }
 
-        /* --- LIQUID MESH BACKGROUND (OTIMIZADO - SEM BLUR) --- */
+        /* --- BACKGROUND SUTIL --- */
         .liquid-bg {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
-            background: var(--bg-base); overflow: hidden;
-            transition: background 0.5s ease;
+            background: radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.12), transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.12), transparent 40%);
+            animation: slowPan 25s infinite alternate linear;
         }
-        
-        /* A magia da performance: radial-gradient no lugar de filter: blur() */
-        .liquid-orb {
-            position: absolute; border-radius: 50%;
-            opacity: 0.6; mix-blend-mode: screen; 
-            animation: fluidMotion 25s infinite alternate ease-in-out;
-            will-change: transform, border-radius; /* Dica para a GPU */
-        }
-        [data-theme="light"] .liquid-orb { mix-blend-mode: multiply; opacity: 0.5; }
-        
-        .orb1 { width: 55vw; height: 55vw; top: -10%; left: -10%; background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, transparent 65%); }
-        .orb2 { width: 65vw; height: 65vw; bottom: -20%; right: -15%; background: radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, transparent 65%); animation-delay: -5s; }
-        .orb3 { width: 45vw; height: 45vw; top: 30%; left: 20%; background: radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, transparent 65%); animation-delay: -10s; }
+        @keyframes slowPan { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
 
-        @keyframes fluidMotion {
-            0% { transform: translate(0, 0) scale(1); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-            50% { transform: translate(5vw, 5vh) scale(1.05); border-radius: 60% 40% 30% 70% / 50% 40% 50% 60%; }
-            100% { transform: translate(-3vw, -4vh) scale(0.95); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-        }
+        /* BARRA SUPERIOR */
+        .top-bar { position: relative; z-index: 1000; width: 100%; padding: 1.5rem 2rem; display: flex; justify-content: flex-end; align-items: center; }
+        .icon-btn { width: 45px; height: 45px; border-radius: 50%; background: var(--bubble-bg); box-shadow: inset 2px 2px 5px var(--bubble-highlight), inset -2px -2px 5px var(--bubble-shadow), 0 5px 15px rgba(0,0,0,0.2); color: var(--text-main); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; backdrop-filter: blur(5px); }
+        .icon-btn:hover { background: var(--accent); color: #fff; transform: translateY(-3px) scale(1.05); box-shadow: 0 10px 20px var(--accent-glow); }
 
-        /* --- MODO LITE (PERFORMANCE MÁXIMA, MAS COM ANIMAÇÃO LEVE) --- */
-        /* Desliga os orbes e o vidro fosco, liga o pan de gradiente leve */
-        body.lite-mode .liquid-orb { display: none !important; }
-        
-        body.lite-mode .liquid-bg {
-            background: linear-gradient(45deg, #020617, #0f172a, #082f49, #020617);
-            background-size: 300% 300%;
-            animation: gradientPan 18s ease infinite;
-        }
-        body.lite-mode [data-theme="light"] .liquid-bg {
-            background: linear-gradient(45deg, #f8fafc, #e2e8f0, #bae6fd, #f8fafc);
-            background-size: 300% 300%;
-            animation: gradientPan 18s ease infinite;
-        }
-
-        @keyframes gradientPan {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        body.lite-mode .app-card, body.lite-mode .modal-content, body.lite-mode .data-hover-card {
-            backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-            background: var(--bg-card) !important; border: 1px solid var(--border-strong) !important;
-        }
-        body.lite-mode .app-card::before { display: none !important; }
-        /* No modo lite, mantemos um hover simples e elegante sem deformação pesada */
-        body.lite-mode .app-card:hover { transform: translateY(-5px) !important; border-color: var(--accent) !important; border-radius: var(--card-radius) !important;}
-
-
-        /* --- BARRA SUPERIOR E WIDGETS --- */
-        .top-bar { position: relative; z-index: 1000; width: 100%; max-width: 1200px; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; margin-top: 1vh; }
-        .widget-panel { display: flex; gap: 1rem; align-items: center; position: relative; }
-        
-        .chip { 
-            background: var(--bg-card); border: 1px solid var(--border-light); 
-            backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-            padding: 0.6rem 1.2rem; border-radius: 20px; display: flex; align-items: center; gap: 0.5rem; 
-            font-weight: 600; font-size: 0.9rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
-            cursor: default; transition: all 0.3s ease;
-        }
-
-        .hover-container { position: relative; cursor: pointer; }
-        .hover-dropdown { 
-            position: absolute; top: 140%; left: 50%; transform: translateX(-50%) translateY(15px) scale(0.9); 
-            background: var(--bg-modal-glass); border: 1px solid var(--border-strong); 
-            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-            border-radius: 30px; padding: 1.5rem; width: 240px; text-align: center; 
-            opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05); z-index: 10000; pointer-events: none; 
-        }
-        .hover-container:hover .hover-dropdown { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0) scale(1); pointer-events: auto; }
-        
-        .weather-anim-box { height: 70px; display: flex; justify-content: center; align-items: center; margin-bottom: 0.5rem;}
-        .anim-sun { width: 40px; height: 40px; background: #fbbf24; border-radius: 50%; box-shadow: 0 0 20px #fbbf24; animation: pulseSun 2s infinite alternate; }
-        @keyframes pulseSun { 0% { transform: scale(1); } 100% { transform: scale(1.15); box-shadow: 0 0 35px #fbbf24; } }
-        .anim-rain { position: relative; width: 50px; height: 40px; }
-        .cloud { width: 50px; height: 18px; background: #94a3b8; border-radius: 20px; position: absolute; top: 0; z-index: 2; }
-        .drop { position: absolute; width: 2px; height: 8px; background: #38bdf8; top: 15px; animation: rainDrop 0.8s linear infinite; }
-        .drop:nth-child(1) { left: 10px; animation-delay: 0.1s; } .drop:nth-child(2) { left: 25px; animation-delay: 0.4s; } .drop:nth-child(3) { left: 40px; animation-delay: 0.2s; }
-        @keyframes rainDrop { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
-
-        .icon-btn { 
-            width: 45px; height: 45px; border-radius: 16px; background: var(--bg-card); 
-            border: 1px solid var(--border-light); color: var(--text-main); display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: var(--glass-blur); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .icon-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-3px) scale(1.05); box-shadow: 0 10px 25px var(--accent-glow); border-radius: 12px; }
-
-        .header { text-align: center; margin: 2vh 0 4vh 0; position: relative; z-index: 5; }
+        .header { text-align: center; margin-top: 1vh; position: relative; z-index: 5; pointer-events: none;}
         .header h1 { font-size: 3.5rem; font-weight: 800; background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; }
-        
-        .app-container { width: 100%; max-width: 1200px; padding: 0 2rem; position: relative; z-index: 10; display: flex; justify-content: center; }
-        
-        /* --- GRID FLUIDO --- */
-        .app-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--grid-gap); width: 100%; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        
-        /* --- BOTÕES LÍQUIDOS (MORPHING CARDS RESTAURADOS) --- */
-        .app-card {
-            background: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--border-light); border-radius: var(--card-radius); 
-            padding: var(--card-padding); aspect-ratio: var(--card-ratio);
-            width: calc((100% - (var(--grid-gap) * (var(--grid-cols) - 1))) / var(--grid-cols)); min-width: 180px; 
-            display: flex; flex-direction: var(--card-direction); align-items: var(--card-align); justify-content: var(--card-justify); 
-            cursor: grab; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15), inset 0 0 0 transparent;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: visible; 
-        }
 
-        .app-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at bottom, var(--accent-glow) 0%, transparent 60%);
-            border-radius: inherit; transition: opacity 0.6s ease; opacity: 0; pointer-events: none; z-index: -1;
-        }
-
-        .app-card:hover { 
-            transform: translateY(-10px); border-color: var(--accent);
-            box-shadow: 0 25px 40px rgba(0,0,0,0.3), 0 0 20px var(--accent-glow), inset 0 -5px 20px rgba(6, 182, 212, 0.2); 
-            border-radius: 35px 20px 35px 20px / 20px 35px 20px 35px; z-index: 100;
-        }
-        .app-card:hover::before { opacity: 1; }
-        
-        .app-card.dragging { opacity: 0.3; transform: scale(0.9); border: 2px dashed var(--accent); }
-        .app-card.drag-over { border-color: var(--accent); box-shadow: 0 0 40px var(--accent-glow); transform: scale(1.05); }
-
-        .app-icon { font-size: var(--icon-size); color: var(--accent); transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; margin: var(--icon-margin); position: relative; z-index: 2;}
-        .app-card:hover .app-icon { transform: scale(1.2) translateY(-5px); color: #fff; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-        
-        .app-label { font-weight: 700; font-size: 1.15rem; pointer-events: none; display: var(--label-display); text-align: left; position: relative; z-index: 2; transition: color 0.3s; }
-
-        /* --- DATA HOVER CARDS (VIDRO FOSCO LÍQUIDO) --- */
-        .data-hover-card {
-            position: absolute; top: 120%; left: 50%; transform: translateX(-50%) translateY(20px) scale(0.9);
-            background: var(--bg-modal-glass); border: 1px solid rgba(255,255,255,0.15); border-top: 1px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            width: 340px; padding: 1.5rem; text-align: left;
-            border-radius: 20px 40px 20px 40px; 
-            opacity: 0; visibility: hidden; pointer-events: none;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.05); 
-            z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            color: var(--text-main); cursor: default;
+        /* --- BUBBLE FLOWER LAYOUT --- */
+        .radial-container {
+            position: relative; width: 100vw; flex-grow: 1; display: flex; justify-content: center; align-items: center;
         }
         
-        .data-hover-card::before {
-            content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(45deg);
-            width: 16px; height: 16px; background: var(--bg-modal-glass);
-            border-left: 1px solid rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(30px); z-index: -1;
+        .bubble, .center-hub {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--bubble-bg) 0%, transparent 80%), var(--bg-base);
+            box-shadow: 
+                inset 8px 8px 20px var(--bubble-highlight),
+                inset -8px -8px 20px var(--bubble-shadow),
+                0 15px 30px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .app-card:hover .data-hover-card { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0) scale(1); pointer-events: auto; }
+        .bubble { animation: spiralIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+        .center-hub { z-index: 50; animation: floatAnim 4s ease-in-out infinite alternate; }
+
+        /* Flutuação Sutil Injetada via JS */
+        @keyframes floatAnim {
+            0% { transform: translate(-50%, calc(-50% - 6px)); }
+            100% { transform: translate(-50%, calc(-50% + 6px)); }
+        }
+
+        @keyframes spiralIn {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        /* --- ESTADO HOVER: O MORPHING --- */
+        .bubble:hover, .center-hub:hover {
+            width: 360px; height: 400px;
+            border-radius: 32px; /* Morph para Card */
+            z-index: 100;
+            background: var(--bg-modal-glass);
+            box-shadow: 
+                inset 2px 2px 10px var(--bubble-highlight),
+                inset -2px -2px 10px var(--bubble-shadow),
+                0 30px 60px rgba(0,0,0,0.6),
+                0 0 40px var(--accent-glow);
+            animation: none !important; /* Trava a flutuação ao abrir */
+            transform: translate(-50%, -50%) !important;
+        }
+
+        /* Conteúdo Minimizado */
+        .bubble-mini {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; transition: opacity 0.3s ease; opacity: 1; pointer-events: none;
+        }
+        .bubble:hover .bubble-mini, .center-hub:hover .bubble-mini { opacity: 0; }
         
-        .hc-title { font-size: 1.05rem; font-weight: 800; color: var(--accent); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px dashed var(--border-strong); padding-bottom: 0.5rem;}
-        .hc-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;}
-        .hc-row:hover { background: rgba(255,255,255,0.05); border-radius: 8px; padding-left: 5px; padding-right: 5px; }
-        .hc-row:last-child { border-bottom: none; }
-        .hc-highlight { font-weight: 700; color: #fff; }
-        .hc-tag { background: rgba(6, 182, 212, 0.2); color: var(--accent); padding: 3px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(6, 182, 212, 0.3);}
+        .bubble-icon { font-size: 3.5rem; color: var(--accent); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); margin-bottom: 0.5rem; }
         
-        .tank-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 8px; overflow: hidden; position: relative; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+        /* FIX: Texto saindo da borda */
+        .bubble-title-mini { 
+            font-weight: 700; font-size: 0.85rem; color: var(--text-main); 
+            text-align: center; line-height: 1.2; 
+            padding: 0 15px; width: 100%; word-break: break-word; 
+        }
+
+        /* Conteúdo Expandido */
+        .bubble-full {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 2rem;
+            display: flex; flex-direction: column; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease 0.2s;
+        }
+        .bubble:hover .bubble-full, .center-hub:hover .bubble-full { opacity: 1; pointer-events: auto; }
+
+        .full-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px dashed var(--border-strong); padding-bottom: 1rem;}
+        .full-header .material-symbols-outlined { font-size: 2.5rem; color: var(--accent); }
+        .full-header h3 { font-size: 1.4rem; font-weight: 800; }
+        
+        .full-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px;}
+        .full-content::-webkit-scrollbar { width: 4px; }
+        .full-content::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+        .action-btn { width: 100%; padding: 1rem; margin-top: 1rem; border-radius: 12px; background: var(--accent); color: #fff; border: none; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .action-btn:hover { background: var(--accent-dark); box-shadow: 0 5px 15px var(--accent-glow); transform: translateY(-2px); }
+
+        /* Elementos Internos de Dados */
+        .data-row { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-highlight { font-weight: 700; color: #fff; }
+        .data-tag { background: rgba(6, 182, 212, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(6, 182, 212, 0.3);}
+        
+        .tank-bar-bg { width: 100%; height: 14px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-top: 8px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
         .tank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-dark), var(--accent)); width: 0%; border-radius: 10px; transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 10px var(--accent-glow);}
 
-        /* --- MODAIS COM ENTRADA FLUIDA --- */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.4s ease; }
-        .modal.active { display: flex; opacity: 1; }
-        .modal-content { background: var(--bg-modal-glass); backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px); border: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.2); border-radius: 32px; padding: 2.5rem; width: 90%; max-width: 500px; box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.02); transform: scale(0.8) translateY(20px); opacity: 0; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 90vh; overflow-y: auto; position: relative; }
-        .modal.active .modal-content { transform: scale(1) translateY(0); opacity: 1; }
-        .modal-header h2 { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-bottom: 1.5rem; text-align: center; letter-spacing: -0.5px;}
-        .btn-close-modal { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0,0,0,0.2); border: none; color: var(--text-muted); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;}
-        .btn-close-modal:hover { color: var(--danger); background: rgba(244, 63, 94, 0.2); transform: rotate(90deg); }
+        /* --- CLIMA & ANIMAÇÕES (LEVES) --- */
+        .weather-anim-box { height: 80px; display: flex; justify-content: center; align-items: center; margin-bottom: 1rem; transform: scale(1.2);}
+        .anim-sun { width: 45px; height: 45px; background: #fbbf24; border-radius: 50%; box-shadow: 0 0 25px #fbbf24; animation: pulseSun 2s infinite alternate; }
+        @keyframes pulseSun { 0% { transform: scale(1); } 100% { transform: scale(1.15); box-shadow: 0 0 40px #fbbf24; } }
         
-        .btn-3d { width: 100%; padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.2); color: var(--text-main); font-weight: 600; border: 1px solid var(--border-light); cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.8rem; position: relative; overflow: hidden;}
-        .btn-3d::after { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: var(--accent); border-radius: 50%; transform: translate(-50%, -50%); transition: width 0.4s ease, height 0.4s ease; z-index: -1; opacity: 0.2;}
-        .btn-3d:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.02); }
-        .btn-3d:hover::after { width: 300px; height: 300px; }
-        .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent-dark); }
-        .btn-primary:hover { color: #fff; box-shadow: 0 10px 20px var(--accent-glow); }
-        .btn-primary::after { display: none; }
+        .anim-rain { position: relative; width: 60px; height: 50px; }
+        .cloud { width: 60px; height: 22px; background: #94a3b8; border-radius: 20px; position: absolute; top: 0; z-index: 2; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3);}
+        .drop { position: absolute; width: 2px; height: 10px; background: #38bdf8; top: 20px; animation: rainDrop 0.8s linear infinite; }
+        .drop:nth-child(1) { left: 15px; animation-delay: 0.1s; } .drop:nth-child(2) { left: 30px; animation-delay: 0.4s; } .drop:nth-child(3) { left: 45px; animation-delay: 0.2s; }
+        @keyframes rainDrop { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(25px); opacity: 0; } }
 
-        .input-group { margin-bottom: 1.2rem; text-align: left; }
-        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; padding-left: 0.5rem;}
-        .form-input, .form-select { width: 100%; padding: 1.2rem; border-radius: 16px; border: 1px solid var(--border-strong); background: rgba(0,0,0,0.3); color: var(--text-main); font-family: 'Plus Jakarta Sans'; outline: none; transition: all 0.3s; }
-        .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); background: rgba(0,0,0,0.5); }
-        
-        .switch-container { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem; background: rgba(0,0,0,0.2); border-radius: 16px; border: 1px solid var(--border-strong); margin-bottom: 1.5rem;}
-        .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 34px; border: 1px solid var(--border-strong);}
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
-        input:checked + .slider { background-color: var(--accent); border-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        .app-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border-light); border-radius: 16px; margin-bottom: 0.8rem; transition: all 0.3s; }
-        .app-list-item:hover { background: rgba(0,0,0,0.4); border-color: var(--accent-glow); }
-        .btn-action { width: 40px; height: 40px; border-radius: 12px; border: none; background: var(--border-strong); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;}
-        .btn-action:hover { background: var(--accent); color: #fff; transform: scale(1.1); } 
-        .btn-danger:hover { background: var(--danger); }
-        .sublinks-container { background: rgba(0,0,0,0.1); padding: 1.5rem; border-radius: 20px; border: 1px dashed var(--border-strong); margin-bottom: 1.5rem; }
-        .sublink-row { display: flex; gap: 0.8rem; margin-bottom: 0.8rem; align-items: center; }
-        .sublink-row input { flex: 1; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-strong); background: rgba(0,0,0,0.3); color: var(--text-main); outline: none; transition: border-color 0.3s;}
-        .sublink-row input:focus { border-color: var(--accent); }
-
-        /* Watch Mode (2D) */
-        .watch-viewport { width: 100%; height: 60vh; border-radius: 40px; border: 1px solid var(--border-strong); background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.6)); overflow: hidden; position: relative; cursor: grab; display: none; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); }
-        .watch-viewport:active { cursor: grabbing; }
-        .watch-canvas { position: absolute; top: 50%; left: 50%; transform-origin: center center; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 15px; width: 800px; transition: transform 0.1s linear; }
-        .watch-canvas .app-card { width: 90px; height: 90px; border-radius: 50%; padding: 0; aspect-ratio: 1/1; flex-direction: column; min-width: 90px; border-bottom: none; overflow: hidden; }
-        .watch-canvas .app-card::before { display: none; }
-        .watch-canvas .app-card:hover { border-radius: 50%; transform: scale(1.15); box-shadow: 0 0 30px var(--accent-glow); }
-        .watch-canvas .app-icon { font-size: 2.5rem; margin: 0; }
-        .watch-canvas .app-label { display: none; } 
-        .watch-canvas .app-card:nth-child(even) { transform: translateY(45px); }
-        .watch-canvas .app-card:nth-child(even):hover { transform: translateY(45px) scale(1.15); }
-        .watch-canvas .data-hover-card { display: none !important; }
-
-        #iframe-container { width: 95%; height: 90%; max-width: 1400px; background: var(--bg-base); border-radius: 30px; padding: 1rem; position: relative; display: flex; flex-direction: column; border: 1px solid var(--border-strong); box-shadow: 0 50px 100px rgba(0,0,0,0.8);}
-        iframe { width: 100%; height: 100%; border-radius: 20px; border: none; background: #fff; }
+        .anim-cloud { width: 60px; height: 22px; background: #cbd5e1; border-radius: 20px; position: relative; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.2); animation: floatCloud 3s infinite alternate ease-in-out; }
+        .anim-cloud::before { content: ''; position: absolute; width: 30px; height: 30px; background: #cbd5e1; border-radius: 50%; top: -15px; left: 10px; }
+        @keyframes floatCloud { 0% { transform: translateY(-3px); } 100% { transform: translateY(3px); } }
 
         @media (max-width: 768px) {
-            .top-bar { flex-direction: column; gap: 1rem; }
-            .header h1 { font-size: 2.5rem; }
-            :root { --grid-cols: 2 !important; }
+            .bubble:hover, .center-hub:hover { width: 90vw; height: 60vh; }
         }
     </style>
 </head>
 <body>
 
-    <div class="liquid-bg">
-        <div class="liquid-orb orb1"></div><div class="liquid-orb orb2"></div><div class="liquid-orb orb3"></div>
-    </div>
+    <div class="liquid-bg"></div>
 
     <div class="top-bar">
-        <div class="widget-panel">
-            <div class="hover-container">
-                <div class="chip"><span class="material-symbols-outlined" style="font-size: 1.2rem;">schedule</span><span id="mainClock">00:00</span></div>
-                <div class="hover-dropdown">
-                    <div class="hc-title" style="justify-content:center; border:none;" id="fullDateText">Buscando Data...</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted);">Semana <strong style="color: var(--text-main);" id="weekNumber">--</strong></div>
-                </div>
+        <button class="icon-btn" onclick="toggleTheme()" title="Modo Claro/Escuro"><span class="material-symbols-outlined" id="themeIcon">light_mode</span></button>
+    </div>
+
+    <div class="header">
+        <h1>Icaphi Hub</h1>
+        <p style="color: var(--text-muted); font-weight: 500;">Sistema Operacional Dinâmico</p>
+    </div>
+
+    <div class="radial-container" id="bubble-container">
+        
+        <div class="center-hub" id="center-hub">
+            <div class="bubble-mini">
+                <span id="mainClock" style="font-size: 2.2rem; font-weight: 800; color: var(--accent); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">00:00</span>
+                <span id="weatherIconSmall" class="material-symbols-outlined" style="margin-top: 5px; color: var(--text-muted); font-size: 1.4rem;">thermostat</span>
             </div>
             
-            <div class="hover-container">
-                <div class="chip"><span class="material-symbols-outlined" id="weatherIconSmall" style="font-size: 1.2rem;">thermostat</span><span id="currentTemp">--°C</span></div>
-                <div class="hover-dropdown">
-                    <div class="weather-anim-box" id="weatherAnimation"></div>
-                    <div class="hc-title" style="justify-content:center; border:none;" id="weatherDesc">Atualizando...</div>
-                    <div style="display: flex; justify-content: space-around; font-size: 0.85rem; margin-top: 10px;">
-                        <span><span style="color:#38bdf8;">Min:</span> <span id="tempMin">--</span></span>
-                        <span><span style="color:#ef4444;">Max:</span> <span id="tempMax">--</span></span>
+            <div class="bubble-full" style="align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+                <h3 id="fullDateText" style="color: var(--accent); font-size: 1.3rem; margin-bottom: 5px; font-weight: 800;">Buscando Data...</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Semana <strong id="weekNumber" style="color:var(--text-main);">--</strong></p>
+
+                <div class="weather-anim-box" id="weatherAnimation"></div>
+                
+                <h4 id="weatherDesc" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-main);">Atualizando...</h4>
+
+                <div style="display: flex; gap: 20px; font-size: 1rem; width: 100%; justify-content: center;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="color:#38bdf8; display:block; font-size:0.8rem; font-weight:700;">MÍNIMA</span> 
+                        <strong id="tempMin" style="font-size:1.2rem;">--</strong>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="color:#ef4444; display:block; font-size:0.8rem; font-weight:700;">MÁXIMA</span> 
+                        <strong id="tempMax" style="font-size:1.2rem;">--</strong>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="widget-panel">
-            <button class="icon-btn" onclick="abrirModal('layoutModal')" title="Configurar Interface"><span class="material-symbols-outlined">fluid</span></button>
-            <button class="icon-btn" onclick="openManager()" title="Gerenciar Sistema"><span class="material-symbols-outlined">settings</span></button>
-            <button class="icon-btn" onclick="toggleTheme()" title="Modo Claro/Escuro"><span class="material-symbols-outlined" id="themeIcon">light_mode</span></button>
-        </div>
     </div>
-
-    <div class="header">
-        <h1>Icaphi Hub</h1>
-        <p style="color: var(--text-muted); font-weight: 500; font-size: 1.1rem; margin-top: 0.5rem;">Central Operacional Estratégica</p>
-    </div>
-
-    <div class="app-container">
-        <div class="app-grid" id="appGridContainer"></div>
-        <div class="watch-viewport" id="watchViewport">
-            <div class="watch-canvas" id="watchCanvas"></div>
-        </div>
-    </div>
-
-    <div id="layoutModal" class="modal" onclick="closeModalOutside(event, 'layoutModal')">
-        <div class="modal-content">
-            <button class="btn-close-modal" onclick="closeModal('layoutModal')"><span class="material-symbols-outlined">close</span></button>
-            <div class="modal-header"><h2>Design & Performance</h2></div>
-            
-            <div class="switch-container">
-                <div>
-                    <strong style="display:block; color:var(--text-main); font-size: 1.1rem;">Modo Infinito 2D</strong>
-                    <span style="font-size:0.8rem; color:var(--text-muted);">Estilo Apple Watch c/ Zoom livre.</span>
-                </div>
-                <label class="switch"><input type="checkbox" id="toggleWatchMode" onchange="applyLayout()"><span class="slider"></span></label>
-            </div>
-
-            <div class="switch-container">
-                <div>
-                    <strong style="display:block; color:var(--accent); font-size: 1.1rem;">Modo Lite (Performance)</strong>
-                    <span style="font-size:0.8rem; color:var(--text-muted);">Ligue se o sistema estiver travando.</span>
-                </div>
-                <label class="switch"><input type="checkbox" id="toggleLiteMode" onchange="applyLayout()"><span class="slider"></span></label>
-            </div>
-
-            <div id="gridSettingsArea">
-                <div class="input-group">
-                    <label>Design Estrutural</label>
-                    <select id="layShape" class="form-select" onchange="applyLayout()">
-                        <option value="rect">Botões Fluidos (Padrão)</option>
-                        <option value="circle">Esferas Circulares</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Orientação Interna</label>
-                    <select id="layDir" class="form-select" onchange="applyLayout()">
-                        <option value="column">Empilhado (Ícone Acima)</option>
-                        <option value="row">Em Linha (Ícone ao Lado)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Itens por Linha</label>
-                    <select id="layCols" class="form-select" onchange="applyLayout()">
-                        <option value="3">3 Colunas</option>
-                        <option value="4" selected>4 Colunas (Padrão)</option>
-                        <option value="5">5 Colunas</option>
-                    </select>
-                </div>
-            </div>
-            <button class="btn-3d btn-primary" style="margin-top: 1.5rem;" onclick="closeModal('layoutModal')">Aplicar Mudanças</button>
-        </div>
-    </div>
-
-    <div id="choiceModal" class="modal" onclick="closeModalOutside(event, 'choiceModal')">
-        <div class="modal-content">
-            <button class="btn-close-modal" onclick="closeModal('choiceModal')"><span class="material-symbols-outlined">close</span></button>
-            <div class="modal-header"><h2 id="modalTitle">Sistema</h2></div>
-            <button class="btn-3d btn-primary" onclick="goToLink()"><span class="material-symbols-outlined">open_in_new</span> Ir para o Sistema (Nova Aba)</button>
-            <button class="btn-3d" id="btnQuickView" onclick="openQuickView()"><span class="material-symbols-outlined">picture_in_picture</span> Abrir Rápido (Modal Interno)</button>
-        </div>
-    </div>
-
-    <div id="subLinksModal" class="modal" onclick="closeModalOutside(event, 'subLinksModal')">
-        <div class="modal-content">
-            <button class="btn-close-modal" onclick="closeModal('subLinksModal')"><span class="material-symbols-outlined">close</span></button>
-            <div class="modal-header"><h2 id="subModalTitle">Módulos</h2></div>
-            <div id="subLinksContainer"></div>
-        </div>
-    </div>
-    
-    <div id="managerModal" class="modal" onclick="closeModalOutside(event, 'managerModal')">
-        <div class="modal-content" style="max-width: 600px;">
-            <button class="btn-close-modal" onclick="closeModal('managerModal')"><span class="material-symbols-outlined">close</span></button>
-            <div class="modal-header"><h2 id="managerFormTitle">Configurar Módulo</h2></div>
-            <input type="hidden" id="editAppId" value="">
-            <div style="display: flex; gap: 1rem;">
-                <div class="input-group" style="flex: 2;"><label>Título do Módulo</label><input type="text" id="appName" class="form-input" placeholder="Ex: Financeiro"></div>
-                <div class="input-group" style="flex: 1;"><label>Ícone (Google)</label><input type="text" id="appIcon" class="form-input" placeholder="Ex: attach_money"></div>
-            </div>
-            <div class="input-group"><label>Tipo de Rotina</label><select id="appType" class="form-select" onchange="toggleFormType()"><option value="single">Atalho Direto</option><option value="folder">Sub-Menu</option></select></div>
-            <div id="singleLinkArea" class="input-group"><label>URL</label><input type="text" id="appUrl" class="form-input" placeholder="https://..."></div>
-            <div id="subLinksArea" style="display: none;"><label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; padding-left: 0.5rem;">Gerenciar Rotas</label><div id="subLinksBuilder" class="sublinks-container"></div><button class="btn-3d" style="padding: 1rem; font-size: 0.95rem; border-style: dashed;" onclick="addNewSublinkRow()"><span class="material-symbols-outlined">add_circle</span> Inserir Novo Caminho</button></div>
-            <button class="btn-3d btn-primary" style="margin-top: 1rem;" onclick="saveAppForm()"><span class="material-symbols-outlined">save</span> Gravar Alterações</button>
-            <hr style="border: 0; border-top: 1px dashed var(--border-strong); margin: 2.5rem 0 1.5rem 0;">
-            <label style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; text-align: center;">Módulos Ativos <span style="font-weight: 400; color: var(--text-muted); font-size: 0.8rem; display: block;">Arraste os cards na tela inicial para ordená-los.</span></label>
-            <div id="appListContainer"></div>
-        </div>
-    </div>
-
-    <div id="iframeModal" class="modal">
-        <div id="iframe-container">
-            <button class="btn-action btn-danger" style="position: absolute; top: -15px; right: -15px; z-index: 10;" onclick="closeIframe()"><span class="material-symbols-outlined">close</span></button>
-            <iframe id="appIframe" src=""></iframe>
-        </div>
-    </div>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ==========================================
-        // 1. CONEXÃO FIREBASE (DUPLA INTEGRAÇÃO)
-        // ==========================================
+        // 1. FIREBASE CONFIG
         const configAbast = {
             apiKey: "AIzaSyBvbLbyI4ho-X9buW5j6atXvehnoZM0qXM",
             authDomain: "gestao-abastecimento.firebaseapp.com",
@@ -457,140 +251,96 @@
         const appKm = initializeApp(configKm, "kms");
         const dbKm = getFirestore(appKm);
 
-        // ==========================================
-        // 2. DADOS DOS BOTÕES & CRUD
-        // ==========================================
-        const defaultApps = [
-            { id: 1, title: 'Painel', icon: 'settings_input_component', type: 'single', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiPainel.html' },
-            { id: 2, title: 'KMs', icon: 'route', type: 'single', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html' },
-            { id: 3, title: 'Abastecimento', icon: 'ev_station', type: 'single', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiAbastecimento.html' },
-            { id: 4, title: 'Monitoramento', icon: 'folder_shared', type: 'folder', sublinks: [{ title: "Drive", url: "#" }] }
+        // 2. DADOS DOS MÓDULOS
+        const apps = [
+            { id: 1, title: 'Painel Geral', icon: 'settings_input_component', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiPainel.html' },
+            { id: 2, title: 'Gestão de KMs', icon: 'route', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html' },
+            { id: 3, title: 'Abastecimento', icon: 'ev_station', url: 'https://matheusjulio780.github.io/app-marcador-ponto/IcaphiAbastecimento.html' },
+            { id: 4, title: 'Monitoramento', icon: 'monitoring', url: '#' },
+            { id: 5, title: 'Relatórios', icon: 'summarize', url: '#' }
         ];
-        
-        let apps = JSON.parse(localStorage.getItem('icaphi_apps_v15')) || defaultApps;
 
-        function persistData() { 
-            localStorage.setItem('icaphi_apps_v15', JSON.stringify(apps)); 
-            renderMainUI(); 
-            if(document.getElementById('managerModal').classList.contains('active')) renderManagerList();
-        }
+        // 3. RENDERIZAÇÃO DA FLOR & FLUTUAÇÃO
+        function renderBubbles() {
+            const container = document.getElementById('bubble-container');
+            const radius = window.innerWidth < 768 ? 130 : 230; 
+            const angleStep = (2 * Math.PI) / apps.length;
 
-        // ==========================================
-        // 3. MOTOR DE LAYOUT DINÂMICO
-        // ==========================================
-        let isWatchMode = false;
-
-        function applyLayout() {
-            isWatchMode = document.getElementById('toggleWatchMode').checked;
-            const isLite = document.getElementById('toggleLiteMode').checked;
-            const shape = document.getElementById('layShape').value;
-            const dir = document.getElementById('layDir').value;
-            const cols = document.getElementById('layCols').value;
-            
-            document.getElementById('gridSettingsArea').style.opacity = isWatchMode ? '0.3' : '1';
-            document.getElementById('gridSettingsArea').style.pointerEvents = isWatchMode ? 'none' : 'auto';
-
-            if(isLite) document.body.classList.add('lite-mode');
-            else document.body.classList.remove('lite-mode');
-
-            const root = document.documentElement;
-            root.style.setProperty('--grid-cols', cols);
-            
-            if (shape === 'circle') {
-                root.style.setProperty('--card-radius', '50%'); root.style.setProperty('--card-ratio', '1/1');
-                root.style.setProperty('--card-padding', '0'); root.style.setProperty('--label-display', 'none');
-                root.style.setProperty('--icon-size', '4.5rem'); root.style.setProperty('--card-direction', 'column');
-                root.style.setProperty('--icon-margin', '0'); root.style.setProperty('--card-align', 'center');
-                root.style.setProperty('--card-justify', 'center');
-            } else {
-                root.style.setProperty('--card-radius', '24px'); root.style.setProperty('--card-ratio', 'auto');
-                root.style.setProperty('--label-display', 'block'); root.style.setProperty('--icon-size', '3.5rem');
-                if (dir === 'row') {
-                    root.style.setProperty('--card-direction', 'row'); root.style.setProperty('--card-padding', '1.5rem 2rem');
-                    root.style.setProperty('--icon-margin', '0 1rem 0 0'); root.style.setProperty('--card-justify', 'flex-start'); 
-                } else {
-                    root.style.setProperty('--card-direction', 'column'); root.style.setProperty('--card-padding', '2.5rem 1rem');
-                    root.style.setProperty('--icon-margin', '0 0 1rem 0'); root.style.setProperty('--card-justify', 'center');
-                }
-            }
-
-            localStorage.setItem('icaphi_prefs_v15', JSON.stringify({ watch: isWatchMode, isLite, shape, dir, cols }));
-            renderMainUI();
-        }
-
-        function loadLayout() {
-            const prefs = JSON.parse(localStorage.getItem('icaphi_prefs_v15'));
-            if(prefs) {
-                document.getElementById('toggleWatchMode').checked = prefs.watch || false;
-                document.getElementById('toggleLiteMode').checked = prefs.isLite || false;
-                document.getElementById('layShape').value = prefs.shape || 'rect';
-                document.getElementById('layDir').value = prefs.dir || 'column';
-                document.getElementById('layCols').value = prefs.cols || '4';
-            }
-            applyLayout();
-        }
-
-        function renderMainUI() {
-            const gridContainer = document.getElementById('appGridContainer');
-            const watchContainer = document.getElementById('watchViewport');
-            const watchCanvas = document.getElementById('watchCanvas');
-
-            const buildCardHTML = (app, isDraggable, idx) => {
-                let hoverCardHTML = '';
-                if(!isWatchMode) {
-                    if(app.id === 2) { 
-                        hoverCardHTML = `
-                            <div class="data-hover-card" onclick="event.stopPropagation()">
-                                <div class="hc-title"><span class="material-symbols-outlined">route</span> Últimos KMs Finalizados</div>
-                                <div id="kms-list"><div style="text-align:center; font-size:0.8rem; padding: 1rem;">Carregando Firebase...</div></div>
-                            </div>`;
-                    } else if(app.id === 3) { 
-                        hoverCardHTML = `
-                            <div class="data-hover-card" onclick="event.stopPropagation()">
-                                <div class="hc-title"><span class="material-symbols-outlined">local_gas_station</span> Status do Tanque Base</div>
-                                <div style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:800;">
-                                        <span id="abast-estoque">-- L</span> <span style="color:var(--text-muted);" id="abast-cap">/ -- L</span>
-                                    </div>
-                                    <div class="tank-bar-bg"><div class="tank-bar-fill" id="abast-bar"></div></div>
-                                    <div style="font-size:0.8rem; color:var(--accent); margin-top:8px; font-weight:600;" id="abast-hoje">Abastecido Hoje: -- L</div>
-                                </div>
-                                <div class="hc-title" style="font-size:0.9rem;"><span class="material-symbols-outlined" style="font-size:1.1rem;">history</span> Últimos 5 Abastecimentos</div>
-                                <div id="abast-list"><div style="text-align:center; font-size:0.8rem; padding: 1rem;">Carregando...</div></div>
-                            </div>`;
-                    }
-                }
-
-                const dragAttrs = isDraggable ? `draggable="true" ondragstart="handleDragStart(event, ${idx})" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, ${idx})" ondragend="handleDragEnd(event)"` : '';
+            apps.forEach((app, index) => {
+                const angle = (index * angleStep) - (Math.PI / 2); 
+                const offsetX = Math.cos(angle) * radius;
+                const offsetY = Math.sin(angle) * radius;
                 
-                return `
-                    <div class="app-card" ${dragAttrs} onclick="handleCardClick(${app.id})">
-                        <span class="material-symbols-outlined app-icon">${app.icon}</span>
-                        <span class="app-label">${app.title}</span>
-                        ${hoverCardHTML}
-                    </div>`;
-            };
+                // O delay da espiral
+                const entryDelay = index * 0.15; 
+                // O delay aleatório da flutuação contínua (para não mexerem iguais)
+                const floatDuration = 3 + Math.random() * 2; 
 
-            if (isWatchMode) {
-                gridContainer.style.display = 'none';
-                watchContainer.style.display = 'block';
-                watchCanvas.innerHTML = '';
-                apps.forEach(app => { watchCanvas.innerHTML += buildCardHTML(app, false, 0); });
-                resetWatchCanvas();
-            } else {
-                watchContainer.style.display = 'none';
-                gridContainer.style.display = 'flex'; 
-                gridContainer.innerHTML = '';
-                apps.forEach((app, idx) => { gridContainer.innerHTML += buildCardHTML(app, true, idx); });
-                fetchFirebaseData(); 
-            }
+                let contentHTML = `<div style="text-align:center; padding: 1rem; color:var(--text-muted);">Módulo em operação.</div>`;
+                
+                if(app.id === 2) {
+                    contentHTML = `<div id="kms-list"><div style="text-align:center; padding: 2rem;">Sincronizando Firebase...</div></div>`;
+                } else if(app.id === 3) {
+                    contentHTML = `
+                        <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 16px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display:flex; justify-content:space-between; font-weight:800;">
+                                <span id="abast-estoque">-- L</span> <span style="color:var(--text-muted);" id="abast-cap">/ -- L</span>
+                            </div>
+                            <div class="tank-bar-bg"><div class="tank-bar-fill" id="abast-bar"></div></div>
+                            <div style="font-size:0.85rem; color:var(--accent); margin-top:8px; font-weight:700;" id="abast-hoje">Abastecido Hoje: -- L</div>
+                        </div>
+                        <h4 style="font-size:0.9rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase;">Últimos Registros</h4>
+                        <div id="abast-list"><div style="text-align:center; padding: 1rem;">Sincronizando...</div></div>`;
+                }
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.style.marginTop = `${offsetY}px`;
+                bubble.style.marginLeft = `${offsetX}px`;
+                
+                // Injeta Animação de Entrada
+                bubble.style.animation = `spiralIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) backwards ${entryDelay}s`;
+
+                // Após a entrada, injeta a flutuação orgânica sutil
+                setTimeout(() => {
+                    // Impede de sobrescrever se o usuário já estiver com o mouse em cima
+                    if(!bubble.matches(':hover')) {
+                        bubble.style.animation = `floatAnim ${floatDuration}s ease-in-out infinite alternate`;
+                    }
+                }, (1000 + (entryDelay * 1000)));
+
+                bubble.innerHTML = `
+                    <div class="bubble-mini">
+                        <span class="material-symbols-outlined bubble-icon">${app.icon}</span>
+                        <span class="bubble-title-mini">${app.title.replace(' ', '<br>')}</span>
+                    </div>
+                    <div class="bubble-full">
+                        <div class="full-header">
+                            <span class="material-symbols-outlined">${app.icon}</span>
+                            <h3>${app.title}</h3>
+                        </div>
+                        <div class="full-content">
+                            ${contentHTML}
+                        </div>
+                        <button class="action-btn" onclick="window.open('${app.url}', '_blank')">
+                            Acessar Módulo <span class="material-symbols-outlined">arrow_forward</span>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(bubble);
+                
+                // Restaura a flutuação ao tirar o mouse
+                bubble.addEventListener('mouseleave', () => {
+                    bubble.style.animation = `floatAnim ${floatDuration}s ease-in-out infinite alternate`;
+                });
+            });
+
+            fetchFirebaseData();
         }
 
-        // ==========================================
-        // 4. LÓGICA DE BUSCA FIREBASE 
-        // ==========================================
+        // 4. FETCH FIREBASE DATA
         async function fetchFirebaseData() {
-            // PROJETO: ABASTECIMENTO
             try {
                 const confRef = doc(dbAbast, 'configuracoes', 'gerais');
                 const confSnap = await getDoc(confRef);
@@ -599,23 +349,17 @@
                     const cap = confSnap.data().capacidadeTanque || 1; 
                     const perc = Math.min((est / cap) * 100, 100);
                     
-                    const elEstoque = document.getElementById('abast-estoque');
-                    const elCap = document.getElementById('abast-cap');
+                    document.getElementById('abast-estoque').innerText = est + ' L';
+                    document.getElementById('abast-cap').innerText = '/ ' + cap + ' L';
                     const elBar = document.getElementById('abast-bar');
-                    
-                    if(elEstoque) elEstoque.innerText = est + ' L';
-                    if(elCap) elCap.innerText = '/ ' + cap + ' L';
-                    if(elBar) {
-                        elBar.style.width = perc + '%';
-                        if(perc < 20) elBar.style.background = 'linear-gradient(90deg, #991b1b, #ef4444)';
-                    }
+                    elBar.style.width = perc + '%';
+                    if(perc < 20) elBar.style.background = 'linear-gradient(90deg, #991b1b, #ef4444)';
                 }
 
-                const qAbast = query(collection(dbAbast, 'abastecimentos'), orderBy('timestamp', 'desc'), limit(20));
+                const qAbast = query(collection(dbAbast, 'abastecimentos'), orderBy('timestamp', 'desc'), limit(5));
                 const abastSnap = await getDocs(qAbast);
                 let htmlAbast = '';
                 let litrosHoje = 0;
-                let count = 0;
                 const todayStr = new Date().toISOString().split('T')[0];
 
                 abastSnap.forEach(d => {
@@ -623,26 +367,20 @@
                     if(data.timestamp && data.timestamp.startsWith(todayStr)) {
                         litrosHoje += parseFloat(data.litros || 0);
                     }
-                    if(count < 5) {
-                        htmlAbast += `
-                            <div class="hc-row">
-                                <div><span class="hc-highlight">${data.placa || 'N/A'}</span> <span style="font-size:0.75rem; color:var(--text-muted); display:block;">${data.funcionario || ''}</span></div>
-                                <div class="hc-tag">${data.litros || 0} L</div>
-                            </div>`;
-                        count++;
-                    }
+                    htmlAbast += `
+                        <div class="data-row">
+                            <div><span class="data-highlight">${data.placa || 'N/A'}</span> <span style="font-size:0.75rem; color:var(--text-muted); display:block;">${data.funcionario || ''}</span></div>
+                            <div class="data-tag">${data.litros || 0} L</div>
+                        </div>`;
                 });
 
-                const elHoje = document.getElementById('abast-hoje');
-                const elList = document.getElementById('abast-list');
-                if(elHoje) elHoje.innerText = `Abastecido Hoje: ${litrosHoje.toFixed(1)} L`;
-                if(elList) elList.innerHTML = htmlAbast || '<div style="text-align:center; font-size:0.8rem;">Nenhum registro.</div>';
+                document.getElementById('abast-hoje').innerText = `Abastecido Hoje: ${litrosHoje.toFixed(1)} L`;
+                document.getElementById('abast-list').innerHTML = htmlAbast;
 
             } catch(e) { console.error("Erro Firebase Abast:", e); }
 
-            // PROJETO: VIAGENS (KMS)
             try {
-                const qKms = query(collection(dbKm, 'viagens'), orderBy('dataFimCelular', 'desc'), limit(30));
+                const qKms = query(collection(dbKm, 'viagens'), orderBy('dataFimCelular', 'desc'), limit(15));
                 const kmsSnap = await getDocs(qKms);
                 
                 let htmlKms = '';
@@ -653,105 +391,81 @@
                     if(data.status === 'finalizada' && countKms < 5) {
                         const kmRodado = (data.kmFim || 0) - (data.kmInicio || 0);
                         htmlKms += `
-                            <div class="hc-row">
-                                <div><span class="hc-highlight">${data.placa || 'N/A'}</span> <span style="font-size:0.75rem; color:var(--text-muted); display:block;">${data.nome || ''}</span></div>
-                                <div class="hc-tag">${kmRodado} KM</div>
+                            <div class="data-row">
+                                <div><span class="data-highlight">${data.placa || 'N/A'}</span> <span style="font-size:0.75rem; color:var(--text-muted); display:block;">${data.nome || ''}</span></div>
+                                <div class="data-tag">${kmRodado} KM</div>
                             </div>`;
                         countKms++;
                     }
                 });
 
-                const elKmsList = document.getElementById('kms-list');
-                if(elKmsList) elKmsList.innerHTML = htmlKms || '<div style="text-align:center; font-size:0.8rem;">Nenhuma viagem recente.</div>';
+                document.getElementById('kms-list').innerHTML = htmlKms || '<div style="text-align:center; font-size:0.8rem;">Nenhuma viagem recente.</div>';
 
             } catch(e) { console.error("Erro Firebase KMs:", e); }
         }
 
-        // ==========================================
-        // 5. ENGINE DO MODO APPLE WATCH (PAN & ZOOM)
-        // ==========================================
-        const vp = document.getElementById('watchViewport');
-        const canvas = document.getElementById('watchCanvas');
-        let scale = 1, panX = 0, panY = 0, isPanning = false, startX, startY;
-
-        function resetWatchCanvas() { scale = 1; panX = 0; panY = 0; updateTransform(); }
-        function updateTransform() { canvas.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`; }
-
-        vp.addEventListener('wheel', (e) => { if(!isWatchMode) return; e.preventDefault(); scale += e.deltaY * -0.001; scale = Math.min(Math.max(0.5, scale), 2.5); updateTransform(); });
-        vp.addEventListener('mousedown', (e) => { if(!isWatchMode) return; isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY; vp.style.cursor = 'grabbing'; });
-        vp.addEventListener('mousemove', (e) => { if (!isPanning || !isWatchMode) return; panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); });
-        vp.addEventListener('mouseup', () => { isPanning = false; vp.style.cursor = 'grab'; });
-        vp.addEventListener('mouseleave', () => { isPanning = false; vp.style.cursor = 'grab'; });
-
-        // ==========================================
-        // 6. SISTEMA DE DRAG & DROP E CLIQUES
-        // ==========================================
-        let draggedAppIndex = null;
-        window.handleDragStart = function(e, idx) { draggedAppIndex = idx; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-        window.handleDragOver = function(e) { e.preventDefault(); const target = e.target.closest('.app-card'); if (target && !target.classList.contains('dragging')) target.classList.add('drag-over'); }
-        window.handleDragLeave = function(e) { const target = e.target.closest('.app-card'); if (target) target.classList.remove('drag-over'); }
-        window.handleDrop = function(e, targetIdx) { e.preventDefault(); const target = e.target.closest('.app-card'); if (target) target.classList.remove('drag-over'); if (draggedAppIndex !== null && draggedAppIndex !== targetIdx) { const item = apps.splice(draggedAppIndex, 1)[0]; apps.splice(targetIdx, 0, item); persistData(); } }
-        window.handleDragEnd = function(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.app-card').forEach(c => c.classList.remove('drag-over')); draggedAppIndex = null; }
-
-        let currentUrl = '';
-        window.handleCardClick = function(id) {
-            if(draggedAppIndex !== null || isPanning) return; 
-            const app = apps.find(a => a.id === id); if (!app) return;
-            if (app.type === 'folder') {
-                document.getElementById('subModalTitle').innerText = app.title;
-                const container = document.getElementById('subLinksContainer'); container.innerHTML = '';
-                if(app.sublinks.length === 0) container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Vazio.</p>';
-                else app.sublinks.forEach(sub => container.innerHTML += `<button class="btn-3d" onclick="window.open('${sub.url}', '_blank'); closeModal('subLinksModal');"><span class="material-symbols-outlined" style="color:var(--accent);">link</span> ${sub.title}</button>`);
-                abrirModal('subLinksModal');
-            } else {
-                currentUrl = app.url; document.getElementById('modalTitle').innerText = app.title;
-                abrirModal('choiceModal');
-            }
-        }
-        window.goToLink = function() { window.open(currentUrl, '_blank'); closeModal('choiceModal'); }
-        window.openQuickView = function() { closeModal('choiceModal'); document.getElementById('appIframe').src = currentUrl; abrirModal('iframeModal'); }
-        window.closeIframe = function() { closeModal('iframeModal'); setTimeout(()=>document.getElementById('appIframe').src = '', 300); }
-
-        // ==========================================
-        // 7. GERENCIADOR CRUD
-        // ==========================================
-        window.openManager = function() { clearAppForm(); renderManagerList(); abrirModal('managerModal'); }
-        window.toggleFormType = function() { const type = document.getElementById('appType').value; if (type === 'folder') { document.getElementById('singleLinkArea').style.display = 'none'; document.getElementById('subLinksArea').style.display = 'block'; if(document.getElementById('subLinksBuilder').children.length === 0) addNewSublinkRow(); } else { document.getElementById('singleLinkArea').style.display = 'block'; document.getElementById('subLinksArea').style.display = 'none'; } }
-        window.addNewSublinkRow = function(title='', url='') { const rowId = 'row_' + Date.now(); document.getElementById('subLinksBuilder').insertAdjacentHTML('beforeend', `<div class="sublink-row" id="${rowId}"><input type="text" placeholder="Nome" class="sublink-title" value="${title}"><input type="text" placeholder="URL" class="sublink-url" value="${url}"><button class="btn-action btn-danger" onclick="document.getElementById('${rowId}').remove()"><span class="material-symbols-outlined">delete</span></button></div>`); }
-        window.saveAppForm = function() { const idToEdit = document.getElementById('editAppId').value; const title = document.getElementById('appName').value.trim(); const icon = document.getElementById('appIcon').value.trim() || 'widgets'; const type = document.getElementById('appType').value; if(!title) return alert("Nome obrigatório."); let newApp = { id: idToEdit ? parseInt(idToEdit) : Date.now(), title, icon, type }; if (type === 'single') { const url = document.getElementById('appUrl').value.trim(); if(!url) return alert("URL obrigatória."); newApp.url = url; } else { newApp.sublinks = []; document.querySelectorAll('.sublink-row').forEach(row => { const sTitle = row.querySelector('.sublink-title').value.trim(); const sUrl = row.querySelector('.sublink-url').value.trim(); if(sTitle && sUrl) newApp.sublinks.push({ title: sTitle, url: sUrl }); }); if(newApp.sublinks.length === 0) return alert("Insira pelo menos um sub-link."); } if (idToEdit) { const index = apps.findIndex(a => a.id === parseInt(idToEdit)); if(index > -1) apps[index] = newApp; } else { apps.push(newApp); } persistData(); clearAppForm(); }
-        window.editApp = function(id) { const app = apps.find(a => a.id === id); if(!app) return; document.getElementById('editAppId').value = app.id; document.getElementById('managerFormTitle').innerText = "Atualizar Módulo"; document.getElementById('appName').value = app.title; document.getElementById('appIcon').value = app.icon; document.getElementById('appType').value = app.type; document.getElementById('subLinksBuilder').innerHTML = ''; if (app.type === 'single') { document.getElementById('appUrl').value = app.url || ''; } else if(app.sublinks) { app.sublinks.forEach(sub => addNewSublinkRow(sub.title, sub.url)); } toggleFormType(); }
-        window.deleteApp = function(id) { if(confirm("Deseja eliminar este módulo?")) { apps = apps.filter(a => a.id !== id); persistData(); } }
-        function clearAppForm() { document.getElementById('editAppId').value = ''; document.getElementById('managerFormTitle').innerText = "Configurar Módulo"; document.getElementById('appName').value = ''; document.getElementById('appIcon').value = ''; document.getElementById('appType').value = 'single'; document.getElementById('appUrl').value = ''; document.getElementById('subLinksBuilder').innerHTML = ''; toggleFormType(); }
-        function renderManagerList() { const list = document.getElementById('appListContainer'); list.innerHTML = ''; apps.forEach(app => { const infoText = app.type === 'folder' ? `[Menu ${app.sublinks ? app.sublinks.length : 0} rotas]` : '[Direto]'; list.innerHTML += `<div class="app-list-item"><div style="font-weight:600;"><span class="material-symbols-outlined" style="vertical-align:middle; margin-right:5px; color:var(--accent);">${app.icon}</span> ${app.title} <span style="font-size:0.7rem; color:var(--text-muted); margin-left:5px;">${infoText}</span></div><div style="display:flex; gap:0.5rem;"><button class="btn-action" onclick="editApp(${app.id})"><span class="material-symbols-outlined">edit</span></button><button class="btn-action btn-danger" onclick="deleteApp(${app.id})"><span class="material-symbols-outlined">delete</span></button></div></div>`; }); }
-
-        // ==========================================
-        // 8. API DE CLIMA, RELÓGIO E EXPORTAÇÃO
-        // ==========================================
-        window.abrirModal = function(id) { const m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10); }
-        window.closeModal = function(id) { const m = document.getElementById(id); m.classList.remove('active'); setTimeout(() => m.style.display = 'none', 400); }
-        window.closeModalOutside = function(e, id) { if (e.target.id === id) closeModal(id); }
-        window.applyLayout = applyLayout;
-
+        // 5. RELÓGIO & CLIMA
         function getWeekNumber(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d - yearStart) / 86400000) + 1)/7); }
-        function updateClockAndDate() { const now = new Date(); document.getElementById('mainClock').innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}); let dataFull = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }); document.getElementById('fullDateText').innerText = dataFull.charAt(0).toUpperCase() + dataFull.slice(1); document.getElementById('weekNumber').innerText = getWeekNumber(now); }
-        setInterval(updateClockAndDate, 1000); updateClockAndDate();
+        
+        function updateClock() { 
+            const now = new Date(); 
+            document.getElementById('mainClock').innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}); 
+            
+            let dataFull = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }); 
+            document.getElementById('fullDateText').innerText = dataFull.charAt(0).toUpperCase() + dataFull.slice(1); 
+            document.getElementById('weekNumber').innerText = getWeekNumber(now);
+        }
+        setInterval(updateClock, 1000); updateClock();
 
         async function fetchWeather() { 
             try { 
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-22.7856&longitude=-43.3117&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo`); 
                 const data = await res.json(); 
-                document.getElementById('currentTemp').innerText = `${Math.round(data.current_weather.temperature)}°C`; 
+                
                 document.getElementById('tempMin').innerText = `${Math.round(data.daily.temperature_2m_min[0])}°C`; 
                 document.getElementById('tempMax').innerText = `${Math.round(data.daily.temperature_2m_max[0])}°C`; 
-                const code = data.current_weather.weathercode; const animBox = document.getElementById('weatherAnimation'); const desc = document.getElementById('weatherDesc'); const iconSmall = document.getElementById('weatherIconSmall'); 
-                if (code <= 3) { animBox.innerHTML = `<div class="anim-sun"></div>`; desc.innerText = "Tempo Aberto"; iconSmall.innerText = "light_mode"; } else if (code >= 51 && code <= 67 || code >= 80 && code <= 82) { animBox.innerHTML = `<div class="anim-rain"><div class="cloud"></div><div class="drop"></div><div class="drop"></div><div class="drop"></div></div>`; desc.innerText = "Chuvoso"; iconSmall.innerText = "rainy"; } else if (code >= 95) { animBox.innerHTML = `<div class="anim-rain"><div class="cloud" style="background:#475569;"></div><div class="drop" style="background:#fbbf24; width:3px;"></div></div>`; desc.innerText = "Tempestade"; iconSmall.innerText = "thunderstorm"; } else { animBox.innerHTML = `<div class="anim-rain"><div class="cloud"></div></div>`; desc.innerText = "Nublado"; iconSmall.innerText = "cloud"; } 
+                
+                const code = data.current_weather.weathercode; 
+                const animBox = document.getElementById('weatherAnimation'); 
+                const desc = document.getElementById('weatherDesc'); 
+                const iconSmall = document.getElementById('weatherIconSmall'); 
+                
+                if (code <= 3) { 
+                    animBox.innerHTML = `<div class="anim-sun"></div>`; desc.innerText = "Céu Limpo"; iconSmall.innerText = "light_mode"; 
+                } else if (code >= 51 && code <= 67 || code >= 80 && code <= 82) { 
+                    animBox.innerHTML = `<div class="anim-rain"><div class="cloud"></div><div class="drop"></div><div class="drop"></div><div class="drop"></div></div>`; desc.innerText = "Chuvoso"; iconSmall.innerText = "rainy"; 
+                } else if (code >= 95) { 
+                    animBox.innerHTML = `<div class="anim-rain"><div class="cloud" style="background:#475569;"></div><div class="drop" style="background:#fbbf24; width:3px;"></div></div>`; desc.innerText = "Tempestade"; iconSmall.innerText = "thunderstorm"; 
+                } else { 
+                    animBox.innerHTML = `<div class="anim-cloud"></div>`; desc.innerText = "Nublado"; iconSmall.innerText = "cloud"; 
+                } 
             } catch(e) { console.error("Erro na API de clima"); } 
         }
 
-        window.toggleTheme = function() { const isLight = document.documentElement.getAttribute('data-theme') === 'light'; document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light'); document.getElementById('themeIcon').innerText = isLight ? 'light_mode' : 'dark_mode'; localStorage.setItem('theme', isLight ? 'dark' : 'light'); }
-        function initTheme() { const saved = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', saved); document.getElementById('themeIcon').innerText = saved === 'dark' ? 'light_mode' : 'dark_mode'; }
+        window.toggleTheme = function() { 
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light'; 
+            document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light'); 
+            document.getElementById('themeIcon').innerText = isLight ? 'light_mode' : 'dark_mode'; 
+            localStorage.setItem('theme', isLight ? 'dark' : 'light'); 
+        }
 
-        initTheme(); loadLayout(); fetchWeather();
+        function init() { 
+            const saved = localStorage.getItem('theme') || 'dark'; 
+            document.documentElement.setAttribute('data-theme', saved); 
+            document.getElementById('themeIcon').innerText = saved === 'dark' ? 'light_mode' : 'dark_mode'; 
+            
+            renderBubbles();
+            fetchWeather();
+            
+            window.addEventListener('resize', () => {
+                const container = document.getElementById('bubble-container');
+                const bubbles = container.querySelectorAll('.bubble');
+                bubbles.forEach(b => b.remove()); 
+                renderBubbles(); 
+            });
+        }
+
+        init();
     </script>
 </body>
 </html>
