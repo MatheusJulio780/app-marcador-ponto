@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,135 +13,286 @@
 
     <script>
         tailwind.config = { darkMode: 'class' }
+        // Inicializa tema imediatamente para evitar flash branco
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        }
     </script>
     <style>
         .modal-active { display: flex !important; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-[#09090b] text-gray-800 dark:text-zinc-200 min-h-screen p-6 font-sans">
+<body class="bg-gray-50 dark:bg-[#09090b] text-gray-800 dark:text-zinc-200 min-h-screen font-sans selection:bg-teal-500 selection:text-white pb-10 transition-colors duration-300">
 
-    <div class="max-w-4xl mx-auto mb-8 flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-black tracking-tight text-teal-600 dark:text-teal-500 flex items-center gap-2">
-                <i data-lucide="file-spreadsheet" class="w-6 h-6"></i> IMPORTADOR DE ESCALA
-            </h1>
-            <p class="text-sm text-gray-500 dark:text-zinc-500 mt-1">Valide e edite os dados antes de enviar para o sistema.</p>
+    <div class="w-full bg-white dark:bg-[#121214] border-b border-gray-200 dark:border-zinc-800 shadow-sm sticky top-0 z-40 transition-colors duration-300">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/30 shrink-0">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-gray-800 dark:text-zinc-100 uppercase leading-none">Importar Escala</h1>
+                    <p class="text-[10px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Sincronização em Nuvem</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html" target="_blank" class="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-zinc-700 hover:text-teal-600 dark:hover:text-teal-400 transition-colors flex items-center gap-2 shadow-sm border border-gray-200 dark:border-zinc-700">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i> App KMs
+                </a>
+                <button onclick="toggleTheme()" class="w-10 h-10 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-xl hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center shadow-sm border border-gray-200 dark:border-zinc-700">
+                    <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-wider">1. Data da Escala</label>
-                <input type="date" id="data-importacao" class="w-full p-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-sm font-bold">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-wider">2. Arquivo (Excel)</label>
-                <input type="file" id="arquivo-planilha" accept=".xlsx, .xls, .csv" class="w-full p-2.5 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-900/30 dark:file:text-teal-400 hover:file:bg-teal-100 cursor-pointer">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-[#18181b] p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-sm relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 -mt-16 -mr-16 w-48 h-48 bg-teal-500/10 dark:bg-teal-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <h2 class="text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2 mb-6 uppercase tracking-wider">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5 text-teal-500"></i> Importar Planilha
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+                    <div>
+                        <label class="block text-[11px] font-black text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-widest">1. Data Alvo da Escala</label>
+                        <input type="date" id="data-importacao" class="w-full p-3.5 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-sm font-bold transition-all text-gray-700 dark:text-zinc-200 shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-black text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-widest">2. Arquivo (XLSX, CSV)</label>
+                        <input type="file" id="arquivo-planilha" accept=".xlsx, .xls, .csv" class="w-full p-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl text-sm file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-wider file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-900/30 dark:file:text-teal-400 hover:file:bg-teal-100 cursor-pointer text-gray-500 dark:text-zinc-400 transition-all shadow-inner">
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end relative z-10">
+                    <button onclick="lerPlanilha()" class="w-full sm:w-auto px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-teal-600 dark:hover:bg-teal-500 text-white font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-xl shadow-gray-900/20 dark:shadow-teal-900/20">
+                        <i data-lucide="search" class="w-4 h-4"></i> Analisar Dados
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="mt-6 flex justify-end">
-            <button onclick="lerPlanilha()" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 transition"><i data-lucide="search" class="w-4 h-4"></i> LER E REVISAR PLANILHA</button>
+
+        <div class="space-y-4">
+            <h2 class="text-sm font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider px-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-orange-500"></i> Auditoria de Metas
+            </h2>
+            <div id="historico-container" class="flex flex-col gap-3">
+                <div class="p-4 bg-white dark:bg-[#18181b] rounded-2xl border border-gray-200 dark:border-zinc-800 flex items-center justify-center text-sm font-bold text-gray-400 animate-pulse">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Puxando histórico do servidor...
+                </div>
+            </div>
         </div>
+
     </div>
 
-    <div id="modal-revisao" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white dark:bg-[#18181b] w-full max-w-5xl rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[90vh]">
+    <div id="modal-revisao" class="hidden fixed inset-0 bg-gray-900/60 dark:bg-black/80 z-50 items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white dark:bg-[#18181b] w-full max-w-5xl rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform scale-100 transition-transform">
             
-            <div class="p-5 border-b border-gray-200 dark:border-zinc-800 flex justify-between items-center bg-gray-50 dark:bg-[#121214] rounded-t-2xl">
-                <h2 class="text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2"><i data-lucide="edit-3" class="w-5 h-5 text-teal-500"></i> REVISÃO DE DADOS</h2>
-                <button onclick="fecharModal()" class="text-gray-400 hover:text-red-500 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="p-5 sm:p-6 border-b border-gray-200 dark:border-zinc-800 flex justify-between items-center bg-gray-50 dark:bg-[#121214]">
+                <div>
+                    <h2 class="text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider">
+                        <i data-lucide="edit-3" class="w-5 h-5 text-teal-500"></i> Validação da Escala
+                    </h2>
+                    <p class="text-[11px] text-gray-500 dark:text-zinc-400 font-bold mt-1">Revise as informações antes de enviar para os motoristas.</p>
+                </div>
+                <button onclick="fecharModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-zinc-800 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <div class="p-0 overflow-y-auto flex-1">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-100 dark:bg-zinc-900/50 text-[10px] uppercase font-black text-gray-500 dark:text-zinc-500 tracking-wider sticky top-0 z-10">
+            <div class="p-0 overflow-y-auto flex-1 custom-scrollbar overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[700px]">
+                    <thead class="bg-gray-100 dark:bg-zinc-900/80 text-[10px] uppercase font-black text-gray-500 dark:text-zinc-500 tracking-wider sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th class="p-3 border-b dark:border-zinc-800">Placa</th>
-                            <th class="p-3 border-b dark:border-zinc-800">Motorista</th>
-                            <th class="p-3 border-b dark:border-zinc-800 w-24">Meta KM</th>
-                            <th class="p-3 border-b dark:border-zinc-800">Rota</th>
-                            <th class="p-3 border-b dark:border-zinc-800">Perfil</th>
-                            <th class="p-3 border-b dark:border-zinc-800 text-center">Ação</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800 w-32">Placa</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800">Motorista</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800 w-28 text-center">Meta KM</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800">Rota</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800 w-28">Perfil</th>
+                            <th class="p-4 border-b border-gray-200 dark:border-zinc-800 w-16 text-center">Ação</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-revisao-body" class="text-xs font-medium divide-y divide-gray-100 dark:divide-zinc-800/50">
+                    <tbody id="tabela-revisao-body" class="text-xs font-bold divide-y divide-gray-100 dark:divide-zinc-800/50">
                         </tbody>
                 </table>
             </div>
 
-            <div class="p-5 border-t border-gray-200 dark:border-zinc-800 flex justify-between items-center bg-gray-50 dark:bg-[#121214] rounded-b-2xl">
-                <span id="contador-linhas" class="text-xs font-bold text-gray-500 dark:text-zinc-400">0 registros encontrados</span>
-                <button onclick="confirmarEnvio()" class="px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition shadow-lg shadow-teal-500/20"><i data-lucide="upload-cloud" class="w-5 h-5"></i> CONFIRMAR E ENVIAR</button>
+            <div class="p-5 sm:p-6 border-t border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 dark:bg-[#121214]">
+                <div class="flex flex-col items-center sm:items-start">
+                    <span id="contador-linhas" class="text-sm font-black text-teal-600 dark:text-teal-500">0 Registros</span>
+                    <span class="text-[10px] text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Prontos para envio</span>
+                </div>
+                <button onclick="confirmarEnvio()" class="w-full sm:w-auto px-8 py-3.5 bg-teal-600 hover:bg-teal-500 text-white font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-lg shadow-teal-600/30">
+                    <i data-lucide="cloud-lightning" class="w-4 h-4"></i> Sincronizar Agora
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="main-loader" class="hidden fixed inset-0 bg-black/90 z-[100] items-center justify-center flex-col">
-        <i data-lucide="loader-2" class="w-12 h-12 text-teal-500 animate-spin mb-4"></i>
-        <span id="texto-loader" class="text-white font-bold tracking-widest uppercase text-sm">Processando...</span>
+    <div id="main-loader" class="hidden fixed inset-0 bg-white/80 dark:bg-black/80 z-[100] items-center justify-center flex-col backdrop-blur-md">
+        <div class="w-16 h-16 relative flex items-center justify-center mb-4">
+            <div class="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-zinc-800"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-teal-500 border-t-transparent animate-spin"></div>
+            <i data-lucide="cloud" class="w-6 h-6 text-teal-600 dark:text-teal-400 absolute"></i>
+        </div>
+        <span id="texto-loader" class="text-gray-800 dark:text-zinc-100 font-black tracking-widest uppercase text-sm">Processando...</span>
     </div>
 
     <script>
         // ==========================================
-        // CONFIGURAÇÃO FIREBASE
+        // CONFIGURAÇÃO FIREBASE E TEMA
         // ==========================================
         const firebaseConfig = {
-            // INSIRA SUAS CHAVES AQUI
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_DOMAIN",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_BUCKET",
-            messagingSenderId: "SEU_SENDER",
-            appId: "SEU_APP_ID"
+            apiKey: "AIzaSyA3TviypEfSWilOz4_3TqJP1JwB7LIa49U",
+            authDomain: "marcador-ponto-digital.firebaseapp.com",
+            projectId: "marcador-ponto-digital",
+            storageBucket: "marcador-ponto-digital.firebasestorage.app",
+            messagingSenderId: "774324665760",
+            appId: "1:774324665760:web:2c4e9c42eaaa347e32b8c5",
+            measurementId: "G-W1QEJTCS1B"
         };
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
-        // Inicializa ícones
-        lucide.createIcons();
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
 
-        // Utilitários globais
+        document.addEventListener('DOMContentLoaded', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+            
+            el('data-importacao').value = getLocalYMD(new Date());
+            carregarHistorico(); // Inicia a carga da auditoria
+        });
+
         const el = (id) => document.getElementById(id);
         const formatarPlaca = (p) => p.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
-        function mostrarLoader(msg) {
-            el('texto-loader').innerText = msg;
-            el('main-loader').classList.add('modal-active');
-        }
+        function mostrarLoader(msg) { el('texto-loader').innerText = msg; el('main-loader').classList.add('modal-active'); }
+        function esconderLoader() { el('main-loader').classList.remove('modal-active'); }
+        function fecharModal() { el('modal-revisao').classList.remove('modal-active'); }
+        function removerLinha(btn) { btn.closest('tr').remove(); atualizarContador(); }
+        function atualizarContador() { el('contador-linhas').innerText = `${document.querySelectorAll('#tabela-revisao-body tr').length} Registros`; }
 
-        function esconderLoader() {
-            el('main-loader').classList.remove('modal-active');
-        }
-
-        function fecharModal() {
-            el('modal-revisao').classList.remove('modal-active');
-        }
-
-        function removerLinha(btn) {
-            btn.closest('tr').remove();
-            atualizarContador();
-        }
-
-        function atualizarContador() {
-            const qtd = document.querySelectorAll('#tabela-revisao-body tr').length;
-            el('contador-linhas').innerText = `${qtd} registros prontos para envio`;
+        function getLocalYMD(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
         // ==========================================
-        // ETAPA 1: LER EXCEL E RENDERIZAR TABELA
+        // AUDITORIA: TOTAL vs META vs SEM META
+        // ==========================================
+        async function carregarHistorico() {
+            const diasAlvo = [];
+            let dataAtual = new Date();
+
+            // Pega os últimos 5 dias ignorando o domingo (0)
+            while (diasAlvo.length < 5) {
+                if (dataAtual.getDay() !== 0) {
+                    diasAlvo.push({
+                        dbStr: getLocalYMD(dataAtual),
+                        display: `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}`,
+                        nomeDia: dataAtual.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()
+                    });
+                }
+                dataAtual.setDate(dataAtual.getDate() - 1);
+            }
+
+            const container = el('historico-container');
+
+            try {
+                // Alavancagem: Puxamos as últimas 300 viagens para não criar index. 
+                // É rápido e resolve a conta localmente.
+                const snap = await db.collection('viagens').orderBy('dataInicio', 'desc').limit(300).get();
+                
+                const contagem = {};
+                snap.forEach(doc => {
+                    const v = doc.data();
+                    if (!v.dataInicioCelular) return;
+                    
+                    const dStr = v.dataInicioCelular.split('T')[0];
+                    if (!contagem[dStr]) contagem[dStr] = { total: 0, comMeta: 0 };
+                    
+                    contagem[dStr].total++;
+                    if (v.metaKm && v.metaKm > 0) contagem[dStr].comMeta++;
+                });
+
+                let htmlBuffer = '';
+
+                diasAlvo.forEach(dia => {
+                    const stats = contagem[dia.dbStr] || { total: 0, comMeta: 0 };
+                    const semMeta = stats.total - stats.comMeta;
+                    
+                    // Lógica visual da barra de progresso
+                    let pct = 0;
+                    let barraCor = 'bg-red-500';
+                    if (stats.total > 0) {
+                        pct = (stats.comMeta / stats.total) * 100;
+                        if (pct >= 90) barraCor = 'bg-emerald-500';
+                        else if (pct >= 50) barraCor = 'bg-orange-500';
+                    }
+
+                    htmlBuffer += `
+                    <div class="bg-white dark:bg-[#18181b] p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-[#202024]">
+                        <div class="flex items-center gap-4 w-full">
+                            
+                            <div class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-[#121214] border border-gray-200 dark:border-zinc-800/50 flex flex-col items-center justify-center text-gray-800 dark:text-zinc-200 shrink-0">
+                                <span class="text-[9px] font-black uppercase text-gray-400 dark:text-zinc-500 leading-none">${dia.nomeDia}</span>
+                                <span class="text-sm font-black leading-tight mt-0.5">${dia.display}</span>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex justify-between items-end mb-1.5">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-zinc-500">TOTAL: <b class="text-gray-800 dark:text-gray-200 text-xs">${stats.total}</b></span>
+                                    <div class="flex gap-3 text-[10px] font-black uppercase tracking-widest">
+                                        <span class="text-teal-600 dark:text-teal-400">C/ Meta: <b class="text-sm">${stats.comMeta}</b></span>
+                                        <span class="text-red-500 dark:text-red-400 opacity-80">S/ Meta: <b class="text-sm">${semMeta}</b></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="w-full h-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                                    <div class="h-full ${barraCor} rounded-full transition-all duration-1000" style="width: ${stats.total > 0 ? pct : 0}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+                container.innerHTML = htmlBuffer;
+
+            } catch (err) {
+                console.error("Erro histórico:", err);
+                container.innerHTML = `<div class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold text-center border border-red-200 dark:border-red-900/30">Falha ao carregar banco.</div>`;
+            }
+        }
+
+        // ==========================================
+        // IMPORTAÇÃO E SALVAMENTO
         // ==========================================
         window.lerPlanilha = function () {
             const file = el('arquivo-planilha').files[0];
             const dataData = el('data-importacao').value;
 
-            if (!dataData) return alert("⚠️ Selecione a data da escala!");
-            if (!file) return alert("⚠️ Selecione o arquivo da planilha!");
+            if (!dataData) return alert("⚠️ Selecione a data alvo da escala!");
+            if (!file) return alert("⚠️ Selecione o arquivo XLSX ou CSV da planilha!");
 
-            mostrarLoader("Lendo arquivo Excel...");
+            mostrarLoader("Analisando Estrutura...");
 
             const reader = new FileReader();
             reader.onload = function (e) {
@@ -163,18 +314,14 @@
                             if (placa && placa.length >= 7) {
                                 const kmMetaRaw = parseFloat(row['O']);
                                 if (!isNaN(kmMetaRaw)) {
-                                    const nomeMot = String(row['G'] || '');
-                                    const rotaCit = String(row['J'] || '');
-                                    const perfilVeic = String(row['E'] || 'PADRÃO').toUpperCase();
-
                                     htmlBuffer += `
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition border-b border-transparent dark:border-zinc-800/50">
-                                        <td class="p-2"><input type="text" value="${placa}" class="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-zinc-700 p-1.5 rounded outline-none font-black uppercase text-center" data-field="placa"></td>
-                                        <td class="p-2"><input type="text" value="${nomeMot}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase" data-field="nome"></td>
-                                        <td class="p-2"><input type="number" step="0.1" value="${kmMetaRaw}" class="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-zinc-700 p-1.5 rounded outline-none font-bold text-center text-teal-600 dark:text-teal-400" data-field="meta"></td>
-                                        <td class="p-2"><input type="text" value="${rotaCit}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase text-[10px]" data-field="rota"></td>
-                                        <td class="p-2"><input type="text" value="${perfilVeic}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase text-[10px]" data-field="perfil"></td>
-                                        <td class="p-2 text-center"><button onclick="removerLinha(this)" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors group">
+                                        <td class="p-3"><input type="text" value="${placa}" class="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-zinc-700 p-2 rounded-lg outline-none font-black uppercase text-center text-xs text-gray-800 dark:text-zinc-100 shadow-inner" data-field="placa"></td>
+                                        <td class="p-3"><input type="text" value="${String(row['G'] || '')}" class="w-full bg-transparent border-b-2 border-transparent focus:border-teal-500 p-1.5 outline-none uppercase text-xs font-bold text-gray-700 dark:text-zinc-300 transition-colors" data-field="nome"></td>
+                                        <td class="p-3"><input type="number" step="0.1" value="${kmMetaRaw}" class="w-full bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 p-2 rounded-lg outline-none font-black text-center text-teal-700 dark:text-teal-400 text-xs shadow-inner" data-field="meta"></td>
+                                        <td class="p-3"><input type="text" value="${String(row['J'] || '')}" class="w-full bg-transparent border-b-2 border-transparent focus:border-teal-500 p-1.5 outline-none uppercase text-[10px] font-bold text-gray-600 dark:text-zinc-400 transition-colors" data-field="rota"></td>
+                                        <td class="p-3"><input type="text" value="${String(row['E'] || 'PADRÃO').toUpperCase()}" class="w-full bg-transparent border-b-2 border-transparent focus:border-teal-500 p-1.5 outline-none uppercase text-[10px] font-bold text-gray-600 dark:text-zinc-400 transition-colors" data-field="perfil"></td>
+                                        <td class="p-3 text-center"><button onclick="removerLinha(this)" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-50 group-hover:opacity-100" title="Remover da importação"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
                                     </tr>`;
                                     contador++;
                                 }
@@ -184,40 +331,34 @@
 
                     if (contador === 0) {
                         esconderLoader();
-                        return alert("❌ Nenhuma placa com KM na coluna 'O' foi encontrada.");
+                        return alert("❌ Nenhuma placa com KM na coluna 'O' foi encontrada. Verifique o layout da planilha.");
                     }
 
                     el('tabela-revisao-body').innerHTML = htmlBuffer;
                     lucide.createIcons();
                     atualizarContador();
-                    
                     esconderLoader();
                     el('modal-revisao').classList.add('modal-active');
 
                 } catch (err) {
                     esconderLoader();
-                    alert("Erro ao processar planilha: " + err.message);
+                    alert("Erro Crítico ao processar planilha: " + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);
         };
 
-        // ==========================================
-        // ETAPA 2: CAPTURAR EDIÇÕES E ENVIAR AO FIREBASE
-        // ==========================================
         window.confirmarEnvio = async function () {
             const dataData = el('data-importacao').value;
-            if (!dataData) return alert("Data da escala perdida!");
+            if (!dataData) return alert("Erro: Data da escala foi perdida!");
 
             const linhas = document.querySelectorAll('#tabela-revisao-body tr');
-            if (linhas.length === 0) return alert("A tabela está vazia!");
+            if (linhas.length === 0) return alert("A tabela de revisão está vazia!");
 
-            mostrarLoader("Sincronizando com o Servidor...");
+            mostrarLoader("Sincronizando Escala na Nuvem...");
 
             try {
                 const batch = db.batch();
-                
-                // Cálculo de TTL (Meio-dia do dia seguinte à escala)
                 const partesData = dataData.split('-');
                 const ano = parseInt(partesData[0]);
                 const mes = parseInt(partesData[1]) - 1; 
@@ -226,28 +367,21 @@
                 const dataExpiracao = new Date(dataAlvoFimDoDia.getTime() + (12 * 60 * 60 * 1000));
 
                 let importadosReal = 0;
-                let dicionarioAtualizacao = {}; // Para atualizar os que já estão em curso
+                let dicionarioAtualizacao = {};
 
-                // Varre a tabela capturando as edições feitas pelo funcionário
                 linhas.forEach(tr => {
                     const placa = formatarPlaca(tr.querySelector('[data-field="placa"]').value);
-                    const nome = tr.querySelector('[data-field="nome"]').value.toUpperCase();
                     const meta = parseFloat(tr.querySelector('[data-field="meta"]').value) || 0;
-                    const rota = tr.querySelector('[data-field="rota"]').value.toUpperCase();
-                    const perfil = tr.querySelector('[data-field="perfil"]').value.toUpperCase();
-
+                    
                     if (placa && meta > 0) {
+                        const nome = tr.querySelector('[data-field="nome"]').value.toUpperCase();
+                        const rota = tr.querySelector('[data-field="rota"]').value.toUpperCase();
+                        const perfil = tr.querySelector('[data-field="perfil"]').value.toUpperCase();
                         const docId = `${placa}_${dataData}`;
-                        const docRef = db.collection('escala_standby').doc(docId);
 
-                        batch.set(docRef, {
-                            placa: placa,
-                            nome: nome,
-                            metaKm: meta,
-                            rotaCidades: rota,
-                            perfilVeiculo: perfil,
-                            dataReferencia: dataData,
-                            expireAt: dataExpiracao
+                        batch.set(db.collection('escala_standby').doc(docId), {
+                            placa: placa, nome: nome, metaKm: meta, rotaCidades: rota, perfilVeiculo: perfil,
+                            dataReferencia: dataData, expireAt: dataExpiracao
                         }, { merge: true });
 
                         dicionarioAtualizacao[placa] = { metaKm: meta, rotaCidades: rota, perfilVeiculo: perfil, nome: nome };
@@ -255,10 +389,6 @@
                     }
                 });
 
-                // ==========================================
-                // ATUALIZAÇÃO REVERSA (Viagens já abertas hoje)
-                // ==========================================
-                // Como não temos a variável global do Admin, buscamos os em_curso direto no Firebase
                 const viagensAtivasSnap = await db.collection('viagens').where('status', 'in', ['em_curso']).get();
                 let promessasUpdate = [];
                 let ativasAtualizadas = 0;
@@ -266,30 +396,26 @@
                 viagensAtivasSnap.forEach(doc => {
                     const v = doc.data();
                     const dStr = v.dataInicioCelular ? v.dataInicioCelular.split('T')[0] : '';
-                    
                     if (dStr === dataData && dicionarioAtualizacao[v.placa]) {
                         const info = dicionarioAtualizacao[v.placa];
                         let updates = { metaKm: info.metaKm, rotaCidades: info.rotaCidades, perfilVeiculo: info.perfilVeiculo };
                         if (!v.nome || v.nome.trim() === '') updates.nome = info.nome;
-                        
                         promessasUpdate.push(db.collection('viagens').doc(doc.id).update(updates));
                         ativasAtualizadas++;
                     }
                 });
 
-                // Dispara lote e atualizações
                 await Promise.all([ batch.commit(), ...promessasUpdate ]);
 
                 esconderLoader();
                 fecharModal();
-                alert(`🚀 ESCALA SINCRONIZADA COM SUCESSO!\n\n${importadosReal} metas enviadas para o banco.\n${ativasAtualizadas} viagens que já estavam rodando foram atualizadas.`);
+                alert(`🚀 ESCALA SINCRONIZADA COM SUCESSO!\n\n${importadosReal} metas no Standby.\n${ativasAtualizadas} viagens em curso atualizadas.`);
                 
-                // Limpa os campos para evitar envio duplicado acidental
                 el('arquivo-planilha').value = "";
                 el('tabela-revisao-body').innerHTML = "";
+                carregarHistorico();
 
             } catch (erro) {
-                console.error(erro);
                 esconderLoader();
                 alert("Falha Crítica na sincronização: " + erro.message);
             }
