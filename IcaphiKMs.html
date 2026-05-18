@@ -3734,9 +3734,6 @@
                 return;
             }
 
-            // ==========================================
-            // VALIDAÇÃO DE PLACA (Padrão Antigo e Mercosul)
-            // ==========================================
             const placaFormatada = plac.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
             const regexPlaca = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
             if (!regexPlaca.test(placaFormatada)) {
@@ -3744,9 +3741,6 @@
                 return;
             }
 
-            // ==========================================
-            // IDENTIFICAÇÃO AUTOMÁTICA DE ORIGEM E VERSÃO
-            // ==========================================
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
 
@@ -3756,9 +3750,6 @@
 
             const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
 
-            // ==========================================
-            // LOADER VISUAL
-            // ==========================================
             const loader = document.getElementById('main-loader');
             const textoLoader = document.getElementById('texto-loader');
 
@@ -3780,19 +3771,29 @@
                 } catch (e) { }
 
                 // ==========================================
-                // RESGATE DA ESCALA EM STANDBY (BUSCA DIRETA POR PLACA)
+                // RESGATE DA ESCALA EM STANDBY (COM DATA ALVO)
                 // ==========================================
                 if (textoLoader) textoLoader.innerText = "Verificando escala ativa...";
                 
                 let metaExtraida = 0;
                 let perfilExtraido = "PADRÃO";
                 let servicoExtraido = servico; 
+                let rotaExtraida = "N/D"; 
+
+                // Constrói a string YYYY-MM-DD do dia atual do motorista
+                const hoje = new Date();
+                const ano = hoje.getFullYear();
+                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                const dia = String(hoje.getDate()).padStart(2, '0');
+                const dataHojeStr = `${ano}-${mes}-${dia}`;
+                
+                // Monta o ID Composto (Ex: SHE1H15_2026-05-18)
+                const standbyId = `${placaFormatada}_${dataHojeStr}`;
 
                 try {
                     if (navigator.onLine) {
-                        // Busca o documento usando apenas a placa como chave de pesquisa
                         const escalaDoc = await Promise.race([
-                            db.collection('escala_standby').doc(placaFormatada).get(),
+                            db.collection('escala_standby').doc(standbyId).get({ source: 'server' }),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Standby")), 5000))
                         ]);
                         
@@ -3800,13 +3801,14 @@
                             const dadosEscala = escalaDoc.data();
                             metaExtraida = dadosEscala.metaKm || 0;
                             perfilExtraido = dadosEscala.perfilVeiculo || "PADRÃO";
+                            rotaExtraida = dadosEscala.rotaCidades || "N/D";
                             if (dadosEscala.tipoServico && dadosEscala.tipoServico !== 'N/D') {
                                 servicoExtraido = dadosEscala.tipoServico;
                             }
                         }
                     }
                 } catch (e) {
-                    console.warn("Fila de standby indisponível. Avançando sem meta.");
+                    console.warn("Fila de standby indisponível ou em timeout. Avançando com dados locais.");
                 }
 
                 if (textoLoader) textoLoader.innerText = "Salvando no sistema central...";
@@ -3822,6 +3824,7 @@
                     origem: origemIdentificada,
                     metaKm: metaExtraida,
                     perfilVeiculo: perfilExtraido,
+                    rotaCidades: rotaExtraida, 
                     dataInicioCelular: new Date().toISOString()
                 };
 
@@ -4365,11 +4368,22 @@
                     let novasPrevisoesImportadas = {};
                     let importados = 0;
 
-                    // ==========================================
-                    // NOVO: PREPARA O LOTE PARA SALVAR NO STANDBY DO FIREBASE
-                    // ==========================================
                     const batch = db.batch(); 
-                    const dataExpiracao = new Date(Date.now() + (20 * 60 * 60 * 1000)); // TTL de 20 horas
+                    
+                    // ==========================================
+                    // NOVO: CÁLCULO INTELIGENTE DE EXPIRAÇÃO (TTL)
+                    // ==========================================
+                    // Pega a data selecionada no painel (ex: "2026-05-19")
+                    const partesData = dataData.split('-');
+                    const ano = parseInt(partesData[0]);
+                    const mes = parseInt(partesData[1]) - 1; // Mês no JS começa em 0
+                    const dia = parseInt(partesData[2]);
+                    
+                    // Define o fim do dia alvo (23:59:59)
+                    const dataAlvoFimDoDia = new Date(ano, mes, dia, 23, 59, 59);
+                    
+                    // Adiciona 12 horas de tolerância (Expira ao meio-dia do dia seguinte da escala)
+                    const dataExpiracao = new Date(dataAlvoFimDoDia.getTime() + (12 * 60 * 60 * 1000));
 
                     workbook.SheetNames.forEach(sheetName => {
                         const worksheet = workbook.Sheets[sheetName];
@@ -4379,13 +4393,18 @@
                             const placaRaw = String(row['D'] || '').trim();
                             const placa = formatarPlaca(placaRaw);
 
-                            if (placa && placa.length === 7) {
+                            if (placa && placa.length >= 7) {
                                 const kmMetaRaw = parseFloat(row['O']);
                                 if (!isNaN(kmMetaRaw)) {
                                     
                                     const nomeMot = String(row['G'] || '');
                                     const rotaCit = String(row['J'] || '');
                                     const perfilVeic = String(row['E'] || 'PADRÃO').toUpperCase();
+
+                                    const placaIdPuro = placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                                    
+                                    // ID COMPOSTO: PLACA + DATA (Ex: SHE1H15_2026-05-19)
+                                    const docId = `${placaIdPuro}_${dataData}`;
 
                                     novasPrevisoesImportadas[placa] = {
                                         nome: nomeMot,
@@ -4395,10 +4414,9 @@
                                         dataEscala: dataData
                                     };
 
-                                    // Grava na coleção 'escala_standby' usando a PLACA como ID único
-                                    const docRef = db.collection('escala_standby').doc(placa);
+                                    const docRef = db.collection('escala_standby').doc(docId);
                                     batch.set(docRef, {
-                                        placa: placa,
+                                        placa: placaIdPuro,
                                         nome: nomeMot,
                                         metaKm: kmMetaRaw,
                                         rotaCidades: rotaCit,
@@ -4424,7 +4442,6 @@
                     let promessas = [];
                     let viagensAtualizadas = 0;
 
-                    // Atualiza as viagens que JÁ ESTÃO ABERTAS na tela
                     todasViagens.forEach(v => {
                         const dObj = safeDate(v.dataInicio);
                         const dStr = dObj ? getLocalYMD(dObj) : '';
@@ -4445,9 +4462,6 @@
                         }
                     });
 
-                    // ==========================================
-                    // EXECUTA TUDO AO MESMO TEMPO (Atualizar ativas + Salvar Standby)
-                    // ==========================================
                     await Promise.all([
                         batch.commit(), 
                         ...promessas
@@ -4455,7 +4469,7 @@
 
                     el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
 
-                    alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas enviadas para o STANDBY (App do Motorista).\n${viagensAtualizadas} cards existentes atualizados na tela.`);
+                    alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas enviadas para o STANDBY.\nEstão agendadas para o dia ${dataData} e serão apagadas sozinhas após o uso ou vencimento.`);
                     el('modal-importacao').classList.remove('active');
 
                 } catch (err) {
