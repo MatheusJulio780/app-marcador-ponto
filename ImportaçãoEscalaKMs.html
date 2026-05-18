@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importador de Escala | Logística</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        .modal-active { display: flex !important; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-[#09090b] text-gray-800 dark:text-zinc-200 min-h-screen p-6 font-sans">
+
+    <div class="max-w-4xl mx-auto mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-black tracking-tight text-teal-600 dark:text-teal-500 flex items-center gap-2">
+                <i data-lucide="file-spreadsheet" class="w-6 h-6"></i> IMPORTADOR DE ESCALA
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-zinc-500 mt-1">Valide e edite os dados antes de enviar para o sistema.</p>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-wider">1. Data da Escala</label>
+                <input type="date" id="data-importacao" class="w-full p-3 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-sm font-bold">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-wider">2. Arquivo (Excel)</label>
+                <input type="file" id="arquivo-planilha" accept=".xlsx, .xls, .csv" class="w-full p-2.5 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-900/30 dark:file:text-teal-400 hover:file:bg-teal-100 cursor-pointer">
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button onclick="lerPlanilha()" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 transition"><i data-lucide="search" class="w-4 h-4"></i> LER E REVISAR PLANILHA</button>
+        </div>
+    </div>
+
+    <div id="modal-revisao" class="hidden fixed inset-0 bg-black/80 z-50 items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-[#18181b] w-full max-w-5xl rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <div class="p-5 border-b border-gray-200 dark:border-zinc-800 flex justify-between items-center bg-gray-50 dark:bg-[#121214] rounded-t-2xl">
+                <h2 class="text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2"><i data-lucide="edit-3" class="w-5 h-5 text-teal-500"></i> REVISÃO DE DADOS</h2>
+                <button onclick="fecharModal()" class="text-gray-400 hover:text-red-500 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100 dark:bg-zinc-900/50 text-[10px] uppercase font-black text-gray-500 dark:text-zinc-500 tracking-wider sticky top-0 z-10">
+                        <tr>
+                            <th class="p-3 border-b dark:border-zinc-800">Placa</th>
+                            <th class="p-3 border-b dark:border-zinc-800">Motorista</th>
+                            <th class="p-3 border-b dark:border-zinc-800 w-24">Meta KM</th>
+                            <th class="p-3 border-b dark:border-zinc-800">Rota</th>
+                            <th class="p-3 border-b dark:border-zinc-800">Perfil</th>
+                            <th class="p-3 border-b dark:border-zinc-800 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-revisao-body" class="text-xs font-medium divide-y divide-gray-100 dark:divide-zinc-800/50">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="p-5 border-t border-gray-200 dark:border-zinc-800 flex justify-between items-center bg-gray-50 dark:bg-[#121214] rounded-b-2xl">
+                <span id="contador-linhas" class="text-xs font-bold text-gray-500 dark:text-zinc-400">0 registros encontrados</span>
+                <button onclick="confirmarEnvio()" class="px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-black uppercase tracking-wider rounded-xl flex items-center gap-2 transition shadow-lg shadow-teal-500/20"><i data-lucide="upload-cloud" class="w-5 h-5"></i> CONFIRMAR E ENVIAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-loader" class="hidden fixed inset-0 bg-black/90 z-[100] items-center justify-center flex-col">
+        <i data-lucide="loader-2" class="w-12 h-12 text-teal-500 animate-spin mb-4"></i>
+        <span id="texto-loader" class="text-white font-bold tracking-widest uppercase text-sm">Processando...</span>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+            // INSIRA SUAS CHAVES AQUI
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_DOMAIN",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_BUCKET",
+            messagingSenderId: "SEU_SENDER",
+            appId: "SEU_APP_ID"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Inicializa ícones
+        lucide.createIcons();
+
+        // Utilitários globais
+        const el = (id) => document.getElementById(id);
+        const formatarPlaca = (p) => p.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+        function mostrarLoader(msg) {
+            el('texto-loader').innerText = msg;
+            el('main-loader').classList.add('modal-active');
+        }
+
+        function esconderLoader() {
+            el('main-loader').classList.remove('modal-active');
+        }
+
+        function fecharModal() {
+            el('modal-revisao').classList.remove('modal-active');
+        }
+
+        function removerLinha(btn) {
+            btn.closest('tr').remove();
+            atualizarContador();
+        }
+
+        function atualizarContador() {
+            const qtd = document.querySelectorAll('#tabela-revisao-body tr').length;
+            el('contador-linhas').innerText = `${qtd} registros prontos para envio`;
+        }
+
+        // ==========================================
+        // ETAPA 1: LER EXCEL E RENDERIZAR TABELA
+        // ==========================================
+        window.lerPlanilha = function () {
+            const file = el('arquivo-planilha').files[0];
+            const dataData = el('data-importacao').value;
+
+            if (!dataData) return alert("⚠️ Selecione a data da escala!");
+            if (!file) return alert("⚠️ Selecione o arquivo da planilha!");
+
+            mostrarLoader("Lendo arquivo Excel...");
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    let htmlBuffer = '';
+                    let contador = 0;
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
+
+                        json.forEach(row => {
+                            const placaRaw = String(row['D'] || '').trim();
+                            const placa = formatarPlaca(placaRaw);
+
+                            if (placa && placa.length >= 7) {
+                                const kmMetaRaw = parseFloat(row['O']);
+                                if (!isNaN(kmMetaRaw)) {
+                                    const nomeMot = String(row['G'] || '');
+                                    const rotaCit = String(row['J'] || '');
+                                    const perfilVeic = String(row['E'] || 'PADRÃO').toUpperCase();
+
+                                    htmlBuffer += `
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition border-b border-transparent dark:border-zinc-800/50">
+                                        <td class="p-2"><input type="text" value="${placa}" class="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-zinc-700 p-1.5 rounded outline-none font-black uppercase text-center" data-field="placa"></td>
+                                        <td class="p-2"><input type="text" value="${nomeMot}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase" data-field="nome"></td>
+                                        <td class="p-2"><input type="number" step="0.1" value="${kmMetaRaw}" class="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-zinc-700 p-1.5 rounded outline-none font-bold text-center text-teal-600 dark:text-teal-400" data-field="meta"></td>
+                                        <td class="p-2"><input type="text" value="${rotaCit}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase text-[10px]" data-field="rota"></td>
+                                        <td class="p-2"><input type="text" value="${perfilVeic}" class="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 p-1 outline-none uppercase text-[10px]" data-field="perfil"></td>
+                                        <td class="p-2 text-center"><button onclick="removerLinha(this)" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+                                    </tr>`;
+                                    contador++;
+                                }
+                            }
+                        });
+                    });
+
+                    if (contador === 0) {
+                        esconderLoader();
+                        return alert("❌ Nenhuma placa com KM na coluna 'O' foi encontrada.");
+                    }
+
+                    el('tabela-revisao-body').innerHTML = htmlBuffer;
+                    lucide.createIcons();
+                    atualizarContador();
+                    
+                    esconderLoader();
+                    el('modal-revisao').classList.add('modal-active');
+
+                } catch (err) {
+                    esconderLoader();
+                    alert("Erro ao processar planilha: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // ==========================================
+        // ETAPA 2: CAPTURAR EDIÇÕES E ENVIAR AO FIREBASE
+        // ==========================================
+        window.confirmarEnvio = async function () {
+            const dataData = el('data-importacao').value;
+            if (!dataData) return alert("Data da escala perdida!");
+
+            const linhas = document.querySelectorAll('#tabela-revisao-body tr');
+            if (linhas.length === 0) return alert("A tabela está vazia!");
+
+            mostrarLoader("Sincronizando com o Servidor...");
+
+            try {
+                const batch = db.batch();
+                
+                // Cálculo de TTL (Meio-dia do dia seguinte à escala)
+                const partesData = dataData.split('-');
+                const ano = parseInt(partesData[0]);
+                const mes = parseInt(partesData[1]) - 1; 
+                const dia = parseInt(partesData[2]);
+                const dataAlvoFimDoDia = new Date(ano, mes, dia, 23, 59, 59);
+                const dataExpiracao = new Date(dataAlvoFimDoDia.getTime() + (12 * 60 * 60 * 1000));
+
+                let importadosReal = 0;
+                let dicionarioAtualizacao = {}; // Para atualizar os que já estão em curso
+
+                // Varre a tabela capturando as edições feitas pelo funcionário
+                linhas.forEach(tr => {
+                    const placa = formatarPlaca(tr.querySelector('[data-field="placa"]').value);
+                    const nome = tr.querySelector('[data-field="nome"]').value.toUpperCase();
+                    const meta = parseFloat(tr.querySelector('[data-field="meta"]').value) || 0;
+                    const rota = tr.querySelector('[data-field="rota"]').value.toUpperCase();
+                    const perfil = tr.querySelector('[data-field="perfil"]').value.toUpperCase();
+
+                    if (placa && meta > 0) {
+                        const docId = `${placa}_${dataData}`;
+                        const docRef = db.collection('escala_standby').doc(docId);
+
+                        batch.set(docRef, {
+                            placa: placa,
+                            nome: nome,
+                            metaKm: meta,
+                            rotaCidades: rota,
+                            perfilVeiculo: perfil,
+                            dataReferencia: dataData,
+                            expireAt: dataExpiracao
+                        }, { merge: true });
+
+                        dicionarioAtualizacao[placa] = { metaKm: meta, rotaCidades: rota, perfilVeiculo: perfil, nome: nome };
+                        importadosReal++;
+                    }
+                });
+
+                // ==========================================
+                // ATUALIZAÇÃO REVERSA (Viagens já abertas hoje)
+                // ==========================================
+                // Como não temos a variável global do Admin, buscamos os em_curso direto no Firebase
+                const viagensAtivasSnap = await db.collection('viagens').where('status', 'in', ['em_curso']).get();
+                let promessasUpdate = [];
+                let ativasAtualizadas = 0;
+
+                viagensAtivasSnap.forEach(doc => {
+                    const v = doc.data();
+                    const dStr = v.dataInicioCelular ? v.dataInicioCelular.split('T')[0] : '';
+                    
+                    if (dStr === dataData && dicionarioAtualizacao[v.placa]) {
+                        const info = dicionarioAtualizacao[v.placa];
+                        let updates = { metaKm: info.metaKm, rotaCidades: info.rotaCidades, perfilVeiculo: info.perfilVeiculo };
+                        if (!v.nome || v.nome.trim() === '') updates.nome = info.nome;
+                        
+                        promessasUpdate.push(db.collection('viagens').doc(doc.id).update(updates));
+                        ativasAtualizadas++;
+                    }
+                });
+
+                // Dispara lote e atualizações
+                await Promise.all([ batch.commit(), ...promessasUpdate ]);
+
+                esconderLoader();
+                fecharModal();
+                alert(`🚀 ESCALA SINCRONIZADA COM SUCESSO!\n\n${importadosReal} metas enviadas para o banco.\n${ativasAtualizadas} viagens que já estavam rodando foram atualizadas.`);
+                
+                // Limpa os campos para evitar envio duplicado acidental
+                el('arquivo-planilha').value = "";
+                el('tabela-revisao-body').innerHTML = "";
+
+            } catch (erro) {
+                console.error(erro);
+                esconderLoader();
+                alert("Falha Crítica na sincronização: " + erro.message);
+            }
+        };
+    </script>
+</body>
+</html>
