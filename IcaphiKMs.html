@@ -3780,29 +3780,19 @@
                 } catch (e) { }
 
                 // ==========================================
-                // RESGATE DA ESCALA EM STANDBY
+                // RESGATE DA ESCALA EM STANDBY (BUSCA DIRETA POR PLACA)
                 // ==========================================
-                if (textoLoader) textoLoader.innerText = "Verificando escala do dia...";
+                if (textoLoader) textoLoader.innerText = "Verificando escala ativa...";
                 
                 let metaExtraida = 0;
                 let perfilExtraido = "PADRÃO";
                 let servicoExtraido = servico; 
 
-                // Monta a data no formato YYYY-MM-DD para bater com o ID gerado no painel Admin
-                const hoje = new Date();
-                const ano = hoje.getFullYear();
-                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-                const dia = String(hoje.getDate()).padStart(2, '0');
-                const dataHojeStr = `${ano}-${mes}-${dia}`;
-                
-                const standbyId = `${placaFormatada}_${dataHojeStr}`;
-
                 try {
-                    // Tenta buscar apenas se houver conexão com a internet
                     if (navigator.onLine) {
-                        // Timeout de segurança: 5 segundos no máximo para não prender o motorista
+                        // Busca o documento usando apenas a placa como chave de pesquisa
                         const escalaDoc = await Promise.race([
-                            db.collection('escala_standby').doc(standbyId).get(),
+                            db.collection('escala_standby').doc(placaFormatada).get(),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Standby")), 5000))
                         ]);
                         
@@ -3810,19 +3800,17 @@
                             const dadosEscala = escalaDoc.data();
                             metaExtraida = dadosEscala.metaKm || 0;
                             perfilExtraido = dadosEscala.perfilVeiculo || "PADRÃO";
-                            // Se a planilha especificou o serviço, sobrescreve o que ele escolheu na tela
                             if (dadosEscala.tipoServico && dadosEscala.tipoServico !== 'N/D') {
                                 servicoExtraido = dadosEscala.tipoServico;
                             }
                         }
                     }
                 } catch (e) {
-                    console.warn("Standby ignorado (Offline ou Timeout). Iniciando sem meta.");
+                    console.warn("Fila de standby indisponível. Avançando sem meta.");
                 }
 
                 if (textoLoader) textoLoader.innerText = "Salvando no sistema central...";
 
-                // Objeto da viagem atualizado com as informações interceptadas da escala
                 const novaViagem = {
                     tipoServico: servicoExtraido,
                     nome: motor.toUpperCase(),
@@ -4377,6 +4365,12 @@
                     let novasPrevisoesImportadas = {};
                     let importados = 0;
 
+                    // ==========================================
+                    // NOVO: PREPARA O LOTE PARA SALVAR NO STANDBY DO FIREBASE
+                    // ==========================================
+                    const batch = db.batch(); 
+                    const dataExpiracao = new Date(Date.now() + (20 * 60 * 60 * 1000)); // TTL de 20 horas
+
                     workbook.SheetNames.forEach(sheetName => {
                         const worksheet = workbook.Sheets[sheetName];
                         const json = XLSX.utils.sheet_to_json(worksheet, { header: "A", defval: "" });
@@ -4388,13 +4382,30 @@
                             if (placa && placa.length === 7) {
                                 const kmMetaRaw = parseFloat(row['O']);
                                 if (!isNaN(kmMetaRaw)) {
+                                    
+                                    const nomeMot = String(row['G'] || '');
+                                    const rotaCit = String(row['J'] || '');
+                                    const perfilVeic = String(row['E'] || 'PADRÃO').toUpperCase();
+
                                     novasPrevisoesImportadas[placa] = {
-                                        nome: String(row['G'] || ''),
+                                        nome: nomeMot,
                                         metaKm: kmMetaRaw,
-                                        rota: String(row['J'] || ''),
-                                        perfil: String(row['E'] || 'PADRÃO').toUpperCase(),
+                                        rota: rotaCit,
+                                        perfil: perfilVeic,
                                         dataEscala: dataData
                                     };
+
+                                    // Grava na coleção 'escala_standby' usando a PLACA como ID único
+                                    const docRef = db.collection('escala_standby').doc(placa);
+                                    batch.set(docRef, {
+                                        placa: placa,
+                                        nome: nomeMot,
+                                        metaKm: kmMetaRaw,
+                                        rotaCidades: rotaCit,
+                                        perfilVeiculo: perfilVeic,
+                                        dataReferencia: dataData,
+                                        expireAt: dataExpiracao
+                                    }, { merge: true });
                                 }
                             }
                         });
@@ -4413,6 +4424,7 @@
                     let promessas = [];
                     let viagensAtualizadas = 0;
 
+                    // Atualiza as viagens que JÁ ESTÃO ABERTAS na tela
                     todasViagens.forEach(v => {
                         const dObj = safeDate(v.dataInicio);
                         const dStr = dObj ? getLocalYMD(dObj) : '';
@@ -4433,11 +4445,17 @@
                         }
                     });
 
-                    await Promise.all(promessas);
+                    // ==========================================
+                    // EXECUTA TUDO AO MESMO TEMPO (Atualizar ativas + Salvar Standby)
+                    // ==========================================
+                    await Promise.all([
+                        batch.commit(), 
+                        ...promessas
+                    ]);
 
                     el('main-loader').classList.add('opacity-0'); setTimeout(() => el('main-loader').classList.add('hidden'), 300);
 
-                    alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas lidas da planilha.\n${viagensAtualizadas} cards existentes na tela foram atualizados AGORA MESMO.`);
+                    alert(`✅ IMPORTAÇÃO PERFEITA!\n\n${importados} metas enviadas para o STANDBY (App do Motorista).\n${viagensAtualizadas} cards existentes atualizados na tela.`);
                     el('modal-importacao').classList.remove('active');
 
                 } catch (err) {
@@ -4447,6 +4465,7 @@
             };
             reader.readAsArrayBuffer(file);
         }
+
         // FUNÇÃO NOVA: Limpa todo o formulário para iniciar uma nova viagem do zero
         window.resetarFormularios = function () {
             // 1. Limpa os campos de texto e números
