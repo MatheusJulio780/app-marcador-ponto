@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Importador de Escala</title>
+
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/3648/3648543.png" type="image/png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -62,7 +65,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
                     <div>
-                        <label class="block text-[11px] font-black text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-widest">1. Data da Escala</label>
+                        <label class="block text-[11px] font-black text-gray-500 dark:text-zinc-400 mb-2 uppercase tracking-widest">1. Data Alvo da Escala</label>
                         <input type="date" id="data-importacao" class="w-full p-3.5 bg-gray-50 dark:bg-[#121214] border border-gray-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none text-sm font-bold transition-all text-gray-700 dark:text-zinc-200 shadow-inner">
                     </div>
                     <div>
@@ -72,7 +75,7 @@
                 </div>
                 <div class="mt-8 flex justify-end relative z-10">
                     <button onclick="lerPlanilha()" class="w-full sm:w-auto px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-teal-600 dark:hover:bg-teal-500 text-white font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-xl shadow-gray-900/20 dark:shadow-teal-900/20">
-                        <i data-lucide="search" class="w-4 h-4"></i> Importar Escala
+                        <i data-lucide="search" class="w-4 h-4"></i> Analisar Dados
                     </button>
                 </div>
             </div>
@@ -80,7 +83,7 @@
 
         <div class="space-y-4">
             <h2 class="text-sm font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider px-2">
-                <i data-lucide="bar-chart-2" class="w-4 h-4 text-orange-500"></i> Revisão de viagens com a escala
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-orange-500"></i> Auditoria de Metas
             </h2>
             <div id="historico-container" class="flex flex-col gap-3">
                 <div class="p-4 bg-white dark:bg-[#18181b] rounded-2xl border border-gray-200 dark:border-zinc-800 flex items-center justify-center text-sm font-bold text-gray-400 animate-pulse">
@@ -289,7 +292,7 @@
             const file = el('arquivo-planilha').files[0];
             const dataData = el('data-importacao').value;
 
-            if (!dataData) return alert("⚠️ Selecione a data da escala!");
+            if (!dataData) return alert("⚠️ Selecione a data alvo da escala!");
             if (!file) return alert("⚠️ Selecione o arquivo XLSX ou CSV da planilha!");
 
             mostrarLoader("Analisando Estrutura...");
@@ -359,6 +362,7 @@
 
             try {
                 const batch = db.batch();
+                
                 const partesData = dataData.split('-');
                 const ano = parseInt(partesData[0]);
                 const mes = parseInt(partesData[1]) - 1; 
@@ -379,6 +383,7 @@
                         const perfil = tr.querySelector('[data-field="perfil"]').value.toUpperCase();
                         const docId = `${placa}_${dataData}`;
 
+                        // 1. Grava no Standby para motoristas que ainda vão abrir viagem
                         batch.set(db.collection('escala_standby').doc(docId), {
                             placa: placa, nome: nome, metaKm: meta, rotaCidades: rota, perfilVeiculo: perfil,
                             dataReferencia: dataData, expireAt: dataExpiracao
@@ -389,30 +394,43 @@
                     }
                 });
 
-                const viagensAtivasSnap = await db.collection('viagens').where('status', 'in', ['em_curso']).get();
+                // ==========================================
+                // ATUALIZAÇÃO REVERSA (Qualquer status do dia alvo)
+                // ==========================================
+                // Varre o banco buscando viagens exatas do dia da importação (ignorando o status)
+                const viagensDoDiaSnap = await db.collection('viagens')
+                    .where('dataInicioCelular', '>=', dataData)
+                    .where('dataInicioCelular', '<=', dataData + '\uf8ff')
+                    .get();
+
                 let promessasUpdate = [];
                 let ativasAtualizadas = 0;
 
-                viagensAtivasSnap.forEach(doc => {
+                viagensDoDiaSnap.forEach(doc => {
                     const v = doc.data();
-                    const dStr = v.dataInicioCelular ? v.dataInicioCelular.split('T')[0] : '';
-                    if (dStr === dataData && dicionarioAtualizacao[v.placa]) {
+                    
+                    if (dicionarioAtualizacao[v.placa]) {
                         const info = dicionarioAtualizacao[v.placa];
                         let updates = { metaKm: info.metaKm, rotaCidades: info.rotaCidades, perfilVeiculo: info.perfilVeiculo };
+                        
                         if (!v.nome || v.nome.trim() === '') updates.nome = info.nome;
+                        
                         promessasUpdate.push(db.collection('viagens').doc(doc.id).update(updates));
                         ativasAtualizadas++;
                     }
                 });
 
+                // Executa a injeção no Standby + Atualização das Viagens Passadas simultaneamente
                 await Promise.all([ batch.commit(), ...promessasUpdate ]);
 
                 esconderLoader();
                 fecharModal();
-                alert(`🚀 ESCALA SINCRONIZADA COM SUCESSO!\n\n${importadosReal} metas no Standby.\n${ativasAtualizadas} viagens em curso atualizadas.`);
+                alert(`🚀 ESCALA SINCRONIZADA COM SUCESSO!\n\n${importadosReal} metas no Standby.\n${ativasAtualizadas} viagens do dia ${dataData} atualizadas retroativamente.`);
                 
                 el('arquivo-planilha').value = "";
                 el('tabela-revisao-body').innerHTML = "";
+                
+                // Recarrega os gráficos
                 carregarHistorico();
 
             } catch (erro) {
