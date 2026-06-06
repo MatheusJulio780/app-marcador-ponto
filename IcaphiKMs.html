@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V10</span>
+                        Matheus Julio V10.5</span>
                 </div>
             </div>
 
@@ -1847,7 +1847,7 @@
 
             dadosPlanilha.forEach(linha => {
                 if (!linha.placa) return;
-                
+
                 // Cria um ID único fundindo Placa e Data (ex: SHE1H15_2026-05-18)
                 const docId = `${linha.placa.toUpperCase()}_${hojeStr}`;
                 const docRef = db.collection('escala_standby').doc(docId);
@@ -2326,7 +2326,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.traduzirGpsParaEndereco = async function(coordenadas, elementoId) {
+        window.traduzirGpsParaEndereco = async function (coordenadas, elementoId) {
             if (!coordenadas) return;
 
             const container = document.getElementById(elementoId);
@@ -2338,10 +2338,10 @@
 
             try {
                 const [lat, lng] = coordenadas.split(',');
-                
+
                 // API gratuita do OpenStreetMap (Não exige cartão de crédito ou chave de API)
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
-                
+
                 // Força o retorno do endereço em Português
                 const response = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
                 const data = await response.json();
@@ -2350,7 +2350,7 @@
                     const rua = data.address.road || data.address.pedestrian || 'Rua não mapeada';
                     const bairro = data.address.suburb || data.address.neighbourhood || '';
                     const cidade = data.address.city || data.address.town || data.address.municipality || 'Cidade desconhecida';
-                    
+
                     // Monta a string limpa
                     let enderecoFormatado = rua;
                     if (bairro) enderecoFormatado += `, ${bairro}`;
@@ -2442,8 +2442,21 @@
 
             let acoes = '';
             if (modoEdit) {
+                // ==========================================
+                // NOVO: BOTÕES DE STATUS RÁPIDO NO MODO EDIÇÃO
+                // ==========================================
                 acoes = `
                 <div class="p-3 bg-gray-50 dark:bg-[#121214] border-t border-gray-100 dark:border-zinc-800 flex flex-col gap-2">
+                    
+                    <div class="flex gap-2 mb-1 border-b border-gray-200 dark:border-zinc-800/50 pb-2">
+                        <button onclick="alterarStatusDiretoCard('${v.id}', 'finalizada')" class="flex-1 py-2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black rounded-lg text-[9px] uppercase tracking-widest flex items-center justify-center transition hover:bg-emerald-200 hover:scale-[1.02] border border-emerald-200 dark:border-emerald-900/30">
+                           Mudar p/ Finalizada
+                        </button>
+                        <button onclick="alterarStatusDiretoCard('${v.id}', 'cancelada')" class="flex-1 py-2 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 font-black rounded-lg text-[9px] uppercase tracking-widest flex items-center justify-center transition hover:bg-red-200 hover:scale-[1.02] border border-red-200 dark:border-red-900/30">
+                           Mudar p/ Cancelada
+                        </button>
+                    </div>
+
                     <button onclick="abrirEdicao('${v.id}')" class="w-full py-2.5 bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition hover:bg-orange-200 hover:scale-[1.02]"><i data-lucide="pencil" class="w-4 h-4"></i> EDITAR</button>
                     <button onclick="window.excluirViagemAdmin('${v.id}')" class="w-full py-2.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition hover:bg-red-200 hover:scale-[1.02]"><i data-lucide="trash" class="w-4 h-4"></i> EXCLUIR</button>
                 </div>`;
@@ -2484,8 +2497,8 @@
             // ==========================================
             // LÓGICA DE AUDITORIA GEOCODING (ON DEMAND)
             // ==========================================
-            let blocoEndIni = v.locInicio 
-                ? `<div id="box-end-ini-${v.id}" class="mt-1"><button onclick="window.traduzirGpsParaEndereco('${v.locInicio}', 'box-end-ini-${v.id}')" class="px-3 py-1.5 bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-[9px] font-black text-gray-600 dark:text-zinc-300 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition flex items-center gap-1.5 w-fit active:scale-95"><i data-lucide="satellite" class="w-3 h-3"></i> TRADUZIR GPS</button></div>` 
+            let blocoEndIni = v.locInicio
+                ? `<div id="box-end-ini-${v.id}" class="mt-1"><button onclick="window.traduzirGpsParaEndereco('${v.locInicio}', 'box-end-ini-${v.id}')" class="px-3 py-1.5 bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-[9px] font-black text-gray-600 dark:text-zinc-300 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition flex items-center gap-1.5 w-fit active:scale-95"><i data-lucide="satellite" class="w-3 h-3"></i> TRADUZIR GPS</button></div>`
                 : `<span class="dark:text-zinc-500 text-[11px] italic mt-1 block">Sem GPS registrado</span>`;
 
             let blocoEndFim = '';
@@ -3774,11 +3787,11 @@
                 // RESGATE DA ESCALA EM STANDBY (COM DATA ALVO)
                 // ==========================================
                 if (textoLoader) textoLoader.innerText = "Verificando escala ativa...";
-                
+
                 let metaExtraida = 0;
                 let perfilExtraido = "PADRÃO";
-                let servicoExtraido = servico; 
-                let rotaExtraida = "N/D"; 
+                let servicoExtraido = servico;
+                let rotaExtraida = "N/D";
 
                 // Constrói a string YYYY-MM-DD do dia atual do motorista
                 const hoje = new Date();
@@ -3786,7 +3799,7 @@
                 const mes = String(hoje.getMonth() + 1).padStart(2, '0');
                 const dia = String(hoje.getDate()).padStart(2, '0');
                 const dataHojeStr = `${ano}-${mes}-${dia}`;
-                
+
                 // Monta o ID Composto (Ex: SHE1H15_2026-05-18)
                 const standbyId = `${placaFormatada}_${dataHojeStr}`;
 
@@ -3796,7 +3809,7 @@
                             db.collection('escala_standby').doc(standbyId).get({ source: 'server' }),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Standby")), 5000))
                         ]);
-                        
+
                         if (escalaDoc && escalaDoc.exists) {
                             const dadosEscala = escalaDoc.data();
                             metaExtraida = dadosEscala.metaKm || 0;
@@ -3824,7 +3837,7 @@
                     origem: origemIdentificada,
                     metaKm: metaExtraida,
                     perfilVeiculo: perfilExtraido,
-                    rotaCidades: rotaExtraida, 
+                    rotaCidades: rotaExtraida,
                     dataInicioCelular: new Date().toISOString()
                 };
 
@@ -4157,6 +4170,7 @@
 
                 let foraDoRaio = false;
                 let momentoFora = '';
+                let isApoio = false; // VARIÁVEL DE EXCEÇÃO CRIADA
 
                 // SOLUÇÃO DO CONGELAMENTO: Trava a busca online em 5 segundos.
                 let docReq = null;
@@ -4171,6 +4185,9 @@
 
                 if (docReq && docReq.exists) {
                     const vData = docReq.data();
+
+                    // DETECTA SE É APOIO (Usando toLowerCase para evitar falha por letra maiúscula/minúscula)
+                    isApoio = (vData.tipoServico && vData.tipoServico.toLowerCase() === 'apoio');
 
                     // --- 1. AUDITORIA DE KM ---
                     const kmIniReal = Number(vData.kmInicio);
@@ -4195,7 +4212,8 @@
                     if (loader) { loader.classList.remove('hidden'); loader.style.display = 'flex'; }
 
                     // --- 2. AUDITORIA DE PERÍMETRO (GEOFENCING) ---
-                    if (vData.locInicio) {
+                    // TRAVA ADICIONADA: Só executa a validação se NÃO for Apoio
+                    if (vData.locInicio && !isApoio) {
                         const [iLat, iLng] = vData.locInicio.split(',').map(Number);
                         if (window.calcularDistanciaKM(bLat, bLng, iLat, iLng) > raioMax) {
                             foraDoRaio = true;
@@ -4204,7 +4222,8 @@
                     }
                 }
 
-                if (locFim) {
+                // TRAVA ADICIONADA: Só executa a validação se NÃO for Apoio
+                if (locFim && !isApoio) {
                     const [fLat, fLng] = locFim.split(',').map(Number);
                     if (window.calcularDistanciaKM(bLat, bLng, fLat, fLng) > raioMax) {
                         foraDoRaio = true;
@@ -4330,11 +4349,34 @@
 
         window.salvarEdicaoCompleta = function () {
             const id = el('edit-id').value;
-            db.collection('viagens').doc(id).update({
-                placa: formatarPlaca(el('edit-placa').value), nome: el('edit-motorista').value, perfilVeiculo: el('edit-perfil').value,
-                metaKm: Number(el('edit-meta').value), kmInicio: Number(el('edit-km-ini').value), kmFim: el('edit-km-fim').value ? Number(el('edit-km-fim').value) : null,
-                fotoInicio: el('edit-foto-ini-b64').value, fotoFim: el('edit-foto-fim-b64').value
-            }).then(() => { el('modal-editar-admin').classList.remove('active'); alert("Viagem atualizada com sucesso!"); }).catch(e => { console.error(e); alert("Erro ao salvar edição."); });
+            const statusElement = el('edit-status'); // Busca o select no HTML
+
+            let updates = {
+                placa: formatarPlaca(el('edit-placa').value),
+                nome: el('edit-motorista').value,
+                perfilVeiculo: el('edit-perfil').value,
+                metaKm: Number(el('edit-meta').value),
+                kmInicio: Number(el('edit-km-ini').value),
+                kmFim: el('edit-km-fim').value ? Number(el('edit-km-fim').value) : null,
+                fotoInicio: el('edit-foto-ini-b64').value,
+                fotoFim: el('edit-foto-fim-b64').value
+            };
+
+            // Se existir o select de status no modal, inclui no payload de atualização
+            if (statusElement && statusElement.value) {
+                updates.status = statusElement.value;
+            }
+
+            db.collection('viagens').doc(id).update(updates)
+                .then(() => {
+                    el('modal-editar-admin').classList.remove('active');
+                    alert("Viagem atualizada com sucesso!");
+                    if (typeof renderizarAdmin === 'function') renderizarAdmin(); // Atualiza a UI imediatamente
+                })
+                .catch(e => {
+                    console.error(e);
+                    alert("Erro ao salvar edição.");
+                });
         };
 
         window.finalizarPeloAdmin = function () {
@@ -4368,8 +4410,8 @@
                     let novasPrevisoesImportadas = {};
                     let importados = 0;
 
-                    const batch = db.batch(); 
-                    
+                    const batch = db.batch();
+
                     // ==========================================
                     // NOVO: CÁLCULO INTELIGENTE DE EXPIRAÇÃO (TTL)
                     // ==========================================
@@ -4378,10 +4420,10 @@
                     const ano = parseInt(partesData[0]);
                     const mes = parseInt(partesData[1]) - 1; // Mês no JS começa em 0
                     const dia = parseInt(partesData[2]);
-                    
+
                     // Define o fim do dia alvo (23:59:59)
                     const dataAlvoFimDoDia = new Date(ano, mes, dia, 23, 59, 59);
-                    
+
                     // Adiciona 12 horas de tolerância (Expira ao meio-dia do dia seguinte da escala)
                     const dataExpiracao = new Date(dataAlvoFimDoDia.getTime() + (12 * 60 * 60 * 1000));
 
@@ -4396,13 +4438,13 @@
                             if (placa && placa.length >= 7) {
                                 const kmMetaRaw = parseFloat(row['O']);
                                 if (!isNaN(kmMetaRaw)) {
-                                    
+
                                     const nomeMot = String(row['G'] || '');
                                     const rotaCit = String(row['J'] || '');
                                     const perfilVeic = String(row['E'] || 'PADRÃO').toUpperCase();
 
                                     const placaIdPuro = placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                                    
+
                                     // ID COMPOSTO: PLACA + DATA (Ex: SHE1H15_2026-05-19)
                                     const docId = `${placaIdPuro}_${dataData}`;
 
@@ -4463,7 +4505,7 @@
                     });
 
                     await Promise.all([
-                        batch.commit(), 
+                        batch.commit(),
                         ...promessas
                     ]);
 
@@ -5885,6 +5927,30 @@
                 };
             };
             reader.readAsDataURL(file);
+        };
+
+        window.alterarStatusDiretoCard = async function (idViagem, novoStatus) {
+            if (!confirm(`Confirma a alteração drástica desta viagem para o status: ${novoStatus.toUpperCase()}?`)) return;
+
+            try {
+                document.body.style.cursor = 'wait';
+
+                // Atualiza no banco
+                await db.collection('viagens').doc(idViagem).update({
+                    status: novoStatus
+                });
+
+                // Recarrega a tela para o Admin
+                if (typeof renderizarAdmin === 'function') {
+                    renderizarAdmin();
+                }
+
+            } catch (erro) {
+                console.error("Erro ao forçar status:", erro);
+                alert("Falha ao tentar mudar o status no banco.");
+            } finally {
+                document.body.style.cursor = 'default';
+            }
         };
 
     </script>
