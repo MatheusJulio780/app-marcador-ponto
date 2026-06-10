@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <style>
         /* ================= PALETAS DE CORES ================= */
         :root {
@@ -1212,6 +1213,94 @@
                 text-transform: uppercase;
             }
         }
+
+        /* ================= EDITOR DE LAYOUT (EXCEL MODE) ================= */
+        .table-wrapper table,
+        .table-wrapper table th,
+        .table-wrapper table td {
+            font-size: var(--tb-font-size, 12px) !important;
+            transition: font-size 0.2s ease;
+        }
+
+        th,
+        td {
+            position: relative;
+            /* Base absoluta para os resizers */
+        }
+
+        .resizer-col {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+            z-index: 20;
+        }
+
+        .resizer-col:hover,
+        .resizer-col.resizing {
+            background-color: var(--accent);
+            opacity: 0.5;
+        }
+
+        .resizer-row {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            cursor: row-resize;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .resizer-row:hover,
+        .resizer-row.resizing {
+            background-color: var(--accent);
+            opacity: 0.5;
+        }
+
+        body.is-resizing {
+            user-select: none;
+        }
+
+        /* 1. COMPACTAÇÃO DA BARRA DE PROGRESSO */
+        .progress-container {
+            height: 12px !important; /* Afina a barra */
+            margin-bottom: 8px !important; /* Reduz espaço inferior */
+        }
+        #lbl-progresso-txt {
+            font-size: 11px !important; /* Diminui a fonte do texto */
+            margin-bottom: 4px !important;
+        }
+        #progress-truck {
+            font-size: 14px !important; /* Diminui o caminhãozinho */
+            top: -16px !important;
+        }
+
+        /* 2. COMPACTAÇÃO DO CONTAINER DOS CARDS */
+        #painel-summary {
+            gap: 6px !important; /* Reduz a distância entre os cards */
+            margin-bottom: 10px !important;
+        }
+
+        /* 3. CORES INTELIGENTES NA SIDEBAR (Ícones) */
+        /* Monitoramento (Azul) */
+        .menu-item[data-target="view-monitoramento"] i { color: #3b82f6; }
+        /* Notas Fiscais (Verde) */
+        .menu-item[data-target="view-notas"] i { color: #10b981; }
+        /* Prestação de Contas (Laranja) */
+        .menu-item[data-target="view-canhotos"] i { color: #f59e0b; }
+        /* Configurações (Roxo) */
+        .menu-item i.ph-gear { color: #8b5cf6; }
+        
+        /* Ajuste do hover para manter a harmonia */
+        .menu-item.active i, .menu-item:hover i {
+            filter: brightness(1.2);
+        }
+        
     </style>
 </head>
 
@@ -1469,16 +1558,29 @@
         </section>
 
         <section id="view-ocorrencias" class="view-section">
-            <header class="header">
-                <h2><i class="ph ph-warning" style="color:var(--danger);"></i> Gerador de Ocorrências</h2>
+            <header class="header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2><i class="ph ph-warning" style="color:var(--danger);"></i> Gestão de Ocorrências (Outlook)</h2>
+
+                <div id="auth-microsoft-container"
+                    style="display: flex; align-items: center; gap: 10px; background: var(--bg-panel); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--border-color);">
+                    <div id="ms-user-info" style="font-size: 12px; font-weight: 700; color: var(--text-muted);">
+                        Desconectado</div>
+                    <button id="btn-ms-login" class="btn btn-sm btn-primary" style="border-radius: 15px;">Login
+                        Outlook</button>
+                    <button id="btn-ms-logout" class="btn btn-sm btn-danger"
+                        style="display: none; border-radius: 15px;">Sair</button>
+                </div>
             </header>
+
             <div class="content-container" style="flex-direction: row; gap: 20px;">
                 <div
-                    style="flex: 1; background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                    style="flex: 1; background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; flex-direction: column;">
+
                     <div style="display:flex; gap: 10px; margin-bottom: 15px;">
                         <input type="date" id="oco-data" style="flex:1;">
                         <button class="btn btn-primary" id="btn-buscar-oco">Buscar Frota</button>
                     </div>
+
                     <div style="margin-bottom: 15px;">
                         <label
                             style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Veículo
@@ -1487,6 +1589,7 @@
                             <option value="">-- Selecione a Data Primeiro --</option>
                         </select>
                     </div>
+
                     <div style="margin-bottom: 15px;">
                         <label
                             style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Notas
@@ -1494,6 +1597,7 @@
                         <select id="oco-nota" multiple
                             style="width:100%; border: 1px solid var(--border-color); border-radius: 6px;"></select>
                     </div>
+
                     <div style="margin-bottom: 15px;">
                         <label
                             style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Motivo
@@ -1501,31 +1605,48 @@
                         <input type="text" id="oco-motivo" placeholder="Ex: Produto Descongelado, Cliente ausente..."
                             style="width:100%;">
                     </div>
+
                     <div style="margin-bottom: 15px;">
                         <label
-                            style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Ação
-                            Corretiva / Observação:</label>
-                        <textarea id="oco-obs" rows="3"
-                            style="width:100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-panel); color: var(--text-main); font-family: inherit; font-size: 0.85rem;"
-                            placeholder="Detalhes do ocorrido..."></textarea>
+                            style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Mensagem
+                            / Ação Corretiva:</label>
+                        <textarea id="oco-obs" rows="4"
+                            style="width:100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-main); color: var(--text-main); font-family: inherit; font-size: 0.85rem;"
+                            placeholder="Digite o corpo do e-mail aqui..."></textarea>
                     </div>
-                    <button class="btn btn-success" id="btn-gerar-texto-oco" style="width:100%; padding: 12px;"><i
-                            class="ph ph-file-text"></i> Gerar Texto para E-mail</button>
+
+                    <div style="display: flex; gap: 10px; margin-top: auto;">
+                        <button class="btn btn-secondary" id="btn-gerar-texto-oco" style="flex: 1;"><i
+                                class="ph ph-file-text"></i> Apenas Gerar Texto</button>
+                        <button class="btn btn-success" id="btn-enviar-outlook" style="flex: 1;" disabled><i
+                                class="ph ph-paper-plane-right"></i> Enviar pelo Outlook</button>
+                    </div>
                 </div>
 
                 <div
-                    style="flex: 1; background: var(--bg-panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; box-shadow: var(--shadow-sm);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom: 10px; align-items: center;">
-                        <h3 style="font-size: 1rem; color: var(--text-main); font-weight: 700;">Texto Gerado</h3>
-                        <button class="btn btn-sm btn-secondary" id="btn-copy-oco"><i class="ph ph-copy"></i> Copiar
-                            Texto</button>
+                    style="flex: 1; background: var(--bg-panel); padding: 0; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; box-shadow: var(--shadow-sm); overflow: hidden;">
+
+                    <div
+                        style="background: var(--bg-table-header); padding: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-sidebar-hover);">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">Histórico da Ocorrência</h3>
+                        <span style="font-size: 11px; color: var(--text-sidebar);">Selecione uma nota fiscal na esquerda
+                            para carregar as respostas.</span>
                     </div>
-                    <textarea id="oco-resultado"
-                        style="flex:1; width:100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-main); color: var(--text-main); font-family: monospace; font-size: 13px; resize: none;"
-                        readonly
-                        placeholder="Preencha os dados e clique em 'Gerar Texto' para visualizar o modelo de e-mail aqui."></textarea>
+
+                    <div id="oco-thread-container"
+                        style="flex: 1; padding: 20px; overflow-y: auto; background: var(--bg-main); display: flex; flex-direction: column; gap: 15px;">
+
+                        <div style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 50px;">
+                            <i class="ph ph-envelope-open"
+                                style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+                            Nenhuma thread ativa.<br>As interações aparecerão aqui.
+                        </div>
+
+                    </div>
                 </div>
             </div>
+            <textarea id="oco-resultado" style="display: none;"></textarea>
+            <button id="btn-copy-oco" style="display: none;"></button>
         </section>
 
         <section id="view-prestacao" class="view-section">
@@ -1668,80 +1789,128 @@
         </section>
 
         <section id="print-area-wrapper">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+            <div
+                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
                 <img src="logo_icaphi.png" alt="Icaphi Logo" style="height: 55px; object-fit: contain;">
-                <div style="font-weight: 900; font-size: 18px; text-transform: uppercase; text-align: center; flex: 1; padding: 0 15px;">FORMULÁRIO PADRÃO DE PRESTAÇÃO DE CONTAS</div>
+                <div
+                    style="font-weight: 900; font-size: 18px; text-transform: uppercase; text-align: center; flex: 1; padding: 0 15px;">
+                    FORMULÁRIO PADRÃO DE PRESTAÇÃO DE CONTAS</div>
                 <div style="text-align: right; display: flex; flex-direction: column; align-items: center;">
                     <span style="font-size: 12px; font-weight: 800;">CÓDIGO</span>
                     <strong id="p-codigo" style="font-family: monospace; font-size: 15px;"></strong>
                 </div>
             </div>
-            
+
             <div style="margin-bottom: 15px; font-size: 13px;">
                 <div style="display: flex; gap: 10px; margin-bottom: 12px;">
                     <span style="font-weight: 800;">NOME:</span>
                     <strong id="p-nome" style="border-bottom: 1px solid #000; flex: 1; padding-left: 5px;"></strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">PLACA:</span> <strong id="p-placa" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
-                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span style="font-weight: 800;">PERFIL:</span> <strong id="p-perfil" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
-                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span style="font-weight: 800;">STATUS:</span> <strong id="p-status" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
-                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">TRANSPORTE:</span> <strong id="p-transporte" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
+                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">PLACA:</span> <strong
+                            id="p-placa" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong>
+                    </div>
+                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span
+                            style="font-weight: 800;">PERFIL:</span> <strong id="p-perfil"
+                            style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
+                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span
+                            style="font-weight: 800;">STATUS:</span> <strong id="p-status"
+                            style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
+                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">TRANSPORTE:</span>
+                        <strong id="p-transporte"
+                            style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong>
+                    </div>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
-                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">SAÍDA:</span> <strong id="p-largada" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
-                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span style="font-weight: 800;">PRESTAÇÃO:</span> <strong id="p-prestacao" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
-                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span style="font-weight: 800;">QTD NFs:</span> <strong id="p-qtd" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
+                    <div style="display: flex; gap: 5px; flex: 1;"><span style="font-weight: 800;">SAÍDA:</span> <strong
+                            id="p-largada" style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong>
+                    </div>
+                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span
+                            style="font-weight: 800;">PRESTAÇÃO:</span> <strong id="p-prestacao"
+                            style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
+                    <div style="display: flex; gap: 5px; flex: 1; margin: 0 10px;"><span style="font-weight: 800;">QTD
+                            NFs:</span> <strong id="p-qtd"
+                            style="border-bottom: 1px solid #000; flex: 1; text-align: center;"></strong></div>
                     <div style="flex: 1;"></div>
                 </div>
             </div>
 
             <div style="border: 2px solid #000; margin-top: 20px; border-radius: 4px; overflow: hidden;">
-                <div style="background-color: #e5e7eb !important; -webkit-print-color-adjust: exact; padding: 6px; text-align: center; font-weight: 900; font-size: 14px; border-bottom: 2px solid #000; color: #7f1d1d;">
+                <div
+                    style="background-color: #e5e7eb !important; -webkit-print-color-adjust: exact; padding: 6px; text-align: center; font-weight: 900; font-size: 14px; border-bottom: 2px solid #000; color: #7f1d1d;">
                     RELAÇÃO DE CANHOTOS ENTREGUES
                 </div>
-                <div id="p-canhotos-grid" style="display: flex; flex-wrap: wrap; gap: 35px; padding: 15px 20px; font-family: monospace; font-size: 14px; min-height: 80px;"></div>
-                <div id="p-canhotos-resumo" style="background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; text-align: center; font-weight: 800; font-size: 13px; border-top: 2px solid #000; padding: 6px; color: #000;"></div>
+                <div id="p-canhotos-grid"
+                    style="display: flex; flex-wrap: wrap; gap: 35px; padding: 15px 20px; font-family: monospace; font-size: 14px; min-height: 80px;">
+                </div>
+                <div id="p-canhotos-resumo"
+                    style="background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; text-align: center; font-weight: 800; font-size: 13px; border-top: 2px solid #000; padding: 6px; color: #000;">
+                </div>
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; border: 2px solid #000; font-size: 12px; background-color: #fff !important; -webkit-print-color-adjust: exact;">
+            <table
+                style="width: 100%; border-collapse: collapse; margin-top: 15px; border: 2px solid #000; font-size: 12px; background-color: #fff !important; -webkit-print-color-adjust: exact;">
                 <thead>
                     <tr style="background-color: #e5e7eb !important; -webkit-print-color-adjust: exact;">
-                        <th rowspan="2" style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">NFs Reentrega</th>
-                        <th rowspan="2" style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">NFs Devolução</th>
-                        <th colspan="2" style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">Lançamentos Parciais</th>
+                        <th rowspan="2"
+                            style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">
+                            NFs Reentrega</th>
+                        <th rowspan="2"
+                            style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">
+                            NFs Devolução</th>
+                        <th colspan="2"
+                            style="border: 1px solid #000; padding: 8px; color: #7f1d1d; font-weight: 900; text-transform: uppercase;">
+                            Lançamentos Parciais</th>
                     </tr>
                     <tr style="background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact;">
-                        <th style="border: 1px solid #000; padding: 6px; font-weight: 800; width: 25%; color: #000;">NF Referente</th>
-                        <th style="border: 1px solid #000; padding: 6px; font-weight: 800; width: 25%; color: #000;">Parcial Digitada</th>
+                        <th style="border: 1px solid #000; padding: 6px; font-weight: 800; width: 25%; color: #000;">NF
+                            Referente</th>
+                        <th style="border: 1px solid #000; padding: 6px; font-weight: 800; width: 25%; color: #000;">
+                            Parcial Digitada</th>
                     </tr>
                 </thead>
                 <tbody id="p-ocurrences-body" style="text-align: center;"></tbody>
             </table>
 
-            <div style="display: flex; margin-top: 15px; border: 2px solid #000; font-size: 13px; border-radius: 4px; overflow: hidden; background-color: #f9fafb !important; -webkit-print-color-adjust: exact;">
-                <div style="flex: 1; padding: 10px 15px; border-right: 1px solid #000;"><span style="font-weight: 800;">Pedágio:</span> <strong id="p-pedagio" style="margin-left: 5px; font-weight: normal;"></strong></div>
-                <div style="flex: 1; padding: 10px 15px; border-right: 1px solid #000;"><span style="font-weight: 800;">Descarga:</span> <strong id="p-descarga" style="margin-left: 5px; font-weight: normal;"></strong></div>
-                <div style="flex: 1; padding: 10px 15px;"><span style="font-weight: 800;">Ajudante:</span> <strong id="p-ajudante" style="margin-left: 5px; font-weight: normal;"></strong></div>
+            <div
+                style="display: flex; margin-top: 15px; border: 2px solid #000; font-size: 13px; border-radius: 4px; overflow: hidden; background-color: #f9fafb !important; -webkit-print-color-adjust: exact;">
+                <div style="flex: 1; padding: 10px 15px; border-right: 1px solid #000;"><span
+                        style="font-weight: 800;">Pedágio:</span> <strong id="p-pedagio"
+                        style="margin-left: 5px; font-weight: normal;"></strong></div>
+                <div style="flex: 1; padding: 10px 15px; border-right: 1px solid #000;"><span
+                        style="font-weight: 800;">Descarga:</span> <strong id="p-descarga"
+                        style="margin-left: 5px; font-weight: normal;"></strong></div>
+                <div style="flex: 1; padding: 10px 15px;"><span style="font-weight: 800;">Ajudante:</span> <strong
+                        id="p-ajudante" style="margin-left: 5px; font-weight: normal;"></strong></div>
             </div>
 
-            <div style="border: 1px solid #999; padding: 10px; margin-top: 15px; background: #fff !important; -webkit-print-color-adjust: exact;">
-                <div style="font-weight: 800; text-align: center; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;">Termo de Responsabilidade e Orientações</div>
-                <p style="font-size: 11px; margin: 4px 0;">1. Declaro que as informações aqui prestadas são de minha inteira responsabilidade, e que não ficou nenhum documento faltante.</p>
-                <p style="font-size: 11px; margin: 4px 0;">2. Todas as NFs entregues deverão ter seus canhotos devidamente assinados e carimbados pelo cliente com RG do recebedor.</p>
-                <p style="font-size: 11px; font-weight: 800; margin-top: 8px;">OBS.: É obrigatória a apresentação dos documentos comprobatórios das despesas (Pedágio, Descarga, etc).</p>
+            <div
+                style="border: 1px solid #999; padding: 10px; margin-top: 15px; background: #fff !important; -webkit-print-color-adjust: exact;">
+                <div
+                    style="font-weight: 800; text-align: center; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;">
+                    Termo de Responsabilidade e Orientações</div>
+                <p style="font-size: 11px; margin: 4px 0;">1. Declaro que as informações aqui prestadas são de minha
+                    inteira responsabilidade, e que não ficou nenhum documento faltante.</p>
+                <p style="font-size: 11px; margin: 4px 0;">2. Todas as NFs entregues deverão ter seus canhotos
+                    devidamente assinados e carimbados pelo cliente com RG do recebedor.</p>
+                <p style="font-size: 11px; font-weight: 800; margin-top: 8px;">OBS.: É obrigatória a apresentação dos
+                    documentos comprobatórios das despesas (Pedágio, Descarga, etc).</p>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 45px;">
                 <div style="text-align: center;">
-                    <div style="font-weight: 800; border-bottom: 1px solid #000; padding: 0 15px 2px 15px;">RIO DE JANEIRO</div>
+                    <div style="font-weight: 800; border-bottom: 1px solid #000; padding: 0 15px 2px 15px;">RIO DE
+                        JANEIRO</div>
                     <div style="font-size: 11px; font-weight: 800; margin-top: 4px;">Cidade</div>
                 </div>
                 <div style="text-align: center;">
-                    <div id="p-cidade-data-rodape" style="font-weight: 800; border-bottom: 1px solid #000; padding: 0 15px 2px 15px;"></div>
+                    <div id="p-cidade-data-rodape"
+                        style="font-weight: 800; border-bottom: 1px solid #000; padding: 0 15px 2px 15px;"></div>
                     <div style="font-size: 11px; font-weight: 800; margin-top: 4px;">Data</div>
                 </div>
                 <div style="text-align: center; flex: 1; margin: 0 20px;">
+                    <img id="img-evidencia-pdf" src="" alt="Assinatura"
+                        style="max-height: 40px; display: none; margin: 0 auto; margin-bottom: 5px;" />
                     <div style="border-bottom: 1px solid #000; height: 16px;"></div>
                     <div style="font-size: 11px; font-weight: 800; margin-top: 4px;">Assinatura Motorista</div>
                 </div>
@@ -1754,12 +1923,14 @@
     </main>
 
     <div class="modal-overlay" id="modal-acoes-lote">
-        <div class="modal-content" style="width: 450px;">
+        <div class="modal-content" style="width: 480px;">
             <div class="modal-header">
-                <h3>⚡ Ações em Lote (Notas)</h3><button class="btn-close"
+                <h3>⚡ Ações em Lote (Notas)</h3>
+                <button class="btn-close"
                     onclick="document.getElementById('modal-acoes-lote').classList.remove('active')">×</button>
             </div>
             <div class="modal-body">
+
                 <div
                     style="background: rgba(16,185,129,0.1); border: 1px solid var(--success); padding: 15px; border-radius: 8px; margin-bottom: 10px;">
                     <h4 style="color: var(--success); font-size: 13px; margin-bottom: 5px;">Poder 1: Automação
@@ -1770,16 +1941,30 @@
                     <button class="btn btn-success" style="width: 100%;"
                         onclick="window.executarLoteAppEntregue()">Marcar VAZIAS como ENTREGUE por Anexo</button>
                 </div>
+
                 <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 5px 0;">
+
                 <div
                     style="background: var(--bg-table-row-alt); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
                     <h4 style="color: var(--text-main); font-size: 13px; margin-bottom: 5px;">Poder 2: Alteração em
-                        Massa</h4>
-                    <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">Muda o status de TODAS
-                        as notas <b>vazias</b> que estão visíveis na tela neste momento.</p>
-                    <select id="select-lote-status"
+                        Massa (Filtros Ativos)</h4>
+                    <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">Preencha apenas o que
+                        deseja alterar. A alteração será aplicada em <b>TODAS as linhas visíveis</b> na tela, ignorando
+                        as ocultas.</p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="input-lote-placa" placeholder="Nova Placa"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-panel); color: var(--text-main); text-transform: uppercase;">
+                        <input type="text" id="input-lote-motorista" placeholder="Novo Motorista"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-panel); color: var(--text-main);">
+                    </div>
+
+                    <input type="text" id="input-lote-telefone" placeholder="Novo Telefone"
+                        style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-panel); color: var(--text-main); margin-bottom: 10px;">
+
+                    <select id="select-lote-status-massa"
                         style="width: 100%; margin-bottom: 12px; font-weight: 600; background: var(--bg-panel); color: var(--text-main); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                        <option value="">-- Selecione o Status --</option>
+                        <option value="">-- Mudar Status (Opcional) --</option>
                         <option value="AGUARDANDO">AGUARDANDO</option>
                         <option value="DESCARREGANDO">DESCARREGANDO</option>
                         <option value="DEVOLUÇÃO">DEVOLUÇÃO</option>
@@ -1791,13 +1976,14 @@
                         <option value="PARADA">PARADA</option>
                         <option value="SINISTRADA">SINISTRADA</option>
                     </select>
+
                     <button class="btn btn-primary" style="width: 100%;"
-                        onclick="window.executarLoteStatusVisiveis()">Aplicar Status nas VAZIAS na Tela</button>
+                        onclick="window.executarAlteracaoEmMassa()">Aplicar Alterações nas Linhas Visíveis</button>
                 </div>
+
             </div>
         </div>
     </div>
-
     <div class="modal-overlay" id="modal-atualizar-apps">
         <div class="modal-content" style="width: 420px;">
             <div class="modal-header">
@@ -1812,8 +1998,8 @@
                     style="margin-top: 10px; background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <label
                         style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px;">Data
-                        da Operação:</label><input type="date" id="apps-data-select" style="width:100%;"></div><button
-                    class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;"
+                        da Operação:</label><input type="date" id="apps-data-select" style="width:100%;">
+                </div><button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;"
                     onclick="document.getElementById('file-import-apps').click()"><i class="ph ph-upload-simple"></i>
                     Importar Planilha de Anexos</button><input type="file" id="file-import-apps"
                     accept=".xlsx, .xls, .csv" style="display: none;">
@@ -1893,7 +2079,7 @@
             </div>
             <div class="modal-body">
                 <div
-                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
                     <div>
                         <strong style="display: block; font-size: 14px;">Modo Lite</strong>
                         <span style="font-size: 11px; color: var(--text-muted);">Desativa animações para PCs
@@ -1903,6 +2089,39 @@
                         <input type="checkbox" id="toggle-lite-mode">
                         <span class="slider"></span>
                     </label>
+                </div>
+
+                <div
+                    style="background: var(--bg-table-row-alt); padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <strong style="display: block; font-size: 14px; margin-bottom: 5px;">Editor de Layout
+                        Avançado</strong>
+                    <span
+                        style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 10px;">Comportamento
+                        de redimensionamento idêntico ao Excel.</span>
+
+                    <div id="auth-layout-container" style="display: flex; gap: 10px;">
+                        <input type="password" id="input-senha-layout" placeholder="Senha de ativação..."
+                            style="flex: 1;">
+                        <button class="btn btn-primary" id="btn-auth-layout">Desbloquear</button>
+                    </div>
+
+                    <div id="controls-layout-container" style="display: none; flex-direction: column; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--success); font-size: 12px; font-weight: 700;">✅ Modo Edição
+                                Ativo</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn btn-sm btn-danger" id="btn-cancelar-layout">Cancelar</button>
+                                <button class="btn btn-sm btn-success" id="btn-salvar-layout">Salvar</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label
+                                style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px;">TAMANHO
+                                DA FONTE: <span id="lbl-font-val">12px</span></label>
+                            <input type="range" id="slider-font-tabela" min="8" max="24" value="12"
+                                style="width: 100%;">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2229,7 +2448,9 @@
 
         // ====== LÓGICA OCORRÊNCIAS ======
         document.getElementById('btn-buscar-oco').addEventListener('click', async () => {
-            const dataSel = document.getElementById('oco-data').value; if (!dataSel) return; showLoader();
+            const dataSel = document.getElementById('oco-data').value;
+            if (!dataSel) return alert("Selecione uma data");
+
             try {
                 const snap = await getDoc(doc(db, "notas_fiscais_diario", dataSel));
                 if (snap.exists()) {
@@ -2238,37 +2459,79 @@
                     const selPlaca = document.getElementById('oco-placa');
                     selPlaca.innerHTML = `<option value="">-- Selecione o Veículo --</option>` + placasUnicas.map(p => `<option value="${p}">${p}</option>`).join('');
                     document.getElementById('oco-nota').innerHTML = ``;
-                } else { alert("Não existem notas importadas."); window.ocoNotasDataCache = []; }
-            } catch (e) { console.error("Erro na busca de ocorrências:", e); } hideLoader();
+                } else {
+                    alert("Não existem notas importadas para esta data.");
+                    window.ocoNotasDataCache = [];
+                }
+            } catch (e) {
+                console.error("Erro na busca de ocorrências:", e);
+            }
         });
 
         document.getElementById('oco-placa').addEventListener('change', (e) => {
-            const placa = e.target.value; const notasDaPlaca = window.ocoNotasDataCache.filter(n => n.placa === placa);
+            const placa = e.target.value;
+            const notasDaPlaca = window.ocoNotasDataCache.filter(n => n.placa === placa);
             document.getElementById('oco-nota').innerHTML = notasDaPlaca.map(n => `<option value="${n.nf}">${cleanNF(n.nf)} - ${n.cliente}</option>`).join('');
         });
 
+        // Função integrada de geração de texto
         document.getElementById('btn-gerar-texto-oco').addEventListener('click', () => {
+            // 1. TRAVA: Verifica se o campo já tem um e-mail gerado (pela frase chave)
+            // Se tiver, ele limpa o campo oco-obs para começar do zero
+            const obsAtual = document.getElementById('oco-obs').value;
+            if (obsAtual.includes("PARA CIÊNCIA DE TODOS")) {
+                document.getElementById('oco-obs').value = "";
+            }
             const notasSelecionadas = Array.from(document.getElementById('oco-nota').selectedOptions).map(opt => opt.value);
+
             if (notasSelecionadas.length === 0) return alert("Selecione ao menos uma nota.");
-            const notasArray = window.ocoNotasDataCache.filter(n => notasSelecionadas.includes(n.nf)); const notaBase = notasArray[0];
+
+            const notasArray = window.ocoNotasDataCache.filter(n => notasSelecionadas.includes(n.nf));
+            const notaBase = notasArray[0];
 
             let arrayNFs = []; let somaPeso = 0; let somaQtde = 0;
-            notasArray.forEach(n => { arrayNFs.push(cleanNF(n.nf)); somaPeso += parseFloat(n.peso) || 0; somaQtde += parseInt(n.qtde) || 0; });
-            const motivo = document.getElementById('oco-motivo').value.trim() || (notaBase.status ? notaBase.status : "Não informado");
-            const obs = document.getElementById('oco-obs').value.trim() || "Nenhuma observação informada.";
-            const hora = new Date().getHours(); let saudacao = "Bom Dia!"; if (hora >= 12 && hora < 18) saudacao = "Boa Tarde!"; else if (hora >= 18) saudacao = "Boa Noite!";
+            notasArray.forEach(n => {
+                arrayNFs.push(cleanNF(n.nf));
+                somaPeso += parseFloat(n.peso) || 0;
+                somaQtde += parseInt(n.qtde) || 0;
+            });
 
-            const dataFormatada = formataDataParaEmail(notaBase.data_nf || document.getElementById('oco-data').value);
-            const dataCarregamento = formataDataParaEmail(document.getElementById('oco-data').value);
-            const repFormatado = notaBase.repres || "0"; const supFormatado = notaBase.sup || "";
+            const motivo = document.getElementById('oco-motivo').value.trim() || "Não informado";
+            const obsManual = document.getElementById('oco-obs').value.trim();
 
-            const emailText = `${saudacao}\nPARA CIÊNCIA DE TODOS! \nAPÓS VINTE MINUTOS CONTANDO DO DISPARO DESSE EMAIL, CASO NÃO OCORRA TRATATIVA DA OCORRÊNCIA O VEÍCULO SEGUIRÁ ROTA.\nCLIENTE: ${notaBase.cliente}\nCIDADE: ${notaBase.cidade}\nNF: ${arrayNFs.join(', ')}\nPESO: ${formatNumber(somaPeso)}\nVOLUME: ${somaQtde}\nDATA NF: ${dataFormatada}\nENTREGAS: ${somaQtde}\nDATA CARREGAMENTO: ${dataCarregamento}\nVALOR: \nRCA: ${repFormatado}\nCOORDENADOR: @${supFormatado}\nOCORRÊNCIA: ${motivo} - ${obs}\n`;
-            document.getElementById('oco-resultado').value = emailText;
-        });
+            const hora = new Date().getHours();
+            let saudacao = "Bom Dia!";
+            if (hora >= 12 && hora < 18) saudacao = "Boa Tarde!";
+            else if (hora >= 18) saudacao = "Boa Noite!";
 
-        document.getElementById('btn-copy-oco').addEventListener('click', () => {
-            const text = document.getElementById('oco-resultado').value; if (!text) return; navigator.clipboard.writeText(text);
-            const btn = document.getElementById('btn-copy-oco'); const original = btn.innerHTML; btn.innerHTML = "<i class='ph ph-check-circle'></i> Copiado!"; setTimeout(() => { btn.innerHTML = original; }, 2000);
+            const dataFormatada = (typeof formataDataParaEmail === 'function') ? formataDataParaEmail(notaBase.data_nf || document.getElementById('oco-data').value) : (notaBase.data_nf || document.getElementById('oco-data').value);
+            const dataCarregamento = (typeof formataDataParaEmail === 'function') ? formataDataParaEmail(document.getElementById('oco-data').value) : document.getElementById('oco-data').value;
+            const repFormatado = notaBase.repres || "0";
+            const supFormatado = notaBase.sup || "";
+
+            // Construção do texto sem indentação (usando .replace para limpar espaços)
+            const emailText = `${saudacao}
+            PARA CIÊNCIA DE TODOS! 
+            APÓS VINTE MINUTOS CONTANDO DO DISPARO DESSE EMAIL, CASO NÃO OCORRA TRATATIVA DA OCORRÊNCIA O VEÍCULO SEGUIRÁ ROTA.
+            CLIENTE: ${notaBase.cliente}
+            CIDADE: ${notaBase.cidade}
+            NF: ${arrayNFs.join(', ')}
+            PESO: ${(typeof formatNumber === 'function') ? formatNumber(somaPeso) : somaPeso.toFixed(2)}
+            VOLUME: ${somaQtde}
+            DATA NF: ${dataFormatada}
+            ENTREGAS: ${somaQtde}
+            DATA CARREGAMENTO: ${dataCarregamento}
+            VALOR: 
+            RCA: ${repFormatado}
+            COORDENADOR: @${supFormatado}
+            OCORRÊNCIA: ${motivo} - ${obsManual}`.replace(/^\s+/gm, ''); // Remove espaços iniciais de cada linha
+
+            // Atualiza a caixa de resultado
+            const resultadoBox = document.getElementById('oco-obs');
+            resultadoBox.value = emailText;
+
+            // Se quiser ver o resultado, a caixa precisa estar visível
+            resultadoBox.style.display = 'block';
         });
 
         // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
@@ -2284,32 +2547,32 @@
         });
 
         document.getElementById('btn-pc-pdf').addEventListener('click', () => {
-            const placa = document.getElementById('pc-placa').value; 
-            if(!placa) return alert("Selecione a placa para gerar o relatório.");
-            const notas = window.pcNotasCache.filter(n => trimUpper(n.placa) === trimUpper(placa)); 
-            
+            const placa = document.getElementById('pc-placa').value;
+            if (!placa) return alert("Selecione a placa para gerar o relatório.");
+            const notas = window.pcNotasCache.filter(n => trimUpper(n.placa) === trimUpper(placa));
+
             const motoristaRef = notas.find(n => n.motorista) || notas[0] || {};
             const motoristaNome = motoristaRef.motorista || "NÃO INFORMADO";
             const viagem = motoristaRef.viagem || "00000";
             const infoPlaca = window.placasCache[placa] || { perfil: "", tipo: "" };
-            
+
             document.getElementById('p-nome').innerText = motoristaNome.toUpperCase();
             document.getElementById('p-placa').innerText = placa;
             document.getElementById('p-perfil').innerText = infoPlaca.perfil;
-            document.getElementById('p-status').innerText = infoPlaca.tipo; 
+            document.getElementById('p-status').innerText = infoPlaca.tipo;
             document.getElementById('p-transporte').innerText = viagem;
             document.getElementById('p-codigo').innerText = `${viagem}${placa.replace(/[^A-Z0-9]/g, '')}`;
 
-            const mesesAbrev = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+            const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
             const dataOpStr = document.getElementById('pc-data').value;
-            if(dataOpStr) {
+            if (dataOpStr) {
                 const dOp = new Date(dataOpStr + 'T00:00:00');
                 document.getElementById('p-largada').innerText = `${String(dOp.getDate()).padStart(2, '0')}-${mesesAbrev[dOp.getMonth()]}`;
             }
             const hojeObj = new Date();
-            const dataFormatadaHoje = `${String(hojeObj.getDate()).padStart(2, '0')}/${String(hojeObj.getMonth()+1).padStart(2, '0')}/${hojeObj.getFullYear()}`;
+            const dataFormatadaHoje = `${String(hojeObj.getDate()).padStart(2, '0')}/${String(hojeObj.getMonth() + 1).padStart(2, '0')}/${hojeObj.getFullYear()}`;
             document.getElementById('p-prestacao').innerText = `${String(hojeObj.getDate()).padStart(2, '0')}-${mesesAbrev[hojeObj.getMonth()]}`;
-            
+
             // Rodapé
             document.getElementById('p-cidade-data-rodape').innerText = dataFormatadaHoje;
             document.getElementById('p-qtd').innerText = notas.length;
@@ -2317,17 +2580,17 @@
             const canhotosNFs = notas.filter(n => trimUpper(n.status) === 'ENTREGUE' || trimUpper(n.status) === 'REALIZADA');
 
             const maxPerCol = 10; let nfsHtml = "";
-            for(let i=0; i<canhotosNFs.length; i+=maxPerCol) {
+            for (let i = 0; i < canhotosNFs.length; i += maxPerCol) {
                 nfsHtml += `<div class="canhotos-col">`;
-                for(let j=i; j<i+maxPerCol && j<canhotosNFs.length; j++) { 
+                for (let j = i; j < i + maxPerCol && j < canhotosNFs.length; j++) {
                     const nota = canhotosNFs[j];
                     const appStatus = trimUpper(nota.app);
-                    
+
                     let colorCode = "#dc2626"; // Vermelho
                     if (appStatus === 'ASSINATURA') colorCode = "#2563eb"; // Azul
                     else if (appStatus === 'FOTO' || appStatus === 'ANEXADO') colorCode = "#16a34a"; // Verde
-                    
-                    nfsHtml += `<div style="color: ${colorCode} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: 900;">${cleanNF(nota.nf)}</div>`; 
+
+                    nfsHtml += `<div style="color: ${colorCode} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: 900;">${cleanNF(nota.nf)}</div>`;
                 }
                 nfsHtml += `</div>`;
             }
@@ -2338,7 +2601,7 @@
             const cAss = canhotosNFs.filter(n => trimUpper(n.app) === 'ASSINATURA').length;
             const cFot = canhotosNFs.filter(n => trimUpper(n.app) === 'FOTO').length;
             const cAne = canhotosNFs.filter(n => trimUpper(n.app) === 'ANEXADO').length;
-            
+
             let textoResumoApp = "";
             if (totalEntregues > 0) {
                 if (cAss === totalEntregues) {
@@ -2358,10 +2621,10 @@
             const reen = notas.filter(n => trimUpper(n.status) === 'REENTREGA').map(n => cleanNF(n.nf));
             const dev = notas.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').map(n => cleanNF(n.nf));
             const parc = notas.filter(n => n.parcial && String(n.parcial).trim() !== "").map(n => ({ nf: cleanNF(n.nf), valor: String(n.parcial).trim() }));
-            
-            let maxRows = Math.max(reen.length, dev.length, parc.length, 5); 
+
+            let maxRows = Math.max(reen.length, dev.length, parc.length, 5);
             let rowsHtml = "";
-            for(let i=0; i<maxRows; i++) {
+            for (let i = 0; i < maxRows; i++) {
                 rowsHtml += `<tr style="border-bottom: 1px solid #ccc;">
                     <td style="border: 1px solid #000; padding: 6px;">${reen[i] || "-"}</td>
                     <td style="border: 1px solid #000; padding: 6px;">${dev[i] || "-"}</td>
@@ -2371,6 +2634,7 @@
             }
             document.getElementById('p-ocurrences-body').innerHTML = rowsHtml;
 
+            // Formatação de valores financeiros
             const valPedagio = parseFloat(document.getElementById('pc-pedagio').value) || 0;
             const valDescarga = parseFloat(document.getElementById('pc-descarga').value) || 0;
             const valAjudante = parseFloat(document.getElementById('pc-ajudante').value) || 0;
@@ -2378,6 +2642,19 @@
             document.getElementById('p-descarga').innerText = `R$ ${valDescarga.toFixed(2).replace('.', ',')}`;
             document.getElementById('p-ajudante').innerText = `R$ ${valAjudante.toFixed(2).replace('.', ',')}`;
 
+            // INJEÇÃO DA LÓGICA DE RENDERIZAÇÃO DA IMAGEM NO PDF
+            const assinaturaOuEvidenciaBase64 = "COLE_AQUI_A_SUA_STRING_BASE64_COMPLETA";
+            const imgEvidenciaElement = document.getElementById('img-evidencia-pdf');
+
+            // Controle de estado: exibe a imagem apenas se o Base64 for válido e diferente do placeholder
+            if (imgEvidenciaElement && assinaturaOuEvidenciaBase64 && assinaturaOuEvidenciaBase64 !== "COLE_AQUI_A_SUA_STRING_BASE64_COMPLETA") {
+                imgEvidenciaElement.src = assinaturaOuEvidenciaBase64;
+                imgEvidenciaElement.style.display = 'block';
+            } else if (imgEvidenciaElement) {
+                imgEvidenciaElement.style.display = 'none';
+            }
+
+            // Disparo nativo de impressão
             window.print();
         });
 
@@ -2438,8 +2715,16 @@
                                 if (represVal && notaTarget.repres !== represVal) { notaTarget.repres = represVal; mudou = true; }
                                 if (supVal && notaTarget.sup !== supVal) { notaTarget.sup = supVal; mudou = true; }
 
-                                if (assinVal.includes("@SI@") && notaTarget.app !== "ASSINATURA") { notaTarget.app = "ASSINATURA"; mudou = true; }
-                                else if (assinVal !== "" && !assinVal.includes("@SI@") && notaTarget.app !== "FOTO") { notaTarget.app = "FOTO"; mudou = true; }
+                                // MAPEAMENTO EXATO E CORRIGIDO
+                                let novoApp = "";
+                                if (assinVal.includes("@0Q@")) novoApp = "ASSINATURA";
+                                else if (assinVal.includes("@FM@")) novoApp = "ANEXADO";
+                                else if (assinVal.includes("@SI@")) novoApp = "FOTO";
+
+                                if (novoApp !== "" && notaTarget.app !== novoApp) { 
+                                    notaTarget.app = novoApp; 
+                                    mudou = true; 
+                                }
 
                                 if (mudou) alteradasCount++;
                             }
@@ -2479,6 +2764,65 @@
             document.getElementById('modal-acoes-lote').classList.remove('active'); document.getElementById('select-lote-status').value = "";
         };
 
+        // NOVA FUNÇÃO ENGENHOSA: ALTERAÇÃO EM MASSA AVANÇADA (Poder 2)
+        window.executarAlteracaoEmMassa = () => {
+            const novaPlaca = document.getElementById('input-lote-placa') ? document.getElementById('input-lote-placa').value.trim().toUpperCase() : "";
+            const novoMotorista = document.getElementById('input-lote-motorista') ? document.getElementById('input-lote-motorista').value.trim() : "";
+            const novoTelefone = document.getElementById('input-lote-telefone') ? document.getElementById('input-lote-telefone').value.trim() : "";
+            const novoStatus = document.getElementById('select-lote-status-massa') ? document.getElementById('select-lote-status-massa').value : "";
+
+            if (!novaPlaca && !novoMotorista && !novoTelefone && !novoStatus) {
+                return alert("Preencha pelo menos uma informação no painel antes de aplicar.");
+            }
+
+            let linhasAfetadas = 0;
+            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                // Filtro rígido: Só altera se a linha pertencer à tabela de notas e NÃO estiver oculta por filtros ativos
+                if (tr.style.display !== 'none' && tr.querySelector('[data-live="nf"]')) {
+                    let houveModificacao = false;
+
+                    if (novaPlaca) {
+                        const cell = tr.querySelector('[data-live="placa"]');
+                        if (cell) { cell.textContent = novaPlaca; houveModificacao = true; }
+                    }
+                    if (novoMotorista) {
+                        const cell = tr.querySelector('[data-live="motorista"]');
+                        if (cell) { cell.textContent = novoMotorista; houveModificacao = true; }
+                    }
+                    if (novoTelefone) {
+                        const cell = tr.querySelector('[data-live="telefone"]');
+                        if (cell) { cell.textContent = novoTelefone; houveModificacao = true; }
+                    }
+                    if (novoStatus) {
+                        const selectCell = tr.querySelector('.live-status-select');
+                        if (selectCell) {
+                            selectCell.value = novoStatus;
+                            selectCell.style.cssText = getStRotaStyle(novoStatus);
+                            tr.style.backgroundColor = getRowBackgroundStyle(novoStatus);
+                            houveModificacao = true;
+                        }
+                    }
+
+                    if (houveModificacao) linhasAfetadas++;
+                }
+            });
+
+            if (linhasAfetadas > 0) {
+                autoSaveNotasSilencioso(); // Executa persistência atômica instantânea no Firebase
+                alert(`Sucesso! ${linhasAfetadas} células/linhas visíveis foram alteradas em massa.`);
+
+                // Limpeza e reset dos inputs do painel de lote
+                if (document.getElementById('input-lote-placa')) document.getElementById('input-lote-placa').value = "";
+                if (document.getElementById('input-lote-motorista')) document.getElementById('input-lote-motorista').value = "";
+                if (document.getElementById('input-lote-telefone')) document.getElementById('input-lote-telefone').value = "";
+                if (document.getElementById('select-lote-status-massa')) document.getElementById('select-lote-status-massa').value = "";
+
+                document.getElementById('modal-acoes-lote').classList.remove('active');
+            } else {
+                alert("Nenhuma linha visível ou correspondente foi encontrada para alteração.");
+            }
+        };
+
         // ====== THEME TOGGLE E LITE MODE ======
         const themeBtn = document.getElementById('btn-theme-toggle');
         const applyTheme = (isDark) => { if (isDark) { document.body.classList.add('dark-mode'); themeBtn.innerHTML = '<i class="ph ph-sun"></i>'; localStorage.setItem('theme', 'dark'); } else { document.body.classList.remove('dark-mode'); themeBtn.innerHTML = '<i class="ph ph-moon"></i>'; localStorage.setItem('theme', 'light'); } };
@@ -2502,7 +2846,6 @@
             });
         });
 
-        async function initApp() { await carregarDadosGlobais(); document.getElementById('btn-carregar-painel').click(); }
         async function carregarDadosGlobais() { try { const snapPlacas = await getDocs(collection(db, "placas")); window.placasCache = {}; snapPlacas.forEach(d => { window.placasCache[d.id] = d.data(); }); renderizarTabelaPlacas(); const snapMot = await getDocs(collection(db, "motoristas_historico")); window.motoristasHistoricoCache = {}; snapMot.forEach(d => { window.motoristasHistoricoCache[d.id] = d.data(); }); } catch (e) { console.error("Erro banco", e); } }
 
         // ================= CANHOTOS (AUDITORIA APP) =================
@@ -2610,7 +2953,21 @@
                 let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
 
                 if (snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasDoDia.push({ ...no, status: "" }); } }); }
-                if (snapOntemPainel.exists()) { snapOntemPainel.data().rotas.forEach(ro => { if (trimUpper(ro.status).includes('PERNOITE') && !rotasParaProcessar.find(r => r.placa.replace(/[^A-Z0-9]/gi, '') === ro.placa.replace(/[^A-Z0-9]/gi, ''))) { rotasParaProcessar.push({ ...ro, status: "", isRollover: true }); } }); }
+                if (snapOntemPainel.exists()) {
+                    snapOntemPainel.data().rotas.forEach(ro => {
+                        const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
+
+                        // LÓGICA CORRIGIDA: Verifica se o veículo teve alguma NOTA marcada como PERNOITE no dia anterior
+                        const teveNotaPernoiteOntem = snapOntemNotas.exists() && snapOntemNotas.data().notas.some(n =>
+                            trimUpper(n.status) === 'PERNOITE' && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo
+                        );
+
+                        if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
+                            // Traz o carro para hoje e já define o ST. PAINEL dele como "Pernoite"
+                            rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
+                        }
+                    });
+                }
 
                 window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
                 let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
@@ -2706,10 +3063,36 @@
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                const [snapNotas, snapOntemNotas] = await Promise.all([getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataOntem))]);
+                // OTIMIZAÇÃO: Carrega as notas de hoje, as notas de ontem e também o painel de hoje para mapear trocas
+                const [snapNotas, snapOntemNotas, snapPainel] = await Promise.all([
+                    getDoc(doc(db, "notas_fiscais_diario", dataSel)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
+                    getDoc(doc(db, "painel_diario", dataSel))
+                ]);
+
+                // Constrói mapa de relacionamento De -> Para das placas que sofreram troca hoje
+                let deParaTroca = {};
+                if (snapPainel.exists()) {
+                    snapPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
 
                 let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
-                if (snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasRollover.push({ ...no, status: "" }); } }); }
+                if (snapOntemNotas.exists()) {
+                    snapOntemNotas.data().notas.forEach(no => {
+                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+
+                            // IDENTIFICAÇÃO DIRETA: Se a placa antiga tem uma troca cadastrada no painel de hoje, usa a nova placa
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+
+                            notasRollover.push({ ...no, status: "", placa: placaFinal });
+                        }
+                    });
+                }
 
                 let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = "";
                 if (notasParaProcessar.length > 0) {
@@ -2819,23 +3202,29 @@
             const file = e.target.files[0]; if (!file) return; const dSel = document.getElementById('editor-notas-data').value; if (!dSel) { alert("Selecione Data do Painel!"); e.target.value = ''; return; }
             showLoader();
 
-            // MAPA DE PLACA + TRANSPORTE PARA FILTRAGEM RÍGIDA
-            let mapFiltro = {};
+            // MUDANÇA LOGÍSTICA: O mapa agora usa o TRANSPORTE (Viagem) como chave primária, isolando as operações
+            let mapFiltroTransporte = {};
             try {
                 const sp = await getDoc(doc(db, "painel_diario", dSel));
                 if (sp.exists()) {
                     sp.data().rotas.forEach(r => {
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
                         const placaNormal = r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        const placaTroca = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
+                        const placaFinal = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const isPernoite = statusRota.includes('PERNOITE');
+                        
+                        // Extrai todos os números de transporte (viagem) desta linha do painel
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
-
-                        if (!mapFiltro[placaNormal]) mapFiltro[placaNormal] = { troca: placaTroca, transportes: [], bloqueado: isPernoite };
-                        mapFiltro[placaNormal].transportes.push(...transpsValidos);
+                        
+                        transpsValidos.forEach(t => {
+                            mapFiltroTransporte[t] = { 
+                                placaFinal: placaFinal, 
+                                bloqueado: isPernoite 
+                            };
+                        });
                     });
                 }
-            } catch (err) { }
+            } catch (err) { console.error("Erro ao mapear painel para importação:", err); }
 
             const reader = new FileReader(); reader.onload = function (e) {
                 const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array', raw: false });
@@ -2852,11 +3241,18 @@
                     const row = raw[i]; if (!row || !row[cols.nf]) continue;
                     const nfTratada = cleanNF(row[cols.nf]);
                     const viagemPlanilha = String(row[cols.viagem] || "").trim();
-                    const placaExcel = String(row[cols.placa] || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                    // FILTRO RÍGIDO: Só importa se a Placa + Viagem estiverem no Painel
-                    const filtro = mapFiltro[placaExcel];
-                    if (filtro && !filtro.bloqueado && filtro.transportes.includes(viagemPlanilha)) {
+                    // Validação direta e precisa pelo número do transporte
+                    const filtroViagem = mapFiltroTransporte[viagemPlanilha];
+                    
+                    if (filtroViagem) {
+                        // TRAVA ANTIDUPLICIDADE: Se esta viagem está no painel de hoje como "Pernoite", 
+                        // ela é ignorada na planilha. As notas corretas já vieram via banco de dados (Rollover).
+                        // Isso impede que o faturamento antigo de ontem entre na operação de hoje.
+                        if (filtroViagem.bloqueado) {
+                            continue; 
+                        }
+
                         let existsInTable = false;
                         document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => { if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) existsInTable = true; });
                         if (existsInTable) continue;
@@ -2866,13 +3262,24 @@
 
                         qtd++;
                         window.adicionarLinhaNotas({
-                            nf: nfTratada, viagem: viagemPlanilha, ordem: cols.ordem !== -1 ? row[cols.ordem] : "", data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "", cliente: cols.cliente !== -1 ? row[cols.cliente] : "", cidade: cols.cidade !== -1 ? row[cols.cidade] : "", bairro: cols.bairro !== -1 ? row[cols.bairro] : "", endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
-                            placa: filtro.troca, // SALVA COM A PLACA DE TROCA DO PAINEL
-                            codcli: cols.codcli !== -1 ? row[cols.codcli] : "", repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : ""
+                            nf: nfTratada, 
+                            viagem: viagemPlanilha, 
+                            ordem: cols.ordem !== -1 ? row[cols.ordem] : "", 
+                            data: dSaida, 
+                            peso: cols.peso !== -1 ? row[cols.peso] : "", 
+                            qtde: cols.qtde !== -1 ? row[cols.qtde] : "", 
+                            cliente: cols.cliente !== -1 ? row[cols.cliente] : "", 
+                            cidade: cols.cidade !== -1 ? row[cols.cidade] : "", 
+                            bairro: cols.bairro !== -1 ? row[cols.bairro] : "", 
+                            endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
+                            placa: filtroViagem.placaFinal, // Garante o direcionamento correto para a placa atual (ou placa de troca)
+                            codcli: cols.codcli !== -1 ? row[cols.codcli] : "", 
+                            repres: cols.repres !== -1 ? row[cols.repres] : "", 
+                            sup: cols.sup !== -1 ? row[cols.sup] : ""
                         });
                     }
                 }
-                alert(`Importação concluída: ${qtd} notas vinculadas aos transportes do painel.`); hideLoader();
+                alert(`Importação concluída: ${qtd} notas novas vinculadas aos transportes ativos do painel.`); hideLoader();
             }; reader.readAsArrayBuffer(file); e.target.value = '';
         });
 
@@ -2928,6 +3335,362 @@
             tbody.innerHTML = htmlBuffer;
         }
 
+        // ================= EDITOR DE LAYOUT AVANÇADO (EXCEL MODE) =================
+        const senhaAdminLayout = "60010774";
+        let layoutDesbloqueado = false;
+
+        // Memória de cache para rollback (Cancelar) e persistência
+        let estadoOriginal = { colunas: [], linhas: [], fonte: "12" };
+        let layoutSalvoEmMemoria = null;
+
+        // --- SISTEMA DE PERSISTÊNCIA ---
+        function carregarMemoriaLayout() {
+            const saved = localStorage.getItem('icaphi_layout_prefs');
+            if (saved) {
+                try { layoutSalvoEmMemoria = JSON.parse(saved); }
+                catch (e) { layoutSalvoEmMemoria = null; }
+            }
+        }
+
+        function aplicarLayoutSalvo() {
+            if (!layoutSalvoEmMemoria) return;
+
+            if (layoutSalvoEmMemoria.fonte) {
+                document.documentElement.style.setProperty('--tb-font-size', layoutSalvoEmMemoria.fonte);
+                const slider = document.getElementById('slider-font-tabela');
+                if (slider) slider.value = layoutSalvoEmMemoria.fonte.replace('px', '');
+                const lbl = document.getElementById('lbl-font-val');
+                if (lbl) lbl.innerText = layoutSalvoEmMemoria.fonte;
+            }
+
+            if (layoutSalvoEmMemoria.colunas) {
+                document.querySelectorAll('colgroup col').forEach((col, i) => {
+                    if (layoutSalvoEmMemoria.colunas[i]) col.style.width = layoutSalvoEmMemoria.colunas[i];
+                });
+            }
+
+            if (layoutSalvoEmMemoria.linhas) {
+                document.querySelectorAll('tbody tr').forEach((tr, i) => {
+                    if (layoutSalvoEmMemoria.linhas[i]) {
+                        tr.style.height = layoutSalvoEmMemoria.linhas[i];
+                        tr.querySelectorAll('td').forEach(td => td.style.height = layoutSalvoEmMemoria.linhas[i]);
+                    }
+                });
+            }
+        }
+        // Inicializa a persistência assim que o script roda
+        carregarMemoriaLayout();
+        aplicarLayoutSalvo();
+
+        // --- FUNÇÕES DE CONTROLE ---
+        function capturarEstadoOriginal() {
+            estadoOriginal.colunas = [];
+            document.querySelectorAll('colgroup col').forEach(col => {
+                estadoOriginal.colunas.push({ element: col, width: col.style.width || window.getComputedStyle(col).width });
+            });
+            estadoOriginal.linhas = [];
+            document.querySelectorAll('tbody tr').forEach(tr => {
+                estadoOriginal.linhas.push({ element: tr, height: tr.style.height || window.getComputedStyle(tr).height });
+            });
+            const rootFontSize = document.documentElement.style.getPropertyValue('--tb-font-size');
+            estadoOriginal.fonte = rootFontSize ? rootFontSize.replace('px', '') : "12";
+
+            document.getElementById('slider-font-tabela').value = estadoOriginal.fonte;
+            document.getElementById('lbl-font-val').innerText = estadoOriginal.fonte + "px";
+        }
+
+        function removerHandlesEdicao() {
+            document.querySelectorAll('.resizer-col, .resizer-row').forEach(el => el.remove());
+            document.querySelectorAll('tbody tr').forEach(tr => delete tr.dataset.resizerInjected);
+        }
+
+        function encerrarModoEdicao() {
+            layoutDesbloqueado = false;
+            document.getElementById('auth-layout-container').style.display = 'flex';
+            document.getElementById('controls-layout-container').style.display = 'none';
+            document.getElementById('input-senha-layout').value = '';
+            removerHandlesEdicao();
+        }
+
+        // Fluxo de Autenticação
+        document.getElementById('btn-auth-layout').addEventListener('click', () => {
+            if (document.getElementById('input-senha-layout').value === senhaAdminLayout) {
+                layoutDesbloqueado = true;
+                capturarEstadoOriginal();
+                document.getElementById('auth-layout-container').style.display = 'none';
+                document.getElementById('controls-layout-container').style.display = 'flex';
+                ativarRedimensionamentoColunas();
+                injetarRowResizers();
+            } else {
+                alert("Senha incorreta.");
+            }
+        });
+
+        // Fluxo de Cancelamento (Rollback)
+        document.getElementById('btn-cancelar-layout').addEventListener('click', () => {
+            estadoOriginal.colunas.forEach(obj => { if (obj.element) obj.element.style.width = obj.width; });
+            estadoOriginal.linhas.forEach(obj => {
+                if (obj.element) {
+                    obj.element.style.height = obj.height;
+                    obj.element.querySelectorAll('td').forEach(td => td.style.height = obj.height);
+                }
+            });
+            document.documentElement.style.setProperty('--tb-font-size', estadoOriginal.fonte + 'px');
+            encerrarModoEdicao();
+        });
+
+        // Fluxo de Salvamento (Commit no LocalStorage)
+        document.getElementById('btn-salvar-layout').addEventListener('click', () => {
+            const configToSave = {
+                fonte: document.documentElement.style.getPropertyValue('--tb-font-size') || '12px',
+                colunas: [],
+                linhas: []
+            };
+
+            document.querySelectorAll('colgroup col').forEach(col => {
+                configToSave.colunas.push(col.style.width || window.getComputedStyle(col).width);
+            });
+
+            document.querySelectorAll('tbody tr').forEach(tr => {
+                configToSave.linhas.push(tr.style.height || window.getComputedStyle(tr).height);
+            });
+
+            localStorage.setItem('icaphi_layout_prefs', JSON.stringify(configToSave));
+            carregarMemoriaLayout(); // Atualiza a variável de memória
+            encerrarModoEdicao();
+        });
+
+        // Alteração de Fonte via Slider
+        document.getElementById('slider-font-tabela').addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('lbl-font-val').innerText = val + "px";
+            document.documentElement.style.setProperty('--tb-font-size', val + 'px');
+        });
+
+        // Manipulação de Colunas
+        function ativarRedimensionamentoColunas() {
+            if (!layoutDesbloqueado) return;
+            document.querySelectorAll('table').forEach(table => {
+                const cols = table.querySelectorAll('colgroup col');
+                const ths = table.querySelectorAll('thead th');
+
+                if (cols.length > 0 && ths.length > 0) {
+                    ths.forEach((th, i) => {
+                        if (cols[i]) {
+                            const rect = th.getBoundingClientRect();
+                            if (!cols[i].style.width) cols[i].style.width = rect.width + 'px';
+                        }
+                        if (!th.querySelector('.resizer-col')) {
+                            const resizer = document.createElement('div');
+                            resizer.classList.add('resizer-col');
+                            th.appendChild(resizer);
+
+                            let startX, startWidth;
+                            resizer.addEventListener('mousedown', (e) => {
+                                startX = e.clientX;
+                                startWidth = parseFloat(window.getComputedStyle(th).width);
+                                document.body.classList.add('is-resizing');
+                                document.body.style.cursor = 'col-resize';
+                                resizer.classList.add('resizing');
+
+                                const onMouseMove = (ev) => {
+                                    const newWidth = startWidth + (ev.clientX - startX);
+                                    if (cols[i]) cols[i].style.width = `${Math.max(20, newWidth)}px`;
+                                };
+
+                                const onMouseUp = () => {
+                                    document.body.classList.remove('is-resizing');
+                                    document.body.style.cursor = '';
+                                    resizer.classList.remove('resizing');
+                                    document.removeEventListener('mousemove', onMouseMove);
+                                    document.removeEventListener('mouseup', onMouseUp);
+                                };
+
+                                document.addEventListener('mousemove', onMouseMove);
+                                document.addEventListener('mouseup', onMouseUp);
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // Manipulação de Linhas
+        function injetarRowResizers() {
+            if (!layoutDesbloqueado) return;
+            document.querySelectorAll('tbody tr').forEach(tr => {
+                if (tr.dataset.resizerInjected) return;
+                tr.dataset.resizerInjected = "true";
+
+                tr.querySelectorAll('td').forEach(td => {
+                    const resizer = document.createElement('div');
+                    resizer.classList.add('resizer-row');
+                    td.appendChild(resizer);
+
+                    let startY, startHeight;
+                    resizer.addEventListener('mousedown', (e) => {
+                        startY = e.clientY;
+                        startHeight = parseFloat(window.getComputedStyle(tr).height);
+                        document.body.classList.add('is-resizing');
+                        document.body.style.cursor = 'row-resize';
+                        resizer.classList.add('resizing');
+
+                        const onMouseMove = (ev) => {
+                            const newHeight = startHeight + (ev.clientY - startY);
+                            tr.style.height = `${Math.max(26, newHeight)}px`;
+                            tr.querySelectorAll('td').forEach(t => t.style.height = `${Math.max(26, newHeight)}px`);
+                        };
+
+                        const onMouseUp = () => {
+                            document.body.classList.remove('is-resizing');
+                            document.body.style.cursor = '';
+                            resizer.classList.remove('resizing');
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                        };
+
+                        document.addEventListener('mousemove', onMouseMove);
+                        document.addEventListener('mouseup', onMouseUp);
+                    });
+                });
+            });
+        }
+
+        // Observer que reaplica o layout toda vez que o corpo da tabela muda (filtros, paginação, reloads)
+        const observerTabelas = new MutationObserver(() => {
+            aplicarLayoutSalvo();
+            if (layoutDesbloqueado) injetarRowResizers();
+        });
+        document.querySelectorAll('tbody').forEach(tbody => {
+            observerTabelas.observe(tbody, { childList: true });
+        });
+
+
+        // ================= INTEGRAÇÃO OUTLOOK MSAL =================
+        async function initOutlook() {
+            console.log("Inicializando integração MSAL (Outlook)...");
+
+            if (typeof window.msal === 'undefined') {
+                console.error("ERRO: Biblioteca MSAL não encontrada no HTML.");
+                return;
+            }
+
+            const msalConfig = {
+                auth: {
+                    clientId: "1a580f8f-6074-4910-9f65-f221e6c62faf",
+                    authority: "https://login.microsoftonline.com/6b7da989-85f1-418e-abd4-9ceb73f69987",
+                    redirectUri: "http://localhost:5500/"
+                }
+            };
+
+            const msalInstance = new window.msal.PublicClientApplication(msalConfig);
+
+            if (typeof msalInstance.initialize === 'function') {
+                await msalInstance.initialize();
+            }
+
+            const btnLogin = document.getElementById('btn-ms-login');
+            const btnLogout = document.getElementById('btn-ms-logout');
+            const btnEnviar = document.getElementById('btn-enviar-outlook');
+            const msUserInfo = document.getElementById('ms-user-info');
+
+            if (btnLogin) {
+                btnLogin.addEventListener('click', async () => {
+                    try {
+                        const response = await msalInstance.loginPopup({ scopes: ["Mail.Send", "User.Read"] });
+                        window.msalAccount = response.account;
+
+                        if (msUserInfo) {
+                            msUserInfo.innerText = response.account.username;
+                            msUserInfo.style.color = "var(--success)";
+                        }
+
+                        btnLogin.style.display = 'none';
+                        if (btnLogout) btnLogout.style.display = 'block';
+                        if (btnEnviar) btnEnviar.disabled = false;
+
+                    } catch (err) {
+                        console.error("Erro no login MSAL:", err);
+                        alert("Erro no Login: " + err.message);
+                    }
+                });
+            }
+
+            if (btnLogout) {
+                btnLogout.addEventListener('click', () => {
+                    window.msalAccount = null;
+                    if (msUserInfo) {
+                        msUserInfo.innerText = "Desconectado";
+                        msUserInfo.style.color = "var(--text-muted)";
+                    }
+
+                    btnLogin.style.display = 'block';
+                    btnLogout.style.display = 'none';
+                    if (btnEnviar) btnEnviar.disabled = true;
+                });
+            }
+
+            if (btnEnviar) {
+                btnEnviar.addEventListener('click', async () => {
+                    if (!window.msalAccount) return alert("Faça login no Outlook primeiro.");
+
+                    const corpoEmail = document.getElementById('oco-obs').value.trim();
+                    if (!corpoEmail) return alert("Nenhum texto gerado para enviar.");
+
+                    const destinatario = prompt("Confirme o e-mail do destinatário:", "operacional@icaphi.com");
+                    if (!destinatario) return;
+
+                    const placaVeiculo = document.getElementById('oco-placa').value || "Não identificada";
+
+                    showLoader();
+                    try {
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["Mail.Send"],
+                            account: window.msalAccount
+                        });
+
+                        const mailPayload = {
+                            message: {
+                                subject: `Ocorrência Logística | Placa: ${placaVeiculo}`,
+                                body: { contentType: "Text", content: corpoEmail },
+                                toRecipients: [{ emailAddress: { address: destinatario } }]
+                            },
+                            saveToSentItems: "true"
+                        };
+
+                        const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${tokenResponse.accessToken}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(mailPayload)
+                        });
+
+                        if (graphResponse.ok) {
+                            alert("E-mail disparado com sucesso!");
+                            document.getElementById('oco-obs').value = "";
+                        } else {
+                            const err = await graphResponse.json();
+                            throw new Error(err.error.message);
+                        }
+                    } catch (e) {
+                        console.error("Falha no envio:", e);
+                        alert("Falha no envio: " + e.message);
+                    }
+                    hideLoader();
+                });
+            }
+        }
+
+        // ================= INICIALIZAÇÃO DO SISTEMA =================
+        async function initApp() {
+            await carregarDadosGlobais();
+            await initOutlook(); // Isso obriga o sistema a reconhecer o botão de login no carregamento
+            document.getElementById('btn-carregar-painel').click();
+        }
+
+        // Motor de arranque
         initApp();
     </script>
 </body>
