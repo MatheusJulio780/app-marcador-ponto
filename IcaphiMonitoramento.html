@@ -9,6 +9,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <style>
         /* ================= PALETAS DE CORES ================= */
         :root {
@@ -34,9 +36,9 @@
             --st-vazio-bg: #eff6ff;
             --st-vazio-txt: #2563eb;
             --st-vazio-bd: #bfdbfe;
-            --st-pernoite-bg: #f5f5f4;
+            --st-pernoite-bg: #dfc2b1;
             --st-pernoite-txt: #78350f;
-            --st-pernoite-bd: #d6d3d1;
+            --st-pernoite-bd: #8f6549;
             --st-finalizado-bg: #fdf2f8;
             --st-finalizado-txt: #db2777;
             --st-finalizado-bd: #fbcfe8;
@@ -46,10 +48,10 @@
             --st-emrota-bg: #f8fafc;
             --st-emrota-txt: #64748b;
             --st-emrota-bd: #e2e8f0;
-            --st-aguardando-bg: #ecfeff;
+            --st-aguardando-bg: #a2eaee;
             --st-aguardando-txt: #0891b2;
             --st-aguardando-bd: #a5f3fc;
-            --st-trafegando-bg: #fff7ed;
+            --st-trafegando-bg: #fdcb8d;
             --st-trafegando-txt: #ea580c;
             --st-trafegando-bd: #fed7aa;
             --st-desc-bg: #faf5ff;
@@ -58,9 +60,9 @@
             --st-parada-bg: #fef2f2;
             --st-parada-txt: #dc2626;
             --st-parada-bd: #fecaca;
-            --st-dev-bg: #fca5a5;
+            --st-dev-bg: #ff6d6d;
             --st-dev-txt: #7f1d1d;
-            --st-dev-bd: #f87171;
+            --st-dev-bd: #ffa9a9;
             --st-reen-bg: #fdba74;
             --st-reen-txt: #c2410c;
             --st-reen-bd: #fb923c;
@@ -446,14 +448,14 @@
             gap: 10px;
             flex-wrap: nowrap;
             overflow-x: auto;
-            padding-bottom: 5px;
+            padding-bottom: 1px;
         }
 
         .summary-block {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 5px 5px;
+            border-radius: 10px;
             font-weight: 700;
             font-size: 11px;
             display: flex;
@@ -1268,43 +1270,62 @@
 
         /* 1. COMPACTAÇÃO DA BARRA DE PROGRESSO */
         .progress-container {
-            height: 12px !important; /* Afina a barra */
-            margin-bottom: 8px !important; /* Reduz espaço inferior */
+            height: 12px !important;
+            /* Afina a barra */
+            margin-bottom: 8px !important;
+            /* Reduz espaço inferior */
         }
+
         #lbl-progresso-txt {
-            font-size: 11px !important; /* Diminui a fonte do texto */
+            font-size: 11px !important;
+            /* Diminui a fonte do texto */
             margin-bottom: 4px !important;
         }
+
         #progress-truck {
-            font-size: 14px !important; /* Diminui o caminhãozinho */
+            font-size: 14px !important;
+            /* Diminui o caminhãozinho */
             top: -16px !important;
         }
 
         /* 2. COMPACTAÇÃO DO CONTAINER DOS CARDS */
         #painel-summary {
-            gap: 6px !important; /* Reduz a distância entre os cards */
-            margin-bottom: 10px !important;
+            gap: 6px !important;
+            /* Reduz a distância entre os cards */
+            margin-bottom: 1px !important;
         }
 
         /* 3. CORES INTELIGENTES NA SIDEBAR (Ícones) */
         /* Monitoramento (Azul) */
-        .menu-item[data-target="view-monitoramento"] i { color: #3b82f6; }
+        .menu-item[data-target="view-monitoramento"] i {
+            color: #3b82f6;
+        }
+
         /* Notas Fiscais (Verde) */
-        .menu-item[data-target="view-notas"] i { color: #10b981; }
+        .menu-item[data-target="view-notas"] i {
+            color: #10b981;
+        }
+
         /* Prestação de Contas (Laranja) */
-        .menu-item[data-target="view-canhotos"] i { color: #f59e0b; }
+        .menu-item[data-target="view-canhotos"] i {
+            color: #f59e0b;
+        }
+
         /* Configurações (Roxo) */
-        .menu-item i.ph-gear { color: #8b5cf6; }
-        
+        .menu-item i.ph-gear {
+            color: #8b5cf6;
+        }
+
         /* Ajuste do hover para manter a harmonia */
-        .menu-item.active i, .menu-item:hover i {
+        .menu-item.active i,
+        .menu-item:hover i {
             filter: brightness(1.2);
         }
 
         /* --------------------------------------------------- */
         /* CORREÇÃO DO FUNDO DAS LINHAS (TRANSPARÊNCIA DE TD)  */
         /* --------------------------------------------------- */
-        
+
         /* Força as células a ficarem transparentes caso a linha tenha uma cor aplicada pelo JS */
         tbody tr[style*="background-color"] td {
             background-color: transparent !important;
@@ -1314,6 +1335,124 @@
         tbody tr[style*="background-color"]:not([style*="transparent"]) td {
             color: var(--text-main) !important;
             font-weight: 600;
+        }
+
+        /* ========================================================= */
+        /* MODERNIZAÇÃO DA TABELA DO PAINEL (UI/UX)                  */
+        /* ========================================================= */
+
+        /* 1. Estrutura Base e Remoção do Grid Excel */
+        table {
+            border-collapse: collapse !important;
+            width: 100%;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+            font-size: 11.5px !important;
+            border: none !important;
+        }
+
+        /* 2. Cabeçalho Moderno e Fixo */
+        thead th {
+            background: var(--bg-table-header) !important;
+            color: #f8fafc !important;
+            /* Texto claro sempre */
+            padding: 12px 10px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            border: none !important;
+            border-bottom: 3px solid var(--accent) !important;
+            /* Linha de destaque na base do header */
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+            white-space: nowrap !important;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 3. Células Respiráveis e Linhas Horizontais Suaves */
+        tbody td {
+            padding: 10px 8px !important;
+            vertical-align: middle !important;
+            border: none !important;
+            /* Remove grid vertical e horizontal antigo */
+            border-bottom: 1px solid var(--border-color) !important;
+            /* Apenas linha divisória sutil */
+            color: var(--text-main) !important;
+            white-space: nowrap !important;
+        }
+
+        /* 4. Efeito Zebra Suave (Respeitando as cores de status) */
+        tbody tr:nth-child(even):not([style*="background-color"]) {
+            background-color: rgba(0, 0, 0, 0.02) !important;
+        }
+
+        /* 5. Hover Row (Mapeamento Visual com Mouse) */
+        tbody tr {
+            transition: all 0.2s ease !important;
+        }
+
+        tbody tr:hover {
+            background-color: var(--drag-bg) !important;
+            /* Fundo acende ao passar o mouse */
+            box-shadow: inset 3px 0 0 var(--accent) !important;
+            /* Filete azul indicando a linha ativa na esquerda */
+        }
+
+        /* 6. Estilização de Links (Azul Vivo em vez de Padrão do Navegador) */
+        tbody td a,
+        tbody td span.link-style {
+            color: var(--accent) !important;
+            text-decoration: none !important;
+            font-weight: 600 !important;
+            transition: color 0.2s ease;
+        }
+
+        tbody td a:hover,
+        tbody td span.link-style:hover {
+            color: var(--accent-hover) !important;
+            text-decoration: underline !important;
+        }
+
+        /* 7. Centralização e Alinhamento Estratégico */
+        /* Força a centralização de colunas que são puramente números ou badges pequenos para manter simetria */
+        tbody td:nth-child(10),
+        /* Q.NF */
+        tbody td:nth-child(11),
+        /* PESO */
+        tbody td:nth-child(21),
+        /* REAL */
+        tbody td:nth-child(22)
+
+        /* % APP */
+            {
+            text-align: center !important;
+            font-weight: 600 !important;
+        }
+
+        /* Garante transparência nas células se a linha for pintada por JavaScript (Regra do JS) */
+        tbody tr[style*="background-color"] td {
+            background-color: transparent !important;
+        }
+
+        /* ========================================================= */
+        /* AUTOMAÇÃO VISUAL: DESTAQUE ROXO PARA PARCIAIS PREENCHIDAS */
+        /* ========================================================= */
+        
+        /* 1. Para a tabela de Notas (Células editáveis) */
+        tbody td[data-live="parcial"]:not(:empty) {
+            background-color: var(--st-desc-bg) !important;
+            color: var(--st-desc-txt) !important;
+            font-weight: 700 !important;
+            box-shadow: inset 0 0 0 1px var(--st-desc-bd) !important;
+        }
+
+        /* 2. Para a tabela do Painel (Caso tenha uma coluna "parcial") */
+        tbody td[data-col="parcial"]:not(:empty),
+        tbody td.col-parcial:not(:empty) {
+            background-color: var(--st-desc-bg) !important;
+            color: var(--st-desc-txt) !important;
+            font-weight: 700 !important;
+            border-radius: 4px;
         }
         
     </style>
@@ -1711,11 +1850,21 @@
                             <input type="number" id="pc-ajudante" placeholder="Ex: 80.00" style="width:100%;">
                         </div>
                     </div>
-                    <div style="display:flex; gap:15px;">
-                        <button class="btn btn-success" id="btn-pc-pdf" style="flex:1; padding:12px;"><i
-                                class="ph ph-file-pdf"></i> Gerar PDF / Imprimir</button>
-                        <button class="btn btn-primary" id="btn-pc-excel" style="flex:1; padding:12px;"><i
-                                class="ph ph-file-xls"></i> Exportar Dados (Excel)</button>
+                    <div style="display:flex; gap:15px; flex-wrap: wrap;">
+                        <button class="btn btn-success" id="btn-gerar-pc-padrao"
+                            style="flex:1; padding:12px; min-width: 200px;">
+                            <i class="ph ph-file-pdf"></i> Formulário Padrão
+                        </button>
+
+                        <button class="btn btn-warning" id="btn-gerar-pc-devolucao"
+                            style="flex:1; padding:12px; min-width: 200px; background-color: #f59e0b; color: white; border: none; border-radius: 4px; font-weight: 600;">
+                            <i class="ph ph-warning-circle"></i> Protocolo Dev/Reentregas
+                        </button>
+
+                        <button class="btn btn-primary" id="btn-pc-excel"
+                            style="flex:1; padding:12px; min-width: 200px;">
+                            <i class="ph ph-file-xls"></i> Exportar Dados (Excel)
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2550,128 +2699,61 @@
         });
 
         // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
+        // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
         document.getElementById('btn-buscar-pc-placas').addEventListener('click', async () => {
-            const data = document.getElementById('pc-data').value; if (!data) return alert("Selecione a data da operação."); showLoader();
+            const dataStr = document.getElementById('pc-data').value;
+            if (!dataStr) return alert("Selecione a data da operação.");
+            showLoader();
+
+            // Lógica Avançada: Calcula automaticamente o dia seguinte para capturar a finalização dos pernoites
+            const dObj = new Date(dataStr);
+            dObj.setUTCDate(dObj.getUTCDate() + 1);
+            const dataAmanha = dObj.toISOString().split('T')[0];
+
             try {
-                const sNotas = await getDoc(doc(db, "notas_fiscais_diario", data));
-                window.pcNotasCache = sNotas.exists() ? sNotas.data().notas.filter(n => trimUpper(n.status) !== 'NÃO EMBARCADA') : [];
+                // Dispara busca dupla simultânea (Hoje e Amanhã)
+                const [sNotas, sAmanha] = await Promise.all([
+                    getDoc(doc(db, "notas_fiscais_diario", dataStr)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataAmanha))
+                ]);
+
+                let notasDia = sNotas.exists() ? sNotas.data().notas.filter(n => trimUpper(n.status) !== 'NÃO EMBARCADA') : [];
+                let notasAmanha = sAmanha.exists() ? sAmanha.data().notas : [];
+
+                // Cria um mapa de indexação rápida para o dia seguinte
+                let mapaAmanha = {};
+                notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
+
+                // Mescla os dados: Mantém a base da saída, mas injeta a resolução do pernoite
+                window.pcNotasCache = notasDia.map(n => {
+                    const nfClean = cleanNF(n.nf);
+                    const notaSeguinte = mapaAmanha[nfClean];
+
+                    // Se a nota consta amanhã e estava pendente ou como pernoite na saída original:
+                    if (notaSeguinte && (trimUpper(n.status) === 'PERNOITE' || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO')) {
+                        return {
+                            ...n,
+                            status: notaSeguinte.status || n.status,
+                            app: notaSeguinte.app || n.app,
+                            obs: notaSeguinte.obs || n.obs,
+                            parcial: notaSeguinte.parcial || n.parcial,
+                            chegada: notaSeguinte.chegada || n.chegada,
+                            saida: notaSeguinte.saida || n.saida
+                        };
+                    }
+                    return n;
+                });
+
                 const placas = [...new Set(window.pcNotasCache.map(n => n.placa))].filter(p => p);
                 document.getElementById('pc-placa').innerHTML = `<option value="">Selecione o Veículo</option>` + placas.map(p => `<option value="${p}">${p}</option>`).join('');
                 if (placas.length === 0) alert("Nenhuma placa válida encontrada nesta data.");
-            } catch (e) { console.error("Erro buscar Placas PC", e); } hideLoader();
+
+            } catch (e) {
+                console.error("Erro buscar Placas PC", e);
+            }
+            hideLoader();
         });
 
-        document.getElementById('btn-pc-pdf').addEventListener('click', () => {
-            const placa = document.getElementById('pc-placa').value;
-            if (!placa) return alert("Selecione a placa para gerar o relatório.");
-            const notas = window.pcNotasCache.filter(n => trimUpper(n.placa) === trimUpper(placa));
-
-            const motoristaRef = notas.find(n => n.motorista) || notas[0] || {};
-            const motoristaNome = motoristaRef.motorista || "NÃO INFORMADO";
-            const viagem = motoristaRef.viagem || "00000";
-            const infoPlaca = window.placasCache[placa] || { perfil: "", tipo: "" };
-
-            document.getElementById('p-nome').innerText = motoristaNome.toUpperCase();
-            document.getElementById('p-placa').innerText = placa;
-            document.getElementById('p-perfil').innerText = infoPlaca.perfil;
-            document.getElementById('p-status').innerText = infoPlaca.tipo;
-            document.getElementById('p-transporte').innerText = viagem;
-            document.getElementById('p-codigo').innerText = `${viagem}${placa.replace(/[^A-Z0-9]/g, '')}`;
-
-            const mesesAbrev = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-            const dataOpStr = document.getElementById('pc-data').value;
-            if (dataOpStr) {
-                const dOp = new Date(dataOpStr + 'T00:00:00');
-                document.getElementById('p-largada').innerText = `${String(dOp.getDate()).padStart(2, '0')}-${mesesAbrev[dOp.getMonth()]}`;
-            }
-            const hojeObj = new Date();
-            const dataFormatadaHoje = `${String(hojeObj.getDate()).padStart(2, '0')}/${String(hojeObj.getMonth() + 1).padStart(2, '0')}/${hojeObj.getFullYear()}`;
-            document.getElementById('p-prestacao').innerText = `${String(hojeObj.getDate()).padStart(2, '0')}-${mesesAbrev[hojeObj.getMonth()]}`;
-
-            // Rodapé
-            document.getElementById('p-cidade-data-rodape').innerText = dataFormatadaHoje;
-            document.getElementById('p-qtd').innerText = notas.length;
-
-            const canhotosNFs = notas.filter(n => trimUpper(n.status) === 'ENTREGUE' || trimUpper(n.status) === 'REALIZADA');
-
-            const maxPerCol = 10; let nfsHtml = "";
-            for (let i = 0; i < canhotosNFs.length; i += maxPerCol) {
-                nfsHtml += `<div class="canhotos-col">`;
-                for (let j = i; j < i + maxPerCol && j < canhotosNFs.length; j++) {
-                    const nota = canhotosNFs[j];
-                    const appStatus = trimUpper(nota.app);
-
-                    let colorCode = "#dc2626"; // Vermelho
-                    if (appStatus === 'ASSINATURA') colorCode = "#2563eb"; // Azul
-                    else if (appStatus === 'FOTO' || appStatus === 'ANEXADO') colorCode = "#16a34a"; // Verde
-
-                    nfsHtml += `<div style="color: ${colorCode} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: 900;">${cleanNF(nota.nf)}</div>`;
-                }
-                nfsHtml += `</div>`;
-            }
-            document.getElementById('p-canhotos-grid').innerHTML = nfsHtml || "NENHUM CANHOTO ENTREGUE";
-
-            // LÓGICA DE AUDITORIA APP COM REGRAS DE 100%
-            const totalEntregues = canhotosNFs.length;
-            const cAss = canhotosNFs.filter(n => trimUpper(n.app) === 'ASSINATURA').length;
-            const cFot = canhotosNFs.filter(n => trimUpper(n.app) === 'FOTO').length;
-            const cAne = canhotosNFs.filter(n => trimUpper(n.app) === 'ANEXADO').length;
-
-            let textoResumoApp = "";
-            if (totalEntregues > 0) {
-                if (cAss === totalEntregues) {
-                    textoResumoApp = "100% POR ASSINATURA";
-                } else if (cFot === totalEntregues) {
-                    textoResumoApp = "100% POR FOTO";
-                } else if (cAne === totalEntregues) {
-                    textoResumoApp = "100% POR ANEXADO";
-                } else {
-                    textoResumoApp = `AUDITORIA APP: ${cAss} ASSINATURAS | ${cFot} FOTOS | ${cAne} ANEXADOS`;
-                }
-            } else {
-                textoResumoApp = "SEM DADOS DE CANHOTO";
-            }
-            document.getElementById('p-canhotos-resumo').innerText = textoResumoApp;
-
-            const reen = notas.filter(n => trimUpper(n.status) === 'REENTREGA').map(n => cleanNF(n.nf));
-            const dev = notas.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').map(n => cleanNF(n.nf));
-            const parc = notas.filter(n => n.parcial && String(n.parcial).trim() !== "").map(n => ({ nf: cleanNF(n.nf), valor: String(n.parcial).trim() }));
-
-            let maxRows = Math.max(reen.length, dev.length, parc.length, 5);
-            let rowsHtml = "";
-            for (let i = 0; i < maxRows; i++) {
-                rowsHtml += `<tr style="border-bottom: 1px solid #ccc;">
-                    <td style="border: 1px solid #000; padding: 6px;">${reen[i] || "-"}</td>
-                    <td style="border: 1px solid #000; padding: 6px;">${dev[i] || "-"}</td>
-                    <td style="border: 1px solid #000; padding: 6px; font-weight: 700; color: #000;">${parc[i] ? parc[i].nf : "-"}</td>
-                    <td style="border: 1px solid #000; padding: 6px; font-weight: 900; color: #dc2626 !important; -webkit-print-color-adjust: exact;">${parc[i] ? parc[i].valor : "-"}</td>
-                </tr>`;
-            }
-            document.getElementById('p-ocurrences-body').innerHTML = rowsHtml;
-
-            // Formatação de valores financeiros
-            const valPedagio = parseFloat(document.getElementById('pc-pedagio').value) || 0;
-            const valDescarga = parseFloat(document.getElementById('pc-descarga').value) || 0;
-            const valAjudante = parseFloat(document.getElementById('pc-ajudante').value) || 0;
-            document.getElementById('p-pedagio').innerText = `R$ ${valPedagio.toFixed(2).replace('.', ',')}`;
-            document.getElementById('p-descarga').innerText = `R$ ${valDescarga.toFixed(2).replace('.', ',')}`;
-            document.getElementById('p-ajudante').innerText = `R$ ${valAjudante.toFixed(2).replace('.', ',')}`;
-
-            // INJEÇÃO DA LÓGICA DE RENDERIZAÇÃO DA IMAGEM NO PDF
-            const assinaturaOuEvidenciaBase64 = "COLE_AQUI_A_SUA_STRING_BASE64_COMPLETA";
-            const imgEvidenciaElement = document.getElementById('img-evidencia-pdf');
-
-            // Controle de estado: exibe a imagem apenas se o Base64 for válido e diferente do placeholder
-            if (imgEvidenciaElement && assinaturaOuEvidenciaBase64 && assinaturaOuEvidenciaBase64 !== "COLE_AQUI_A_SUA_STRING_BASE64_COMPLETA") {
-                imgEvidenciaElement.src = assinaturaOuEvidenciaBase64;
-                imgEvidenciaElement.style.display = 'block';
-            } else if (imgEvidenciaElement) {
-                imgEvidenciaElement.style.display = 'none';
-            }
-
-            // Disparo nativo de impressão
-            window.print();
-        });
 
         document.getElementById('btn-pc-excel').addEventListener('click', () => {
             const placa = document.getElementById('pc-placa').value; if (!placa) return alert("Selecione a placa.");
@@ -2736,9 +2818,9 @@
                                 else if (assinVal.includes("@FM@")) novoApp = "ANEXADO";
                                 else if (assinVal.includes("@SI@")) novoApp = "FOTO";
 
-                                if (novoApp !== "" && notaTarget.app !== novoApp) { 
-                                    notaTarget.app = novoApp; 
-                                    mudou = true; 
+                                if (novoApp !== "" && notaTarget.app !== novoApp) {
+                                    notaTarget.app = novoApp;
+                                    mudou = true;
                                 }
 
                                 if (mudou) alteradasCount++;
@@ -3227,14 +3309,14 @@
                         const placaNormal = r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const isPernoite = statusRota.includes('PERNOITE');
-                        
+
                         // Extrai todos os números de transporte (viagem) desta linha do painel
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
-                        
+
                         transpsValidos.forEach(t => {
-                            mapFiltroTransporte[t] = { 
-                                placaFinal: placaFinal, 
-                                bloqueado: isPernoite 
+                            mapFiltroTransporte[t] = {
+                                placaFinal: placaFinal,
+                                bloqueado: isPernoite
                             };
                         });
                     });
@@ -3249,7 +3331,15 @@
                 if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; }
 
                 const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
-                const cols = { nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"), data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"), cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"), endereco: h.indexOf("RUA"), codcli: h.indexOf("COD.CLI."), repres: h.indexOf("REPRES."), sup: h.indexOf("SUPERVISOR"), placa: h.indexOf("PLACA") };
+                // Mapeamento atualizado para capturar a coluna NºPARC.
+                const cols = { 
+                    nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"), 
+                    data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"), 
+                    cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"), 
+                    endereco: h.indexOf("RUA"), codcli: h.indexOf("COD.CLI."), repres: h.indexOf("REPRES."), 
+                    sup: h.indexOf("SUPERVISOR"), placa: h.indexOf("PLACA"), 
+                    parcial: h.indexOf("NºPARC.") // <- NOVA COLUNA MAPEADA AQUI
+                };
 
                 let qtd = 0;
                 for (let i = hIdx + 1; i < raw.length; i++) {
@@ -3257,16 +3347,10 @@
                     const nfTratada = cleanNF(row[cols.nf]);
                     const viagemPlanilha = String(row[cols.viagem] || "").trim();
 
-                    // Validação direta e precisa pelo número do transporte
                     const filtroViagem = mapFiltroTransporte[viagemPlanilha];
                     
                     if (filtroViagem) {
-                        // TRAVA ANTIDUPLICIDADE: Se esta viagem está no painel de hoje como "Pernoite", 
-                        // ela é ignorada na planilha. As notas corretas já vieram via banco de dados (Rollover).
-                        // Isso impede que o faturamento antigo de ontem entre na operação de hoje.
-                        if (filtroViagem.bloqueado) {
-                            continue; 
-                        }
+                        if (filtroViagem.bloqueado) continue; 
 
                         let existsInTable = false;
                         document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => { if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) existsInTable = true; });
@@ -3287,10 +3371,12 @@
                             cidade: cols.cidade !== -1 ? row[cols.cidade] : "", 
                             bairro: cols.bairro !== -1 ? row[cols.bairro] : "", 
                             endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
-                            placa: filtroViagem.placaFinal, // Garante o direcionamento correto para a placa atual (ou placa de troca)
+                            placa: filtroViagem.placaFinal, 
                             codcli: cols.codcli !== -1 ? row[cols.codcli] : "", 
                             repres: cols.repres !== -1 ? row[cols.repres] : "", 
-                            sup: cols.sup !== -1 ? row[cols.sup] : ""
+                            sup: cols.sup !== -1 ? row[cols.sup] : "",
+                            // Injeção do valor da parcial lido da planilha
+                            parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : ""
                         });
                     }
                 }
@@ -3707,6 +3793,294 @@
 
         // Motor de arranque
         initApp();
+
+
+        // ================= FUNÇÕES DE APOIO PARA PDF =================
+        function chunkArray(arr, size) {
+            let results = [];
+            for (let i = 0; i < arr.length; i += size) {
+                results.push(arr.slice(i, i + size));
+            }
+            return results;
+        }
+
+        function getDataAtualFormatada() {
+            const d = new Date();
+            return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // ================= MOTOR DE FILTRAGEM (COM CORREÇÃO DE PARCIAIS NUMÉRICAS) =================
+        function obterDadosFiltradosPC() {
+            const placaSelecionada = document.getElementById('pc-placa').value;
+            const todasNotas = window.pcNotasCache || [];
+
+            const notas = placaSelecionada ? todasNotas.filter(n => n.placa === placaSelecionada) : todasNotas;
+            const entregues = notas.filter(n => ['ENTREGUE', 'REALIZADA', 'VEÍCULO VAZIO'].includes(trimUpper(n.status)));
+            const reentregas = notas.filter(n => trimUpper(n.status) === 'REENTREGA');
+            const devolucoes = notas.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'PARADA' || trimUpper(n.status) === 'SINISTRADA');
+
+            // CORREÇÃO: Converte o valor para String. Assim, se a parcial for um número puro, o filtro não quebra.
+            const parciais = notas.filter(n => n.parcial && String(n.parcial).trim() !== "");
+
+            const motorista = notas.length > 0 ? (notas[0].motorista || "NÃO INFORMADO") : "NÃO INFORMADO";
+            const placa = placaSelecionada || "N/A";
+            const transporte = notas.length > 0 ? (notas[0].viagem || "") : "";
+            const dataSaida = document.getElementById('pc-data').value || "";
+
+            let qtdFoto = entregues.filter(n => n.app === 'FOTO').length;
+            let percentualFoto = entregues.length > 0 ? Math.round((qtdFoto / entregues.length) * 100) : 0;
+
+            let textoApp = "SEM ENTREGAS PARA AUDITAR";
+            if (entregues.length > 0) {
+                textoApp = percentualFoto >= 50 ? `${percentualFoto}% POR FOTO` : `${100 - percentualFoto}% POR ASSINATURA`;
+            }
+
+            return { notas, entregues, reentregas, devolucoes, parciais, motorista, placa, transporte, dataSaida, textoApp };
+        }
+
+        // ================= LAYOUT PADRÃO CORPORATIVO (LINHAS FINAS E ELEGANTES) =================
+        const layoutPremium = {
+            hLineWidth: function (i, node) { return 0.5; },
+            vLineWidth: function (i, node) { return 0.5; },
+            hLineColor: function (i, node) { return '#94a3b8'; },
+            vLineColor: function (i, node) { return '#94a3b8'; },
+            paddingLeft: function (i, node) { return 6; },
+            paddingRight: function (i, node) { return 6; },
+            paddingTop: function (i, node) { return 4; },
+            paddingBottom: function (i, node) { return 4; }
+        };
+
+        // ================= 1. FORMULÁRIO PADRÃO DE PRESTAÇÃO DE CONTAS =================
+        document.getElementById('btn-gerar-pc-padrao').addEventListener('click', () => {
+            if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
+            const d = obterDadosFiltradosPC();
+
+            let linhasCanhotos = chunkArray(d.entregues.map(n => ({ text: cleanNF(n.nf), alignment: 'center', fontSize: 9, bold: true })), 6);
+            linhasCanhotos = linhasCanhotos.map(row => {
+                while (row.length < 6) row.push({ text: '', alignment: 'center' });
+                return row;
+            });
+            while (linhasCanhotos.length < 5) linhasCanhotos.push([{ text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }]);
+
+            const docDefinition = {
+                pageSize: 'A4',
+                pageMargins: [30, 30, 30, 30],
+                defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
+                content: [
+                    // CABEÇALHO DO DOCUMENTO
+                    {
+                        columns: [
+                            { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c', width: '30%' },
+                            { text: 'FORMULÁRIO DE PRESTAÇÃO DE CONTAS', fontSize: 13, bold: true, alignment: 'center', width: '40%', margin: [0, 5, 0, 0] },
+                            { text: `EMISSÃO\n${getDataAtualFormatada()}`, fontSize: 8, alignment: 'right', bold: true, color: '#64748b', width: '30%', margin: [0, 5, 0, 0] }
+                        ],
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // DADOS DA OPERAÇÃO
+                    {
+                        table: {
+                            widths: ['40%', '20%', '20%', '20%'],
+                            body: [
+                                [
+                                    { text: 'MOTORISTA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'PLACA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'TRANSPORTE', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'DATA LARGADA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' }
+                                ],
+                                [
+                                    { text: d.motorista.toUpperCase(), bold: true, fontSize: 10 },
+                                    { text: d.placa.toUpperCase(), bold: true, fontSize: 10 },
+                                    { text: d.transporte, bold: true, fontSize: 10 },
+                                    { text: d.dataSaida.split('-').reverse().join('/'), bold: true, fontSize: 10 }
+                                ]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 10]
+                    },
+
+                    // AUDITORIA E RESUMO
+                    {
+                        table: {
+                            widths: ['50%', '50%'],
+                            body: [
+                                [
+                                    { text: `AUDITORIA DIGITAL: ${d.textoApp}`, bold: true, alignment: 'center', fillColor: '#f1f5f9' },
+                                    { text: `TOTAL DE NOTAS DA ROTA: ${d.notas.length}`, bold: true, alignment: 'center', fillColor: '#f1f5f9' }
+                                ]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // RELAÇÃO DE CANHOTOS
+                    {
+                        table: {
+                            widths: ['*', '*', '*', '*', '*', '*'],
+                            body: [
+                                [{ text: 'RELAÇÃO DE CANHOTOS ENTREGUES', colSpan: 6, alignment: 'center', bold: true, fontSize: 10, fillColor: '#e2e8f0' }, {}, {}, {}, {}, {}],
+                                ...linhasCanhotos,
+                                [{ text: `RESUMO: ${d.entregues.length} Entregues   |   ${d.reentregas.length} Reentregas   |   ${d.devolucoes.length} Devoluções`, colSpan: 6, alignment: 'center', bold: true, fillColor: '#f8fafc' }, {}, {}, {}, {}, {}]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // EXCEÇÕES
+                    {
+                        table: {
+                            widths: ['30%', '30%', '40%'],
+                            body: [
+                                [
+                                    { text: 'NOTAS DE REENTREGA', alignment: 'center', bold: true, fillColor: '#f1f5f9' },
+                                    { text: 'NOTAS DE DEVOLUÇÃO', alignment: 'center', bold: true, fillColor: '#f1f5f9' },
+                                    { text: 'NOTAS PARCIAIS / OBSERVAÇÕES', alignment: 'center', bold: true, fillColor: '#f1f5f9' }
+                                ],
+                                [
+                                    { text: d.reentregas.map(n => cleanNF(n.nf)).join('\n') || '\n', alignment: 'center', margin: [0, 2, 0, 2] },
+                                    { text: d.devolucoes.map(n => cleanNF(n.nf)).join('\n') || '\n', alignment: 'center', margin: [0, 2, 0, 2] },
+                                    { text: d.parciais.map(n => `${cleanNF(n.nf)} - ${n.parcial}`).join('\n') || '\n', alignment: 'left', margin: [0, 2, 0, 2] }
+                                ]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // DESPESAS
+                    {
+                        table: {
+                            widths: ['33%', '33%', '34%'],
+                            body: [
+                                [
+                                    { text: 'PEDÁGIO', bold: true, fontSize: 8, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'DESCARGA', bold: true, fontSize: 8, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'AJUDANTE', bold: true, fontSize: 8, color: '#64748b', fillColor: '#f8fafc' }
+                                ],
+                                [
+                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] },
+                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] },
+                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] }
+                                ]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 20]
+                    },
+
+                    // TERMOS DE RESPONSABILIDADE
+                    { text: 'TERMO DE RESPONSABILIDADE E ORIENTAÇÕES', bold: true, fontSize: 9, margin: [0, 0, 0, 4] },
+                    { text: '1. Declaro que as informações aqui prestadas são de minha inteira responsabilidade, e que não ficou nenhum documento faltante.\n2. Todas as NFs entregues deverão ter seus canhotos devidamente assinados e carimbados pelo cliente com o número de RG da pessoa que recebeu a mercadoria.\nOBS.: É obrigatória a apresentação dos documentos comprobatórios das despesas adicionais declaradas acima.', fontSize: 8, color: '#334155', margin: [0, 0, 0, 30] },
+
+                    // ASSINATURAS
+                    {
+                        columns: [
+                            { text: '____________________________________\nRecebido por (Conferência)', alignment: 'center', bold: true, fontSize: 9 },
+                            { text: '____________________________________\nResponsável (Motorista)', alignment: 'center', bold: true, fontSize: 9 }
+                        ]
+                    }
+                ]
+            };
+            pdfMake.createPdf(docDefinition).open();
+        });
+
+        // ================= 2. PROTOCOLO DEVOLUÇÃO / REENTREGAS =================
+        document.getElementById('btn-gerar-pc-devolucao').addEventListener('click', () => {
+            if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
+            const d = obterDadosFiltradosPC();
+
+            const maxRows = Math.max(d.reentregas.length, d.devolucoes.length, 6);
+            let gridExcecoes = [];
+
+            for (let i = 0; i < maxRows; i += 4) {
+                let row = [];
+                for (let j = 0; j < 4; j++) row.push({ text: d.reentregas[i + j] ? cleanNF(d.reentregas[i + j].nf) : '', alignment: 'center', bold: true });
+                for (let j = 0; j < 4; j++) row.push({ text: d.devolucoes[i + j] ? cleanNF(d.devolucoes[i + j].nf) : '', alignment: 'center', bold: true, color: '#b91c1c' });
+                gridExcecoes.push(row);
+            }
+
+            const docDefinition = {
+                pageSize: 'A4',
+                pageMargins: [30, 30, 30, 30],
+                defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
+                content: [
+                    // CABEÇALHO
+                    {
+                        columns: [
+                            { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c', width: '30%' },
+                            { text: 'PROTOCOLO DE DEVOLUÇÕES E REENTREGAS', fontSize: 12, bold: true, alignment: 'center', width: '40%', margin: [0, 5, 0, 0] },
+                            { text: `EMISSÃO\n${getDataAtualFormatada()}`, fontSize: 8, alignment: 'right', bold: true, color: '#64748b', width: '30%', margin: [0, 5, 0, 0] }
+                        ],
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // DADOS DA OPERAÇÃO
+                    {
+                        table: {
+                            widths: ['40%', '20%', '20%', '20%'],
+                            body: [
+                                [
+                                    { text: 'MOTORISTA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'PLACA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'TRANSPORTE', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                    { text: 'DATA LARGADA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' }
+                                ],
+                                [
+                                    { text: d.motorista.toUpperCase(), bold: true, fontSize: 10 },
+                                    { text: d.placa.toUpperCase(), bold: true, fontSize: 10 },
+                                    { text: d.transporte, bold: true, fontSize: 10 },
+                                    { text: d.dataSaida.split('-').reverse().join('/'), bold: true, fontSize: 10 }
+                                ]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // TABELA DE EXCEÇÕES (8 COLUNAS)
+                    {
+                        table: {
+                            widths: ['12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%'],
+                            body: [
+                                [
+                                    { text: 'NOTAS DE REENTREGA', colSpan: 4, alignment: 'center', bold: true, fillColor: '#e2e8f0' }, {}, {}, {},
+                                    { text: 'NOTAS DE DEVOLUÇÃO', colSpan: 4, alignment: 'center', bold: true, fillColor: '#fecaca', color: '#b91c1c' }, {}, {}, {}
+                                ],
+                                ...gridExcecoes,
+                                [{ text: `VOLUME TOTAL NESTE PROTOCOLO: ${d.reentregas.length + d.devolucoes.length}`, colSpan: 8, alignment: 'center', bold: true, fillColor: '#f8fafc', margin: [0, 4, 0, 4] }, {}, {}, {}, {}, {}, {}, {}]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 15]
+                    },
+
+                    // NOTAS PARCIAIS
+                    {
+                        table: {
+                            widths: ['*'],
+                            body: [
+                                [{ text: 'DETALHAMENTO DE NOTAS PARCIAIS', alignment: 'center', bold: true, fillColor: '#e2e8f0' }],
+                                [{ text: d.parciais.map(n => `${cleanNF(n.nf)} - ${n.parcial}`).join('\n') || '\nNenhuma ocorrência parcial registrada.', margin: [0, 5, 0, 5] }]
+                            ]
+                        },
+                        layout: layoutPremium,
+                        margin: [0, 0, 0, 40]
+                    },
+
+                    // ASSINATURAS
+                    {
+                        columns: [
+                            { text: '____________________________________\nRecebido por (Baia/Logística)', alignment: 'center', bold: true, fontSize: 9 },
+                            { text: '____________________________________\nResponsável (Motorista)', alignment: 'center', bold: true, fontSize: 9 }
+                        ]
+                    }
+                ]
+            };
+            pdfMake.createPdf(docDefinition).open();
+        });
     </script>
 </body>
 
