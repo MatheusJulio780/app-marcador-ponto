@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Icaphi Operacional</title>
+    <title>Icaphi Monitoramento</title>
     <link rel="icon" href="logo_icaphi.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -158,6 +158,15 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             transition: background-color 0.3s, color 0.3s;
+            transform: scale(0.85);
+            transform-origin: top left;
+            /* Mantém o topo esquerdo como referência */
+            width: 117.33%;
+            /* 100 / 0.75 = 133.33% - Compensa o zoom para não sobrar espaço vazio */
+            height: 117.33vh;
+            /* Ajusta a altura proporcionalmente */
+            overflow: block;
+            /* Permite scroll se necessário */
         }
 
         ::-webkit-scrollbar {
@@ -182,7 +191,7 @@
         /* ================= SIDEBAR ================= */
         .sidebar-container {
             width: 65px;
-            height: 100vh;
+            height: 118vh;
             position: relative;
             z-index: 50;
             flex-shrink: 0;
@@ -551,7 +560,7 @@
             border-collapse: collapse !important;
             table-layout: fixed;
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-            font-size: 9px !important;
+            font-size: 12px !important;
             /* <--- COMPACTADO */
             border: none !important;
         }
@@ -579,11 +588,12 @@
 
         /* 3. Células do Corpo (Redução de padding e altura) */
         tbody td {
-            padding: 6px 4px !important;
+            padding: 3px 4px !important;
             /* <--- COMPACTADO (Era 10px 8px) */
             height: 24px !important;
             /* <--- COMPACTADO PARA TRAVAR A ALTURA */
             vertical-align: middle !important;
+            text-align: center;
             border: none !important;
             border-bottom: 1px solid var(--border-color) !important;
             color: var(--text-main) !important;
@@ -1447,9 +1457,10 @@
         }
 
         .kpi-card {
+            text-align: center;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 15px;
             padding: 20px;
             box-shadow: var(--shadow-sm);
             display: flex;
@@ -1480,7 +1491,7 @@
         .chart-box {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 15px;
             padding: 15px;
             box-shadow: var(--shadow-sm);
             height: 320px;
@@ -1500,6 +1511,17 @@
             max-height: 240px !important;
             width: 100% !important;
         }
+
+        .canhoto-info{
+            text-align: center;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            padding: 5px;
+            margin: 5px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
     </style>
 </head>
 
@@ -1510,7 +1532,7 @@
     <div class="sidebar-container">
         <nav class="sidebar">
             <div class="sidebar-top">
-                <div class="brand"><i class="ph-fill ph-lightning brand-icon"></i> Icaphi</div>
+                <div class="brand"><i class="ph-fill ph-lightning brand-icon"></i> Icaphi By: Matheus</div>
                 <a class="menu-item active" data-target="view-monitoramento"><i
                         class="ph ph-chart-bar menu-icon"></i><span class="menu-text">Monitoramento</span></a>
                 <a class="menu-item" data-target="view-notas"><i class="ph ph-receipt menu-icon"></i><span
@@ -3252,7 +3274,7 @@
                 diasNoMes.sort((a, b) => a.data.localeCompare(b.data)); const tbody = document.querySelector('#tabela-canhotos tbody'); let html = "";
                 if (diasNoMes.length === 0) { html = `<tr><td colspan="8" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum faturamento encontrado.</td></tr>`; }
                 else { diasNoMes.forEach(d => { let styleAtraso = "color: var(--text-muted); font-weight: 600;"; let iconAtraso = ""; if (d.semAnexo > 0) { if (d.atraso >= 7) { styleAtraso = "color: var(--danger); font-weight: 800;"; iconAtraso = " 🚨 CRÍTICO"; } else if (d.atraso >= 5) { styleAtraso = "color: var(--warning); font-weight: 800;"; iconAtraso = " ⚠️ ALERTA"; } } let btnHtml = d.semAnexo > 0 ? `<button class="btn btn-sm btn-primary" onclick="window.abrirDetalhesCanhotos('${d.data}')"><i class="ph ph-magnifying-glass"></i> Ver Notas</button>` : `<span style="color:var(--success); font-weight:700;">OK ✓</span>`; html += `<tr><td style="font-weight:700;">${formatarDataBR(d.data)}</td><td style="font-weight:700; color:var(--accent);">${d.totalEntregues}</td><td>${d.assinatura}</td><td>${d.foto}</td><td>${d.anexado}</td><td style="font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:11px;">${d.semAnexo}</td><td style="${styleAtraso}">${d.atraso} Dias${iconAtraso}</td><td align="center">${btnHtml}</td></tr>`; }); }
-                tbody.innerHTML = html; document.getElementById('canhotos-summary').innerHTML = `<div class="summary-block">📅 Faturamento Mês: ${monthSel}</div><div class="summary-block">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div><div class="summary-block" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>`;
+                tbody.innerHTML = html; document.getElementById('canhotos-summary').innerHTML = `<div class="canhoto-info">📅 Faturamento Mês: ${monthSel}</div><div class="canhoto-info">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div><div class="canhoto-info" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>`;
             } catch (e) { console.error("Erro ao carregar canhotos:", e); alert("Erro na comunicação com o banco."); } hideLoader();
         });
 
@@ -3285,109 +3307,109 @@
 
         // ================= FILTRO EXCEL (CORRIGIDO) =================
         let activeFilters = { 'tabela-monitoramento': {}, 'tabela-operacao-notas': {} };
-        const filterPopup = document.getElementById('excel-filter-popup'); 
-        const filterSearch = document.getElementById('excel-filter-search'); 
-        const filterList = document.getElementById('excel-filter-list'); 
-        let activeColIndex = -1; 
+        const filterPopup = document.getElementById('excel-filter-popup');
+        const filterSearch = document.getElementById('excel-filter-search');
+        const filterList = document.getElementById('excel-filter-list');
+        let activeColIndex = -1;
         let activeTableId = '';
 
         document.querySelectorAll('.filter-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
-                e.stopPropagation(); 
-                activeColIndex = parseInt(icon.getAttribute('data-col')); 
+                e.stopPropagation();
+                activeColIndex = parseInt(icon.getAttribute('data-col'));
                 activeTableId = icon.closest('table').id;
-                const rect = icon.getBoundingClientRect(); 
-                filterPopup.style.left = `${rect.left}px`; 
-                filterPopup.style.top = `${rect.bottom + 8}px`; 
+                const rect = icon.getBoundingClientRect();
+                filterPopup.style.left = `${rect.left}px`;
+                filterPopup.style.top = `${rect.bottom + 8}px`;
                 filterPopup.style.display = 'flex';
-                
-                const uniqueValues = new Set(); 
-                document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { 
-                    if (!tr.children[activeColIndex]) return; 
-                    let val = tr.children[activeColIndex].textContent.trim(); 
-                    if (activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { 
-                        const sel = tr.querySelector('.select-status'); 
-                        if (sel) val = sel.value; 
-                    } 
-                    uniqueValues.add(val); 
+
+                const uniqueValues = new Set();
+                document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => {
+                    if (!tr.children[activeColIndex]) return;
+                    let val = tr.children[activeColIndex].textContent.trim();
+                    if (activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) {
+                        const sel = tr.querySelector('.select-status');
+                        if (sel) val = sel.value;
+                    }
+                    uniqueValues.add(val);
                 });
-                
+
                 let checksHtml = '';
-                [...uniqueValues].sort().forEach(val => { 
-                    checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; 
-                }); 
-                filterList.innerHTML = checksHtml; 
-                filterSearch.value = ''; 
+                [...uniqueValues].sort().forEach(val => {
+                    checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`;
+                });
+                filterList.innerHTML = checksHtml;
+                filterSearch.value = '';
                 document.getElementById('excel-filter-select-all').checked = true;
             });
         });
 
-        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { 
-            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { 
-                if (lbl.style.display !== 'none') lbl.querySelector('input').checked = e.target.checked; 
-            }); 
+        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => {
+            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => {
+                if (lbl.style.display !== 'none') lbl.querySelector('input').checked = e.target.checked;
+            });
         });
 
         // CORREÇÃO 1: A BUSCA AGORA DESMARCA OS ITENS OCULTOS AUTOMATICAMENTE
-        filterSearch.addEventListener('input', (e) => { 
-            const term = e.target.value.toLowerCase(); 
-            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { 
-                const val = lbl.textContent.toLowerCase(); 
+        filterSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => {
+                const val = lbl.textContent.toLowerCase();
                 const isMatch = val.includes(term);
-                lbl.style.display = isMatch ? 'flex' : 'none'; 
+                lbl.style.display = isMatch ? 'flex' : 'none';
                 lbl.querySelector('input').checked = isMatch; // Se sumiu da tela, perde o "check"
-            }); 
-        }); 
+            });
+        });
 
         document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none');
 
         document.getElementById('btn-filter-reset').addEventListener('click', () => {
-            if (activeFilters[activeTableId] && activeFilters[activeTableId][activeColIndex]) { 
-                delete activeFilters[activeTableId][activeColIndex]; 
+            if (activeFilters[activeTableId] && activeFilters[activeTableId][activeColIndex]) {
+                delete activeFilters[activeTableId][activeColIndex];
             }
             document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.remove('filter-active');
-            filterPopup.style.display = 'none'; 
+            filterPopup.style.display = 'none';
             applyFilters(activeTableId);
         });
 
         // CORREÇÃO 2: O OK AGORA SÓ PEGA O QUE ESTÁ REALMENTE MARCADO
-        document.getElementById('btn-filter-apply').addEventListener('click', () => { 
+        document.getElementById('btn-filter-apply').addEventListener('click', () => {
             const checkedValues = Array.from(filterList.querySelectorAll('.excel-filter-item'))
                 .filter(lbl => lbl.querySelector('input').checked)
-                .map(lbl => lbl.querySelector('input').value); 
-                
-            activeFilters[activeTableId][activeColIndex] = checkedValues; 
-            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); 
-            filterPopup.style.display = 'none'; 
-            applyFilters(activeTableId); 
+                .map(lbl => lbl.querySelector('input').value);
+
+            activeFilters[activeTableId][activeColIndex] = checkedValues;
+            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active');
+            filterPopup.style.display = 'none';
+            applyFilters(activeTableId);
         });
 
         function applyFilters(tableId) {
-            const filters = activeFilters[tableId]; 
+            const filters = activeFilters[tableId];
             if (!filters) return;
             document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => {
-                if (tr.children.length < 5) return; 
+                if (tr.children.length < 5) return;
                 let show = true;
                 for (let col in filters) {
                     let val = tr.children[col].textContent.trim();
-                    if (tableId === 'tabela-operacao-notas' && col == 13) { 
-                        const sel = tr.querySelector('.select-status'); 
-                        if (sel) val = sel.value; 
+                    if (tableId === 'tabela-operacao-notas' && col == 13) {
+                        const sel = tr.querySelector('.select-status');
+                        if (sel) val = sel.value;
                     }
                     if (!filters[col].includes(val)) { show = false; break; }
                 }
                 tr.style.display = show ? '' : 'none';
             });
-            
+
             document.querySelectorAll(`#${tableId} .filter-icon`).forEach(i => i.classList.remove('filter-active'));
-            for (let col in filters) { 
-                const ic = document.querySelector(`#${tableId} .filter-icon[data-col="${col}"]`); 
-                if (ic) ic.classList.add('filter-active'); 
+            for (let col in filters) {
+                const ic = document.querySelector(`#${tableId} .filter-icon[data-col="${col}"]`);
+                if (ic) ic.classList.add('filter-active');
             }
         }
 
-        document.addEventListener('click', (e) => { 
-            if (!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; 
+        document.addEventListener('click', (e) => {
+            if (!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none';
         });
 
         // ================= BOTÃO LIMPAR FILTROS GLOBAL (NOVO) =================
@@ -3396,17 +3418,17 @@
             const btnLimpar = e.target.closest('.btn-limpar-filtros');
             if (btnLimpar) {
                 const idTabela = btnLimpar.getAttribute('data-tabela');
-                
+
                 // 1. Zera a memória matemática de filtros
                 if (activeFilters[idTabela]) {
                     activeFilters[idTabela] = {};
                 }
-                
+
                 const tabela = document.getElementById(idTabela);
                 if (tabela) {
                     // 2. Remove o azul escuro dos ícones
                     tabela.querySelectorAll('.filter-icon').forEach(icon => icon.classList.remove('filter-active'));
-                    
+
                     // 3. Força a exibição de todas as linhas e colunas
                     tabela.querySelectorAll('tbody tr').forEach(tr => {
                         tr.style.display = '';
@@ -3414,7 +3436,7 @@
                 }
             }
         });
-        
+
         // ================= PAINEL DE MONITORAMENTO =================
         let ultimaDataPainel = "";
         document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
@@ -4352,6 +4374,7 @@
             const d = obterDadosFiltradosPC();
 
             // MAPEAMENTO DE CORES DOS CANHOTOS
+            let notasOrdenadas = [...d.entregues].sort((a, b) => parseInt(a.nf) - parseInt(b.nf));
             let linhasCanhotos = chunkArray(d.entregues.map(n => {
                 let statusApp = trimUpper(n.app || '');
                 let cor = '#94a3b8'; // CINZA (Sem anexo por padrão)
