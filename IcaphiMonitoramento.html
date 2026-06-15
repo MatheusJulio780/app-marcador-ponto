@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         /* ================= PALETAS DE CORES ================= */
         :root {
@@ -1430,41 +1431,19 @@
             }
         }
 
-        /* ================= ESTRUTURA VISUAL DO DASHBOARD ================= */
-        /* Correção de tamanho e alinhamento dos KPIs */
-        .dashboard-header .filter-input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        /* ================= ISOLAMENTO DO DASHBOARD ================= */
+        .dashboard-container {
+            padding: 20px 30px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden;
         }
 
-        /* Força os cartões a terem um limite de tamanho */
         .dashboard-kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
-            gap: 15px;
-            margin-bottom: 20px;
-            max-width: 1200px;
-            /* Limita a largura total */
-        }
-
-        /* Ajusta o tamanho dos gráficos */
-        .chart-box {
-            background: var(--bg-panel);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            max-height: 300px;
-            /* Impede que o gráfico fique gigante */
-        }
-
-        /* Garante que o canvas não estoure o container */
-        canvas {
-            max-width: 100% !important;
-            max-height: 250px !important;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
         }
 
         .kpi-card {
@@ -1476,35 +1455,26 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            border-left: 4px solid var(--accent);
-            /* Dá uma assinatura visual corporativa */
-            transition: transform 0.2s;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-2px);
+            border-left: 4px solid var(--border-color);
         }
 
         .kpi-card h3 {
             font-size: 0.75rem;
             color: var(--text-muted);
-            text-transform: uppercase;
             font-weight: 800;
-            letter-spacing: 0.5px;
         }
 
         .kpi-card .kpi-val {
             font-size: 1.8rem;
             font-weight: 800;
             color: var(--text-main);
-            line-height: 1;
         }
 
         .dashboard-charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
-            flex: 1;
+            margin-bottom: 20px;
         }
 
         .chart-box {
@@ -1513,35 +1483,22 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: var(--shadow-sm);
-            height: 350px;
+            height: 320px;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            position: relative;
         }
 
         .chart-box h4 {
-            width: 100%;
-            text-align: left;
             margin-bottom: 10px;
             font-size: 0.9rem;
             color: var(--text-main);
+            text-align: center;
         }
 
-        /* Isso força o Dashboard a ter respiro interno sem afetar as outras abas */
-        .dashboard-container {
-            padding-left: 20px !important;
-            padding-right: 20px !important;
-            padding-top: 20px !important;
-            /* Evita que o conteúdo da dashboard empurre a sidebar */
+        .chart-box canvas {
+            max-height: 240px !important;
             width: 100% !important;
-            box-sizing: border-box !important;
-        }
-
-        /* Garante que os cards não fiquem colados na lateral esquerda */
-        .dashboard-container .dashboard-header,
-        .dashboard-container .dashboard-kpi-grid,
-        .dashboard-container .dashboard-charts-grid {
-            margin-left: 10px !important;
         }
     </style>
 </head>
@@ -1572,6 +1529,9 @@
                 <a class="menu-item" id="btn-menu-transbordo">
                     <i class="ph ph-swap menu-icon"></i>
                     <span class="menu-text">Transbordo</span>
+                    <a class="menu-item" data-target="view-exportar">
+                        <i class="ph ph-export menu-icon"></i><span class="menu-text">Exportar</span>
+                    </a>
                 </a>
             </div>
             <div class="sidebar-bottom">
@@ -1596,6 +1556,9 @@
             <header class="header">
                 <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento</h2>
                 <div class="header-controls">
+                    <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-monitoramento">
+                        <i class="ph ph-funnel-x"></i> Limpar Filtros
+                    </button>
                     <input type="date" id="mon-data-select">
                     <button class="btn btn-primary" id="btn-carregar-painel">Buscar</button>
                 </div>
@@ -1679,6 +1642,9 @@
                 <h2><i class="ph ph-receipt" style="color:var(--accent);"></i> Notas Fiscais <span
                         id="save-indicator-notas" class="save-indicator">Salvo ✓</span></h2>
                 <div class="header-controls">
+                    <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-operacao-notas">
+                        <i class="ph ph-funnel-x"></i> Limpar Filtros
+                    </button>
                     <button class="btn btn-warning" onclick="window.abrirModalAcoesLote()"><i
                             class="ph ph-lightning"></i> Ações em Lote</button>
                     <div style="border-left: 1px solid var(--border-color); height: 30px; margin: 0 5px;"></div>
@@ -2040,7 +2006,7 @@
 
         <section id="view-dashboard" class="view-section dashboard-container">
             <div class="dashboard-header"
-                style="display:flex; justify-content:space-between; margin-bottom:20px; padding:15px; background:var(--bg-panel); border-radius:8px;">
+                style="display:flex; justify-content:space-between; margin-bottom:20px; padding:15px; background:var(--bg-panel); border-radius:8px; border: 1px solid var(--border-color);">
                 <h2><i class="ph ph-chart-bar"></i> Dashboard Operacional</h2>
                 <div style="display:flex; gap:10px;">
                     <input type="month" id="dash-mes" class="filter-input">
@@ -2053,55 +2019,85 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
-                <div
-                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--accent); box-shadow:var(--shadow-sm);">
-                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">TOTAL DE NOTAS</div>
-                    <div id="kpi-total" style="font-size:24px; font-weight:800;">0</div>
+            <div class="dashboard-kpi-grid">
+                <div class="kpi-card" style="border-left-color: var(--accent);">
+                    <h3>TOTAL DE NOTAS</h3>
+                    <div id="kpi-total" class="kpi-val">0</div>
                 </div>
-                <div
-                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--success); box-shadow:var(--shadow-sm);">
-                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">ENTREGAS REALIZADAS</div>
-                    <div id="kpi-entregues" style="font-size:24px; font-weight:800;">0</div>
+                <div class="kpi-card" style="border-left-color: var(--success);">
+                    <h3>ENTREGAS REALIZADAS</h3>
+                    <div id="kpi-entregues" class="kpi-val">0</div>
                 </div>
-                <div
-                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--danger); box-shadow:var(--shadow-sm);">
-                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">DEVOLUÇÃO / SINISTRO</div>
-                    <div id="kpi-falhas" style="font-size:24px; font-weight:800;">0</div>
+                <div class="kpi-card" style="border-left-color: var(--danger);">
+                    <h3>DEVOLUÇÃO / SINISTRO</h3>
+                    <div id="kpi-falhas" class="kpi-val">0</div>
                 </div>
-                <div
-                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--warning); box-shadow:var(--shadow-sm);">
-                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">SEM ANEXO APP</div>
-                    <div id="kpi-semanexo" style="font-size:24px; font-weight:800;">0</div>
+                <div class="kpi-card" style="border-left-color: var(--warning);">
+                    <h3>SEM ANEXO APP</h3>
+                    <div id="kpi-semanexo" class="kpi-val">0</div>
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
-                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
-                    <h4 style="margin-bottom:10px; text-align:center;">Desempenho por Status</h4>
-                    <canvas id="chart-status" height="200"></canvas>
+            <div class="dashboard-charts-grid">
+                <div class="chart-box">
+                    <h4>Desempenho por Status</h4>
+                    <canvas id="chart-status"></canvas>
                 </div>
-                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
-                    <h4 style="margin-bottom:10px; text-align:center;">Auditoria App (Baixa)</h4>
-                    <canvas id="chart-app" height="200"></canvas>
+                <div class="chart-box">
+                    <h4>Auditoria App (Baixa)</h4>
+                    <canvas id="chart-app"></canvas>
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
-                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
-                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-warning"></i> Top 5: Devoluções
-                        e Reentregas</h4>
+            <div class="dashboard-charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                <div class="chart-box">
+                    <h4><i class="ph-fill ph-warning"></i> Top 5: Devoluções e Reentregas</h4>
                     <canvas id="chart-top-falhas"></canvas>
                 </div>
-                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
-                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-ambulance"></i> Top 5:
-                        Sinistros e Paradas</h4>
+                <div class="chart-box">
+                    <h4><i class="ph-fill ph-ambulance"></i> Top 5: Sinistros e Paradas</h4>
                     <canvas id="chart-top-sinistros"></canvas>
                 </div>
-                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
-                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-pen-nib"></i> Top 5:
-                        Assinaturas (App)</h4>
+                <div class="chart-box">
+                    <h4><i class="ph-fill ph-pen-nib"></i> Top 5: Assinaturas (App)</h4>
                     <canvas id="chart-top-assinaturas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-exportar" class="view-section">
+            <div
+                style="margin-bottom:20px; padding:15px; background:var(--bg-panel); border-radius:8px; border:1px solid var(--border-color);">
+                <h2><i class="ph ph-export"></i> Central de Exportação</h2>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div
+                    style="background: var(--bg-panel); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent); box-shadow: var(--shadow-sm);">
+                    <h3 style="margin-bottom: 5px;">Exportar Painel Operacional</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Mapeamento das rotas.
+                        Inclui coluna de Data automaticamente.</p>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="date" id="exp-painel-inicio" class="filter-input">
+                        <span style="font-size: 13px; font-weight: bold;">Até</span>
+                        <input type="date" id="exp-painel-fim" class="filter-input">
+                        <button id="btn-exportar-painel" class="btn btn-primary" style="width: 100%;">Baixar
+                            Excel</button>
+                    </div>
+                </div>
+
+                <div
+                    style="background: var(--bg-panel); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success); box-shadow: var(--shadow-sm);">
+                    <h3 style="margin-bottom: 5px;">Exportar Notas Fiscais</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Auditoria de NFs e
+                        baixas. A data já compõe o registro.</p>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="date" id="exp-notas-inicio" class="filter-input">
+                        <span style="font-size: 13px; font-weight: bold;">Até</span>
+                        <input type="date" id="exp-notas-fim" class="filter-input">
+                        <button id="btn-exportar-notas" class="btn btn-primary" style="width: 100%;">Baixar
+                            Excel</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -3287,43 +3283,138 @@
             document.querySelectorAll('.quick-status-update').forEach(select => { select.addEventListener('change', async (e) => { const nfTarget = e.target.getAttribute('data-nf'); const novoStatus = e.target.value; e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;"; const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget); if (notaRef) { notaRef.status = novoStatus; } showLoader(); try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } catch (err) { } hideLoader(); document.getElementById('btn-carregar-painel').click(); }); });
         };
 
-        // ================= FILTRO EXCEL =================
+        // ================= FILTRO EXCEL (CORRIGIDO) =================
         let activeFilters = { 'tabela-monitoramento': {}, 'tabela-operacao-notas': {} };
-        const filterPopup = document.getElementById('excel-filter-popup'); const filterSearch = document.getElementById('excel-filter-search'); const filterList = document.getElementById('excel-filter-list'); let activeColIndex = -1; let activeTableId = '';
+        const filterPopup = document.getElementById('excel-filter-popup'); 
+        const filterSearch = document.getElementById('excel-filter-search'); 
+        const filterList = document.getElementById('excel-filter-list'); 
+        let activeColIndex = -1; 
+        let activeTableId = '';
+
         document.querySelectorAll('.filter-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
-                e.stopPropagation(); activeColIndex = parseInt(icon.getAttribute('data-col')); activeTableId = icon.closest('table').id;
-                const rect = icon.getBoundingClientRect(); filterPopup.style.left = `${rect.left}px`; filterPopup.style.top = `${rect.bottom + 8}px`; filterPopup.style.display = 'flex';
-                const uniqueValues = new Set(); document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { if (!tr.children[activeColIndex]) return; let val = tr.children[activeColIndex].textContent.trim(); if (activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { const sel = tr.querySelector('.select-status'); if (sel) val = sel.value; } uniqueValues.add(val); });
-                let checksHtml = '';[...uniqueValues].sort().forEach(val => { checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; }); filterList.innerHTML = checksHtml; filterSearch.value = ''; document.getElementById('excel-filter-select-all').checked = true;
+                e.stopPropagation(); 
+                activeColIndex = parseInt(icon.getAttribute('data-col')); 
+                activeTableId = icon.closest('table').id;
+                const rect = icon.getBoundingClientRect(); 
+                filterPopup.style.left = `${rect.left}px`; 
+                filterPopup.style.top = `${rect.bottom + 8}px`; 
+                filterPopup.style.display = 'flex';
+                
+                const uniqueValues = new Set(); 
+                document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => { 
+                    if (!tr.children[activeColIndex]) return; 
+                    let val = tr.children[activeColIndex].textContent.trim(); 
+                    if (activeTableId === 'tabela-operacao-notas' && activeColIndex === 13) { 
+                        const sel = tr.querySelector('.select-status'); 
+                        if (sel) val = sel.value; 
+                    } 
+                    uniqueValues.add(val); 
+                });
+                
+                let checksHtml = '';
+                [...uniqueValues].sort().forEach(val => { 
+                    checksHtml += `<label class="excel-filter-item"><input type="checkbox" value="${val}" checked> ${val || '(Vazio)'}</label>`; 
+                }); 
+                filterList.innerHTML = checksHtml; 
+                filterSearch.value = ''; 
+                document.getElementById('excel-filter-select-all').checked = true;
             });
         });
-        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { if (lbl.style.display !== 'none') lbl.querySelector('input').checked = e.target.checked; }); });
-        filterSearch.addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { const val = lbl.textContent.toLowerCase(); lbl.style.display = val.includes(term) ? 'flex' : 'none'; }); }); document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none');
 
-        document.getElementById('btn-filter-reset').addEventListener('click', () => {
-            if (activeFilters[activeTableId] && activeFilters[activeTableId][activeColIndex]) { delete activeFilters[activeTableId][activeColIndex]; }
-            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.remove('filter-active');
-            filterPopup.style.display = 'none'; applyFilters(activeTableId);
+        document.getElementById('excel-filter-select-all').addEventListener('change', (e) => { 
+            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { 
+                if (lbl.style.display !== 'none') lbl.querySelector('input').checked = e.target.checked; 
+            }); 
         });
 
-        document.getElementById('btn-filter-apply').addEventListener('click', () => { const checkedValues = Array.from(filterList.querySelectorAll('.excel-filter-item')).filter(lbl => lbl.querySelector('input').checked).map(lbl => lbl.querySelector('input').value); activeFilters[activeTableId][activeColIndex] = checkedValues; document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); filterPopup.style.display = 'none'; applyFilters(activeTableId); });
+        // CORREÇÃO 1: A BUSCA AGORA DESMARCA OS ITENS OCULTOS AUTOMATICAMENTE
+        filterSearch.addEventListener('input', (e) => { 
+            const term = e.target.value.toLowerCase(); 
+            filterList.querySelectorAll('.excel-filter-item').forEach(lbl => { 
+                const val = lbl.textContent.toLowerCase(); 
+                const isMatch = val.includes(term);
+                lbl.style.display = isMatch ? 'flex' : 'none'; 
+                lbl.querySelector('input').checked = isMatch; // Se sumiu da tela, perde o "check"
+            }); 
+        }); 
+
+        document.getElementById('btn-filter-cancel').addEventListener('click', () => filterPopup.style.display = 'none');
+
+        document.getElementById('btn-filter-reset').addEventListener('click', () => {
+            if (activeFilters[activeTableId] && activeFilters[activeTableId][activeColIndex]) { 
+                delete activeFilters[activeTableId][activeColIndex]; 
+            }
+            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.remove('filter-active');
+            filterPopup.style.display = 'none'; 
+            applyFilters(activeTableId);
+        });
+
+        // CORREÇÃO 2: O OK AGORA SÓ PEGA O QUE ESTÁ REALMENTE MARCADO
+        document.getElementById('btn-filter-apply').addEventListener('click', () => { 
+            const checkedValues = Array.from(filterList.querySelectorAll('.excel-filter-item'))
+                .filter(lbl => lbl.querySelector('input').checked)
+                .map(lbl => lbl.querySelector('input').value); 
+                
+            activeFilters[activeTableId][activeColIndex] = checkedValues; 
+            document.querySelector(`#${activeTableId} .filter-icon[data-col="${activeColIndex}"]`).classList.add('filter-active'); 
+            filterPopup.style.display = 'none'; 
+            applyFilters(activeTableId); 
+        });
+
         function applyFilters(tableId) {
-            const filters = activeFilters[tableId]; if (!filters) return;
+            const filters = activeFilters[tableId]; 
+            if (!filters) return;
             document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => {
-                if (tr.children.length < 5) return; let show = true;
+                if (tr.children.length < 5) return; 
+                let show = true;
                 for (let col in filters) {
                     let val = tr.children[col].textContent.trim();
-                    if (tableId === 'tabela-operacao-notas' && col == 13) { const sel = tr.querySelector('.select-status'); if (sel) val = sel.value; }
+                    if (tableId === 'tabela-operacao-notas' && col == 13) { 
+                        const sel = tr.querySelector('.select-status'); 
+                        if (sel) val = sel.value; 
+                    }
                     if (!filters[col].includes(val)) { show = false; break; }
                 }
                 tr.style.display = show ? '' : 'none';
             });
+            
             document.querySelectorAll(`#${tableId} .filter-icon`).forEach(i => i.classList.remove('filter-active'));
-            for (let col in filters) { const ic = document.querySelector(`#${tableId} .filter-icon[data-col="${col}"]`); if (ic) ic.classList.add('filter-active'); }
+            for (let col in filters) { 
+                const ic = document.querySelector(`#${tableId} .filter-icon[data-col="${col}"]`); 
+                if (ic) ic.classList.add('filter-active'); 
+            }
         }
-        document.addEventListener('click', (e) => { if (!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; });
 
+        document.addEventListener('click', (e) => { 
+            if (!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none'; 
+        });
+
+        // ================= BOTÃO LIMPAR FILTROS GLOBAL (NOVO) =================
+        // CORREÇÃO 3: LÓGICA DE LIMPEZA ATÔMICA DA MEMÓRIA
+        document.addEventListener('click', (e) => {
+            const btnLimpar = e.target.closest('.btn-limpar-filtros');
+            if (btnLimpar) {
+                const idTabela = btnLimpar.getAttribute('data-tabela');
+                
+                // 1. Zera a memória matemática de filtros
+                if (activeFilters[idTabela]) {
+                    activeFilters[idTabela] = {};
+                }
+                
+                const tabela = document.getElementById(idTabela);
+                if (tabela) {
+                    // 2. Remove o azul escuro dos ícones
+                    tabela.querySelectorAll('.filter-icon').forEach(icon => icon.classList.remove('filter-active'));
+                    
+                    // 3. Força a exibição de todas as linhas e colunas
+                    tabela.querySelectorAll('tbody tr').forEach(tr => {
+                        tr.style.display = '';
+                    });
+                }
+            }
+        });
+        
         // ================= PAINEL DE MONITORAMENTO =================
         let ultimaDataPainel = "";
         document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
@@ -4818,82 +4909,322 @@
         }
 
         // ================= MOTOR ANALÍTICO DO DASHBOARD =================
-        // ====== MOTOR DE DASHBOARD OPERACIONAL ======
-        let charts = {}; // Cache para destruir gráficos anteriores ao recarregar
+        let dashCharts = {}; // Cache global para destruição e reciclagem de canvas
 
-        document.getElementById('btn-gerar-dash').addEventListener('click', async () => {
-            const mes = document.getElementById('dash-mes').value; // "YYYY-MM"
-            const quinzena = document.getElementById('dash-quinzena').value;
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Configuração Automática de Datas Iniciais
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
 
-            if (!mes) return alert("Selecione o mês.");
-            showLoader();
+            const dashMesInput = document.getElementById('dash-mes');
+            const dashQuinzenaInput = document.getElementById('dash-quinzena');
+            const btnGerarDash = document.getElementById('btn-gerar-dash');
 
-            try {
-                const snap = await getDocs(collection(db, "notas_fiscais_diario"));
-                let notasFiltradas = [];
+            if (dashMesInput) dashMesInput.value = `${ano}-${mes}`;
+            if (dashQuinzenaInput) dashQuinzenaInput.value = hoje.getDate() <= 15 ? '1' : '2';
 
-                snap.forEach(doc => {
-                    const dataStr = doc.id; // Formato YYYY-MM-DD
-                    if (dataStr.startsWith(mes)) {
-                        const dia = parseInt(dataStr.split('-')[2]);
-                        let passaFiltro = false;
+            // 2. Proteção contra execução se os botões não existirem no DOM
+            if (!btnGerarDash) return;
 
-                        if (quinzena === 'T') passaFiltro = true;
-                        else if (quinzena === '1') passaFiltro = dia <= 15;
-                        else if (quinzena === '2') passaFiltro = dia > 15;
+            btnGerarDash.addEventListener('click', async () => {
+                if (typeof Chart === 'undefined') {
+                    return alert("A biblioteca Chart.js não foi carregada. Verifique a tag <head>.");
+                }
 
-                        if (passaFiltro) {
-                            const notasDoDia = doc.data().notas || [];
-                            notasFiltradas.push(...notasDoDia);
+                const mesStr = dashMesInput.value;
+                const quinzena = dashQuinzenaInput.value;
+                if (!mesStr) return alert("Selecione um mês válido.");
+
+                showLoader();
+                try {
+                    const snap = await getDocs(collection(db, "notas_fiscais_diario"));
+                    let notasOperacao = [];
+
+                    snap.forEach(doc => {
+                        const idData = doc.id;
+                        if (idData.startsWith(mesStr)) {
+                            const dia = parseInt(idData.split('-')[2], 10);
+                            let validaQuinzena = (quinzena === 'T') ||
+                                (quinzena === '1' && dia <= 15) ||
+                                (quinzena === '2' && dia >= 16);
+
+                            if (validaQuinzena) {
+                                notasOperacao.push(...(doc.data().notas || []));
+                            }
                         }
-                    }
-                });
+                    });
 
-                processarDadosDashboard(notasFiltradas);
-            } catch (e) {
-                console.error("Erro no Dashboard:", e);
-            } finally {
+                    processarIndicadoresOperacionais(notasOperacao);
+                } catch (error) {
+                    console.error("Falha no Dashboard:", error);
+                    alert("Erro ao ler os dados do Firebase.");
+                }
                 hideLoader();
-            }
+            });
         });
 
-        function processarDadosDashboard(notas) {
-            // 1. Cálculos de KPI
-            const total = notas.length;
-            const entregues = notas.filter(n => ['ENTREGUE', 'REALIZADA'].includes(trimUpper(n.status))).length;
-            const falhas = notas.filter(n => ['DEVOLUÇÃO', 'PARADA', 'SINISTRADA'].includes(trimUpper(n.status))).length;
-            const semAnexo = notas.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app))).length;
+        function processarIndicadoresOperacionais(notas) {
+            let kpi = { total: notas.length, entregues: 0, falhas: 0, semAnexo: 0, assinaturas: 0 };
+            let aggFalhas = {}; let aggSinistros = {}; let aggAssinaturas = {};
 
-            document.getElementById('kpi-total').innerText = total;
-            document.getElementById('kpi-entregues').innerText = entregues;
-            document.getElementById('kpi-falhas').innerText = falhas;
-            document.getElementById('kpi-semanexo').innerText = semAnexo;
+            for (let i = 0; i < notas.length; i++) {
+                let n = notas[i];
+                let st = (n.status || "").trim().toUpperCase();
+                let app = (n.app || "").trim().toUpperCase();
+                let placa = (n.placa || "N/A").trim().toUpperCase();
 
-            // 2. Gráficos (Certifique-se de ter o Chart.js carregado no seu <head>)
-            const ctxStatus = document.getElementById('chart-status').getContext('2d');
+                if (st === 'ENTREGUE' || st === 'REALIZADA') kpi.entregues++;
+                if (st === 'DEVOLUÇÃO' || st === 'SINISTRADA' || st === 'PARADA') kpi.falhas++;
+                if (!['ASSINATURA', 'FOTO', 'ANEXADO'].includes(app) && (st === 'ENTREGUE' || st === 'REALIZADA')) kpi.semAnexo++;
+                if (app === 'ASSINATURA') kpi.assinaturas++;
 
-            // Destroi gráfico anterior se existir
-            if (charts['status']) charts['status'].destroy();
+                if (st === 'DEVOLUÇÃO' || st === 'REENTREGA') aggFalhas[placa] = (aggFalhas[placa] || 0) + 1;
+                if (st === 'SINISTRADA' || st === 'PARADA') aggSinistros[placa] = (aggSinistros[placa] || 0) + 1;
+                if (app === 'ASSINATURA') aggAssinaturas[placa] = (aggAssinaturas[placa] || 0) + 1;
+            }
 
-            charts['status'] = new Chart(ctxStatus, {
-                type: 'doughnut',
+            document.getElementById('kpi-total').innerText = kpi.total;
+            document.getElementById('kpi-entregues').innerText = kpi.entregues;
+            document.getElementById('kpi-falhas').innerText = kpi.falhas;
+            document.getElementById('kpi-semanexo').innerText = kpi.semAnexo;
+
+            const getTop5 = (dict) => Object.entries(dict).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            renderizarGrafico('chart-status', 'doughnut', ['Entregues', 'Falhas', 'Pendentes'], [kpi.entregues, kpi.falhas, kpi.total - (kpi.entregues + kpi.falhas)], ['#16a34a', '#dc2626', '#f59e0b']);
+            renderizarGrafico('chart-app', 'pie', ['Com Anexo/Assinatura', 'Sem Anexo'], [kpi.entregues - kpi.semAnexo, kpi.semAnexo], ['#3b82f6', '#94a3b8']);
+            renderizarGrafico('chart-top-falhas', 'bar', getTop5(aggFalhas).map(x => x[0]), getTop5(aggFalhas).map(x => x[1]), ['#b91c1c']);
+            renderizarGrafico('chart-top-sinistros', 'bar', getTop5(aggSinistros).map(x => x[0]), getTop5(aggSinistros).map(x => x[1]), ['#7f1d1d']);
+            renderizarGrafico('chart-top-assinaturas', 'bar', getTop5(aggAssinaturas).map(x => x[0]), getTop5(aggAssinaturas).map(x => x[1]), ['#0f172a']);
+        }
+
+        function renderizarGrafico(id, type, labels, data, colors) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+
+            if (dashCharts[id]) dashCharts[id].destroy();
+
+            dashCharts[id] = new Chart(canvas.getContext('2d'), {
+                type: type,
                 data: {
-                    labels: ['Entregues', 'Falhas', 'Pendentes'],
+                    labels: labels,
                     datasets: [{
-                        data: [entregues, falhas, total - (entregues + falhas)],
-                        backgroundColor: ['#16a34a', '#dc2626', '#f59e0b']
+                        data: data,
+                        backgroundColor: colors.length === 1 ? colors[0] : colors,
+                        borderWidth: 0,
+                        borderRadius: type === 'bar' ? 4 : 0
                     }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: type !== 'bar', position: 'bottom' } },
+                    scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { precision: 0 } } } : {}
                 }
             });
         }
 
-        // Chame essa função logo após o carregamento dos dados do Firebase
+        // Injetar logo antes de chamar initApp();
+        function autoConfigurarFiltrosDashboard() {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dia = hoje.getDate();
+
+            const dashMes = document.getElementById('dash-mes');
+            if (dashMes) dashMes.value = `${ano}-${mes}`;
+
+            const dashQuinzena = document.getElementById('dash-quinzena');
+            if (dashQuinzena) dashQuinzena.value = dia <= 15 ? '1' : '2';
+        }
+
+        // ================= MOTOR DE EXPORTAÇÃO EXCEL =================
+        async function executarExportacaoFirebase(colecao, tipoExportacao, dataInicio, dataFim) {
+            if (!dataInicio || !dataFim) return alert("Defina o período completo (Início e Fim).");
+            if (dataInicio > dataFim) return alert("A data de início não pode ser maior que a data final.");
+
+            showLoader();
+            try {
+                let registrosExcel = [];
+                let promessasDeBusca = [];
+
+                let dataIteradora = new Date(dataInicio + 'T00:00:00');
+                const dataLimite = new Date(dataFim + 'T00:00:00');
+
+                // Estratégia de leitura pararela: Cria o array de datas e busca de uma vez só
+                while (dataIteradora <= dataLimite) {
+                    const dataDocId = dataIteradora.toISOString().split('T')[0];
+                    promessasDeBusca.push(
+                        getDoc(doc(db, colecao, dataDocId)).then(snap => {
+                            return snap.exists() ? { dataBase: dataDocId, dados: snap.data() } : null;
+                        })
+                    );
+                    dataIteradora.setDate(dataIteradora.getDate() + 1);
+                }
+
+                const resultadosFirestore = await Promise.all(promessasDeBusca);
+
+                resultadosFirestore.forEach(docSnap => {
+                    if (!docSnap) return;
+
+                    if (tipoExportacao === 'PAINEL') {
+                        const rotas = docSnap.dados.rotas || [];
+                        rotas.forEach(rota => {
+                            // Estrutura EXATA que vai para o Excel
+                            registrosExcel.push({
+                                "Data": docSnap.dataBase, // Exigência cumprida: Data na primeira coluna
+                                "Rota": rota.rota || "",
+                                "Motorista": rota.motorista || "",
+                                "Placa": rota.placa || "",
+                                "Status": rota.status || "",
+                                "Devolução": rota.devolucao || "",
+                                "Pernoite": rota.pernoite || ""
+                            });
+                        });
+                    } else if (tipoExportacao === 'NOTAS') {
+                        const notas = docSnap.dados.notas || [];
+                        notas.forEach(nf => {
+                            registrosExcel.push({
+                                "Data Inserção": docSnap.dataBase, // Caso queira a data de base
+                                "Nota Fiscal": nf.nf || "",
+                                "Remetente": nf.remetente || "",
+                                "Destinatário": nf.destinatario || "",
+                                "Peso": nf.peso || "",
+                                "Status": nf.status || "",
+                                "App Baixa": nf.app || ""
+                            });
+                        });
+                    }
+                });
+
+                if (registrosExcel.length === 0) return alert("Não há registros neste intervalo de datas.");
+
+                // Criação e formatação do Excel via SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(registrosExcel);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+                XLSX.writeFile(workbook, `Exportacao_${tipoExportacao}_${dataInicio}_a_${dataFim}.xlsx`);
+
+            } catch (erro) {
+                console.error("Erro Crítico na Exportação: ", erro);
+                alert("Falha de processamento durante a montagem do Excel.");
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Listeners de Exportação
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'btn-exportar-painel') {
+                const di = document.getElementById('exp-painel-inicio').value;
+                const df = document.getElementById('exp-painel-fim').value;
+                executarExportacaoFirebase("painel_diario", "PAINEL", di, df);
+            }
+
+            if (e.target.id === 'btn-exportar-notas') {
+                const di = document.getElementById('exp-notas-inicio').value;
+                const df = document.getElementById('exp-notas-fim').value;
+                executarExportacaoFirebase("notas_fiscais_diario", "NOTAS", di, df);
+            }
+        });
+
+
+        // ================= MOTOR DE FILTRAGEM (ROBUSTO: COLUNAS E LIMPEZA) =================
+        document.addEventListener('click', (e) => {
+            // 1. AÇÃO: BOTÃO LIMPAR FILTROS
+            const btnLimpar = e.target.closest('.btn-limpar-filtros');
+            if (btnLimpar) {
+                const idTabela = btnLimpar.getAttribute('data-tabela');
+                const tabela = document.getElementById(idTabela);
+
+                if (tabela) {
+                    // Limpa todos os inputs de pesquisa no cabeçalho
+                    tabela.querySelectorAll('thead input, thead select').forEach(inp => inp.value = '');
+
+                    // Destrói a memória do Filtro Excel e remove a cor azul dos ícones
+                    if (typeof activeFilters !== 'undefined' && activeFilters[idTabela]) {
+                        activeFilters[idTabela] = {};
+                    }
+                    tabela.querySelectorAll('.filter-icon').forEach(icon => icon.classList.remove('filter-active'));
+
+                    // Restaura a visibilidade de todas as linhas e limpa tags de esconder
+                    tabela.querySelectorAll('tbody tr').forEach(row => {
+                        row.style.display = '';
+                    });
+                }
+            }
+
+            // 2. AÇÃO: BOTÃO "OK" NAS COLUNAS (Filtro por Clique)
+            const btnOK = e.target.closest('button');
+            if (btnOK) {
+                const isBotaoFiltro = btnOK.classList.contains('btn-ok-filtro');
+                const isBotaoThead = btnOK.closest('thead') && btnOK.textContent.trim().toUpperCase() === 'OK';
+
+                if (isBotaoFiltro || isBotaoThead) {
+                    executarFiltroDeColunas(btnOK.closest('table'));
+                }
+            }
+        });
+
+        // 3. AÇÃO: APERTAR "ENTER" NOS INPUTS DE COLUNA (UX Profissional)
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.closest('thead input')) {
+                e.preventDefault();
+                executarFiltroDeColunas(e.target.closest('table'));
+            }
+        });
+
+        // ================= FUNÇÃO CENTRAL DE FILTRAGEM MATEMÁTICA =================
+        function executarFiltroDeColunas(tabela) {
+            if (!tabela) return;
+
+            const camposFiltro = Array.from(tabela.querySelectorAll('thead input, thead select'));
+            const linhasBody = tabela.querySelectorAll('tbody tr');
+
+            linhasBody.forEach(row => {
+                let linhaAprovada = true;
+
+                camposFiltro.forEach(input => {
+                    const termoBuscado = input.value.trim().toUpperCase();
+                    if (termoBuscado === "") return; // Pula se a caixa estiver vazia
+
+                    const celulaHeader = input.closest('th');
+                    if (!celulaHeader) return;
+
+                    // Acha a posição X/Y da coluna para filtrar na célula exata
+                    const indiceColuna = Array.from(celulaHeader.parentNode.children).indexOf(celulaHeader);
+                    const celulaCorpo = row.children[indiceColuna];
+
+                    if (celulaCorpo) {
+                        let textoCelula = celulaCorpo.textContent.trim().toUpperCase();
+
+                        // Se for a coluna de STATUS que usa um elemento <select>, lemos o .value
+                        const selectStatus = celulaCorpo.querySelector('select');
+                        if (selectStatus) textoCelula = selectStatus.value.trim().toUpperCase();
+
+                        // Lógica não estrita (Contains)
+                        if (!textoCelula.includes(termoBuscado)) {
+                            linhaAprovada = false;
+                        }
+                    }
+                });
+
+                // Aplica o display sem destruir as animações ou outras diretivas
+                row.style.display = linhaAprovada ? '' : 'none';
+            });
+        }
+
+        // ================= INICIALIZAÇÃO DE GARANTIA DO SISTEMA =================
+        document.addEventListener('DOMContentLoaded', () => {
+            autoConfigurarFiltrosDashboard();
+            initApp();
+        });
+
         setTimeout(ativarFiltrosTempoReal, 2000);
 
-        // Aguarda o HTML estar pronto antes de rodar qualquer lógica de busca de elementos
+        // Dispara logo após carregamento base para garantir datas corretas
         document.addEventListener('DOMContentLoaded', () => {
             configurarDatasPadrao();
-            initApp();
         });
 
     </script>
