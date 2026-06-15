@@ -12,6 +12,8 @@
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
         /* ================= PALETAS DE CORES ================= */
         :root {
@@ -542,19 +544,25 @@
             transition: 0.3s;
         }
 
+        /* 1. Estrutura Base da Tabela (Redução de 11.5px para 9px) */
         table {
             width: 100%;
             border-collapse: collapse !important;
             table-layout: fixed;
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-            font-size: 11.5px !important;
+            font-size: 9px !important;
+            /* <--- COMPACTADO */
             border: none !important;
         }
 
+        /* 2. Cabeçalho (Redução de padding e texto) */
         thead th {
             background: var(--bg-table-header) !important;
             color: #f8fafc !important;
-            padding: 12px 10px !important;
+            padding: 8px 6px !important;
+            /* <--- COMPACTADO (Era 12px 10px) */
+            font-size: 8.5px !important;
+            /* <--- COMPACTADO */
             font-weight: 600 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
@@ -568,8 +576,12 @@
             cursor: default;
         }
 
+        /* 3. Células do Corpo (Redução de padding e altura) */
         tbody td {
-            padding: 10px 8px !important;
+            padding: 6px 4px !important;
+            /* <--- COMPACTADO (Era 10px 8px) */
+            height: 24px !important;
+            /* <--- COMPACTADO PARA TRAVAR A ALTURA */
             vertical-align: middle !important;
             border: none !important;
             border-bottom: 1px solid var(--border-color) !important;
@@ -578,6 +590,39 @@
             overflow: hidden;
             text-overflow: ellipsis;
             position: relative;
+        }
+
+        /* 4. Compactação do Seletor de Status dentro da célula */
+        .select-status {
+            width: 100%;
+            padding: 2px 1px;
+            /* <--- COMPACTADO */
+            border: 1px solid transparent;
+            background: transparent;
+            outline: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 8px;
+            /* <--- COMPACTADO (Era 9.5px) */
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-overflow: ellipsis;
+        }
+
+        /* 5. Compactação do Botão de Cidade dentro da célula */
+        .btn-city {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 4px 8px;
+            /* <--- COMPACTADO */
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 8px;
+            /* <--- COMPACTADO */
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: var(--shadow-sm);
         }
 
         /* Centralizações */
@@ -1384,6 +1429,120 @@
                 text-transform: uppercase;
             }
         }
+
+        /* ================= ESTRUTURA VISUAL DO DASHBOARD ================= */
+        /* Correção de tamanho e alinhamento dos KPIs */
+        .dashboard-header .filter-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* Força os cartões a terem um limite de tamanho */
+        .dashboard-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+            gap: 15px;
+            margin-bottom: 20px;
+            max-width: 1200px;
+            /* Limita a largura total */
+        }
+
+        /* Ajusta o tamanho dos gráficos */
+        .chart-box {
+            background: var(--bg-panel);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: 300px;
+            /* Impede que o gráfico fique gigante */
+        }
+
+        /* Garante que o canvas não estoure o container */
+        canvas {
+            max-width: 100% !important;
+            max-height: 250px !important;
+        }
+
+        .kpi-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-left: 4px solid var(--accent);
+            /* Dá uma assinatura visual corporativa */
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-card .kpi-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .dashboard-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            flex: 1;
+        }
+
+        .chart-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: var(--shadow-sm);
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .chart-box h4 {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        /* Isso força o Dashboard a ter respiro interno sem afetar as outras abas */
+        .dashboard-container {
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+            padding-top: 20px !important;
+            /* Evita que o conteúdo da dashboard empurre a sidebar */
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Garante que os cards não fiquem colados na lateral esquerda */
+        .dashboard-container .dashboard-header,
+        .dashboard-container .dashboard-kpi-grid,
+        .dashboard-container .dashboard-charts-grid {
+            margin-left: 10px !important;
+        }
     </style>
 </head>
 
@@ -1879,10 +2038,72 @@
             </div>
         </section>
 
-        <section id="view-dashboard" class="view-section">
-            <div class="content-container"
-                style="background:var(--bg-panel); border-radius: 8px; text-align:center; padding:50px; font-weight: 600; color: var(--text-muted); font-size: 1.1rem;">
-                Dashboard em construção...</div>
+        <section id="view-dashboard" class="view-section dashboard-container">
+            <div class="dashboard-header"
+                style="display:flex; justify-content:space-between; margin-bottom:20px; padding:15px; background:var(--bg-panel); border-radius:8px;">
+                <h2><i class="ph ph-chart-bar"></i> Dashboard Operacional</h2>
+                <div style="display:flex; gap:10px;">
+                    <input type="month" id="dash-mes" class="filter-input">
+                    <select id="dash-quinzena" class="filter-input">
+                        <option value="1">1ª Quinzena (Dia 01 ao 15)</option>
+                        <option value="2">2ª Quinzena (Dia 16 ao Final)</option>
+                        <option value="T">Mês Completo</option>
+                    </select>
+                    <button id="btn-gerar-dash" class="btn btn-primary">Processar Dados</button>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
+                <div
+                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--accent); box-shadow:var(--shadow-sm);">
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">TOTAL DE NOTAS</div>
+                    <div id="kpi-total" style="font-size:24px; font-weight:800;">0</div>
+                </div>
+                <div
+                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--success); box-shadow:var(--shadow-sm);">
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">ENTREGAS REALIZADAS</div>
+                    <div id="kpi-entregues" style="font-size:24px; font-weight:800;">0</div>
+                </div>
+                <div
+                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--danger); box-shadow:var(--shadow-sm);">
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">DEVOLUÇÃO / SINISTRO</div>
+                    <div id="kpi-falhas" style="font-size:24px; font-weight:800;">0</div>
+                </div>
+                <div
+                    style="background:var(--bg-panel); padding:15px; border-radius:8px; border-left:4px solid var(--warning); box-shadow:var(--shadow-sm);">
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:700;">SEM ANEXO APP</div>
+                    <div id="kpi-semanexo" style="font-size:24px; font-weight:800;">0</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
+                    <h4 style="margin-bottom:10px; text-align:center;">Desempenho por Status</h4>
+                    <canvas id="chart-status" height="200"></canvas>
+                </div>
+                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
+                    <h4 style="margin-bottom:10px; text-align:center;">Auditoria App (Baixa)</h4>
+                    <canvas id="chart-app" height="200"></canvas>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
+                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-warning"></i> Top 5: Devoluções
+                        e Reentregas</h4>
+                    <canvas id="chart-top-falhas"></canvas>
+                </div>
+                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
+                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-ambulance"></i> Top 5:
+                        Sinistros e Paradas</h4>
+                    <canvas id="chart-top-sinistros"></canvas>
+                </div>
+                <div style="background:var(--bg-panel); padding:15px; border-radius:8px; box-shadow:var(--shadow-sm);">
+                    <h4 style="margin-bottom:10px; font-size:13px;"><i class="ph-fill ph-pen-nib"></i> Top 5:
+                        Assinaturas (App)</h4>
+                    <canvas id="chart-top-assinaturas"></canvas>
+                </div>
+            </div>
         </section>
 
         <section id="print-area-wrapper">
@@ -2445,6 +2666,7 @@
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">DATA DA LARGADA:</label>
                     <input type="date" id="transbordo-data">
+                    <button id="btn-buscar-placas-transbordo" class="btn btn-primary">Buscar Placas</button>
 
                     <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PLACA
                         ORIGEM (VEÍCULO COM PROBLEMA):</label>
@@ -2520,7 +2742,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, query, where, documentId, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const app = initializeApp({ apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y", authDomain: "monitoramento-bc533.firebaseapp.com", projectId: "monitoramento-bc533", storageBucket: "monitoramento-bc533.firebasestorage.app", messagingSenderId: "70745510419", appId: "1:70745510419:web:7c21a45dcff85c1f8de5e6" });
         const db = getFirestore(app);
@@ -2547,6 +2769,27 @@
             const m = String(date.getMonth() + 1).padStart(2, '0');
             return `${date.getFullYear()}-${m}-${d}`;
         };
+
+        function configurarDatasPadrao() {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dia = hoje.getDate();
+
+            // Define Mês Atual (Formato YYYY-MM)
+            const inputsMes = document.querySelectorAll('input[type="month"], select[name="mes"]');
+            inputsMes.forEach(el => el.value = `${ano}-${mes}`);
+
+            // Define Quinzena Atual
+            // Se dia <= 15, quinzena 1, senão quinzena 2
+            const quinzena = dia <= 15 ? '1' : '2';
+            const selectQuinzena = document.getElementById('quinzena-select'); // Ajuste o ID conforme seu HTML
+            if (selectQuinzena) selectQuinzena.value = quinzena;
+
+            // Define data de hoje nos inputs de data
+            const dataIso = hoje.toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach(el => el.value = dataIso);
+        }
 
         // ================= CARREGADOR DE LOGO =================
         window.logoIcaphiBase64 = null;
@@ -2733,7 +2976,6 @@
         });
 
         // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
-        // ====== LÓGICA PRESTAÇÃO DE CONTAS ======
         document.getElementById('btn-buscar-pc-placas').addEventListener('click', async () => {
             const dataStr = document.getElementById('pc-data').value;
             if (!dataStr) return alert("Selecione a data da operação.");
@@ -2801,18 +3043,25 @@
             const checkTodos = document.getElementById('export-canhotos-todos').checked; const mes = document.getElementById('export-canhotos-month').value;
             if (!checkTodos && !mes) return alert("Selecione um mês ou marque 'Todo o Histórico'."); showLoader();
             try {
-                const snap = await getDocs(collection(db, "notas_fiscais_diario")); let exportData = [];
+                // CORREÇÃO ESTRATÉGICA: Mesma lógica de query para evitar download massivo
+                let snap;
+                if (checkTodos) {
+                    snap = await getDocs(collection(db, "notas_fiscais_diario"));
+                } else {
+                    const q = query(collection(db, "notas_fiscais_diario"), where(documentId(), ">=", `${mes}-01`), where(documentId(), "<=", `${mes}-31`));
+                    snap = await getDocs(q);
+                }
+
+                let exportData = [];
                 snap.forEach(doc => {
                     const dataStr = doc.id;
-                    if (checkTodos || dataStr.startsWith(mes)) {
-                        const notas = doc.data().notas || [];
-                        let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
-                        let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
-                        pendentes.forEach(p => { exportData.push({ "Data Operacao": formatarDataBR(dataStr), "Placa": p.placa, "Motorista": p.motorista, "NF": cleanNF(p.nf), "Cliente": p.cliente, "Peso": formatNumber(p.peso), "Status": p.status, "App_Atual": p.app || "VAZIO" }); });
-                    }
+                    const notas = doc.data().notas || [];
+                    let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
+                    let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
+                    pendentes.forEach(p => { exportData.push({ "Data Operacao": formatarDataBR(dataStr), "Placa": p.placa, "Motorista": p.motorista, "NF": cleanNF(p.nf), "Cliente": p.cliente, "Peso": formatNumber(p.peso), "Status": p.status, "App_Atual": p.app || "VAZIO" }); });
                 });
                 if (exportData.length === 0) { alert("Nenhuma pendência encontrada."); } else { const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pendencias_App"); XLSX.writeFile(wb, `Pendencias_Canhotos_${checkTodos ? 'Historico' : mes}.xlsx`); }
-            } catch (e) { console.error(e); alert("Erro ao exportar."); } hideLoader(); document.getElementById('modal-exportar-canhotos').classList.remove('active');
+            } catch (e) { console.error("Erro ao exportar:", e); alert("Erro ao exportar."); } hideLoader(); document.getElementById('modal-exportar-canhotos').classList.remove('active');
         };
 
         // ====== LÓGICA ATUALIZAR APPS (COM RCA E COORDENADOR) ======
@@ -2974,6 +3223,7 @@
                 if (targetId === 'view-monitoramento' && document.getElementById('mon-data-select').value) { document.getElementById('btn-carregar-painel').click(); }
                 else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
                 else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
+                else if (targetId === 'view-dashboard' && document.getElementById('dashboard-data').value) { document.getElementById('btn-carregar-dashboard').click(); }
             });
         });
 
@@ -2983,26 +3233,31 @@
         document.getElementById('btn-carregar-canhotos').addEventListener('click', async () => {
             const monthSel = document.getElementById('canhotos-month-select').value; if (!monthSel) return; showLoader(); window.canhotosCache = {};
             try {
-                const snap = await getDocs(collection(db, "notas_fiscais_diario")); let diasNoMes = []; let tEntregasMes = 0; let tSemAnexoMes = 0;
+                // CORREÇÃO ESTRATÉGICA: Busca apenas os documentos do mês requisitado usando limites lexicais
+                const dataInicio = `${monthSel}-01`;
+                const dataFim = `${monthSel}-31`;
+                const q = query(collection(db, "notas_fiscais_diario"), where(documentId(), ">=", dataInicio), where(documentId(), "<=", dataFim));
+                const snap = await getDocs(q);
+
+                let diasNoMes = []; let tEntregasMes = 0; let tSemAnexoMes = 0;
                 const hojeStr = new Date().toISOString().split('T')[0]; const hojeTime = new Date(hojeStr).getTime();
+
                 snap.forEach(doc => {
                     const dataStr = doc.id;
-                    if (dataStr.startsWith(monthSel)) {
-                        const notas = doc.data().notas || [];
-                        let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
-                        if (entregues.length > 0) {
-                            let cAssinatura = entregues.filter(n => trimUpper(n.app) === 'ASSINATURA').length; let cFoto = entregues.filter(n => trimUpper(n.app) === 'FOTO').length; let cAnexado = entregues.filter(n => trimUpper(n.app) === 'ANEXADO').length; let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
-                            const diffTime = hojeTime - new Date(dataStr).getTime(); let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); if (diffDays < 0) diffDays = 0;
-                            tEntregasMes += entregues.length; tSemAnexoMes += pendentes.length; window.canhotosCache[dataStr] = pendentes;
-                            diasNoMes.push({ data: dataStr, totalEntregues: entregues.length, assinatura: cAssinatura, foto: cFoto, anexado: cAnexado, semAnexo: pendentes.length, atraso: diffDays });
-                        }
+                    const notas = doc.data().notas || [];
+                    let entregues = notas.filter(n => trimUpper(n.status) === 'ENTREGUE');
+                    if (entregues.length > 0) {
+                        let cAssinatura = entregues.filter(n => trimUpper(n.app) === 'ASSINATURA').length; let cFoto = entregues.filter(n => trimUpper(n.app) === 'FOTO').length; let cAnexado = entregues.filter(n => trimUpper(n.app) === 'ANEXADO').length; let pendentes = entregues.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app)));
+                        const diffTime = hojeTime - new Date(dataStr).getTime(); let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); if (diffDays < 0) diffDays = 0;
+                        tEntregasMes += entregues.length; tSemAnexoMes += pendentes.length; window.canhotosCache[dataStr] = pendentes;
+                        diasNoMes.push({ data: dataStr, totalEntregues: entregues.length, assinatura: cAssinatura, foto: cFoto, anexado: cAnexado, semAnexo: pendentes.length, atraso: diffDays });
                     }
                 });
                 diasNoMes.sort((a, b) => a.data.localeCompare(b.data)); const tbody = document.querySelector('#tabela-canhotos tbody'); let html = "";
                 if (diasNoMes.length === 0) { html = `<tr><td colspan="8" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum faturamento encontrado.</td></tr>`; }
                 else { diasNoMes.forEach(d => { let styleAtraso = "color: var(--text-muted); font-weight: 600;"; let iconAtraso = ""; if (d.semAnexo > 0) { if (d.atraso >= 7) { styleAtraso = "color: var(--danger); font-weight: 800;"; iconAtraso = " 🚨 CRÍTICO"; } else if (d.atraso >= 5) { styleAtraso = "color: var(--warning); font-weight: 800;"; iconAtraso = " ⚠️ ALERTA"; } } let btnHtml = d.semAnexo > 0 ? `<button class="btn btn-sm btn-primary" onclick="window.abrirDetalhesCanhotos('${d.data}')"><i class="ph ph-magnifying-glass"></i> Ver Notas</button>` : `<span style="color:var(--success); font-weight:700;">OK ✓</span>`; html += `<tr><td style="font-weight:700;">${formatarDataBR(d.data)}</td><td style="font-weight:700; color:var(--accent);">${d.totalEntregues}</td><td>${d.assinatura}</td><td>${d.foto}</td><td>${d.anexado}</td><td style="font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:11px;">${d.semAnexo}</td><td style="${styleAtraso}">${d.atraso} Dias${iconAtraso}</td><td align="center">${btnHtml}</td></tr>`; }); }
                 tbody.innerHTML = html; document.getElementById('canhotos-summary').innerHTML = `<div class="summary-block">📅 Faturamento Mês: ${monthSel}</div><div class="summary-block">📦 Total Entregue no Mês: <span style="color:var(--accent); font-size:13px;">${tEntregasMes}</span></div><div class="summary-block" style="border-color: var(--danger);">🚨 Faltam Anexar: <span style="color:var(--danger); font-size:13px;">${tSemAnexoMes}</span></div>`;
-            } catch (e) { console.error(e); } hideLoader();
+            } catch (e) { console.error("Erro ao carregar canhotos:", e); alert("Erro na comunicação com o banco."); } hideLoader();
         });
 
         window.abrirDetalhesCanhotos = (dataStr) => {
@@ -3251,6 +3506,7 @@
         });
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
+        // Correção: Logs explícitos para prevenção de falhas silenciosas
         async function autoSaveNotasSilencioso() {
             const dataSel = document.getElementById('notas-data-select').value; if (!dataSel) return;
             indSaveNotas.innerText = "Salvando..."; indSaveNotas.style.display = "inline"; const notas = [];
@@ -3261,8 +3517,53 @@
                     codcli: tr.dataset.codcli || "", repres: tr.dataset.repres || "", sup: tr.dataset.sup || ""
                 });
             });
-            try { await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas }); indSaveNotas.innerText = "Salvo ✓"; setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000); } catch (e) { }
+            try {
+                await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas });
+                indSaveNotas.innerText = "Salvo ✓";
+                setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000);
+            } catch (e) {
+                console.error("FALHA CRÍTICA NO AUTOSAVE:", e);
+                indSaveNotas.innerText = "Erro ao Salvar!";
+                indSaveNotas.style.color = "var(--danger)";
+            }
         }
+
+        // Correção Atômica: Uso de writeBatch para gravar múltiplos motoristas simultaneamente
+        document.getElementById('btn-confirmar-salvar-notas').addEventListener('click', async () => {
+            const d = document.getElementById('editor-notas-data').value; showLoader(); const updatesMap = {};
+            const batch = writeBatch(db); // Inicializa a gravação atômica
+
+            document.querySelectorAll('#lista-motoristas-modal .motorista-row').forEach(row => {
+                const p = row.getAttribute('data-placa').replace(/[^A-Z0-9]/g, ''); const m = row.querySelector('.input-mot').value.trim(); const t = row.querySelector('.input-tel').value.trim();
+                updatesMap[p] = { motorista: m, telefone: t };
+                if (m || t) {
+                    window.motoristasHistoricoCache[p] = { motorista: m, telefone: t };
+                    const docRef = doc(db, "motoristas_historico", p);
+                    batch.set(docRef, { motorista: m, telefone: t }); // Prepara gravação
+                }
+            });
+
+            const notas = [];
+            document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
+                if (!tr.querySelector('[data-col="nf"]')) return; const placaBase = tr.querySelector('[data-col="placa"]').textContent.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (updatesMap[placaBase]) { tr.querySelector('[data-col="motorista"]').innerText = updatesMap[placaBase].motorista; tr.querySelector('[data-col="telefone"]').innerText = updatesMap[placaBase].telefone; }
+                notas.push({ nf: cleanNF(tr.querySelector('[data-col="nf"]').textContent), viagem: tr.querySelector('[data-col="viagem"]').textContent.trim(), ordem: tr.querySelector('[data-col="ordem"]').textContent.trim(), data_nf: tr.querySelector('[data-col="data"]').textContent.trim(), peso: tr.querySelector('[data-col="peso"]').textContent.trim(), qtde: tr.querySelector('[data-col="qtde"]').textContent.trim(), cliente: tr.querySelector('[data-col="cliente"]').textContent.trim(), cidade: tr.querySelector('[data-col="cidade"]').textContent.trim(), bairro: tr.querySelector('[data-col="bairro"]').textContent.trim(), endereco: tr.querySelector('[data-col="endereco"]').textContent.trim(), placa: placaBase, motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(), telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(), status: "", chegada: "", saida: "", obs: "", parcial: "", app: "", codcli: tr.dataset.codcli || "", repres: tr.dataset.repres || "", sup: tr.dataset.sup || "" });
+            });
+
+            try {
+                const notasDocRef = doc(db, "notas_fiscais_diario", d);
+                batch.set(notasDocRef, { notas }); // Inclui as notas no mesmo lote
+                await batch.commit(); // Executa tudo simultaneamente
+
+                if (document.getElementById('notas-data-select').value === d) { document.getElementById('btn-carregar-notas').click(); }
+                alert("Base de Notas Fiscais e Motoristas Salva com Sucesso!");
+                document.getElementById('modal-motoristas').classList.remove('active'); document.getElementById('modal-editor-notas').classList.remove('active');
+            } catch (e) {
+                console.error("Erro ao salvar lote de notas:", e);
+                alert("Ocorreu um erro ao salvar no banco de dados.");
+            }
+            hideLoader();
+        });
 
         tbodyOperacaoNotas.addEventListener('change', (e) => { if (e.target.classList.contains('live-status-select')) { const val = e.target.value; e.target.style.cssText = getStRotaStyle(val); const tr = e.target.closest('tr'); if (tr) tr.style.backgroundColor = getRowBackgroundStyle(val); autoSaveNotasSilencioso(); } });
         tbodyOperacaoNotas.addEventListener('blur', (e) => { if (e.target.dataset.live === 'placa') { const novaPlaca = e.target.textContent.trim().toUpperCase(); const tr = e.target.closest('tr'); const cache = window.motoristasHistoricoCache[novaPlaca]; if (cache) { tr.querySelector('[data-live="motorista"]').innerText = cache.motorista || ""; tr.querySelector('[data-live="telefone"]').innerText = cache.telefone || ""; } } if (e.target.classList.contains('live-edit')) autoSaveNotasSilencioso(); }, true);
@@ -3290,8 +3591,13 @@
                 if (sOntem.exists()) {
                     sOntem.data().notas.forEach(no => { if (trimUpper(no.status) === 'PERNOITE' && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasParaApresentar.push({ ...no, status: "" }); } });
                 }
+
+                // CORREÇÃO DE PERFORMANCE (DOM Reflow Bypass)
+                tbodyEditorNotas.style.display = 'none';
                 notasParaApresentar.forEach(n => window.adicionarLinhaNotas(n));
-            } catch (e) { } hideLoader();
+                tbodyEditorNotas.style.display = '';
+
+            } catch (e) { console.error("Erro ao carregar notas edição:", e); } hideLoader();
         }
 
         window.adicionarLinhaNotas = (dados = {}) => {
@@ -3433,7 +3739,19 @@
             tr.querySelector('[data-col="placa"]').addEventListener('blur', function () { const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''); this.innerText = val; const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; });
             configurarDragAndDrop(tr, tbodyPainel); tbodyPainel.appendChild(tr);
         };
-        document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => { const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); tbodyPainel.innerHTML = ""; const s = await getDoc(doc(db, "painel_diario", d)); if (s.exists()) { s.data().rotas.forEach(r => window.adicionarLinhaPainel(r)); } hideLoader(); });
+        document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => {
+            const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); tbodyPainel.innerHTML = "";
+            try {
+                const s = await getDoc(doc(db, "painel_diario", d));
+                if (s.exists()) {
+                    // CORREÇÃO DE PERFORMANCE
+                    tbodyPainel.style.display = 'none';
+                    s.data().rotas.forEach(r => window.adicionarLinhaPainel(r));
+                    tbodyPainel.style.display = '';
+                }
+            } catch (e) { console.error("Erro editor painel:", e); }
+            hideLoader();
+        });
         document.getElementById('btn-salvar-editor-painel').addEventListener('click', async () => {
             const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); const rotas = [];
             document.querySelectorAll('#tabela-editor-painel tbody tr').forEach(tr => {
@@ -3825,9 +4143,6 @@
             document.getElementById('btn-carregar-painel').click();
         }
 
-        // Motor de arranque
-        initApp();
-
 
         // ================= FUNÇÕES DE APOIO PARA PDF =================
         function chunkArray(arr, size) {
@@ -3846,20 +4161,30 @@
         // ================= MOTOR DE FILTRAGEM (COM CORREÇÃO DE PARCIAIS NUMÉRICAS) =================
         function obterDadosFiltradosPC() {
             const placaSelecionada = document.getElementById('pc-placa').value;
+            const dataSaidaInput = document.getElementById('pc-data').value;
             const todasNotas = window.pcNotasCache || [];
 
-            // Filtro simplificado: Verifica se a placa da nota é igual à selecionada
-            // OU se a nota está num carro que recebeu troca (formato: ORIGEM troca;DESTINO)
             const notas = todasNotas.filter(n => {
                 if (!placaSelecionada) return true;
 
                 let pNota = String(n.placa || "").trim();
-                // Extrai a placa destino se existir o marcador de troca
                 let pAtiva = pNota;
                 if (pNota.includes('troca;')) pAtiva = pNota.split('troca;')[1].trim();
                 if (pNota.includes('troca:')) pAtiva = pNota.split('troca:')[1].trim();
+                const matchPlaca = (pNota === placaSelecionada || pAtiva === placaSelecionada);
 
-                return pNota === placaSelecionada || pAtiva === placaSelecionada;
+                // CORREÇÃO: Propriedade exata (data_nf) e validação de múltiplos formatos (BR e ISO)
+                let matchData = true;
+                if (dataSaidaInput) {
+                    let dNota = String(n.data_nf || n.data || "").trim();
+                    const [y, m, d] = dataSaidaInput.split('-');
+                    const dataFormatoBR = `${d}/${m}/${y}`;
+                    const dataSemZero = `${parseInt(d)}/${parseInt(m)}/${y}`;
+
+                    matchData = dNota.includes(dataSaidaInput) || dNota.includes(dataFormatoBR) || dNota.includes(dataSemZero);
+                }
+
+                return matchPlaca && matchData;
             });
 
             const entregues = notas.filter(n => ['ENTREGUE', 'REALIZADA', 'VEÍCULO VAZIO'].includes(trimUpper(n.status)));
@@ -3870,20 +4195,18 @@
             const motorista = notas.length > 0 ? (notas[0].motorista || "NÃO INFORMADO") : "NÃO INFORMADO";
             const placa = placaSelecionada || "N/A";
             const transporte = notas.length > 0 ? (notas[0].viagem || "") : "";
-            const dataSaida = document.getElementById('pc-data').value || "";
+            const dataSaida = dataSaidaInput || "";
 
-            // MÓDULO DE CÁLCULO DE ANEXOS (PRESERVANDO O QUE FUNCIONAVA)
             let total = entregues.length;
             let textoApp = "SEM ENTREGAS PARA AUDITAR";
 
             if (total > 0) {
                 let qtdFoto = entregues.filter(n => ['FOTO', 'ANEXADO'].includes(trimUpper(n.app || ''))).length;
                 let qtdAss = entregues.filter(n => trimUpper(n.app || '') === 'ASSINATURA').length;
-                let qtdSem = total - (qtdFoto + qtdAss);
 
                 let pFoto = Math.round((qtdFoto / total) * 100);
                 let pAss = Math.round((qtdAss / total) * 100);
-                let pSem = Math.round((qtdSem / total) * 100);
+                let pSem = 100 - (pFoto + pAss);
 
                 let partes = [];
                 if (pFoto > 0) partes.push(`${pFoto}% FOTO`);
@@ -3908,24 +4231,25 @@
             paddingBottom: function (i, node) { return 4; }
         };
 
-        // ================= CONTROLADOR DE PREVIEW DE PDF =================
+        // ================= CONTROLADOR DE PREVIEW DE PDF (LEITURA APENAS) =================
         function abrirPreviewPDF(docDefinition) {
-            // Carrega o PDF em array binário puro para bloquear gatilhos de impressão automáticos
-            pdfMake.createPdf(docDefinition).getBuffer((buffer) => {
-                const blob = new Blob([buffer], { type: 'application/pdf' });
+            pdfMake.createPdf(docDefinition).getBlob((blob) => {
                 const url = URL.createObjectURL(blob);
+                const iframe = document.getElementById('pdf-viewer');
 
-                // Libera lixo de memória de previews antigos
-                if (window.currentPdfUrl) {
-                    URL.revokeObjectURL(window.currentPdfUrl);
-                }
-                window.currentPdfUrl = url;
+                // Injeta a URL protegida (desvinculada do modo window.print de abertura)
+                iframe.src = url;
 
-                // Injeta no Iframe para leitura visual sutil
-                document.getElementById('pdf-viewer').src = url;
+                // Bloqueia interações indesejadas de teclado que disparam impressão nativa
+                iframe.onload = () => { iframe.contentWindow.focus(); };
+
                 document.getElementById('modal-pdf-preview').classList.add('active');
             });
         }
+        // A impressão SÓ acontece ao clicar neste botão:
+        document.getElementById('btn-imprimir-pdf').addEventListener('click', () => {
+            document.getElementById('pdf-viewer').contentWindow.print();
+        });
 
         document.getElementById('close-pdf-preview').addEventListener('click', () => document.getElementById('modal-pdf-preview').classList.remove('active'));
         document.getElementById('btn-voltar-pdf').addEventListener('click', () => document.getElementById('modal-pdf-preview').classList.remove('active'));
@@ -4205,7 +4529,6 @@
 
         document.getElementById('close-transbordo').addEventListener('click', () => modalTransbordo.classList.remove('active'));
         document.getElementById('btn-cancelar-transbordo').addEventListener('click', () => modalTransbordo.classList.remove('active'));
-
         document.getElementById('close-confirm-transbordo').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
         document.getElementById('btn-cancelar-confirm').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
 
@@ -4215,134 +4538,50 @@
             document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
         });
 
-        // ================= MOTOR DE TRANSBORDO MATRIZ (CORRIGIDO) =================
+        // A BUSCA DIRETA NO DOM
         function atualizarPlacasTransbordo() {
-            const dateInput = document.getElementById('transbordo-data').value;
-            if (!dateInput) return;
-
-            const [y, m, d] = dateInput.split('-');
-            const df1 = `${d}/${m}/${y}`;
-            const df2 = `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
-
             const selectOrigem = document.getElementById('transbordo-origem');
-            selectOrigem.innerHTML = '<option value="">Selecione o veículo com problema...</option>';
+            selectOrigem.innerHTML = '<option value="">Selecione o veículo...</option>';
 
-            let placasData = new Map(); // Chave: Placa com a carga | Valor: Placa de Origem da Linha
+            let placasEncontradas = new Map();
 
-            ['tabela-editor-painel', 'tabela-monitoramento'].forEach(id => {
-                let tabela = document.getElementById(id);
-                if (!tabela) return;
+            // Varredura de alta precisão nas tabelas do DOM ativas no momento
+            document.querySelectorAll('#tabela-editor-painel tbody tr, #tabela-monitoramento tbody tr, #tabela-operacao-notas tbody tr').forEach(tr => {
 
-                let ths = Array.from(tabela.querySelectorAll('thead th'));
-                let idxData = ths.findIndex(th => th.textContent.toUpperCase().includes('DATA'));
-                let idxPlaca = ths.findIndex(th => th.textContent.toUpperCase().includes('PLACA'));
+                // Localiza a coluna da placa via atributo data-col, data-live ou assume a 1ª coluna no monitoramento
+                let colPlaca = tr.querySelector('[data-col="placa"], [data-live="placa"], .col-placa');
+                if (!colPlaca) colPlaca = tr.children[0];
 
-                if (idxData === -1) idxData = 4;
-                if (idxPlaca === -1) idxPlaca = 2;
+                if (colPlaca && colPlaca.textContent) {
+                    let placaRaw = colPlaca.textContent.trim().toUpperCase();
+                    if (!placaRaw || placaRaw.length < 5) return; // Filtro contra lixo ou cabeçalhos
 
-                tabela.querySelectorAll('tbody tr').forEach(tr => {
-                    let dataCell = tr.children[idxData];
-                    let placaCell = tr.children[idxPlaca];
+                    let pOrig = placaRaw;
+                    let pAtiva = placaRaw;
 
-                    if (dataCell && placaCell) {
-                        let txtData = dataCell.textContent.trim();
-                        if (txtData.includes(df1) || txtData.includes(df2) || txtData === '') {
-                            let placaRaw = placaCell.textContent.trim();
-                            if (!placaRaw) return;
-
-                            let pOrig = placaRaw;
-                            let pAtiva = placaRaw;
-
-                            // Se já existir uma troca em andamento, extrai quem está com a carga agora
-                            if (placaRaw.includes('troca;')) {
-                                let parts = placaRaw.split('troca;');
-                                pOrig = parts[0].trim();
-                                pAtiva = parts[1].trim();
-                            } else if (placaRaw.includes('troca:')) {
-                                let parts = placaRaw.split('troca:');
-                                pOrig = parts[0].trim();
-                                pAtiva = parts[1].trim();
-                            }
-
-                            if (pAtiva) placasData.set(pAtiva, pOrig);
-                        }
+                    // Tratamento de nomenclatura de trocas
+                    if (placaRaw.includes('TROCA;')) {
+                        pOrig = placaRaw.split('TROCA;')[0].trim();
+                        pAtiva = placaRaw.split('TROCA;')[1].trim();
+                    } else if (placaRaw.includes('TROCA:')) {
+                        pOrig = placaRaw.split('TROCA:')[0].trim();
+                        pAtiva = placaRaw.split('TROCA:')[1].trim();
                     }
-                });
-            });
 
-            placasData.forEach((orig, ativa) => {
-                selectOrigem.innerHTML += `<option value="${ativa}" data-orig="${orig}">${ativa}</option>`;
-            });
-            renderizarNotasTransbordo();
-        }
-
-        // EXECUÇÃO DO TRANSBORDO COM ATUALIZAÇÃO DE MOTORISTA E TELEFONE
-        document.getElementById('btn-finalizar-transbordo').addEventListener('click', () => {
-            const selectElem = document.getElementById('transbordo-origem');
-            const optionSel = selectElem.options[selectElem.selectedIndex];
-
-            const placaAtiva = optionSel.value;
-            const placaOriginal = optionSel.getAttribute('data-orig');
-            const destino = document.getElementById('transbordo-destino').value.trim().toUpperCase();
-            const tipo = document.getElementById('transbordo-tipo').value;
-
-            const novoMot = document.getElementById('transbordo-novo-mot').value.trim().toUpperCase();
-            const novoTel = document.getElementById('transbordo-novo-tel').value.trim();
-
-            if (!destino) return alert("Digite a placa de destino.");
-
-            let nfsSel = [];
-            if (tipo === 'selecionar') {
-                document.querySelectorAll('.check-nf-transbordo:checked').forEach(cb => nfsSel.push(cb.value));
-                if (nfsSel.length === 0) return alert("Nenhuma NF selecionada.");
-            }
-
-            // 1. Atualiza os Painéis Operacionais (Injeta a nova troca e dados de contato)
-            ['tabela-editor-painel', 'tabela-monitoramento'].forEach(tableId => {
-                let tabela = document.getElementById(tableId);
-                if (!tabela) return;
-
-                let ths = Array.from(tabela.querySelectorAll('thead th'));
-                let idxPlaca = ths.findIndex(th => th.textContent.toUpperCase().includes('PLACA'));
-                let idxMot = ths.findIndex(th => th.textContent.toUpperCase().includes('MOTORISTA'));
-                let idxTel = ths.findIndex(th => th.textContent.toUpperCase().includes('TEL'));
-
-                if (idxPlaca === -1) idxPlaca = 2;
-                if (idxMot === -1) idxMot = 3;
-
-                tabela.querySelectorAll('tbody tr').forEach(tr => {
-                    let placaCell = tr.children[idxPlaca];
-                    if (placaCell) {
-                        let placaRaw = placaCell.textContent.trim();
-                        let pOrigLocal = (placaRaw.includes('troca;') || placaRaw.includes('troca:')) ? placaRaw.split(/troca;|troca:/)[0].trim() : placaRaw;
-
-                        if (pOrigLocal === placaOriginal && placaRaw.includes(placaAtiva)) {
-                            placaCell.textContent = `${placaOriginal} troca;${destino}`;
-
-                            if (idxMot !== -1 && tr.children[idxMot] && novoMot) tr.children[idxMot].textContent = novoMot;
-                            if (idxTel !== -1 && tr.children[idxTel] && novoTel) tr.children[idxTel].textContent = novoTel;
-                        }
-                    }
-                });
-            });
-
-            // 2. Atualiza a Tabela de Notas Fiscais vinculada à nova placa
-            document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                let placaCol = tr.querySelector('[data-col="placa"]');
-                let nfCol = tr.querySelector('[data-col="nf"]');
-
-                if (placaCol && nfCol && placaCol.textContent.trim() === placaAtiva) {
-                    let nf = nfCol.textContent.trim();
-                    if (tipo === 'todas' || nfsSel.includes(nf)) {
-                        placaCol.textContent = destino;
-                    }
+                    if (pAtiva) placasEncontradas.set(pAtiva, pOrig);
                 }
             });
 
-            alert(`⚡ TRANSBORDO EXECUTADO!\nVeículo atualizado para ${destino}.\nMotorista: ${novoMot || 'Mantido'}`);
-            modalConfirmTransbordo.classList.remove('active');
-            modalTransbordo.classList.remove('active');
-        });
+            if (placasEncontradas.size === 0) {
+                selectOrigem.innerHTML = '<option value="">Nenhum veículo carregado na tela</option>';
+            } else {
+                placasEncontradas.forEach((orig, ativa) => {
+                    selectOrigem.innerHTML += `<option value="${ativa}" data-orig="${orig}">${ativa}</option>`;
+                });
+            }
+
+            if (typeof renderizarNotasTransbordo === "function") renderizarNotasTransbordo();
+        }
 
         function renderizarNotasTransbordo() {
             const placaAtiva = document.getElementById('transbordo-origem').value;
@@ -4350,11 +4589,9 @@
             container.innerHTML = '';
             if (!placaAtiva) return;
 
-            // Vasculha direto a tabela de notas pela Placa Ativa
             document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
                 let placaCol = tr.querySelector('[data-col="placa"]');
                 let nfCol = tr.querySelector('[data-col="nf"]');
-
                 if (placaCol && nfCol && placaCol.textContent.trim() === placaAtiva) {
                     let nf = nfCol.textContent.trim();
                     container.innerHTML += `<label style="display: flex; gap: 8px; margin-bottom: 6px; font-weight: 600; cursor: pointer;">
@@ -4363,6 +4600,71 @@
                 }
             });
         }
+
+        document.getElementById('btn-executar-transbordo').addEventListener('click', () => {
+            if (!document.getElementById('transbordo-origem').value || !document.getElementById('transbordo-destino').value.trim()) {
+                return alert("Selecione a origem e digite o destino.");
+            }
+            document.getElementById('transbordo-novo-mot').value = '';
+            document.getElementById('transbordo-novo-tel').value = '';
+            modalConfirmTransbordo.classList.add('active');
+        });
+
+        document.getElementById('btn-finalizar-transbordo').addEventListener('click', () => {
+            const selectElem = document.getElementById('transbordo-origem');
+            const optionSel = selectElem.options[selectElem.selectedIndex];
+            const placaAtiva = optionSel.value;
+            const placaOriginal = optionSel.getAttribute('data-orig');
+            const destino = document.getElementById('transbordo-destino').value.trim().toUpperCase();
+            const tipo = document.getElementById('transbordo-tipo').value;
+            const novoMot = document.getElementById('transbordo-novo-mot').value.trim().toUpperCase();
+            const novoTel = document.getElementById('transbordo-novo-tel').value.trim();
+
+            let nfsSel = [];
+            if (tipo === 'selecionar') {
+                document.querySelectorAll('.check-nf-transbordo:checked').forEach(cb => nfsSel.push(cb.value));
+                if (nfsSel.length === 0) return alert("Nenhuma NF selecionada.");
+            }
+
+            // 1. Atualiza o Painel
+            ['tabela-editor-painel', 'tabela-monitoramento'].forEach(tableId => {
+                let tabela = document.getElementById(tableId);
+                if (!tabela) return;
+                tabela.querySelectorAll('tbody tr').forEach(tr => {
+                    let placaCol = tr.querySelector('[data-col="placa"], .col-placa');
+                    if (!placaCol) placaCol = tr.children[2];
+
+                    if (placaCol) {
+                        let placaRaw = placaCol.textContent.trim();
+                        let pOrigLocal = placaRaw.includes('troca;') ? placaRaw.split('troca;')[0].trim() : (placaRaw.includes('troca:') ? placaRaw.split('troca:')[0].trim() : placaRaw);
+
+                        if (pOrigLocal === placaOriginal && placaRaw.includes(placaAtiva)) {
+                            placaCol.textContent = `${placaOriginal} troca;${destino}`;
+                            let motCol = tr.querySelector('[data-col="motorista"], .col-motorista');
+                            let telCol = tr.querySelector('[data-col="telefone"], .col-telefone');
+                            if (novoMot && motCol) motCol.textContent = novoMot;
+                            if (novoTel && telCol) telCol.textContent = novoTel;
+                        }
+                    }
+                });
+            });
+
+            // 2. Atualiza as Notas
+            document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
+                let placaCol = tr.querySelector('[data-col="placa"]');
+                let nfCol = tr.querySelector('[data-col="nf"]');
+                if (placaCol && nfCol && placaCol.textContent.trim() === placaAtiva) {
+                    let nf = nfCol.textContent.trim();
+                    if (tipo === 'todas' || nfsSel.includes(nf)) {
+                        placaCol.textContent = destino;
+                    }
+                }
+            });
+
+            alert(`⚡ TRANSBORDO CONCLUÍDO!\nA carga foi transferida de ${placaAtiva} para ${destino}.`);
+            modalConfirmTransbordo.classList.remove('active');
+            modalTransbordo.classList.remove('active');
+        });
 
         // Passo 1: Abre a confirmação de Motorista
         document.getElementById('btn-executar-transbordo').addEventListener('click', () => {
@@ -4483,6 +4785,115 @@
                 select.innerHTML = '<option value="">Selecione...</option>';
                 placas.forEach(p => { if (p) select.innerHTML += `<option value="${p}">${p}</option>`; });
             }, 1000);
+        });
+
+        // ================= BUSCA DINÂMICA EM TEMPO REAL =================
+        function ativarFiltrosTempoReal() {
+            document.querySelectorAll('.filter-input, input[data-filter]').forEach(input => {
+                // Flag de segurança para não duplicar eventos de escuta (Memory Leak)
+                if (input.dataset.listenerAtivo) return;
+                input.dataset.listenerAtivo = "true";
+
+                input.addEventListener('input', function (e) {
+                    const termo = e.target.value.toLowerCase().trim();
+                    // Identifica qual tabela o usuário está olhando
+                    const tabelasAtivas = document.querySelectorAll('.view-section.active table');
+
+                    tabelasAtivas.forEach(table => {
+                        table.querySelectorAll('tbody tr').forEach(tr => {
+                            const textoLinha = tr.textContent.toLowerCase();
+
+                            if (textoLinha.includes(termo)) {
+                                // Respeita o filtro do Excel se a linha já estava escondida por ele
+                                if (tr.dataset.excelHidden !== "true") {
+                                    tr.style.display = '';
+                                }
+                            } else {
+                                tr.style.display = 'none';
+                            }
+                        });
+                    });
+                });
+            });
+        }
+
+        // ================= MOTOR ANALÍTICO DO DASHBOARD =================
+        // ====== MOTOR DE DASHBOARD OPERACIONAL ======
+        let charts = {}; // Cache para destruir gráficos anteriores ao recarregar
+
+        document.getElementById('btn-gerar-dash').addEventListener('click', async () => {
+            const mes = document.getElementById('dash-mes').value; // "YYYY-MM"
+            const quinzena = document.getElementById('dash-quinzena').value;
+
+            if (!mes) return alert("Selecione o mês.");
+            showLoader();
+
+            try {
+                const snap = await getDocs(collection(db, "notas_fiscais_diario"));
+                let notasFiltradas = [];
+
+                snap.forEach(doc => {
+                    const dataStr = doc.id; // Formato YYYY-MM-DD
+                    if (dataStr.startsWith(mes)) {
+                        const dia = parseInt(dataStr.split('-')[2]);
+                        let passaFiltro = false;
+
+                        if (quinzena === 'T') passaFiltro = true;
+                        else if (quinzena === '1') passaFiltro = dia <= 15;
+                        else if (quinzena === '2') passaFiltro = dia > 15;
+
+                        if (passaFiltro) {
+                            const notasDoDia = doc.data().notas || [];
+                            notasFiltradas.push(...notasDoDia);
+                        }
+                    }
+                });
+
+                processarDadosDashboard(notasFiltradas);
+            } catch (e) {
+                console.error("Erro no Dashboard:", e);
+            } finally {
+                hideLoader();
+            }
+        });
+
+        function processarDadosDashboard(notas) {
+            // 1. Cálculos de KPI
+            const total = notas.length;
+            const entregues = notas.filter(n => ['ENTREGUE', 'REALIZADA'].includes(trimUpper(n.status))).length;
+            const falhas = notas.filter(n => ['DEVOLUÇÃO', 'PARADA', 'SINISTRADA'].includes(trimUpper(n.status))).length;
+            const semAnexo = notas.filter(n => !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(trimUpper(n.app))).length;
+
+            document.getElementById('kpi-total').innerText = total;
+            document.getElementById('kpi-entregues').innerText = entregues;
+            document.getElementById('kpi-falhas').innerText = falhas;
+            document.getElementById('kpi-semanexo').innerText = semAnexo;
+
+            // 2. Gráficos (Certifique-se de ter o Chart.js carregado no seu <head>)
+            const ctxStatus = document.getElementById('chart-status').getContext('2d');
+
+            // Destroi gráfico anterior se existir
+            if (charts['status']) charts['status'].destroy();
+
+            charts['status'] = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Entregues', 'Falhas', 'Pendentes'],
+                    datasets: [{
+                        data: [entregues, falhas, total - (entregues + falhas)],
+                        backgroundColor: ['#16a34a', '#dc2626', '#f59e0b']
+                    }]
+                }
+            });
+        }
+
+        // Chame essa função logo após o carregamento dos dados do Firebase
+        setTimeout(ativarFiltrosTempoReal, 2000);
+
+        // Aguarda o HTML estar pronto antes de rodar qualquer lógica de busca de elementos
+        document.addEventListener('DOMContentLoaded', () => {
+            configurarDatasPadrao();
+            initApp();
         });
 
     </script>
