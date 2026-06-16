@@ -347,7 +347,7 @@
         }
 
         .menu-item i.ph-device-mobile {
-            color: #b4becf;
+            color: #2063d8;
         }
 
         .menu-item.active i,
@@ -1493,6 +1493,89 @@
             /* Centraliza o contêiner no meio da tela */
             width: 100%;
         }
+
+        /* ================= HUB DE SISTEMAS MODERN CARDS ================= */
+        .hub-container {
+            display: grid;
+            margin-left: 500px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+            padding: 30px;
+            max-width: 1200px;
+        }
+
+        .hub-btn-modern {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 35px 20px;
+            background: var(--bg-panel, #ffffff);
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-main, #1e293b);
+            border: 1px solid var(--border-color, #e2e8f0);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Efeito de micro-interação no fundo */
+        .hub-btn-modern::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 0;
+            background: var(--accent, #3b82f6);
+            z-index: -1;
+            transition: height 0.3s ease;
+            opacity: 0.05;
+        }
+
+        .hub-btn-modern:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: var(--accent, #3b82f6);
+        }
+
+        .hub-btn-modern:hover::after {
+            height: 100%;
+        }
+
+        .hub-btn-modern i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--accent, #3b82f6);
+            transition: transform 0.3s ease;
+        }
+
+        .hub-btn-modern:hover i {
+            transform: scale(1.15) translateY(-2px);
+        }
+
+        .hub-btn-modern span.title {
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .hub-btn-modern span.sub {
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .top-bar{
+            text-align: center;
+            margin-top: 20px;
+            text-shadow: 2px 2px 2px rgb(255, 255, 255);
+        }
+
     </style>
 </head>
 
@@ -1536,6 +1619,8 @@
                         class="menu-text">Frota</span></a>
                 <a class="menu-item" onclick="window.abrirModalConfig()"><i class="ph ph-sliders menu-icon"></i><span
                         class="menu-text">Configurações</span></a>
+                <a class="menu-item" data-target="view-hub"><i class="ph ph-squares-four menu-icon"></i><span
+                        class="menu-text">HUB | Apps</span></a>
             </div>
         </nav>
     </div>
@@ -2227,6 +2312,43 @@
                 </div>
             </div>
         </section>
+
+        <!-- ================= VIEW HUB ================= -->
+        <div id="view-hub" class="view-section">
+            <div class="top-bar">
+                <div class="title-area">
+                    <h2><i class="ph-fill ph-squares-four"></i> HUB Integrado Icaphi</h2>
+                    <p class="subtitle">Acesso rápido centralizado aos sistemas operacionais auxiliares</p>
+                </div>
+            </div>
+
+            <div class="hub-container">
+                <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiKMs.html" target="_blank" class="hub-btn-modern">
+                    <i class="ph-fill ph-steering-wheel"></i>
+                    <span class="title">Icaphi KMs</span>
+                    <span class="sub">Controle de Quilometragem</span>
+                </a>
+
+                <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiAbastecimento.html" target="_blank" class="hub-btn-modern">
+                    <i class="ph-fill ph-gas-pump"></i>
+                    <span class="title">Icaphi Abastecimento</span>
+                    <span class="sub">Gestão de Combustível</span>
+                </a>
+
+                <a href="https://matheusjulio780.github.io/app-marcador-ponto/IcaphiPainel.html" target="_blank" class="hub-btn-modern">
+                    <i class="ph-fill ph-chart-line-up"></i>
+                    <span class="title">Icaphi Métricas</span>
+                    <span class="sub">Dashboards e Resultados</span>
+                </a>
+
+                <a href="https://matheusjulio780.github.io/app-marcador-ponto/ImportaçãoEscalaKMs.html" target="_blank" class="hub-btn-modern">
+                    <i class="ph-fill ph-file-arrow-up"></i>
+                    <span class="title">Importação Escala KMs</span>
+                    <span class="sub">Injeção de Dados em Lote</span>
+                </a>
+            </div>
+        </div>
+
     </main>
 
     <div class="modal-overlay" id="modal-acoes-lote">
@@ -4412,9 +4534,12 @@
             if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
             const d = obterDadosFiltradosPC();
 
-            // MAPEAMENTO DE CORES DOS CANHOTOS
-            let notasOrdenadas = [...d.entregues].sort((a, b) => parseInt(a.nf) - parseInt(b.nf));
-            let linhasCanhotos = chunkArray(d.entregues.map(n => {
+            // MAPEAMENTO E ORDENAÇÃO DE CANHOTOS (COLUMN-MAJOR)
+            
+            // 1. Correção Lógica: Ordena numericamente e aplica a base limpa
+            let notasOrdenadas = [...d.entregues].sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
+
+            let canhotosMapeados = notasOrdenadas.map(n => {
                 let statusApp = trimUpper(n.app || '');
                 let cor = '#94a3b8'; // CINZA (Sem anexo por padrão)
 
@@ -4422,11 +4547,23 @@
                 else if (statusApp === 'ASSINATURA') cor = '#000000'; // PRETO
 
                 return { text: cleanNF(n.nf), color: cor, alignment: 'center', fontSize: 10, bold: true };
-            }), 6);
+            });
 
-            linhasCanhotos = linhasCanhotos.map(row => {
-                while (row.length < 6) row.push({ text: '', alignment: 'center' });
-                return row;
+            // 2. Parâmetros da Matriz
+            const numColunas = 6;
+            // Força um mínimo de 5 linhas para não quebrar a estética do seu PDF
+            let numLinhas = Math.max(5, Math.ceil(canhotosMapeados.length / numColunas));
+
+            // 3. Matriz vazia pré-alocada (Engana o construtor Row-Major do pdfMake)
+            let linhasCanhotos = Array.from({ length: numLinhas }, () =>
+                Array.from({ length: numColunas }, () => ({ text: '', alignment: 'center' }))
+            );
+
+            // 4. Preenchimento Cruzado (A matemática empurra os dados verticalmente primeiro)
+            canhotosMapeados.forEach((canhoto, index) => {
+                let c = Math.floor(index / numLinhas); // Índice da Coluna
+                let r = index % numLinhas;             // Índice da Linha
+                linhasCanhotos[r][c] = canhoto;
             });
             while (linhasCanhotos.length < 5) linhasCanhotos.push([{ text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }]);
 
@@ -5153,64 +5290,189 @@
             showLoader();
             try {
                 let registrosExcel = [];
-                let promessasDeBusca = [];
 
-                let dataIteradora = new Date(dataInicio + 'T00:00:00');
+                // Precisamos puxar o dia ANTERIOR ao dataInicio para recalcular corretamente os Pernoites
+                let dtInicioObj = new Date(dataInicio + 'T00:00:00');
+                dtInicioObj.setDate(dtInicioObj.getDate() - 1);
+                let dataOntemStr = dtInicioObj.toISOString().split('T')[0];
+
+                let dataIteradora = new Date(dataOntemStr + 'T00:00:00');
                 const dataLimite = new Date(dataFim + 'T00:00:00');
 
-                // Estratégia de leitura pararela: Cria o array de datas e busca de uma vez só
+                let promessasDeBusca = [];
+                // Busca de forma paralela todas as notas e rotas do período
                 while (dataIteradora <= dataLimite) {
                     const dataDocId = dataIteradora.toISOString().split('T')[0];
-                    promessasDeBusca.push(
-                        getDoc(doc(db, colecao, dataDocId)).then(snap => {
-                            return snap.exists() ? { dataBase: dataDocId, dados: snap.data() } : null;
-                        })
-                    );
+                    promessasDeBusca.push(getDoc(doc(db, "painel_diario", dataDocId)).then(s => ({ date: dataDocId, type: 'painel', data: s.exists() ? s.data().rotas : null })));
+                    promessasDeBusca.push(getDoc(doc(db, "notas_fiscais_diario", dataDocId)).then(s => ({ date: dataDocId, type: 'notas', data: s.exists() ? s.data().notas : null })));
                     dataIteradora.setDate(dataIteradora.getDate() + 1);
                 }
 
-                const resultadosFirestore = await Promise.all(promessasDeBusca);
+                const resultados = await Promise.all(promessasDeBusca);
+                
+                // Mapeia na memória para cruzamento ultrarrápido
+                let dbData = {};
+                resultados.forEach(r => {
+                    if (!dbData[r.date]) dbData[r.date] = { painel: [], notas: [] };
+                    if (r.type === 'painel' && r.data) dbData[r.date].painel = r.data;
+                    if (r.type === 'notas' && r.data) dbData[r.date].notas = r.data;
+                });
 
-                resultadosFirestore.forEach(docSnap => {
-                    if (!docSnap) return;
+                // >>> CORREÇÃO DO BUG DE DATA NO EXCEL <<<
+                // Transforma a string em um Objeto Data Nativo que o Excel reconhece automaticamente
+                const converterDataExcel = (dataStr) => {
+                    if (!dataStr) return "";
+                    if (dataStr.includes('-')) {
+                        const [y, m, d] = dataStr.split('-');
+                        return new Date(y, m - 1, d);
+                    }
+                    if (dataStr.includes('/')) {
+                        const [d, m, y] = dataStr.split('/');
+                        return new Date(y, m - 1, d);
+                    }
+                    return dataStr;
+                };
+
+                // Executa a lógica idêntica à renderização do Painel para o período solicitado
+                let dtAtual = new Date(dataInicio + 'T00:00:00');
+                while (dtAtual <= dataLimite) {
+                    const dataSel = dtAtual.toISOString().split('T')[0];
+                    let dtOntem = new Date(dtAtual);
+                    dtOntem.setDate(dtOntem.getDate() - 1);
+                    const dataOntem = dtOntem.toISOString().split('T')[0];
+
+                    let rotasParaProcessar = dbData[dataSel].painel || [];
+                    let notasDoDia = [...(dbData[dataSel].notas || [])];
+                    let rotasOntem = dbData[dataOntem].painel || [];
+                    let notasOntem = dbData[dataOntem].notas || [];
+
+                    // Reconstrução dos Transbordos e Pernoites
+                    let deParaTroca = {};
+                    rotasParaProcessar.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+
+                    notasOntem.forEach(no => {
+                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                        }
+                    });
+
+                    rotasOntem.forEach(ro => {
+                        const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
+                        const teveNotaPernoiteOntem = notasOntem.some(n => trimUpper(n.status) === 'PERNOITE' && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo);
+                        if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
+                            rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
+                        }
+                    });
 
                     if (tipoExportacao === 'PAINEL') {
-                        const rotas = docSnap.dados.rotas || [];
-                        rotas.forEach(rota => {
-                            // Estrutura EXATA que vai para o Excel
+                        rotasParaProcessar.forEach(rota => {
+                            const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
+                            const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
+                            const notasPlaca = notasDoDia.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
+
+                            let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
+                            if (notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
+
+                            let qtd_nf = notasPlaca.length;
+                            let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                            let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                            let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                            let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
+                            let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
+                            let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+                            const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
+                            let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
+
+                            const isParada = trimUpper(rota.status) === 'PARADA';
+                            const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
+                            const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
+                            const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
+                            const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
+                            const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
+
+                            let stRotaCalc = "";
+                            if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
+
+                            let p_q_nfs = notasPernoite.length > 0 ? `${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}` : "";
+                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
+                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                            let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "SIM" : "NÃO"; }
+
+                            // EXPORTAÇÃO EXATA NA ORDEM DO CABEÇALHO DO PAINEL
                             registrosExcel.push({
-                                "Data": docSnap.dataBase, // Exigência cumprida: Data na primeira coluna
-                                "Rota": rota.rota || "",
-                                "Motorista": rota.motorista || "",
-                                "Placa": rota.placa || "",
-                                "Status": rota.status || "",
-                                "Devolução": rota.devolucao || "",
-                                "Pernoite": rota.pernoite || ""
+                                "DATA OP.": converterDataExcel(dataSel),
+                                "PLACA": rota.placa || "",
+                                "TROCA": rota.troca || "",
+                                "PERFIL": infoViva.perfil,
+                                "TIPO": infoViva.tipo,
+                                "O.C.": rota.oc || "",
+                                "TRANS.": rota.transporte || "",
+                                "MOT.": motoristaFinal,
+                                "CONT.": contatoFinal,
+                                "ST. PAINEL": rota.status || "",
+                                "Q.NF": qtd_nf,
+                                "PESO": parseFloat(pesoTotal.toFixed(2)),
+                                "KM": parseFloat(rota.km) || 0,
+                                "REGIÃO": rota.regiao || "",
+                                "AJUDANTE": rota.ajudante || "",
+                                "DEV": devolucao > 0 ? devolucao : "",
+                                "REEN": reentrega > 0 ? reentrega : "",
+                                "P+Q": p_q_nfs,
+                                "PARC": teveParcialBool ? "SIM" : "",
+                                "ST. ROTA": stRotaCalc,
+                                "PEN": pendente > 0 ? pendente : "",
+                                "REAL": realizada > 0 ? realizada : "",
+                                "% APP": percentApp > 0 ? percentApp + '%' : '',
+                                "100%": cemPorcentoAss,
+                                "PAL.": rota.vale_palete || "",
+                                "QTD": rota.qtde || ""
                             });
                         });
                     } else if (tipoExportacao === 'NOTAS') {
-                        const notas = docSnap.dados.notas || [];
-                        notas.forEach(nf => {
+                        // EXPORTAÇÃO EXATA NA ORDEM DO CABEÇALHO DE NOTAS
+                        notasDoDia.forEach(nf => {
                             registrosExcel.push({
-                                "Data Inserção": docSnap.dataBase, // Caso queira a data de base
-                                "Nota Fiscal": nf.nf || "",
-                                "Remetente": nf.remetente || "",
-                                "Destinatário": nf.destinatario || "",
-                                "Peso": nf.peso || "",
-                                "Status": nf.status || "",
-                                "App Baixa": nf.app || ""
+                                "DATA OP.": converterDataExcel(dataSel), 
+                                "NF": cleanNF(nf.nf),
+                                "VIAGEM": nf.viagem || "",
+                                "ORDEM": nf.ordem || "",
+                                "DATA NOTA": converterDataExcel(nf.data_nf || nf.data),
+                                "PESO": parseFloat(nf.peso) || 0,
+                                "QTDE": parseInt(nf.qtde) || 0,
+                                "CLIENTE": nf.cliente || "",
+                                "CIDADE": nf.cidade || "",
+                                "BAIRRO": nf.bairro || "",
+                                "ENDEREÇO": nf.endereco || "",
+                                "PLACA": nf.placa || "",
+                                "MOTORISTA": nf.motorista || "",
+                                "TELEFONE": nf.telefone || "",
+                                "STATUS": nf.status || "",
+                                "CHEGADA": nf.chegada || "",
+                                "SAÍDA": nf.saida || "",
+                                "OBS": nf.obs || "",
+                                "PARCIAL": nf.parcial || "",
+                                "APP": nf.app || ""
                             });
                         });
                     }
-                });
+                    dtAtual.setDate(dtAtual.getDate() + 1);
+                }
 
                 if (registrosExcel.length === 0) return alert("Não há registros neste intervalo de datas.");
 
-                // Criação e formatação do Excel via SheetJS
-                const worksheet = XLSX.utils.json_to_sheet(registrosExcel);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
-                XLSX.writeFile(workbook, `Exportacao_${tipoExportacao}_${dataInicio}_a_${dataFim}.xlsx`);
+                // Usando a tag cellDates: true, o SheetJS converte os objetos nativos Data para Células Formato Data no Excel.
+                const ws = XLSX.utils.json_to_sheet(registrosExcel, { cellDates: true });
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Dados");
+                XLSX.writeFile(wb, `Exportacao_${tipoExportacao}_${dataInicio}_a_${dataFim}.xlsx`);
 
             } catch (erro) {
                 console.error("Erro Crítico na Exportação: ", erro);
