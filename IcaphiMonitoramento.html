@@ -160,13 +160,9 @@
             transition: background-color 0.3s, color 0.3s;
             transform: scale(0.85);
             transform-origin: top left;
-            /* Mantém o topo esquerdo como referência */
             width: 117.33%;
-            /* 100 / 0.75 = 133.33% - Compensa o zoom para não sobrar espaço vazio */
             height: 117.33vh;
-            /* Ajusta a altura proporcionalmente */
             overflow: block;
-            /* Permite scroll se necessário */
         }
 
         ::-webkit-scrollbar {
@@ -438,10 +434,7 @@
             background: var(--bg-panel);
         }
 
-        input[type="date"]:focus,
-        input[type="month"]:focus,
-        input[type="text"]:focus,
-        input[type="number"]:focus,
+        input:focus,
         select:focus,
         textarea:focus {
             border-color: var(--accent);
@@ -540,7 +533,7 @@
             transition: 0.3s;
         }
 
-        /* ================= TABELAS MODERNIZADAS (CORRIGIDAS) ================= */
+        /* ================= TABELAS MODERNIZADAS ================= */
         .table-wrapper {
             background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
@@ -554,25 +547,20 @@
             transition: 0.3s;
         }
 
-        /* 1. Estrutura Base da Tabela (Redução de 11.5px para 9px) */
         table {
             width: 100%;
             border-collapse: collapse !important;
             table-layout: fixed;
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
             font-size: 12px !important;
-            /* <--- COMPACTADO */
             border: none !important;
         }
 
-        /* 2. Cabeçalho (Redução de padding e texto) */
         thead th {
             background: var(--bg-table-header) !important;
             color: #f8fafc !important;
             padding: 8px 6px !important;
-            /* <--- COMPACTADO (Era 12px 10px) */
             font-size: 8.5px !important;
-            /* <--- COMPACTADO */
             font-weight: 600 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
@@ -586,12 +574,9 @@
             cursor: default;
         }
 
-        /* 3. Células do Corpo (Redução de padding e altura) */
         tbody td {
             padding: 3px 4px !important;
-            /* <--- COMPACTADO (Era 10px 8px) */
             height: 24px !important;
-            /* <--- COMPACTADO PARA TRAVAR A ALTURA */
             vertical-align: middle !important;
             text-align: center;
             border: none !important;
@@ -603,40 +588,61 @@
             position: relative;
         }
 
-        /* 4. Compactação do Seletor de Status dentro da célula */
-        .select-status {
-            width: 100%;
-            padding: 2px 1px;
-            /* <--- COMPACTADO */
-            border: 1px solid transparent;
-            background: transparent;
-            outline: none;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 8px;
-            /* <--- COMPACTADO (Era 9.5px) */
-            border-radius: 4px;
-            transition: all 0.2s;
-            text-overflow: ellipsis;
+        /* --- NOVO FORMATO DO STATUS (SEM BOLINHA E COM DEGRADÊ) --- */
+        /* Retira o padding do TD que contém o Select para forçar preenchimento total */
+        tbody td:has(.select-status) {
+            padding: 0 !important;
         }
 
-        /* 5. Compactação do Botão de Cidade dentro da célula */
+        .select-status {
+            width: 100%;
+            height: 100%;
+            min-height: 24px;
+            padding: 0 8px;
+            /* Mantém respiro do texto */
+            border: none !important;
+            background-color: transparent;
+            outline: none;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 9.5px;
+            text-align: left;
+            /* Esquerda pra Direita */
+            border-radius: 0;
+            /* Remove a bolinha */
+            text-overflow: ellipsis;
+            transition: all 0.2s;
+            /* Degradê direcional da esquerda para a direita (sentido das Realizadas) */
+            background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.05) 100%);
+        }
+
+        .select-status:hover {
+            filter: brightness(0.9);
+        }
+
+        /* 5. Botão de Cidade */
         .btn-city {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 4px 8px;
-            /* <--- COMPACTADO */
             border-radius: 20px;
             font-weight: 600;
             font-size: 8px;
-            /* <--- COMPACTADO */
             cursor: pointer;
             transition: 0.2s;
             box-shadow: var(--shadow-sm);
         }
 
-        /* Centralizações */
+        .btn-city:hover,
+        .btn-city.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* Centralizações Específicas */
         tbody td:nth-child(10),
         tbody td:nth-child(11),
         tbody td:nth-child(21),
@@ -661,19 +667,14 @@
             filter: brightness(1.2);
         }
 
-        /* --- 1. REGRA DE OURO DA ZEBRA --- */
-        /* Zebra só aplica onde a linha não tem cor injetada por JS */
         tbody tr:nth-child(even):not([style*="background-color"]) {
             background-color: var(--bg-table-row-alt) !important;
         }
 
-        /* --- 2. GARANTIA DA COR DE STATUS DO JS --- */
-        /* Transparência forçada na TD para o background da TR brilhar */
         tbody tr[style*="background-color"] td {
             background-color: transparent !important;
         }
 
-        /* Garante legibilidade do texto quando a linha acende com Status */
         tbody tr[style*="background-color"]:not([style*="transparent"]) td {
             font-weight: 600;
         }
@@ -682,8 +683,6 @@
             color: #fff !important;
         }
 
-        /* --- 3. PRIORIDADE MÁXIMA DA PARCIAL (ROXO) --- */
-        /* Essa célula obriga o navegador a acender Roxo, anulando a zebra da linha nesta TD específica */
         tbody td[data-live="parcial"]:not(:empty),
         tbody td[data-col="parcial"]:not(:empty),
         tbody td.col-parcial:not(:empty) {
@@ -694,7 +693,6 @@
             border-radius: 4px;
         }
 
-        /* Edição de Células e Arrastar */
         td[contenteditable="true"] {
             cursor: text;
             outline: none;
@@ -724,7 +722,6 @@
             transform: scale(0.995);
         }
 
-        /* Links na Tabela */
         tbody td a,
         tbody td span.link-style {
             color: var(--accent) !important;
@@ -833,27 +830,6 @@
             gap: 10px;
         }
 
-        .btn-city {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .btn-city:hover,
-        .btn-city.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-            transform: scale(1.05);
-        }
-
         .theme-toggle-btn {
             position: fixed;
             bottom: 30px;
@@ -923,7 +899,7 @@
             transform: translateX(24px);
         }
 
-        /* ================= ELEMENTOS FLUTUANTES (FILTROS, MODAIS, SPINNER) ================= */
+        /* ================= ELEMENTOS FLUTUANTES ================= */
         .filter-icon {
             cursor: pointer;
             margin-left: 3px;
@@ -1109,7 +1085,6 @@
             cursor: pointer;
             color: var(--text-muted);
             transition: 0.2s;
-            line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1151,24 +1126,6 @@
 
         #modal-motoristas {
             z-index: 1050 !important;
-        }
-
-        .select-status {
-            width: 100%;
-            padding: 4px 2px;
-            border: 1px solid transparent;
-            background: transparent;
-            outline: none;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 9.5px;
-            border-radius: 4px;
-            transition: all 0.2s;
-            text-overflow: ellipsis;
-        }
-
-        .select-status:hover {
-            border-color: var(--border-color);
         }
 
         .clickable-cell {
@@ -1259,6 +1216,9 @@
                 font-family: 'Arial', sans-serif !important;
                 margin: 0;
                 padding: 0;
+                transform: none;
+                width: 100%;
+                height: auto;
             }
 
             .sidebar-container,
@@ -1512,7 +1472,7 @@
             width: 100% !important;
         }
 
-        .canhoto-info{
+        .canhoto-info {
             text-align: center;
             background: var(--bg-panel);
             border-radius: 8px;
@@ -1521,7 +1481,18 @@
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-sm);
         }
-        
+
+        /* ================= LIMITAÇÃO DE LARGURA PARA TELAS SECUNDÁRIAS ================= */
+        /* Isso evita que os formulários e botões dessas telas fiquem absurdamente esticados */
+        #view-canhotos .content-container,
+        #view-prestacao .content-container,
+        #view-exportar .content-container,
+        #view-ocorrencias .content-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            /* Centraliza o contêiner no meio da tela */
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -1576,7 +1547,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.0</h2>
                 <div class="header-controls">
                     <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-monitoramento">
                         <i class="ph ph-funnel-x"></i> Limpar Filtros
@@ -2686,6 +2657,14 @@
                     <input type="date" id="transbordo-data">
                     <button id="btn-buscar-placas-transbordo" class="btn btn-primary">Buscar Placas</button>
 
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">STATUS
+                        NO PAINEL (NOVO VEÍCULO):</label>
+                    <select id="transbordo-st-painel">
+                        <option value="Saida Dia">Saída Dia</option>
+                        <option value="Apoio">Apoio</option>
+                        <option value="Seg. Viagem">Seg. Viagem</option>
+                        <option value="Pernoite">Pernoite</option>
+                    </select>
                     <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PLACA
                         ORIGEM (VEÍCULO COM PROBLEMA):</label>
                     <select id="transbordo-origem">
@@ -2788,6 +2767,7 @@
             return `${date.getFullYear()}-${m}-${d}`;
         };
 
+
         function configurarDatasPadrao() {
             const hoje = new Date();
             const ano = hoje.getFullYear();
@@ -2826,20 +2806,24 @@
         }
         preCarregarLogo();
 
-        function formatarDataBR(dataIso) {
-            if (!dataIso) return "";
-            const partes = dataIso.split('-');
-            if (partes.length < 3) return dataIso;
-            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            return `${partes[2]} ${meses[parseInt(partes[1]) - 1]}`;
-        }
-
         function formataDataParaEmail(dataIso) {
             if (!dataIso) return "";
             const partes = dataIso.split('-');
             if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
             return dataIso;
         }
+
+        // FORÇA A DISPONIBILIDADE GLOBAL DA FUNÇÃO
+        window.formatarDataBR = function (dataISO) {
+            if (!dataISO) return "";
+            if (dataISO.includes('/')) return dataISO;
+            const partes = dataISO.split('-');
+            if (partes.length === 3) {
+                return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            }
+            return dataISO;
+        };
+        const formatarDataBR = window.formatarDataBR;
 
         const getStRotaStyle = (status) => {
             const s = trimUpper(status);
@@ -2890,18 +2874,46 @@
         window.abrirModalExcluirPeriodo = (tipo) => { document.getElementById('exc-tipo').value = tipo; document.getElementById('modal-excluir-periodo').classList.add('active'); };
 
         document.getElementById('btn-confirmar-exclusao').addEventListener('click', async () => {
-            const inicio = document.getElementById('exc-data-inicio').value; const fim = document.getElementById('exc-data-fim').value; const tipo = document.getElementById('exc-tipo').value;
+            const inicio = document.getElementById('exc-data-inicio').value;
+            const fim = document.getElementById('exc-data-fim').value;
+            const tipo = document.getElementById('exc-tipo').value;
+
             if (!inicio || !fim) return alert("Por favor, selecione as datas.");
+
             const nomeModulo = tipo === 'notas' ? 'Notas Fiscais' : 'Painel Diário';
+
+            // Trava de segurança com senha
+            const senhaDigitada = prompt(`AÇÃO CRÍTICA: Digite a senha de administrador para excluir os dados de ${nomeModulo}:`);
+            if (senhaDigitada !== '60010774@Icaphi') {
+                return alert("Senha incorreta. A exclusão foi cancelada por segurança.");
+            }
+
             if (confirm(`Tem certeza ABSOLUTA que deseja EXCLUIR TODOS OS DADOS de ${nomeModulo} do dia ${formatarDataBR(inicio)} até ${formatarDataBR(fim)}?`)) {
                 showLoader();
                 try {
-                    let currentDate = new Date(inicio); const endDate = new Date(fim); const collectionName = tipo === 'notas' ? 'notas_fiscais_diario' : 'painel_diario';
-                    while (currentDate <= endDate) { const dateStr = currentDate.toISOString().split('T')[0]; await deleteDoc(doc(db, collectionName, dateStr)); currentDate.setUTCDate(currentDate.getUTCDate() + 1); }
-                    alert(`${nomeModulo}: Período excluído!`); document.getElementById('modal-excluir-periodo').classList.remove('active');
-                    if (tipo === 'notas' && document.getElementById('editor-notas-data').value >= inicio && document.getElementById('editor-notas-data').value <= fim) { document.querySelector('#tabela-editor-notas tbody').innerHTML = ""; }
-                    else if (tipo === 'painel' && document.getElementById('editor-painel-data').value >= inicio && document.getElementById('editor-painel-data').value <= fim) { document.querySelector('#tabela-editor-painel tbody').innerHTML = ""; }
-                } catch (e) { console.error(e); alert("Erro ao excluir."); } hideLoader();
+                    let currentDate = new Date(inicio);
+                    const endDate = new Date(fim);
+                    const collectionName = tipo === 'notas' ? 'notas_fiscais_diario' : 'painel_diario';
+
+                    while (currentDate <= endDate) {
+                        const dateStr = currentDate.toISOString().split('T')[0];
+                        await deleteDoc(doc(db, collectionName, dateStr));
+                        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+                    }
+
+                    alert(`${nomeModulo}: Período excluído!`);
+                    document.getElementById('modal-excluir-periodo').classList.remove('active');
+
+                    if (tipo === 'notas' && document.getElementById('editor-notas-data').value >= inicio && document.getElementById('editor-notas-data').value <= fim) {
+                        document.querySelector('#tabela-editor-notas tbody').innerHTML = "";
+                    } else if (tipo === 'painel' && document.getElementById('editor-painel-data').value >= inicio && document.getElementById('editor-painel-data').value <= fim) {
+                        document.querySelector('#tabela-editor-painel tbody').innerHTML = "";
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Erro ao excluir.");
+                }
+                hideLoader();
             }
         });
 
@@ -3445,13 +3457,40 @@
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([getDoc(doc(db, "painel_diario", dataSel)), getDoc(doc(db, "notas_fiscais_diario", dataSel)), getDoc(doc(db, "painel_diario", dataOntem)), getDoc(doc(db, "notas_fiscais_diario", dataOntem))]);
+                const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", dataSel)), 
+                    getDoc(doc(db, "notas_fiscais_diario", dataSel)), 
+                    getDoc(doc(db, "painel_diario", dataOntem)), 
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem))
+                ]);
 
                 const tbody = document.querySelector('#tabela-monitoramento tbody');
                 let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
                 let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
 
-                if (snapOntemNotas.exists()) { snapOntemNotas.data().notas.forEach(no => { if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasDoDia.push({ ...no, status: "" }); } }); }
+                // >>> CORREÇÃO: ENSINANDO O PAINEL A LER O TRANSBORDO <<<
+                let deParaTroca = {};
+                if (snapPainel.exists()) {
+                    snapPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
+
+                if (snapOntemNotas.exists()) { 
+                    snapOntemNotas.data().notas.forEach(no => { 
+                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { 
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            
+                            // Tradução instantânea: se o carro original trocou, a nota já vai pra memória com a placa nova
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa; 
+                            
+                            notasDoDia.push({ ...no, status: "", placa: placaFinal }); 
+                        } 
+                    }); 
+                }
+
                 if (snapOntemPainel.exists()) {
                     snapOntemPainel.data().rotas.forEach(ro => {
                         const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
@@ -3599,7 +3638,7 @@
                         const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
                         htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}" data-codcli="${nota.codcli || ''}" data-repres="${nota.repres || ''}" data-sup="${nota.sup || ''}">
                             <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
-                            <td data-live="ordem">${nota.ordem}</td><td data-live="data">${nota.data_nf}</td>
+                            <td data-live="ordem">${nota.ordem}</td><td data-live="data">${formatarDataBR(nota.data_nf)}</td>
                             <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
                             <td data-live="cliente" title="${nota.cliente}"><span class="clickable-cell" onclick="window.abrirMapaLogistico('${encodeURIComponent(nota.endereco || "")}', '${encodeURIComponent(nota.bairro || "")}', '${encodeURIComponent(nota.cidade || "")}')">${nota.cliente}</span></td>
                             <td data-live="cidade">${nota.cidade}</td>
@@ -4637,7 +4676,9 @@
 
         document.getElementById('btn-menu-transbordo').addEventListener('click', () => {
             modalTransbordo.classList.add('active');
-            document.getElementById('transbordo-data').value = new Date().toISOString().split('T')[0];
+            // Força a data do transbordo ser igual à data que o usuário está visualizando nas Notas
+            const dataOperacao = document.getElementById('notas-data-select').value || new Date().toISOString().split('T')[0];
+            document.getElementById('transbordo-data').value = dataOperacao;
             atualizarPlacasTransbordo();
         });
 
@@ -4652,28 +4693,31 @@
             document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
         });
 
-        // A BUSCA DIRETA NO DOM
+        // Botão de buscar ativado corretamente
+        document.getElementById('btn-buscar-placas-transbordo').addEventListener('click', (e) => {
+            e.preventDefault();
+            atualizarPlacasTransbordo();
+        });
+
+        // 1. LÊ CORRETAMENTE O QUE ESTÁ NA TELA DA OPERAÇÃO
         function atualizarPlacasTransbordo() {
             const selectOrigem = document.getElementById('transbordo-origem');
-            selectOrigem.innerHTML = '<option value="">Selecione o veículo...</option>';
+            selectOrigem.innerHTML = '<option value="">Analisando operação...</option>';
 
             let placasEncontradas = new Map();
 
-            // Varredura de alta precisão nas tabelas do DOM ativas no momento
-            document.querySelectorAll('#tabela-editor-painel tbody tr, #tabela-monitoramento tbody tr, #tabela-operacao-notas tbody tr').forEach(tr => {
-
-                // Localiza a coluna da placa via atributo data-col, data-live ou assume a 1ª coluna no monitoramento
+            // Lê primariamente da tabela de monitoramento e de notas (Ignora o editor vazio)
+            document.querySelectorAll('#tabela-monitoramento tbody tr, #tabela-operacao-notas tbody tr').forEach(tr => {
                 let colPlaca = tr.querySelector('[data-col="placa"], [data-live="placa"], .col-placa');
                 if (!colPlaca) colPlaca = tr.children[0];
 
                 if (colPlaca && colPlaca.textContent) {
                     let placaRaw = colPlaca.textContent.trim().toUpperCase();
-                    if (!placaRaw || placaRaw.length < 5) return; // Filtro contra lixo ou cabeçalhos
+                    if (!placaRaw || placaRaw.length < 5) return;
 
                     let pOrig = placaRaw;
                     let pAtiva = placaRaw;
 
-                    // Tratamento de nomenclatura de trocas
                     if (placaRaw.includes('TROCA;')) {
                         pOrig = placaRaw.split('TROCA;')[0].trim();
                         pAtiva = placaRaw.split('TROCA;')[1].trim();
@@ -4686,9 +4730,11 @@
                 }
             });
 
+            selectOrigem.innerHTML = '';
             if (placasEncontradas.size === 0) {
-                selectOrigem.innerHTML = '<option value="">Nenhum veículo carregado na tela</option>';
+                selectOrigem.innerHTML = '<option value="">Nenhum veículo operando nesta data</option>';
             } else {
+                selectOrigem.innerHTML = '<option value="">Selecione o veículo...</option>';
                 placasEncontradas.forEach((orig, ativa) => {
                     selectOrigem.innerHTML += `<option value="${ativa}" data-orig="${orig}">${ativa}</option>`;
                 });
@@ -4697,18 +4743,22 @@
             if (typeof renderizarNotasTransbordo === "function") renderizarNotasTransbordo();
         }
 
+        // 2. LÊ AS NOTAS DO LUGAR CERTO (tabela-operacao-notas)
         function renderizarNotasTransbordo() {
             const placaAtiva = document.getElementById('transbordo-origem').value;
             const container = document.getElementById('transbordo-lista-notas');
             container.innerHTML = '';
             if (!placaAtiva) return;
 
-            document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                let placaCol = tr.querySelector('[data-col="placa"]');
-                let nfCol = tr.querySelector('[data-col="nf"]');
-                if (placaCol && nfCol && placaCol.textContent.trim() === placaAtiva) {
+            // AQUI ESTAVA O BUG: Agora puxa das notas ativas e em tempo real
+            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                let placaCol = tr.querySelector('[data-live="placa"]');
+                let nfCol = tr.querySelector('[data-live="nf"]');
+
+                if (placaCol && nfCol && placaCol.textContent.trim().toUpperCase() === placaAtiva) {
                     let nf = nfCol.textContent.trim();
-                    container.innerHTML += `<label style="display: flex; gap: 8px; margin-bottom: 6px; font-weight: 600; cursor: pointer;">
+                    container.innerHTML += `
+            <label style="display: flex; gap: 8px; margin-bottom: 6px; font-weight: 600; cursor: pointer;">
                 <input type="checkbox" value="${nf}" class="check-nf-transbordo" checked> NF: ${nf}
             </label>`;
                 }
@@ -4717,65 +4767,99 @@
 
         document.getElementById('btn-executar-transbordo').addEventListener('click', () => {
             if (!document.getElementById('transbordo-origem').value || !document.getElementById('transbordo-destino').value.trim()) {
-                return alert("Selecione a origem e digite o destino.");
+                return alert("Erro: Selecione a origem e digite a placa de destino.");
             }
-            document.getElementById('transbordo-novo-mot').value = '';
-            document.getElementById('transbordo-novo-tel').value = '';
+            const motInput = document.getElementById('transbordo-novo-mot');
+            const telInput = document.getElementById('transbordo-novo-tel');
+            if (motInput) motInput.value = '';
+            if (telInput) telInput.value = '';
+
             modalConfirmTransbordo.classList.add('active');
         });
 
-        document.getElementById('btn-finalizar-transbordo').addEventListener('click', () => {
+        // 3. EXECUÇÃO IMPLACÁVEL: ALTERA O DOM E SALVA NO FIREBASE
+        document.getElementById('btn-finalizar-transbordo').addEventListener('click', async () => {
             const selectElem = document.getElementById('transbordo-origem');
             const optionSel = selectElem.options[selectElem.selectedIndex];
+
             const placaAtiva = optionSel.value;
             const placaOriginal = optionSel.getAttribute('data-orig');
             const destino = document.getElementById('transbordo-destino').value.trim().toUpperCase();
             const tipo = document.getElementById('transbordo-tipo').value;
-            const novoMot = document.getElementById('transbordo-novo-mot').value.trim().toUpperCase();
-            const novoTel = document.getElementById('transbordo-novo-tel').value.trim();
+
+            const stPainelSelect = document.getElementById('transbordo-st-painel');
+            const novoStatusPainel = stPainelSelect ? stPainelSelect.value : "Saida Dia";
+
+            const motInput = document.getElementById('transbordo-novo-mot');
+            const telInput = document.getElementById('transbordo-novo-tel');
+            const novoMot = motInput ? motInput.value.trim().toUpperCase() : '';
+            const novoTel = telInput ? telInput.value.trim() : '';
 
             let nfsSel = [];
             if (tipo === 'selecionar') {
                 document.querySelectorAll('.check-nf-transbordo:checked').forEach(cb => nfsSel.push(cb.value));
-                if (nfsSel.length === 0) return alert("Nenhuma NF selecionada.");
+                if (nfsSel.length === 0) return alert("Erro: Nenhuma NF selecionada para transbordo.");
             }
 
-            // 1. Atualiza o Painel
-            ['tabela-editor-painel', 'tabela-monitoramento'].forEach(tableId => {
-                let tabela = document.getElementById(tableId);
-                if (!tabela) return;
-                tabela.querySelectorAll('tbody tr').forEach(tr => {
-                    let placaCol = tr.querySelector('[data-col="placa"], .col-placa');
-                    if (!placaCol) placaCol = tr.children[2];
+            // A. Atualiza as Notas na Tela (Apenas as selecionadas ou todas)
+            let alterouNotas = false;
+            document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                let placaCol = tr.querySelector('[data-live="placa"]');
+                let nfCol = tr.querySelector('[data-live="nf"]');
 
-                    if (placaCol) {
-                        let placaRaw = placaCol.textContent.trim();
-                        let pOrigLocal = placaRaw.includes('troca;') ? placaRaw.split('troca;')[0].trim() : (placaRaw.includes('troca:') ? placaRaw.split('troca:')[0].trim() : placaRaw);
-
-                        if (pOrigLocal === placaOriginal && placaRaw.includes(placaAtiva)) {
-                            placaCol.textContent = `${placaOriginal} troca;${destino}`;
-                            let motCol = tr.querySelector('[data-col="motorista"], .col-motorista');
-                            let telCol = tr.querySelector('[data-col="telefone"], .col-telefone');
-                            if (novoMot && motCol) motCol.textContent = novoMot;
-                            if (novoTel && telCol) telCol.textContent = novoTel;
-                        }
-                    }
-                });
-            });
-
-            // 2. Atualiza as Notas
-            document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                let placaCol = tr.querySelector('[data-col="placa"]');
-                let nfCol = tr.querySelector('[data-col="nf"]');
-                if (placaCol && nfCol && placaCol.textContent.trim() === placaAtiva) {
+                if (placaCol && nfCol && placaCol.textContent.trim().toUpperCase() === placaAtiva.toUpperCase()) {
                     let nf = nfCol.textContent.trim();
                     if (tipo === 'todas' || nfsSel.includes(nf)) {
                         placaCol.textContent = destino;
+                        if (novoMot) { let mCol = tr.querySelector('[data-live="motorista"]'); if (mCol) mCol.textContent = novoMot; }
+                        if (novoTel) { let tCol = tr.querySelector('[data-live="telefone"]'); if (tCol) tCol.textContent = novoTel; }
+                        alterouNotas = true;
                     }
                 }
             });
 
-            alert(`⚡ TRANSBORDO CONCLUÍDO!\nA carga foi transferida de ${placaAtiva} para ${destino}.`);
+            // B. Força o salvamento das NOTAS no Firebase instantaneamente
+            if (alterouNotas && typeof autoSaveNotasSilencioso === 'function') {
+                await autoSaveNotasSilencioso();
+            }
+
+            // C. Vai direto no Firebase alterar a configuração do Painel
+            const dataOperacao = document.getElementById('transbordo-data').value;
+            if (dataOperacao) {
+                try {
+                    // Utilizamos a importação nativa que você já tem do Firestore (getDoc, doc, setDoc, db)
+                    const snapPainel = await getDoc(doc(db, "painel_diario", dataOperacao));
+                    if (snapPainel.exists()) {
+                        let rotas = snapPainel.data().rotas;
+                        let alterouPainelDb = false;
+
+                        rotas.forEach(r => {
+                            let pOrigDb = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            let pAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                            if (pOrigDb === pAtivaLimpa || r.placa.toUpperCase().replace(/[^A-Z0-9]/g, '') === pAtivaLimpa) {
+                                r.troca = destino;
+                                r.status = novoStatusPainel; // Injeta o novo status do painel!
+                                if (novoMot) r.motorista = novoMot;
+                                if (novoTel) r.contato = novoTel;
+                                alterouPainelDb = true;
+                            }
+                        });
+
+                        if (alterouPainelDb) {
+                            await setDoc(doc(db, "painel_diario", dataOperacao), { rotas });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erro ao persistir painel no transbordo:", e);
+                }
+            }
+
+            // D. Recarrega as tabelas para refletir o status perfeito na interface
+            if (document.getElementById('btn-carregar-painel')) document.getElementById('btn-carregar-painel').click();
+            if (document.getElementById('btn-carregar-notas')) document.getElementById('btn-carregar-notas').click();
+
+            alert(`⚡ TRANSBORDO EXECUTADO COM SUCESSO!\nA carga foi transferida de ${placaAtiva} para ${destino} como [${novoStatusPainel}].\nTudo já está salvo no banco de dados.`);
             modalConfirmTransbordo.classList.remove('active');
             modalTransbordo.classList.remove('active');
         });
@@ -5236,6 +5320,7 @@
                 row.style.display = linhaAprovada ? '' : 'none';
             });
         }
+
 
         // ================= INICIALIZAÇÃO DE GARANTIA DO SISTEMA =================
         document.addEventListener('DOMContentLoaded', () => {
