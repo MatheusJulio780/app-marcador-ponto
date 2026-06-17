@@ -1970,7 +1970,7 @@
                         <label style="font-weight: bold; color: var(--accent);">Múltiplas rotas detectadas. Selecione a
                             viagem:</label>
                         <select id="select-viagem-exportacao" class="input-padrao"
-                            style="width: 100%; padding: 10px; border-radius: 8px;">
+                            style="width: 100%; margin-bottom: 10px; margin-top: 10px; padding: 10px; border-radius: 8px;">
                         </select>
                     </div>
                     <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap: wrap;">
@@ -2152,13 +2152,13 @@
 
         <section id="view-exportar" class="view-section">
             <div
-                style="margin-bottom:20px; padding:15px; background:var(--bg-panel); border-radius:8px; border:1px solid var(--border-color);">
+                style="margin:10px; padding:15px; background:var(--bg-panel); border-radius:8px; border:1px solid var(--border-color);">
                 <h2><i class="ph ph-export"></i> Central de Exportação</h2>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div
-                    style="background: var(--bg-panel); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent); box-shadow: var(--shadow-sm);">
+                    style="background: var(--bg-panel); margin:10px; margin-left: 650px; padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent); box-shadow: var(--shadow-sm);">
                     <h3 style="margin-bottom: 5px;">Exportar Painel Operacional</h3>
                     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Mapeamento das rotas.
                         Inclui coluna de Data automaticamente.</p>
@@ -2172,7 +2172,7 @@
                 </div>
 
                 <div
-                    style="background: var(--bg-panel); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success); box-shadow: var(--shadow-sm);">
+                    style="background: var(--bg-panel); margin:10px; margin-right: 650px; padding: 20px; border-radius: 8px; border-left: 4px solid var(--success); box-shadow: var(--shadow-sm);">
                     <h3 style="margin-bottom: 5px;">Exportar Notas Fiscais</h3>
                     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Auditoria de NFs e
                         baixas. A data já compõe o registro.</p>
@@ -3144,35 +3144,55 @@
             if (!dataStr) return alert("Selecione a data da operação.");
             showLoader();
 
-            // Lógica Avançada: Calcula automaticamente o dia seguinte
             const dObj = new Date(dataStr);
             dObj.setUTCDate(dObj.getUTCDate() + 1);
             const dataAmanha = dObj.toISOString().split('T')[0];
 
+            // CORREÇÃO: Calcular data de ontem para buscar Pernoites invisíveis
+            const dOntemObj = new Date(dataStr);
+            dOntemObj.setUTCDate(dOntemObj.getUTCDate() - 1);
+            const dataOntem = dOntemObj.toISOString().split('T')[0];
+
             try {
-                // Dispara busca tripla simultânea (Notas Hoje, Notas Amanhã e PAINEL de Hoje)
-                const [sNotas, sAmanha, sPainel] = await Promise.all([
+                // CORREÇÃO: Buscar notasOntem simultaneamente
+                const [sNotas, sAmanha, sPainel, sOntemNotas] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataStr)),
                     getDoc(doc(db, "notas_fiscais_diario", dataAmanha)),
-                    getDoc(doc(db, "painel_diario", dataStr)) // NOVO: Busca o painel para saber das viagens
+                    getDoc(doc(db, "painel_diario", dataStr)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem))
                 ]);
 
                 let notasDia = sNotas.exists() ? sNotas.data().notas.filter(n => trimUpper(n.status) !== 'NÃO EMBARCADA') : [];
                 let notasAmanha = sAmanha.exists() ? sAmanha.data().notas : [];
-
-                // Cacheia as rotas do painel
                 window.pcRotasCache = sPainel.exists() ? sPainel.data().rotas : [];
 
-                // Cria um mapa de indexação rápida para o dia seguinte
+                // CORREÇÃO: Herdar as notas de Pernoite de ontem pro cache do PDF
+                let deParaTroca = {};
+                if (sPainel.exists()) {
+                    sPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
+                if (sOntemNotas && sOntemNotas.exists()) {
+                    sOntemNotas.data().notas.forEach(no => {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            notasDia.push({ ...no, status: "", placa: placaFinal });
+                        }
+                    });
+                }
+
                 let mapaAmanha = {};
                 notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
 
-                // Mescla os dados
                 window.pcNotasCache = notasDia.map(n => {
                     const nfClean = cleanNF(n.nf);
                     const notaSeguinte = mapaAmanha[nfClean];
 
-                    if (notaSeguinte && (trimUpper(n.status) === 'PERNOITE' || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO')) {
+                    if (notaSeguinte && (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO')) {
                         return {
                             ...n,
                             status: notaSeguinte.status || n.status,
@@ -3190,7 +3210,6 @@
                 document.getElementById('pc-placa').innerHTML = `<option value="">Selecione o Veículo</option>` + placas.map(p => `<option value="${p}">${p}</option>`).join('');
                 if (placas.length === 0) alert("Nenhuma placa válida encontrada nesta data.");
 
-                // Esconde o seletor de viagem ao carregar nova data
                 document.getElementById('container-seletor-viagem').style.display = 'none';
 
             } catch (e) {
@@ -3687,7 +3706,6 @@
                 let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
                 let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
 
-                // >>> CORREÇÃO: ENSINANDO O PAINEL A LER O TRANSBORDO <<<
                 let deParaTroca = {};
                 if (snapPainel.exists()) {
                     snapPainel.data().rotas.forEach(r => {
@@ -3699,12 +3717,9 @@
 
                 if (snapOntemNotas.exists()) {
                     snapOntemNotas.data().notas.forEach(no => {
-                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
                             let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-
-                            // Tradução instantânea: se o carro original trocou, a nota já vai pra memória com a placa nova
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
-
                             notasDoDia.push({ ...no, status: "", placa: placaFinal });
                         }
                     });
@@ -3713,14 +3728,11 @@
                 if (snapOntemPainel.exists()) {
                     snapOntemPainel.data().rotas.forEach(ro => {
                         const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
-
-                        // LÓGICA CORRIGIDA: Verifica se o veículo teve alguma NOTA marcada como PERNOITE no dia anterior
                         const teveNotaPernoiteOntem = snapOntemNotas.exists() && snapOntemNotas.data().notas.some(n =>
-                            trimUpper(n.status) === 'PERNOITE' && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo
+                            trimUpper(n.status).includes('PERNOITE') && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo
                         );
 
                         if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
-                            // Traz o carro para hoje e já define o ST. PAINEL dele como "Pernoite"
                             rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
                         }
                     });
@@ -3734,23 +3746,18 @@
                         const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
                         const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
 
-                        // MOTOR DE ISOLAMENTO DE NOTAS (COMPOSTO POR PLACA + TRANSPORTE)
                         const transpRotaStr = String(rota.transporte || "").trim();
                         const transpNumArray = transpRotaStr.match(/\d+/g) || [];
 
                         const notasPlaca = notasDoDia.filter(n => {
                             if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
-
                             const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
                             if (!matchPlaca) return false;
-
-                            // Se o painel informou um número de Transporte, a nota precisa obrigatoriamente pertencer a ele
                             const viagemNota = String(n.viagem || "").trim();
                             if (transpNumArray.length > 0 && viagemNota !== "") {
                                 return transpNumArray.some(t => viagemNota.includes(t));
                             }
-
-                            return true; // Se o painel ou a nota não tiverem transporte, faz o vínculo clássico só pela placa
+                            return true; 
                         });
                         let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
                         if (notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
@@ -3836,14 +3843,12 @@
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                // OTIMIZAÇÃO: Carrega as notas de hoje, as notas de ontem e também o painel de hoje para mapear trocas
                 const [snapNotas, snapOntemNotas, snapPainel] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataSel)),
                     getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
                     getDoc(doc(db, "painel_diario", dataSel))
                 ]);
 
-                // Constrói mapa de relacionamento De -> Para das placas que sofreram troca hoje
                 let deParaTroca = {};
                 if (snapPainel.exists()) {
                     snapPainel.data().rotas.forEach(r => {
@@ -3856,12 +3861,9 @@
                 let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
                 if (snapOntemNotas.exists()) {
                     snapOntemNotas.data().notas.forEach(no => {
-                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
                             let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-
-                            // IDENTIFICAÇÃO DIRETA: Se a placa antiga tem uma troca cadastrada no painel de hoje, usa a nova placa
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
-
                             notasRollover.push({ ...no, status: "", placa: placaFinal });
                         }
                     });
@@ -3976,10 +3978,9 @@
                 const dataOntem = dObj.toISOString().split('T')[0];
                 const sOntem = await getDoc(doc(db, "notas_fiscais_diario", dataOntem));
                 if (sOntem.exists()) {
-                    sOntem.data().notas.forEach(no => { if (trimUpper(no.status) === 'PERNOITE' && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasParaApresentar.push({ ...no, status: "" }); } });
+                    sOntem.data().notas.forEach(no => { if (trimUpper(no.status).includes('PERNOITE') && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasParaApresentar.push({ ...no, status: "" }); } });
                 }
 
-                // CORREÇÃO DE PERFORMANCE (DOM Reflow Bypass)
                 tbodyEditorNotas.style.display = 'none';
                 notasParaApresentar.forEach(n => window.adicionarLinhaNotas(n));
                 tbodyEditorNotas.style.display = '';
@@ -4556,11 +4557,9 @@
                 throw new Error("Execução interrompida: Placa não selecionada.");
             }
 
-            // 1. CAPTURA A ROTA ALVO SELECIONADA
             let rotaAlvo;
             const containerSeletor = document.getElementById('container-seletor-viagem');
 
-            // Fallback: Se o array de rotas da tela não estiver pronto, recria a partir do cache do painel
             if (!window.rotasDisponiveisParaExportacao || window.rotasDisponiveisParaExportacao.length === 0) {
                 const placaLimpa = trimUpper(placaSelecionada).replace(/[^A-Z0-9]/g, '');
                 window.rotasDisponiveisParaExportacao = (window.pcRotasCache || []).filter(r => {
@@ -4579,16 +4578,18 @@
                 rotaAlvo = { placa: placaSelecionada };
             }
 
-            // 2. ISOLAMENTO ESTRITO PELO MOTOR GLOBAL (Considera Transporte/Viagem)
             let notas = filtrarNotasDaRotaEspecifica(rotaAlvo, todasNotas);
 
-            // 3. VALIDAÇÃO RESIDUAL DE DATA
             if (dataSaidaInput) {
                 notas = notas.filter(n => {
                     let dNota = String(n.data_nf || n.data || "").trim();
                     const [y, m, d] = dataSaidaInput.split('-');
                     const dataFormatoBR = `${d}/${m}/${y}`;
                     const dataSemZero = `${parseInt(d)}/${parseInt(m)}/${y}`;
+                    
+                    // CORREÇÃO: Liberar Pernoites/Transbordos com datas anteriores
+                    if (dNota < dataSaidaInput) return true;
+
                     return dNota.includes(dataSaidaInput) || dNota.includes(dataFormatoBR) || dNota.includes(dataSemZero);
                 });
             }
@@ -4600,7 +4601,6 @@
 
             const motorista = notas.length > 0 ? (notas[0].motorista || "NÃO INFORMADO") : "NÃO INFORMADO";
             const placa = placaSelecionada || "N/A";
-            // Puxa o transporte primariamente da rota alvo para garantir correspondência exata no cabeçalho do PDF
             const transporte = rotaAlvo.transporte || (notas.length > 0 ? (notas[0].viagem || "") : "");
             const dataSaida = dataSaidaInput || "";
 
@@ -5781,13 +5781,21 @@
                 if (!matchPlaca) return false;
 
                 const viagemNota = String(n.viagem || "").trim();
+                
                 if (transpNumArray.length > 0 && viagemNota !== "") {
-                    return transpNumArray.some(t => viagemNota.includes(t));
+                    let matchesTransp = transpNumArray.some(t => viagemNota.includes(t));
+                    
+                    // CORREÇÃO: Transbordo/Pernoite causa conflito de nº de transporte (ontem vs hoje).
+                    // Se não bater o nº, mas o veículo for Pernoite/Apoio, bypassa a checagem.
+                    const stRota = trimUpper(rota.status || "");
+                    if (!matchesTransp && (stRota.includes('PERNOITE') || stRota.includes('APOIO'))) {
+                        return true; 
+                    }
+                    return matchesTransp;
                 }
                 return true;
             });
         }
-
 
         // ================= INICIALIZAÇÃO DE GARANTIA DO SISTEMA =================
         document.addEventListener('DOMContentLoaded', () => {
