@@ -4,9 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IcaphiAbastecimento</title>
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/2311/2311296.png" type="image/png">
-    
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22IcaphiApp%22%2C%22short_name%22%3A%22Icaphi%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%7D">
+    <!-- META TAGS DE COMPORTAMENTO NATIVO (PWA) -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Icaphi">
+
+    <!-- ÍCONE PARA NAVEGADORES PC / ANDROID BASE -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2311/2311296.png" type="image/png">
+
+    <!-- ÍCONE ESTRITO PARA IPHONE/IPAD (iOS) -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2311/2311296.png">
+
+    <!-- MANIFESTO ATUALIZADO COM ARRAY DE ÍCONES (Essencial para o Android instalar como App) -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22IcaphiApp%22%2C%22short_name%22%3A%22Icaphi%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F2311%2F2311296.png%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -649,7 +660,7 @@
                     <div class="form-group"><label>Placa</label><input type="text" id="placaVeiculo" list="listaPlacasInput" placeholder="Selecione..." autocomplete="off" style="text-transform: uppercase;" required><datalist id="listaPlacasInput"></datalist></div>
                 </div>
                 
-                <div class="form-row-1"><div class="form-group"><label>Condutor</label><input type="text" id="nomeMotorista" required></div></div>
+                <div class="form-row-1"><div class="form-group"><label>Condutor</label><input type="text" id="nomeMotorista" list="listaMotoristasInput" autocomplete="off" required><datalist id="listaMotoristasInput"></datalist></div></div>
 
                 <div class="form-row-2">
                     <div class="form-group"><label>Litros (Nº)</label><input type="number" id="qtdLitros" required></div>
@@ -1276,6 +1287,15 @@
         const litros = parseFloat(val) || 0; document.getElementById('displayValorTotal').innerText = (litros * configGerais.precoDiesel).toFixed(2);
     });
 
+    // MÁSCARA ESTRITA PARA PLACA (Tempo Real)
+    document.getElementById('placaVeiculo').addEventListener('input', (e) => {
+        // Remove tudo que não for letra ou número e converte para maiúscula
+        let val = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        // Trava o tamanho máximo em 7 caracteres exatos
+        if (val.length > 7) val = val.substring(0, 7);
+        e.target.value = val;
+    });
+
     function atualizarVisorTanque() {
         let pct = 0;
         if(configGerais.capacidadeTanque > 0) { pct = (configGerais.estoqueTanque / configGerais.capacidadeTanque) * 100; if(pct > 100) pct = 100; if(pct < 0) pct = 0; }
@@ -1335,27 +1355,54 @@
             if (docSnap.exists()) {
                 const data = docSnap.data(); configGerais.precoDiesel = data.precoDiesel || 5.90; configGerais.estoqueTanque = data.estoqueTanque || 0; configGerais.capacidadeTanque = data.capacidadeTanque || 10000; configGerais.pontoPedido = data.pontoPedido || 2000; configGerais.placas = data.placas || [];
                 if (data.tabelaRegua) { tabelaReguaTanque = data.tabelaRegua; }
-                atualizarVisorTanque(); renderizarSelectPlacas(); if (!document.getElementById('aba-frota').classList.contains('hidden')) { renderizarListaPlacasAdmin(); }
+                atualizarVisorTanque(); atualizarListasSuspensas(); if (!document.getElementById('aba-frota').classList.contains('hidden')) { renderizarListaPlacasAdmin(); }
             } else { setDoc(doc(db, "configuracoes", "gerais"), configGerais); }
         });
     }
 
     async function atualizarConfigFirebase(dadosParciais) { try { await setDoc(doc(db, "configuracoes", "gerais"), dadosParciais, {merge: true}); } catch(e) { console.error(e); } }
 
-    function renderizarSelectPlacas() {
-        const datalist = document.getElementById('listaPlacasInput'); if(!datalist) return; datalist.innerHTML = '';
+    window.atualizarListasSuspensas = function() {
+        // REGEX de validação
+        const regexPlaca = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+
+        // 1. Extrai, limpa (tira traços/espaços) e filtra apenas placas logicamente válidas
+        let placasHistorico = window.dadosRelatorio
+            .map(d => d.placa ? d.placa.replace(/[^A-Z0-9]/g, '').toUpperCase() : "")
+            .filter(p => regexPlaca.test(p));
+
+        let motoristasHistorico = window.dadosRelatorio.map(d => d.motorista);
         
-        // Popula também o select de Consulta Rápida
+        // 2. Mescla com as configuradas e remove duplicatas
+        let placasConfig = configGerais.placas.map(p => p.replace(/[^A-Z0-9]/g, '').toUpperCase()).filter(p => regexPlaca.test(p));
+        let placasUnicas = [...new Set([...placasConfig, ...placasHistorico])].filter(Boolean).sort();
+        let motoristasUnicos = [...new Set(motoristasHistorico)].filter(Boolean).sort();
+
+        // ... (o resto da função atualizando os datalists continua igual)
+
+        // 3. Atualiza Datalist de Placas (Tela de Abastecimento)
+        const datalistPlacas = document.getElementById('listaPlacasInput');
+        if(datalistPlacas) {
+            datalistPlacas.innerHTML = '';
+            placasUnicas.forEach(p => datalistPlacas.innerHTML += `<option value="${p}"></option>`);
+        }
+
+        // 4. Atualiza Select do Modal de Consulta Rápida (Lupa)
         const selectQuick = document.getElementById('quickSearchPlaca');
-        if (selectQuick) {
+        if(selectQuick) {
             let currVal = selectQuick.value;
             selectQuick.innerHTML = '<option value="">Geral (Todas as placas)</option>';
-            configGerais.placas.sort().forEach(placa => { selectQuick.innerHTML += `<option value="${placa}">${placa}</option>`; });
+            placasUnicas.forEach(p => selectQuick.innerHTML += `<option value="${p}">${p}</option>`);
             selectQuick.value = currVal;
         }
 
-        configGerais.placas.sort().forEach(placa => { datalist.innerHTML += `<option value="${placa}">`; });
-    }
+        // 5. Atualiza Datalist de Motoristas
+        const datalistMotoristas = document.getElementById('listaMotoristasInput');
+        if(datalistMotoristas) {
+            datalistMotoristas.innerHTML = '';
+            motoristasUnicos.forEach(m => datalistMotoristas.innerHTML += `<option value="${m}"></option>`);
+        }
+    };
 
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId); const ctx = canvas.getContext('2d'); let isDrawing = false;
@@ -1382,9 +1429,22 @@
 
     document.getElementById('btnProsseguirAssinaturas').addEventListener('click', () => {
         const placaInserida = document.getElementById('placaVeiculo').value.toUpperCase();
-        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !placaInserida) { alert("Preencha todos os campos obrigatórios e anexe a foto da bomba."); return; }
+        
+        // 1. Verifica se os campos estão preenchidos
+        if (!photoDataUrl || !document.getElementById('qtdLitros').value || !document.getElementById('nomeMotorista').value || !placaInserida) { 
+            alert("Preencha todos os campos obrigatórios e anexe a foto da bomba."); 
+            return; 
+        }
+
+        // 2. VALIDAÇÃO REGEX ESTRITA (Padrão Antigo e Mercosul)
+        const placaRegex = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+        if (!placaRegex.test(placaInserida)) {
+            alert("🚨 PLACA INVÁLIDA!\n\nDigite uma placa real com exatos 7 caracteres, sem traços ou espaços.\nExemplos aceitos: ABC1234 ou ABC1D23");
+            return;
+        }
         
         const momentoAtual = new Date(); const horaAutomatica = momentoAtual.toTimeString().substring(0,5);
+        // ... (o resto da função currentRecordData continua igual abaixo daqui)
 
         currentRecordData = {
             data: document.getElementById('dataAbastecimento').value, horario: horaAutomatica, placa: placaInserida, km: document.getElementById('kmVeiculo').value || "", 
@@ -1686,6 +1746,8 @@
             
             window.dadosRelatorio.sort((a,b) => new Date(b.timestamp || b.data) - new Date(a.timestamp || a.data));
             window.dadosApagados.sort((a,b) => new Date(b.dataExclusao) - new Date(a.dataExclusao));
+
+            atualizarListasSuspensas(); // <- ADICIONE ESTA LINHA AQUI
             
             document.getElementById('badgeApagados').innerText = window.dadosApagados.length;
 
