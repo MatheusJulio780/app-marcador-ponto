@@ -1811,95 +1811,106 @@
             font-weight: bold;
         }
 
-        /* ================= CHAT FLUTUANTE ================= */
+        /* ================= CHAT FLUTUANTE & EXPANSÃO ================= */
         #chat-widget-container {
             position: fixed;
-            bottom: 80px;
-            right: 20px;
+            bottom: 30px;
+            right: 90px;
             z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
         }
 
         .btn-floating {
-            position: fixed;
-            bottom: 90px;
-            right: 30px;
+            position: relative;
             width: 55px;
             height: 55px;
             border-radius: 50%;
-            background: rgb(45, 128, 236);
+            background: var(--accent);
             color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             cursor: pointer;
             border: none;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease;
             z-index: 9999;
         }
 
-        .btn-floating:hover {
-            transform: scale(1.05);
+        /* Oculta o botão instantaneamente ou de forma seca se o modo lite estiver ativo */
+        .btn-floating.hidden {
+            opacity: 0;
+            transform: scale(0);
+            pointer-events-none;
+        }
+
+        .btn-floating:hover:not(.hidden) {
+            transform: scale(1.08);
         }
 
         .chat-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #dc2626;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
             color: white;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 2px solid white;
+            border: 2px solid var(--bg-main);
         }
 
+        /* Painel que nasce do botão e se expande com animação fluida */
         .chat-panel {
-            width: 320px;
-            height: 450px;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 340px;
+            height: 520px;
+            max-height: 80vh;
             background: var(--bg-main);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             border: 1px solid var(--border-color);
-            display: none;
+
+            /* Sempre flex para aceitar a animação, mas invisível e encolhido inicialmente */
+            display: flex;
             flex-direction: column;
             overflow: hidden;
-            margin-right: 30px;
-            margin-bottom: 50px;
+
             transform-origin: bottom right;
-            animation: scaleUp 0.2s ease-out;
+            transform: scale(0);
+            opacity: 0;
+            visibility: hidden;
+            /* Controla a presença física sem cortar a animação */
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease, border-radius 0.3s ease, visibility 0.35s;
             z-index: 99999;
         }
 
-        .chat-panel.active {
-            display: flex;
+        /* Modo Lite Ativado: Abre seco instantaneamente */
+        body.lite-mode .chat-panel {
+            transform: none !important;
+            border-radius: 16px !important;
+            transition: opacity 0.1s ease !important;
         }
 
-        @keyframes scaleUp {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        /* Estado Ativo (O painel se expande a partir do botão) */
+        .chat-panel.active {
+            transform: scale(1);
+            opacity: 1;
+            visibility: visible;
+            border-radius: 16px;
         }
 
         .chat-header {
             background: var(--accent);
             color: white;
-            padding: 12px 15px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1907,13 +1918,20 @@
 
         .chat-header h4 {
             margin: 0;
-            font-size: 1rem;
+            font-size: 1.05rem;
+            font-weight: 600;
         }
 
         #chat-close-btn {
             cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1.4rem;
+            line-height: 1;
+            opacity: 0.8;
+            transition: 0.2s;
+        }
+
+        #chat-close-btn:hover {
+            opacity: 1;
         }
 
         .chat-view {
@@ -1921,36 +1939,42 @@
             flex: 1;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
         .chat-view.active {
             display: flex;
         }
 
-        /* Lista de Contatos */
+        /* Lista de Conversas */
         #chat-contact-list {
             overflow-y: auto;
             padding: 10px;
+            background: var(--bg-body);
         }
 
         .chat-contact-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 10px;
             transition: background 0.2s;
-            position: relative;
+            background: var(--bg-main);
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .chat-contact-item:hover {
             background: var(--bg-hover);
+            transform: translateY(-1px);
         }
 
         .chat-contact-item img {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             object-fit: cover;
         }
@@ -1964,6 +1988,7 @@
         .chat-contact-info strong {
             color: var(--text-main);
             font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .chat-contact-info span {
@@ -1971,23 +1996,42 @@
             font-size: 0.75rem;
         }
 
-        .contact-unread {
-            background: #dc2626;
+        .btn-new-chat {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--success);
             color: white;
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: 0.2s;
         }
 
-        /* Janela de Conversa */
+        .btn-new-chat:hover {
+            transform: scale(1.1);
+        }
+
         .chat-conv-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px;
+            justify-content: space-between;
+            padding: 12px 15px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .chat-conv-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         #chat-btn-voltar {
@@ -1995,12 +2039,30 @@
             border: none;
             color: var(--text-main);
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
         }
 
         #chat-active-name {
-            font-weight: bold;
+            font-weight: 600;
             color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        #chat-btn-delete-conv {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+
+        #chat-btn-delete-conv:hover {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .chat-messages-area {
@@ -2013,54 +2075,91 @@
             background: var(--bg-body);
         }
 
-        .chat-msg {
-            max-width: 80%;
-            padding: 10px 12px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            line-height: 1.3;
-            position: relative;
+        .chat-msg-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
         }
 
-        .chat-msg.sent {
+        .chat-msg-wrapper.sent {
             align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .chat-msg-wrapper.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .chat-msg-wrapper.sent .chat-msg {
             background: var(--accent);
             color: white;
-            border-bottom-right-radius: 2px;
+            border-bottom-right-radius: 3px;
         }
 
-        .chat-msg.received {
-            align-self: flex-start;
-            background: white;
-            color: #0f172a;
-            border-bottom-left-radius: 2px;
-            border: 1px solid #e2e8f0;
+        .chat-msg-wrapper.received .chat-msg {
+            background: #ffffff;
+            color: #1e293b;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .msg-time {
-            display: block;
-            font-size: 0.65rem;
-            margin-top: 5px;
-            opacity: 0.8;
-            text-align: right;
+        .msg-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .chat-msg-wrapper:hover .msg-actions {
+            opacity: 1;
+        }
+
+        .msg-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .msg-action-btn:hover {
+            color: var(--accent);
+        }
+
+        .msg-action-btn.delete:hover {
+            color: var(--danger);
         }
 
         .chat-input-area {
             display: flex;
-            padding: 10px;
+            padding: 10px 12px;
             background: var(--bg-main);
             border-top: 1px solid var(--border-color);
             gap: 8px;
+            align-items: center;
         }
 
         .chat-input-area input {
             flex: 1;
-            padding: 10px;
+            padding: 10px 14px;
             border: 1px solid var(--border-color);
             border-radius: 20px;
             outline: none;
-            background: var(--bg-secondary);
+            background: var(--bg-body);
             color: var(--text-main);
+            font-size: 0.9rem;
         }
 
         .chat-input-area button {
@@ -2074,11 +2173,76 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 1.1rem;
             transition: 0.2s;
         }
 
         .chat-input-area button:hover {
             transform: scale(1.05);
+        }
+
+        /* ================= TOAST NOTIFICATION (GOTA) ================= */
+        #chat-toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px 8px 8px;
+            gap: 12px;
+            z-index: 100000;
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+            cursor: pointer;
+            max-width: 90%;
+            width: 350px;
+        }
+
+        #chat-toast-container.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Modo Lite: Desliga a animação elástica e usa um fade seco */
+        body.lite-mode #chat-toast-container {
+            transition: opacity 0.2s ease !important;
+        }
+
+        body.lite-mode #chat-toast-container.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        #chat-toast-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        #chat-toast-text {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #chat-toast-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        #chat-toast-msg {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .sys-input {
@@ -3498,11 +3662,6 @@
         </div>
     </div>
 
-    <!-- Áudio Embutido para Notificação (Base64 pequeno para não depender de arquivos externos) -->
-    <audio id="chat-notification-sound"
-        src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq/9k="
-        preload="auto"></audio>
-
     <!-- TELA DE CARREGAMENTO INICIAL (MÁSCARA PARA O FIREBASE) -->
     <div id="splash-screen"
         style="position: fixed; top: 0; left: 0; width: 120vw; height: 120vh; background: var(--bg-sidebar); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -3620,32 +3779,61 @@
         </div>
     </div>
 
+    <!-- WIDGET DE NOTIFICAÇÃO TIPO "GOTA" (SMARTPHONE) -->
+    <div id="chat-toast-container">
+        <img id="chat-toast-img" src="" alt="User">
+        <div id="chat-toast-text">
+            <span id="chat-toast-name">Nome</span>
+            <span id="chat-toast-msg">Nova mensagem...</span>
+        </div>
+    </div>
+
     <!-- WIDGET DE CHAT FLUTUANTE -->
     <div id="chat-widget-container">
         <div id="chat-panel" class="chat-panel">
             <div class="chat-header">
-                <h4 id="chat-panel-title">Chat Icaphi</h4>
+                <h4 id="chat-panel-title">Comunicação</h4>
                 <span id="chat-close-btn">&times;</span>
             </div>
 
-            <!-- Lista de Contatos -->
+            <!-- Lista de Conversas (Histórico) -->
             <div id="chat-contact-list" class="chat-view active">
                 <!-- Renderizado via JS -->
+                <button id="btn-open-new-chat" class="btn-new-chat" title="Nova Conversa">
+                    <i class="ph ph-plus"></i>
+                </button>
+            </div>
+
+            <!-- Nova Lista de Contatos para iniciar conversa -->
+            <div id="chat-new-chat-view" class="chat-view"
+                style="display:none; padding: 10px; background: var(--bg-body); overflow-y: auto;">
+                <div
+                    style="padding-bottom: 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <button id="btn-back-from-new"
+                        style="background:transparent; border:none; color:var(--text-main); font-size:1.2rem; cursor:pointer;"><i
+                            class="ph ph-arrow-left"></i></button>
+                    <span style="font-weight: 600; color: var(--text-main);">Selecione um contato</span>
+                </div>
+                <div id="chat-all-users-list"></div>
             </div>
 
             <!-- Janela de Conversa 1-a-1 -->
             <div id="chat-conversation" class="chat-view">
                 <div class="chat-conv-header">
-                    <!-- Ícone trocado para Phosphor (Seta de Voltar) -->
-                    <button id="chat-btn-voltar"><i class="ph ph-arrow-left"></i></button>
-                    <span id="chat-active-name">Usuário</span>
+                    <div class="chat-conv-header-left">
+                        <button id="chat-btn-voltar"><i class="ph ph-arrow-left"></i></button>
+                        <span id="chat-active-name">Usuário</span>
+                    </div>
+                    <!-- Botão de Apagar Conversa -->
+                    <button id="chat-btn-delete-conv" title="Apagar conversa inteira"><i
+                            class="ph ph-trash"></i></button>
                 </div>
+
                 <div id="chat-messages-area" class="chat-messages-area">
                     <!-- Renderizado via JS -->
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="chat-input-msg" placeholder="Digite uma mensagem...">
-                    <!-- Ícone trocado para Phosphor (Aviãozinho de Enviar) -->
                     <button id="chat-btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
                 </div>
             </div>
@@ -3655,41 +3843,44 @@
             <i class="ph ph-chat-circle"></i>
             <span id="chat-global-badge" class="chat-badge" style="display:none;">0</span>
         </button>
+    </div>
 
-        <!-- MODAL DE CADASTRO/EDIÇÃO DE FROTA -->
-        <div class="modal-overlay" id="modal-placa">
-            <div class="modal-content" style="width: 400px;">
-                <div class="modal-header">
-                    <h3 id="modal-placa-title"><i class="ph ph-truck"></i> Adicionar Veículo</h3>
-                    <button class="btn-close" onclick="fecharModalPlaca()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">PLACA DO
-                            VEÍCULO:</label>
-                        <input type="text" id="placa-input-placa" style="text-transform: uppercase; font-weight: bold;"
-                            placeholder="Ex: ABC1D23">
+    <!-- Elemento de Áudio Oculto -->
+    <audio id="chat-notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+        preload="auto"></audio>
 
-                        <label
-                            style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PERFIL
-                            DO VEÍCULO:</label>
-                        <input type="text" id="placa-input-perfil" style="text-transform: uppercase;"
-                            placeholder="Ex: FIORINO, LEVE 3/4">
+    <!-- MODAL DE CADASTRO/EDIÇÃO DE FROTA -->
+    <div class="modal-overlay" id="modal-placa">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h3 id="modal-placa-title"><i class="ph ph-truck"></i> Adicionar Veículo</h3>
+                <button class="btn-close" onclick="fecharModalPlaca()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">PLACA DO
+                        VEÍCULO:</label>
+                    <input type="text" id="placa-input-placa" style="text-transform: uppercase; font-weight: bold;"
+                        placeholder="Ex: ABC1D23">
 
-                        <label
-                            style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">TIPO
-                            DE VÍNCULO:</label>
-                        <input type="text" id="placa-input-tipo" style="text-transform: uppercase;"
-                            placeholder="Ex: FIXO, AGREGADO">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="fecharModalPlaca()">Cancelar</button>
-                    <button class="btn btn-primary" onclick="salvarPlaca()"><i class="ph ph-floppy-disk"></i> Salvar
-                        Veículo</button>
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PERFIL
+                        DO VEÍCULO:</label>
+                    <input type="text" id="placa-input-perfil" style="text-transform: uppercase;"
+                        placeholder="Ex: FIORINO, LEVE 3/4">
+
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">TIPO
+                        DE VÍNCULO:</label>
+                    <input type="text" id="placa-input-tipo" style="text-transform: uppercase;"
+                        placeholder="Ex: FIXO, AGREGADO">
                 </div>
             </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModalPlaca()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarPlaca()"><i class="ph ph-floppy-disk"></i> Salvar
+                    Veículo</button>
+            </div>
         </div>
+    </div>
     </div>
 
     <script type="module">
@@ -4182,42 +4373,84 @@
         };
 
         // ================= MOTOR DE CHAT E NOTIFICAÇÕES =================
-
-        // ================= CONTROLES DA INTERFACE DO CHAT (BLINDADOS) =================
         const chatWidget = document.getElementById('chat-widget-container');
         const chatPanel = document.getElementById('chat-panel');
 
-        document.getElementById('btn-floating-chat')?.addEventListener('click', () => {
-            chatPanel?.classList.toggle('active');
-            if (chatPanel?.classList.contains('active')) renderizarListaContatosChat();
+        // Controles da Janela do Chat
+        const btnFloatingChat = document.getElementById('btn-floating-chat');
+
+        btnFloatingChat?.addEventListener('click', () => {
+            chatPanel?.classList.add('active');
+            btnFloatingChat.classList.add('hidden'); // Esconde o botão redondo
+
+            document.getElementById('chat-new-chat-view').style.display = 'none';
+            document.getElementById('chat-contact-list').classList.add('active');
+            renderizarListaContatosChat();
         });
 
         document.getElementById('chat-close-btn')?.addEventListener('click', () => {
             chatPanel?.classList.remove('active');
+
+            // Aguarda a animação de saída terminar para mostrar o botão novamente
+            setTimeout(() => {
+                btnFloatingChat.classList.remove('hidden');
+            }, 200);
         });
 
         document.getElementById('chat-btn-voltar')?.addEventListener('click', () => {
             document.getElementById('chat-conversation')?.classList.remove('active');
             document.getElementById('chat-contact-list')?.classList.add('active');
 
-            if (typeof unsubscribeChat === 'function' && unsubscribeChat) {
+            if (unsubscribeChat) {
                 unsubscribeChat();
                 unsubscribeChat = null;
             }
-
-            if (typeof activeChatId !== 'undefined') activeChatId = null;
-
+            activeChatId = null;
             const panelTitle = document.getElementById('chat-panel-title');
-            if (panelTitle) panelTitle.innerText = "Comunicação Interna";
+            if (panelTitle) panelTitle.innerText = "Comunicação";
         });
 
-        // Listener Global de Notificações (Rastreia mensagens não lidas)
+        // Voltar da tela de "Nova Conversa"
+        document.getElementById('btn-back-from-new')?.addEventListener('click', () => {
+            document.getElementById('chat-new-chat-view').style.display = 'none';
+            document.getElementById('chat-contact-list').classList.add('active');
+        });
+
+        // ================= NOTIFICAÇÕES VISUAIS E SONORAS =================
+        window.mostrarToastNotificacao = async (senderId, text) => {
+            const toast = document.getElementById('chat-toast-container');
+            if (!toast) return;
+
+            let nome = "Novo Mensagem";
+            let foto = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Padrão
+
+            try {
+                const userSnap = await getDoc(doc(db, "users", senderId));
+                if (userSnap.exists()) {
+                    nome = userSnap.data().nome;
+                    foto = userSnap.data().foto || foto;
+                }
+            } catch (e) { }
+
+            document.getElementById('chat-toast-img').src = foto;
+            document.getElementById('chat-toast-name').innerText = nome;
+            document.getElementById('chat-toast-msg').innerText = text;
+
+            toast.classList.add('show');
+
+            // Oculta após 4 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        };
+
         function listenChatsGlobais() {
             const myUid = window.currentUserData.uid;
-            // Ouve todos os chats onde o usuário participa (ID da sala contém o UID)
             onSnapshot(collection(db, "chats"), (snapshot) => {
                 let totalUnread = 0;
                 let toqueSound = false;
+                let ultimoSender = null;
+                let ultimaMensagemTexto = "";
 
                 snapshot.docChanges().forEach(change => {
                     const docId = change.doc.id;
@@ -4226,9 +4459,11 @@
                         const myUnread = data.unreadCount ? (data.unreadCount[myUid] || 0) : 0;
                         unreadCountsGlobal[docId] = myUnread;
 
-                        // Toca som apenas se o documento foi modificado, eu tenho não lidas, e a última msg não é minha
+                        // Toca som e mostra a gota apenas se for modificação e eu tiver não lidas e não for a minha janela ativa
                         if (change.type === 'modified' && myUnread > 0 && data.lastMessageSender !== myUid && activeChatId !== docId) {
                             toqueSound = true;
+                            ultimoSender = data.lastMessageSender;
+                            ultimaMensagemTexto = data.lastMessageText || "Nova mensagem recebida";
                         }
                     }
                 });
@@ -4240,96 +4475,238 @@
                     badge.innerText = totalUnread;
                     badge.style.display = 'flex';
                     if (toqueSound) {
+                        // Toca o som de notificação
                         const sound = document.getElementById('chat-notification-sound');
-                        sound.play().catch(e => console.log("Áudio bloqueado pelo navegador até interação."));
+                        if (sound) sound.play().catch(e => console.log("Áudio bloqueado pelo navegador até primeira interação."));
+                        // Dispara a Gota Flutuante
+                        mostrarToastNotificacao(ultimoSender, ultimaMensagemTexto);
                     }
                 } else {
                     badge.style.display = 'none';
                 }
 
-                if (chatPanel.classList.contains('active') && !activeChatId) renderizarListaContatosChat();
+                if (chatPanel.classList.contains('active') && !activeChatId && document.getElementById('chat-contact-list').classList.contains('active')) {
+                    renderizarListaContatosChat();
+                }
             });
         }
 
-        // Renderiza a Lista de Contatos para Chat
+        // ================= RENDERIZAR LISTA DE CONVERSAS ATIVAS =================
         async function renderizarListaContatosChat() {
             const myUid = window.currentUserData.uid;
             const container = document.getElementById('chat-contact-list');
-            container.innerHTML = '<div style="text-align:center; padding: 20px;">Carregando contatos...</div>';
+            const btnNewHTML = `<button id="btn-open-new-chat" class="btn-new-chat" title="Nova Conversa"><i class="ph ph-plus"></i></button>`;
 
+            container.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Carregando conversas...</div>' + btnNewHTML;
+
+            // Busca dados dos usuários para cruzar com as conversas
             const snapUsers = await getDocs(collection(db, "users"));
-            container.innerHTML = '';
+            let usersMap = {};
+            snapUsers.forEach(d => { usersMap[d.id] = { uid: d.id, ...d.data() }; });
 
-            let usersList = [];
-            snapUsers.forEach(d => { if (d.id !== myUid) usersList.push({ uid: d.id, ...d.data() }); });
+            // Busca todos os chats
+            const snapChats = await getDocs(collection(db, "chats"));
+            let activeUsers = [];
 
-            // Ordena os online primeiro
-            usersList.sort((a, b) => (b.online === a.online) ? 0 : b.online ? 1 : -1);
+            snapChats.forEach(docSnap => {
+                if (docSnap.id.includes(myUid)) {
+                    const data = docSnap.data();
+                    // Se a conversa foi apagada por mim, não renderiza na lista principal
+                    if (data[`deletedBy_${myUid}`] === true) return;
 
-            usersList.forEach(u => {
-                const chatId = myUid < u.uid ? `${myUid}_${u.uid}` : `${u.uid}_${myUid}`;
-                const unread = unreadCountsGlobal[chatId] || 0;
+                    const otherUid = docSnap.id.replace(myUid, '').replace('_', '');
+                    if (usersMap[otherUid]) {
+                        activeUsers.push({
+                            ...usersMap[otherUid],
+                            chatId: docSnap.id,
+                            lastTime: data.lastMessageTime ? data.lastMessageTime.toMillis() : 0
+                        });
+                    }
+                }
+            });
 
+            // Ordena conversas pelas mais recentes
+            activeUsers.sort((a, b) => b.lastTime - a.lastTime);
+
+            // Limpa a tela e INSERE O BOTÃO ANTES de renderizar as divs (Evita matar os cliques)
+            container.innerHTML = btnNewHTML;
+
+            if (activeUsers.length === 0) {
+                container.insertAdjacentHTML('beforeend', '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.9rem;">Nenhuma conversa ativa no momento.</div>');
+            }
+
+            activeUsers.forEach(u => {
+                const unread = unreadCountsGlobal[u.chatId] || 0;
                 const div = document.createElement('div');
                 div.className = 'chat-contact-item';
                 div.innerHTML = `
             <img src="${u.foto}" style="border: ${u.online ? '2px solid #16a34a' : '2px solid transparent'};">
             <div class="chat-contact-info">
-                <strong>${u.nome} ${u.sobrenome}</strong>
-                <span>${u.setor}</span>
+                <strong>${u.nome} ${u.sobrenome || ''}</strong>
+                <span>${u.setor || ''}</span>
             </div>
             ${unread > 0 ? `<span class="contact-unread">${unread}</span>` : ''}
         `;
-                div.addEventListener('click', () => abrirConversa(u, chatId));
+                // O evento de clique agora fica blindado
+                div.addEventListener('click', () => abrirConversa(u, u.chatId));
+                container.appendChild(div);
+            });
+
+            // Ativa o clique do botão "+"
+            document.getElementById('btn-open-new-chat').addEventListener('click', () => {
+                document.getElementById('chat-contact-list').classList.remove('active');
+                document.getElementById('chat-new-chat-view').style.display = 'block';
+                renderizarTodosUsuarios();
+            });
+        }
+
+        // ================= RENDERIZAR TODOS OS USUÁRIOS (NOVA CONVERSA) =================
+        async function renderizarTodosUsuarios() {
+            const myUid = window.currentUserData.uid;
+            const container = document.getElementById('chat-all-users-list');
+            container.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Buscando equipe...</div>';
+
+            const snapUsers = await getDocs(collection(db, "users"));
+            let usersList = [];
+            snapUsers.forEach(d => { if (d.id !== myUid) usersList.push({ uid: d.id, ...d.data() }); });
+
+            usersList.sort((a, b) => (b.online === a.online) ? 0 : b.online ? 1 : -1);
+            container.innerHTML = '';
+
+            usersList.forEach(u => {
+                const chatId = myUid < u.uid ? `${myUid}_${u.uid}` : `${u.uid}_${myUid}`;
+                const div = document.createElement('div');
+                div.className = 'chat-contact-item';
+                div.innerHTML = `
+            <img src="${u.foto}" style="border: ${u.online ? '2px solid #16a34a' : '2px solid transparent'};">
+            <div class="chat-contact-info">
+                <strong>${u.nome} ${u.sobrenome || ''}</strong>
+                <span>${u.setor || ''}</span>
+            </div>
+        `;
+                div.addEventListener('click', () => {
+                    document.getElementById('chat-new-chat-view').style.display = 'none';
+                    abrirConversa(u, chatId);
+                });
                 container.appendChild(div);
             });
         }
 
-        // Abrir e Escutar Conversa Específica
+        // ================= FUNÇÕES DE EDIÇÃO E EXCLUSÃO GLOBAIS =================
+        window.deletarMensagemIcaphi = async (chatId, msgId) => {
+            if (confirm("Apagar esta mensagem para você?")) {
+                const myUid = window.currentUserData.uid;
+                // Não deleta o documento, apenas marca como invisível para você
+                await setDoc(doc(db, `chats/${chatId}/messages`, msgId), {
+                    [`deletedBy_${myUid}`]: true
+                }, { merge: true });
+            }
+        };
+
+        window.editarMensagemIcaphi = async (chatId, msgId, btnElem) => {
+            const msgWrapper = btnElem.closest('.chat-msg-wrapper');
+            const textSpan = msgWrapper.querySelector('.msg-text-content');
+            const currentText = textSpan.innerText;
+
+            const newText = prompt("Editar mensagem:", currentText);
+            if (newText && newText.trim() !== "" && newText !== currentText) {
+                await updateDoc(doc(db, `chats/${chatId}/messages`, msgId), {
+                    text: newText.trim(),
+                    editado: true
+                });
+            }
+        };
+
+        // ================= ABRIR E ESCUTAR CONVERSA 1-A-1 =================
         function abrirConversa(targetUser, chatId) {
             activeChatId = chatId;
             document.getElementById('chat-contact-list').classList.remove('active');
             document.getElementById('chat-conversation').classList.add('active');
             document.getElementById('chat-active-name').innerText = targetUser.nome;
-            document.getElementById('chat-panel-title').innerText = "Chat";
 
             const msgArea = document.getElementById('chat-messages-area');
-            msgArea.innerHTML = '';
+            msgArea.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Sincronizando...</div>';
 
-            // Zera notificações de leitura
+            // Zera mensagens não lidas
             setDoc(doc(db, "chats", chatId), { unreadCount: { [window.currentUserData.uid]: 0 } }, { merge: true });
 
-            const q = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
+            // --- LÓGICA DE APAGAR CONVERSA INTEIRA PARA MIM ---
+            const btnDelConv = document.getElementById('chat-btn-delete-conv');
+            const newBtnDelConv = btnDelConv.cloneNode(true);
+            btnDelConv.parentNode.replaceChild(newBtnDelConv, btnDelConv);
 
-            if (unsubscribeChat) unsubscribeChat();
-            unsubscribeChat = onSnapshot(q, (snapshot) => {
-                msgArea.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const msg = docSnap.data();
-                    const isMe = msg.sender === window.currentUserData.uid;
-                    const dataStr = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            newBtnDelConv.addEventListener('click', async () => {
+                if (confirm(`Apagar o histórico com ${targetUser.nome} para você?`)) {
+                    try {
+                        const myUid = window.currentUserData.uid;
 
-                    msgArea.innerHTML += `
-                <div class="chat-msg ${isMe ? 'sent' : 'received'}">
-                    ${msg.text}
-                    <span class="msg-time">${dataStr}</span>
-                </div>
-            `;
-                });
-                // Scroll to bottom
-                msgArea.scrollTop = msgArea.scrollHeight;
+                        // 1. Oculta a sala principal para mim
+                        await setDoc(doc(db, "chats", chatId), {
+                            [`deletedBy_${myUid}`]: true
+                        }, { merge: true });
 
-                // Zera notificação se eu estou com o chat aberto e recebi mensagem
-                if (chatPanel.classList.contains('active')) {
-                    setDoc(doc(db, "chats", chatId), { unreadCount: { [window.currentUserData.uid]: 0 } }, { merge: true });
+                        // 2. Oculta todas as mensagens antigas para mim
+                        const msgsSnap = await getDocs(collection(db, `chats/${chatId}/messages`));
+                        msgsSnap.forEach(d => {
+                            setDoc(d.ref, { [`deletedBy_${myUid}`]: true }, { merge: true });
+                        });
+
+                        document.getElementById('chat-btn-voltar').click();
+                    } catch (e) { console.error("Erro ao ocultar conversa:", e); }
                 }
             });
 
-            // Anexa envio de mensagem ao botão ativo
+            // --- LÓGICA DE RENDERIZAÇÃO DAS MENSAGENS ---
+            const q = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
+            if (unsubscribeChat) unsubscribeChat();
+
+            unsubscribeChat = onSnapshot(q, (snapshot) => {
+                msgArea.innerHTML = '';
+                let countVisible = 0;
+                const myUid = window.currentUserData.uid;
+
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+
+                    // SE EU APAGUEI ESSA MENSAGEM, PULA ELA
+                    if (msg[`deletedBy_${myUid}`] === true) return;
+
+                    countVisible++;
+                    const msgId = docSnap.id;
+                    const isMe = msg.sender === myUid;
+                    const dataStr = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                    const editadoStr = msg.editado ? `<span style="font-size:0.65rem; opacity:0.6; margin-left:5px;">(editado)</span>` : '';
+
+                    msgArea.innerHTML += `
+                <div class="chat-msg-wrapper ${isMe ? 'sent' : 'received'}" data-id="${msgId}">
+                    <div class="chat-msg">
+                        <span class="msg-text-content">${msg.text}</span> ${editadoStr}
+                        <span class="msg-time">${dataStr}</span>
+                    </div>
+                    ${isMe ? `
+                    <div class="msg-actions">
+                        <button class="msg-action-btn edit" onclick="window.editarMensagemIcaphi('${chatId}', '${msgId}', this)" title="Editar mensagem"><i class="ph ph-pencil-simple"></i></button>
+                        <button class="msg-action-btn delete" onclick="window.deletarMensagemIcaphi('${chatId}', '${msgId}')" title="Apagar mensagem"><i class="ph ph-trash"></i></button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+                });
+
+                if (countVisible === 0) {
+                    msgArea.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Nenhuma mensagem ainda.</div>';
+                }
+
+                msgArea.scrollTop = msgArea.scrollHeight;
+                if (chatPanel.classList.contains('active')) {
+                    setDoc(doc(db, "chats", chatId), { unreadCount: { [myUid]: 0 } }, { merge: true });
+                }
+            });
+
+            // --- LÓGICA DE ENVIO (RESSUSCITA A SALA SE ELA ESTAVA APAGADA) ---
             const btnSend = document.getElementById('chat-btn-send');
             const inputMsg = document.getElementById('chat-input-msg');
 
-            // Limpa eventos anteriores clonando o botão (Design Pattern para evitar memory leaks em listeners)
             const newBtnSend = btnSend.cloneNode(true);
             btnSend.parentNode.replaceChild(newBtnSend, btnSend);
 
@@ -4342,14 +4719,18 @@
                     await addDoc(collection(db, `chats/${chatId}/messages`), {
                         sender: window.currentUserData.uid,
                         text: text,
+                        editado: false,
                         timestamp: serverTimestamp()
                     });
 
-                    // Atualiza metadados da sala (notifica o outro usuário)
+                    // Remove a flag de deleção para que a sala volte a aparecer para ambos
                     await setDoc(doc(db, "chats", chatId), {
                         lastMessageSender: window.currentUserData.uid,
+                        lastMessageText: text,
                         lastMessageTime: serverTimestamp(),
-                        unreadCount: { [targetUser.uid]: increment(1) }
+                        unreadCount: { [targetUser.uid]: increment(1) },
+                        [`deletedBy_${window.currentUserData.uid}`]: false,
+                        [`deletedBy_${targetUser.uid}`]: false
                     }, { merge: true });
                 } catch (e) { console.error("Erro ao enviar:", e); }
             };
