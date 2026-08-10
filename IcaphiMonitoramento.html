@@ -657,10 +657,15 @@
             filter: brightness(1);
         }
 
+        /* Efeito Hover Geral e Elevação de Camada (Z-index) */
         tbody tr:hover {
             background-color: var(--drag-bg) !important;
             box-shadow: inset 3px 0 0 var(--accent) !important;
             filter: brightness(0.95);
+
+            /* ADICIONE ESTAS DUAS LINHAS PARA VENCER O CABEÇALHO */
+            position: relative;
+            z-index: 99999 !important;
         }
 
         .dark-mode tbody tr:hover {
@@ -2335,51 +2340,53 @@
             font-weight: bold;
         }
 
-        /* 1. Container base - Adicionado Z-index dinâmico */
+        /* ================= TOOLTIP DE STATUS (EMBUTIDO E ALINHADO) ================= */
         .status-pill {
             position: relative;
             cursor: help;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Força a célula para a frente da tela no hover, vencendo a hierarquia da tabela */
-        .status-pill:hover {
-            z-index: 9999;
-        }
-
-        /* Mantém apenas o cursor de interrogação */
-        .status-pill {
-            cursor: help;
-        }
-
-        /* O novo Tooltip Global - Imune a cortes */
-        #global-status-tooltip {
-            position: fixed;
-            /* Essencial para alinhar com o getBoundingClientRect sem erro de scroll */
+        .status-pill .tooltip-box {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            transform-origin: bottom center;
             background-color: var(--bg-panel, #1e293b);
             color: var(--text-main, #f8fafc);
             border: 1px solid var(--border-color, #334155);
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             white-space: nowrap;
-            pointer-events: none;
-            z-index: 999999;
             opacity: 0;
             visibility: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            transition: opacity 0.15s ease, visibility 0.15s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            pointer-events: none;
         }
 
-        #global-status-tooltip.active {
-            opacity: 1;
-            visibility: visible;
+        .status-pill .tooltip-box::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--border-color, #334155) transparent transparent transparent;
         }
 
-        /* Gatilho de Aparição */
-        .status-pill:hover::after,
-        .status-pill:hover::before {
+        .status-pill:hover {
+            z-index: 9999;
+        }
+
+        .status-pill:hover .tooltip-box {
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) scale(1);
@@ -2421,6 +2428,10 @@
                     <a class="menu-item" data-target="view-exportar">
                         <i class="ph ph-export menu-icon"></i><span class="menu-text">Exportar</span>
                     </a>
+                </a>
+                <a class="menu-item" onclick="window.abrirModalExportarTransportes()">
+                    <span class="menu-icon"><i class="ph-fill ph-file-text"></i></span>
+                    <span class="menu-text">Exportar Transportes</span>
                 </a>
             </div>
             <div class="sidebar-bottom">
@@ -3081,6 +3092,52 @@
                 </div>
             </div>
         </section>
+
+        <div class="modal-overlay" id="modal-exportar-transportes">
+            <div class="modal-content" style="width: 500px; max-height: 85vh;">
+                <div class="modal-header">
+                    <h3>📋 Exportar Transportes por Período</h3>
+                    <button class="btn-close"
+                        onclick="document.getElementById('modal-exportar-transportes').classList.remove('active')">×</button>
+                </div>
+                <div class="modal-body" style="gap: 12px; overflow-y: auto;">
+
+                    <!-- Seletores de Data -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">DATA
+                                INÍCIO:</label>
+                            <input type="date" id="exp-data-inicio" style="width: 100%; margin-top: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">DATA
+                                FIM:</label>
+                            <input type="date" id="exp-data-fim" style="width: 100%; margin-top: 4px;">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 5px;"
+                        onclick="window.processarExportacaoTransportes()">
+                        🔍 Buscar Transportes
+                    </button>
+
+                    <!-- Área de Exibição / Cópia -->
+                    <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11.5px; font-weight: 700; color: var(--text-main);"
+                                id="exp-contador-label">TRANSPORTES (0 encontrados)</span>
+                            <button class="btn btn-success btn-sm" onclick="window.copiarListaTransportes()">
+                                📋 Copiar Tudo
+                            </button>
+                        </div>
+
+                        <textarea id="exp-resultado-textarea" readonly
+                            style="width: 100%; height: 240px; font-family: monospace; font-size: 12px; padding: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; resize: none;"></textarea>
+                    </div>
+
+                </div>
+            </div>
+        </div>
 
         <section id="print-area-wrapper">
             <div
@@ -5366,15 +5423,34 @@
 
         // ====== LÓGICA AÇÕES EM LOTE ======
         window.executarLoteAppEntregue = () => {
+            // Pega a hora exata da automação
+            const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             let alteradas = 0;
+
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
-                const appCell = tr.querySelector('[data-live="app"]'); const selectCell = tr.querySelector('.live-status-select');
+                const appCell = tr.querySelector('[data-live="app"]');
+                const selectCell = tr.querySelector('.live-status-select');
                 if (!appCell || !selectCell) return;
+
                 if (appCell.textContent.trim() !== "" && selectCell.value === "") {
-                    selectCell.value = "ENTREGUE"; selectCell.style.cssText = getStRotaStyle("ENTREGUE"); tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE"); alteradas++;
+                    selectCell.value = "ENTREGUE";
+                    selectCell.style.cssText = getStRotaStyle("ENTREGUE");
+                    tr.style.backgroundColor = getRowBackgroundStyle("ENTREGUE");
+
+                    // CARIMBA A HORA EXATA NA LINHA PARA O TOOLTIP DO PAINEL
+                    tr.dataset.horaStatus = horaAtual;
+
+                    alteradas++;
                 }
             });
-            if (alteradas > 0) { autoSaveNotasSilencioso(); alert(`${alteradas} notas VAZIAS com anexo foram atualizadas para ENTREGUE.`); } else { alert("Nenhuma nota vazia precisava de atualização."); }
+
+            if (alteradas > 0) {
+                autoSaveNotasSilencioso();
+                alert(`${alteradas} notas VAZIAS com anexo foram atualizadas para ENTREGUE.`);
+            } else {
+                alert("Nenhuma nota vazia precisava de atualização.");
+            }
+
             document.getElementById('modal-acoes-lote').classList.remove('active');
         };
 
@@ -5403,6 +5479,9 @@
                 return alert("Preencha pelo menos uma informação no painel antes de aplicar.");
             }
 
+            // Pega a hora exata do momento em que o botão foi clicado
+            const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
             let linhasAfetadas = 0;
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
                 // Filtro rígido: Só altera se a linha pertencer à tabela de notas e NÃO estiver oculta por filtros ativos
@@ -5421,12 +5500,18 @@
                         const cell = tr.querySelector('[data-live="telefone"]');
                         if (cell) { cell.textContent = novoTelefone; houveModificacao = true; }
                     }
+
+                    // É AQUI DENTRO QUE A HORA DEVE SER GRAVADA:
                     if (novoStatus) {
                         const selectCell = tr.querySelector('.live-status-select');
                         if (selectCell) {
                             selectCell.value = novoStatus;
                             selectCell.style.cssText = getStRotaStyle(novoStatus);
                             tr.style.backgroundColor = getRowBackgroundStyle(novoStatus);
+
+                            // Grava a hora no dataset da linha (TR)
+                            tr.dataset.horaStatus = horaAtual;
+
                             houveModificacao = true;
                         }
                     }
@@ -5819,9 +5904,10 @@
                             <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
                             
                             <!-- O TOOLTIP ESTÁ AQUI AGORA (ST. ROTA) LENDO A ÚLTIMA HORA DAS NOTAS -->
-                            <td>
-                                <div class="status-pill" data-hora="${ultimaHoraRota}" style="display:inline-block;">
+                            <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
+                                <div class="status-pill" style="display:inline-flex;">
                                     ${getStRotaPill(stRotaCalc)}
+                                    <div class="tooltip-box">Alterado às ${ultimaHoraRota}</div>
                                 </div>
                             </td>
                             
@@ -8352,43 +8438,117 @@
         }
 
         function ajustarPosicaoGota(x, y) {
-            // Posiciona 15 pixels à direita e 40 pixels acima do ponteiro do mouse
-            tooltipGota.style.left = `${x + 15}px`;
-            tooltipGota.style.top = `${y - 45}px`;
+            // Fator de escala do body (0.85) que desconfigura as coordenadas puras do mouse
+            const scale = 0.85;
+
+            // Divide as coordenadas do mouse pelo scale para neutralizar o zoom e alinhar perfeitamente
+            const adjustedX = x / scale;
+            const adjustedY = y / scale;
+
+            // Posiciona milimetricamente em relação ao cursor corrigido
+            tooltipGota.style.left = `${adjustedX + 15}px`;
+            tooltipGota.style.top = `${adjustedY - 45}px`;
             tooltipGota.classList.add('ativo');
         }
 
-        // ================= MOTOR DO TOOLTIP GLOBAL (FIXED VIEWPORT) =================
-        const globalTooltip = document.createElement('div');
-        globalTooltip.id = 'global-status-tooltip';
-        document.body.appendChild(globalTooltip);
+        // --- FUNÇÕES DE EXPORTAÇÃO DE TRANSPORTES ---
 
-        document.addEventListener('mouseover', (e) => {
-            const pill = e.target.closest('.status-pill');
-            if (!pill) return;
+        window.abrirModalExportarTransportes = () => {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const diaAtual = hoje.getDate();
 
-            const hora = pill.getAttribute('data-hora');
-            if (!hora) return;
+            let dataInicio, dataFim;
 
-            globalTooltip.innerText = `Alterado às ${hora}`;
-
-            // Pega a posição exata da pílula na tela visível (Viewport)
-            const rect = pill.getBoundingClientRect();
-
-            // Posiciona usando fixed (sem somar scroll, direto na tela do usuário)
-            globalTooltip.style.top = `${rect.top - 38}px`;
-            globalTooltip.style.left = `${rect.left + (rect.width / 2)}px`;
-            globalTooltip.style.transform = 'translateX(-50%)';
-
-            globalTooltip.classList.add('active');
-        });
-
-        document.addEventListener('mouseout', (e) => {
-            const pill = e.target.closest('.status-pill');
-            if (pill) {
-                globalTooltip.classList.remove('active');
+            // Define a quinzena atual automaticamente por padrão
+            if (diaAtual <= 15) {
+                dataInicio = `${ano}-${mes}-01`;
+                dataFim = `${ano}-${mes}-15`;
+            } else {
+                dataInicio = `${ano}-${mes}-16`;
+                const ultimoDiaMes = new Date(ano, hoje.getMonth() + 1, 0).getDate();
+                dataFim = `${ano}-${mes}-${ultimoDiaMes}`;
             }
-        });
+
+            document.getElementById('exp-data-inicio').value = dataInicio;
+            document.getElementById('exp-data-fim').value = dataFim;
+
+            // Deixa limpo sem o cabeçalho "TRANSPORTES"
+            document.getElementById('exp-resultado-textarea').value = "";
+            document.getElementById('exp-contador-label').innerText = "TRANSPORTES (0 encontrados)";
+
+            document.getElementById('modal-exportar-transportes').classList.add('active');
+        };
+
+        window.processarExportacaoTransportes = async () => {
+            const dataInicioStr = document.getElementById('exp-data-inicio').value;
+            const dataFimStr = document.getElementById('exp-data-fim').value;
+
+            if (!dataInicioStr || !dataFimStr) {
+                return alert("Por favor, selecione o período de início e fim.");
+            }
+
+            showLoader();
+            try {
+                const dInicio = new Date(dataInicioStr + "T00:00:00");
+                const dFim = new Date(dataFimStr + "T00:00:00");
+
+                let transportesSet = new Set();
+                let currentIterDate = new Date(dInicio);
+
+                while (currentIterDate <= dFim) {
+                    const dataIso = currentIterDate.toISOString().split('T')[0];
+
+                    const docRef = doc(db, "notas_fiscais_diario", dataIso);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const dados = docSnap.data();
+                        if (dados.notas && Array.isArray(dados.notas)) {
+                            dados.notas.forEach(nota => {
+                                const transp = String(nota.transporte || nota.viagem || "").trim();
+                                if (transp !== "" && transp !== "undefined" && transp !== "null") {
+                                    transportesSet.add(transp);
+                                }
+                            });
+                        }
+                    }
+
+                    currentIterDate.setDate(currentIterDate.getDate() + 1);
+                }
+
+                const listaTransportes = Array.from(transportesSet);
+
+                // Junta os números apenas com quebra de linha, sem nenhum texto extra no topo
+                let textoFinal = listaTransportes.join("\n");
+
+                document.getElementById('exp-resultado-textarea').value = textoFinal;
+                document.getElementById('exp-contador-label').innerText = `TRANSPORTES (${listaTransportes.length} encontrados)`;
+
+            } catch (e) {
+                console.error("Erro ao exportar transportes:", e);
+                alert("Ocorreu um erro ao buscar os transportes. Verifique o console.");
+            }
+            hideLoader();
+        };
+
+        window.copiarListaTransportes = () => {
+            const textarea = document.getElementById('exp-resultado-textarea');
+            if (!textarea.value || textarea.value === "TRANSPORTES\n") {
+                return alert("Não há dados para copiar.");
+            }
+
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // Para dispositivos móveis/compatibilidade
+
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert("Lista de transportes copiada com sucesso para a área de transferência!");
+            }).catch(err => {
+                console.error("Erro ao copiar:", err);
+                alert("Erro ao copiar o texto.");
+            });
+        };
 
     </script>
 </body>
