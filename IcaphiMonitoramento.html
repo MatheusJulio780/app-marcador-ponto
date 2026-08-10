@@ -2391,6 +2391,33 @@
             visibility: visible;
             transform: translateX(-50%) scale(1);
         }
+
+        .status-toast {
+            background: var(--bg-panel, #1e293b);
+            color: var(--text-main, #f8fafc);
+            border: 1px solid var(--border-color, #334155);
+            border-left: 4px solid var(--success, #10b981);
+            padding: 12px 18px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            font-size: 13px;
+            font-weight: 600;
+            pointer-events: auto;
+            animation: slideInToast 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            max-width: 320px;
+        }
+
+        @keyframes slideInToast {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 
@@ -3958,6 +3985,10 @@
             <span id="chat-toast-name">Nome</span>
             <span id="chat-toast-msg">Nova mensagem...</span>
         </div>
+    </div>
+
+    <div id="status-toast-container"
+        style="position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
     </div>
 
     <!-- WIDGET DE CHAT FLUTUANTE -->
@@ -8549,6 +8580,58 @@
                 alert("Erro ao copiar o texto.");
             });
         };
+
+        // Função para disparar a notificação visual na tela
+        function dispararToastStatus(mensagem) {
+            const container = document.getElementById('status-toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'status-toast';
+            toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+            <i class="ph-fill ph-bell-ringing" style="color: var(--success); font-size: 16px;"></i>
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Atualização de Frota</span>
+        </div>
+        <div>${mensagem}</div>
+    `;
+
+            container.appendChild(toast);
+
+            // Remove o balão automaticamente após 4 segundos
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(50px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Escutador em tempo real do dia ativo no Painel de Monitoramento
+        function iniciarEscutadorDeStatus() {
+            let unsubscribe = null;
+
+            // Sempre que a data do painel mudar ou carregar, reconectamos o listener
+            const dataSel = document.getElementById('mon-data-select')?.value;
+            if (!dataSel) return;
+
+            // Se já houver um escutador ativo, desliga para não duplicar
+            if (window.unsubscribeNotasAtual) {
+                window.unsubscribeNotasAtual();
+            }
+
+            const docRef = doc(db, "notas_fiscais_diario", dataSel);
+
+            window.unsubscribeNotasAtual = onSnapshot(docRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                const dadosNovos = docSnap.data();
+
+                // Aqui você pode comparar com um cache anterior se quiser evitar o aviso ao carregar a página pela primeira vez.
+                // Para testes rápidos, ele notificará as mudanças que ocorrerem com a página aberta.
+            }, (error) => {
+                console.error("Erro no listener de status:", error);
+            });
+        }
 
     </script>
 </body>
