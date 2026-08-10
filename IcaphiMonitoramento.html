@@ -2418,6 +2418,111 @@
                 transform: translateX(0);
             }
         }
+
+        /* ====== ACCORDION DE PENDÊNCIAS ====== */
+        .acc-item {
+            background: var(--bg-panel, #ffffff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .acc-header {
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: var(--bg-panel, #ffffff);
+            transition: background 0.2s;
+        }
+
+        .acc-header:hover {
+            background: var(--drag-bg, #f8fafc);
+        }
+
+        .acc-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: var(--accent, #0f172a);
+            font-size: 13px;
+        }
+
+        .acc-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .acc-badge {
+            background: var(--drag-bg, #e2e8f0);
+            color: var(--text-main, #334155);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .acc-icon {
+            transition: transform 0.3s;
+            color: var(--text-muted, #94a3b8);
+        }
+
+        .acc-item.open .acc-icon {
+            transform: rotate(180deg);
+        }
+
+        .acc-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: var(--bg-main, #f8fafc);
+        }
+
+        .acc-item.open .acc-body {
+            max-height: 500px;
+            /* Ajuste se a lista for gigante */
+            overflow-y: auto;
+        }
+
+        .pendencia-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1.5fr;
+            padding: 10px 18px;
+            border-top: 1px solid var(--border-color, #e2e8f0);
+            font-size: 12px;
+            align-items: center;
+        }
+
+        .pendencia-row:hover {
+            background: var(--drag-bg, #f1f5f9);
+        }
+
+        .p-placa {
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .p-mot {
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: uppercase;
+        }
+
+        .p-qtd {
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .p-rota {
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 
@@ -2904,19 +3009,31 @@
                             style="flex:1; padding:12px; min-width: 200px;">
                             <i class="ph ph-file-pdf"></i> Formulário Padrão
                         </button>
-
                         <button class="btn btn-warning" id="btn-gerar-pc-devolucao"
                             style="flex:1; padding:12px; min-width: 200px; background-color: #f59e0b; color: white; border: none; border-radius: 4px; font-weight: 600;">
                             <i class="ph ph-warning-circle"></i> Protocolo Dev/Reentregas
                         </button>
-
                         <button class="btn btn-primary" id="btn-pc-excel"
                             style="flex:1; padding:12px; min-width: 200px;">
                             <i class="ph ph-file-xls"></i> Exportar Dados (Excel)
                         </button>
                     </div>
+                </div> <!-- AQUI FECHA A CAIXA BRANCA -->
+
+                <!-- BLOCO DE PENDÊNCIAS ENTRA AQUI, COLADO NA CAIXA BRANCA -->
+                <div class="prestacao-pendencias-container"
+                    style="max-width: 900px; margin: 20px auto; padding: 0 15px;">
+                    <h3
+                        style="font-size: 14px; color: var(--text-main); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                        <i class="ph-fill ph-warning-circle" style="color: var(--warning);"></i>
+                        Veículos Pendentes de Prestação (Últimos 7 dias)
+                    </h3>
+                    <div id="lista-pendencias-accordion" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Os dias e placas pendentes serão injetados aqui via JS -->
+                    </div>
                 </div>
-            </div>
+
+            </div> <!-- AQUI FECHA O CONTENT-CONTAINER -->
         </section>
 
         <section id="view-montar-painel" class="view-section">
@@ -5584,10 +5701,18 @@
                 document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active')); target.classList.add('active');
                 document.querySelectorAll('.view-section').forEach(view => { view.classList.remove('active'); void view.offsetWidth; });
                 const targetId = target.getAttribute('data-target'); document.getElementById(targetId).classList.add('active');
+
                 if (targetId === 'view-monitoramento' && document.getElementById('mon-data-select').value) { document.getElementById('btn-carregar-painel').click(); }
                 else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
                 else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
                 else if (targetId === 'view-dashboard' && document.getElementById('dashboard-data').value) { document.getElementById('btn-carregar-dashboard').click(); }
+
+                // ADICIONE ESTA LINHA AQUI: Dispara a busca das pendências ao entrar na tela de prestação
+                else if (targetId === 'view-prestacao') {
+                    if (typeof window.carregarPendenciasContas === 'function') {
+                        window.carregarPendenciasContas();
+                    }
+                }
             });
         });
 
@@ -5784,202 +5909,211 @@
         });
 
         // ================= PAINEL DE MONITORAMENTO =================
+        window.unsubscribePainelRotas = null; // Variáveis globais de controle do Painel
+        window.unsubscribePainelNotas = null;
         let ultimaDataPainel = "";
+
         document.getElementById('btn-carregar-painel').addEventListener('click', async () => {
             const dataSel = document.getElementById('mon-data-select').value; if (!dataSel) return; showLoader();
             if (ultimaDataPainel !== dataSel) { activeFilters['tabela-monitoramento'] = {}; ultimaDataPainel = dataSel; }
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([
-                    getDoc(doc(db, "painel_diario", dataSel)),
-                    getDoc(doc(db, "notas_fiscais_diario", dataSel)),
+                // Busca os dados do dia anterior estáticos (isso não precisa ser ao vivo)
+                const [snapOntemPainel, snapOntemNotas] = await Promise.all([
                     getDoc(doc(db, "painel_diario", dataOntem)),
                     getDoc(doc(db, "notas_fiscais_diario", dataOntem))
                 ]);
 
-                const tbody = document.querySelector('#tabela-monitoramento tbody');
-                let rotasParaProcessar = snapPainel.exists() ? snapPainel.data().rotas : [];
-                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : [];
+                // Limpa ouvintes anteriores
+                if (window.unsubscribePainelRotas) window.unsubscribePainelRotas();
+                if (window.unsubscribePainelNotas) window.unsubscribePainelNotas();
 
-                let deParaTroca = {};
-                if (snapPainel.exists()) {
-                    snapPainel.data().rotas.forEach(r => {
-                        if (r.placa && r.troca && r.troca.trim() !== "") {
-                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
-                        }
-                    });
-                }
+                let cacheSnapPainel = null;
+                let cacheSnapNotas = null;
 
-                if (snapOntemNotas.exists()) {
-                    snapOntemNotas.data().notas.forEach(no => {
-                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                            notasDoDia.push({ ...no, status: "", placa: placaFinal });
-                        }
-                    });
-                }
+                // Função Master: Roda automaticamente sempre que Notas ou Painel sofrerem alteração
+                const renderPainelLive = () => {
+                    if (!cacheSnapPainel || !cacheSnapNotas) return; // Só renderiza quando os dois bancos responderem
 
-                if (snapOntemPainel.exists()) {
-                    snapOntemPainel.data().rotas.forEach(ro => {
-                        const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
-                        const teveNotaPernoiteOntem = snapOntemNotas.exists() && snapOntemNotas.data().notas.some(n =>
-                            trimUpper(n.status).includes('PERNOITE') && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo
-                        );
+                    const tbody = document.querySelector('#tabela-monitoramento tbody');
+                    let rotasParaProcessar = cacheSnapPainel.exists() ? cacheSnapPainel.data().rotas : [];
+                    let notasDoDia = cacheSnapNotas.exists() ? cacheSnapNotas.data().notas : [];
 
-                        if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
-                            rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
-                        }
-                    });
-                }
-
-                window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
-                let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
-
-                if (rotasParaProcessar.length > 0) {
-                    rotasParaProcessar.forEach(rota => {
-                        const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
-                        const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
-
-                        const transpRotaStr = String(rota.transporte || "").trim();
-                        const transpNumArray = transpRotaStr.match(/\d+/g) || [];
-
-                        const notasPlaca = notasDoDia.filter(n => {
-                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
-
-                            // 1. Valida se a placa bate
-                            const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
-                            if (!matchPlaca) return false;
-
-                            // 2. SEPARAÇÃO CIRÚRGICA POR TIPO DE VIAGEM DA LINHA (Apoio, Seg. Viagem, etc.)
-                            const tipoViagemRota = trimUpper(rota.status || "");
-                            const tipoViagemNota = trimUpper(n.tipo_viagem || n.status_viagem || "");
-
-                            // Se a linha do painel é um status específico (Ex: APOIO, SEG. VIAGEM), 
-                            // a nota obrigatoriamente precisa ter sido carimbada com esse mesmo tipo.
-                            if (tipoViagemRota !== "" && tipoViagemRota !== "SAIDA DIA" && tipoViagemRota !== "PERNOITE") {
-                                if (tipoViagemNota !== "" && tipoViagemNota !== tipoViagemRota) {
-                                    return false; // Descarta notas que pertencem a outra viagem da mesma placa
-                                }
+                    let deParaTroca = {};
+                    if (cacheSnapPainel.exists()) {
+                        cacheSnapPainel.data().rotas.forEach(r => {
+                            if (r.placa && r.troca && r.troca.trim() !== "") {
+                                deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
                             }
-
-                            const viagemNota = String(n.viagem || "").trim();
-                            if (transpNumArray.length > 0 && viagemNota !== "") {
-                                return transpNumArray.some(t => viagemNota.includes(t));
-                            }
-
-                            return true;
                         });
-                        let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
-                        if (notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
+                    }
 
-                        let qtd_nf = notasPlaca.length;
-                        let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
-                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
-                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                        let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
-                        let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
-                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-                        const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
-                        let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
+                    if (snapOntemNotas.exists()) {
+                        snapOntemNotas.data().notas.forEach(no => {
+                            if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                                let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                                let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                                notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                            }
+                        });
+                    }
 
-                        const isParada = trimUpper(rota.status) === 'PARADA';
-                        const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
-                        const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
-                        const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
-                        const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
-                        const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
+                    if (snapOntemPainel.exists()) {
+                        snapOntemPainel.data().rotas.forEach(ro => {
+                            const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
+                            const teveNotaPernoiteOntem = snapOntemNotas.exists() && snapOntemNotas.data().notas.some(n =>
+                                trimUpper(n.status).includes('PERNOITE') && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo
+                            );
+                            if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
+                                rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
+                            }
+                        });
+                    }
 
-                        let stRotaCalc = "";
-                        if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
+                    window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
+                    let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
 
-                        if (stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
-                        const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
-                        if (stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
+                    if (rotasParaProcessar.length > 0) {
+                        rotasParaProcessar.forEach(rota => {
+                            const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
+                            const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
 
-                        let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'DEVOLUÇÃO')">${devolucao}</span>` : "";
-                        let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'REENTREGA')">${reentrega}</span>` : "";
-                        let vParcial = teveParcialBool ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'PARCIAL')">SIM</span>` : "";
-                        let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="window.abrirModalDetalhes('${placaRef}', 'PENDENTE')">${pendente}</span>` : "";
-                        let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
-                        let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="window.abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
-                        let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
+                            const transpRotaStr = String(rota.transporte || "").trim();
+                            const transpNumArray = transpRotaStr.match(/\d+/g) || [];
 
-                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
-                        let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                        let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-                        let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                        // ... código anterior ...
-                        let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌"; }
+                            const notasPlaca = notasDoDia.filter(n => {
+                                if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                                const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
+                                if (!matchPlaca) return false;
+                                const tipoViagemRota = trimUpper(rota.status || "");
+                                const tipoViagemNota = trimUpper(n.tipo_viagem || n.status_viagem || "");
+                                if (tipoViagemRota !== "" && tipoViagemRota !== "SAIDA DIA" && tipoViagemRota !== "PERNOITE") {
+                                    if (tipoViagemNota !== "" && tipoViagemNota !== tipoViagemRota) {
+                                        return false;
+                                    }
+                                }
+                                const viagemNota = String(n.viagem || "").trim();
+                                if (transpNumArray.length > 0 && viagemNota !== "") {
+                                    return transpNumArray.some(t => viagemNota.includes(t));
+                                }
+                                return true;
+                            });
 
-                        // LÓGICA SUPERIOR: Busca a hora da última atualização baseada nas notas da placa
-                        let ultimaHoraRota = "--:--";
-                        const notasComHora = notasPlaca.filter(n => n.statusHora && n.statusHora !== "--:--");
-                        if (notasComHora.length > 0) {
-                            // Ordena as horas e pega a mais recente (Ex: 14:30 > 09:15)
-                            ultimaHoraRota = notasComHora.map(n => n.statusHora).sort().pop();
-                        }
+                            let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
+                            if (notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
 
-                        let linhaHtml = `<tr>
-                            <td style="font-weight:700;">${rota.placa}</td><td style="font-weight:800; color:var(--warning);">${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
-                            <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
-                            <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
-                            
-                            <!-- ST. PAINEL VOLTA AO NORMAL (Sem o Tooltip) -->
-                            <td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
-                            
-                            <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
-                            <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
-                            <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
-                            <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
-                            
-                            <!-- O TOOLTIP ESTÁ AQUI AGORA (ST. ROTA) LENDO A ÚLTIMA HORA DAS NOTAS -->
-                            <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
-                                <div class="status-pill" style="display:inline-flex;">
-                                    ${getStRotaPill(stRotaCalc)}
-                                    <div class="tooltip-box">Atualizado às ${ultimaHoraRota}</div>
-                                </div>
-                            </td>
-                            
-                            <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
-                            <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
-                        </tr>`;
+                            let qtd_nf = notasPlaca.length;
+                            let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                            let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                            let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                            let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
+                            let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
+                            let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+                            const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
+                            let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
 
-                        const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
-                        // ... continuação do código ...
-                        linhasRenderizadas.push({ isPernoite: isPernoiteRoute, html: linhaHtml });
-                    });
+                            const isParada = trimUpper(rota.status) === 'PARADA';
+                            const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
+                            const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
+                            const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
+                            const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
+                            const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
 
-                    linhasRenderizadas.sort((a, b) => (a.isPernoite ? 1 : 0) - (b.isPernoite ? 1 : 0));
-                    tbody.innerHTML = linhasRenderizadas.map(r => r.html).join('');
-                } else { tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; }
+                            let stRotaCalc = "";
+                            if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
 
-                const totalCarros = rotasParaProcessar.length;
-                const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
-                document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
-                document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
-                document.getElementById('progress-truck').style.left = `${porcentagem}%`;
+                            if (stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
+                            const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
+                            if (stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
 
-                let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
-                for (const [status, count] of Object.entries(statusCounts)) { if (count > 0 && status !== "") { htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span></div>`; } }
-                document.getElementById('painel-summary').innerHTML = htmlSummary;
-                applyFilters('tabela-monitoramento');
-            } catch (e) { console.error("Erro no painel:", e); }
-            hideLoader();
+                            let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'DEVOLUÇÃO')">${devolucao}</span>` : "";
+                            let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'REENTREGA')">${reentrega}</span>` : "";
+                            let vParcial = teveParcialBool ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'PARCIAL')">SIM</span>` : "";
+                            let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="window.abrirModalDetalhes('${placaRef}', 'PENDENTE')">${pendente}</span>` : "";
+                            let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
+                            let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="window.abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
+                            let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
+
+                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
+                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                            let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌"; }
+
+                            let ultimaHoraRota = "--:--";
+                            const notasComHora = notasPlaca.filter(n => n.statusHora && n.statusHora !== "--:--");
+                            if (notasComHora.length > 0) {
+                                ultimaHoraRota = notasComHora.map(n => n.statusHora).sort().pop();
+                            }
+
+                            let linhaHtml = `<tr>
+                        <td style="font-weight:700;">${rota.placa}</td><td style="font-weight:800; color:var(--warning);">${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
+                        <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
+                        <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
+                        <td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
+                        <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
+                        <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
+                        <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
+                        <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
+                        <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
+                            <div class="status-pill" style="display:inline-flex;">
+                                ${getStRotaPill(stRotaCalc)}
+                                <div class="tooltip-box">Atualizado às ${ultimaHoraRota}</div>
+                            </div>
+                        </td>
+                        <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
+                        <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
+                    </tr>`;
+
+                            const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
+                            linhasRenderizadas.push({ isPernoite: isPernoiteRoute, html: linhaHtml });
+                        });
+
+                        linhasRenderizadas.sort((a, b) => (a.isPernoite ? 1 : 0) - (b.isPernoite ? 1 : 0));
+                        tbody.innerHTML = linhasRenderizadas.map(r => r.html).join('');
+                    } else { tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; }
+
+                    const totalCarros = rotasParaProcessar.length;
+                    const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
+                    document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
+                    document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
+                    document.getElementById('progress-truck').style.left = `${porcentagem}%`;
+
+                    let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
+                    for (const [status, count] of Object.entries(statusCounts)) { if (count > 0 && status !== "") { htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span></div>`; } }
+                    document.getElementById('painel-summary').innerHTML = htmlSummary;
+                    applyFilters('tabela-monitoramento');
+                    hideLoader();
+                };
+
+                // ABRE OS CANAIS AO VIVO PARA ROTAS E NOTAS
+                window.unsubscribePainelRotas = onSnapshot(doc(db, "painel_diario", dataSel), (docSnap) => {
+                    cacheSnapPainel = docSnap;
+                    renderPainelLive();
+                });
+
+                window.unsubscribePainelNotas = onSnapshot(doc(db, "notas_fiscais_diario", dataSel), (docSnap) => {
+                    cacheSnapNotas = docSnap;
+                    renderPainelLive();
+                });
+
+            } catch (e) { console.error("Erro no painel:", e); hideLoader(); }
         });
 
         // ================= OPERAÇÃO NOTAS =================
+        window.unsubscribeNotasAtivo = null; // Variável global de controle
         const tbodyOperacaoNotas = document.querySelector('#tabela-operacao-notas tbody');
         let ultimaDataNotas = "";
+
         document.getElementById('btn-carregar-notas').addEventListener('click', async () => {
             const dataSel = document.getElementById('notas-data-select').value; if (!dataSel) return; showLoader();
             if (ultimaDataNotas !== dataSel) { activeFilters['tabela-operacao-notas'] = {}; ultimaDataNotas = dataSel; }
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                const [snapNotas, snapOntemNotas, snapPainel] = await Promise.all([
-                    getDoc(doc(db, "notas_fiscais_diario", dataSel)),
+                // Busca estática apenas do Painel e do dia anterior
+                const [snapOntemNotas, snapPainel] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
                     getDoc(doc(db, "painel_diario", dataSel))
                 ]);
@@ -5993,40 +6127,73 @@
                     });
                 }
 
-                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas : []; let notasRollover = [];
-                if (snapOntemNotas.exists()) {
-                    snapOntemNotas.data().notas.forEach(no => {
-                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                            notasRollover.push({ ...no, status: "", placa: placaFinal });
-                        }
-                    });
-                }
+                // Mata a conexão anterior se o usuário mudar a data no calendário
+                if (window.unsubscribeNotasAtivo) window.unsubscribeNotasAtivo();
 
-                let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = "";
-                if (notasParaProcessar.length > 0) {
-                    notasParaProcessar.forEach(nota => {
-                        const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
-                        htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}" data-codcli="${nota.codcli || ''}" data-repres="${nota.repres || ''}" data-sup="${nota.sup || ''}" data-hora-status="${nota.statusHora || ''}">
-                            <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
-                            <td data-live="ordem">${nota.ordem}</td><td data-live="data">${formatarDataBR(nota.data_nf)}</td>
-                            <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
-                            <td data-live="cliente" title="${nota.cliente}"><span class="clickable-cell" onclick="window.abrirMapaLogistico('${encodeURIComponent(nota.endereco || "")}', '${encodeURIComponent(nota.bairro || "")}', '${encodeURIComponent(nota.cidade || "")}')">${nota.cliente}</span></td>
-                            <td data-live="cidade">${nota.cidade}</td>
-                            <td data-live="bairro">${nota.bairro}</td><td data-live="endereco" title="${nota.endereco}">${nota.endereco}</td>
-                            <td data-live="placa" class="live-edit" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${nota.placa}</td><td data-live="motorista" class="live-edit" contenteditable="true" title="${nota.motorista}">${nota.motorista}</td><td data-live="telefone" class="live-edit" contenteditable="true">${nota.telefone}</td>
-                            <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${getStRotaStyle(statusVal)}"><option value="" ${statusVal === "" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
-                            <td data-live="chegada" class="live-edit" contenteditable="true">${nota.chegada || ""}</td><td data-live="saida" class="live-edit" contenteditable="true">${nota.saida || ""}</td>
-                            <td data-live="obs" class="live-edit" contenteditable="true">${nota.obs || ""}</td><td data-live="parcial" class="live-edit" contenteditable="true">${nota.parcial || ""}</td>
-                            <td data-live="app" style="font-weight:700; color:var(--accent);">${nota.app || ""}</td>
-                        </tr>`;
-                    });
-                } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem notas para esta data.</td></tr>`; }
-                tbodyOperacaoNotas.innerHTML = htmlBuffer;
-                applyFilters('tabela-operacao-notas');
-            } catch (e) { console.error("Erro nas notas:", e); }
-            hideLoader();
+                // ABRE O CANAL AO VIVO PARA AS NOTAS DO DIA
+                window.unsubscribeNotasAtivo = onSnapshot(doc(db, "notas_fiscais_diario", dataSel), (docSnap) => {
+
+                    // INTELIGÊNCIA: Salva a posição exata do cursor antes da tabela atualizar
+                    const elementoFocado = document.activeElement;
+                    const idFocado = elementoFocado && elementoFocado.dataset.live ? {
+                        nf: elementoFocado.closest('tr')?.querySelector('[data-live="nf"]')?.textContent,
+                        coluna: elementoFocado.dataset.live
+                    } : null;
+
+                    let notasDoDia = docSnap.exists() ? docSnap.data().notas : []; let notasRollover = [];
+
+                    if (snapOntemNotas.exists()) {
+                        snapOntemNotas.data().notas.forEach(no => {
+                            if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                                let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                                let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                                notasRollover.push({ ...no, status: "", placa: placaFinal });
+                            }
+                        });
+                    }
+
+                    let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = "";
+
+                    if (notasParaProcessar.length > 0) {
+                        notasParaProcessar.forEach(nota => {
+                            const statusVal = trimUpper(nota.status); const statusSelectOptions = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${statusVal === s ? 'selected' : ''}>${s}</option>`).join('');
+                            htmlBuffer += `<tr style="background-color: ${getRowBackgroundStyle(statusVal)}" data-codcli="${nota.codcli || ''}" data-repres="${nota.repres || ''}" data-sup="${nota.sup || ''}" data-hora-status="${nota.statusHora || ''}">
+                        <td data-live="nf" style="font-weight:700;">${cleanNF(nota.nf)}</td><td data-live="viagem">${nota.viagem}</td>
+                        <td data-live="ordem">${nota.ordem}</td><td data-live="data">${formatarDataBR(nota.data_nf)}</td>
+                        <td data-live="peso">${formatNumber(nota.peso)}</td><td data-live="qtde">${nota.qtde}</td>
+                        <td data-live="cliente" title="${nota.cliente}"><span class="clickable-cell" onclick="window.abrirMapaLogistico('${encodeURIComponent(nota.endereco || "")}', '${encodeURIComponent(nota.bairro || "")}', '${encodeURIComponent(nota.cidade || "")}')">${nota.cliente}</span></td>
+                        <td data-live="cidade">${nota.cidade}</td>
+                        <td data-live="bairro">${nota.bairro}</td><td data-live="endereco" title="${nota.endereco}">${nota.endereco}</td>
+                        <td data-live="placa" class="live-edit" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${nota.placa}</td><td data-live="motorista" class="live-edit" contenteditable="true" title="${nota.motorista}">${nota.motorista}</td><td data-live="telefone" class="live-edit" contenteditable="true">${nota.telefone}</td>
+                        <td data-live="status" class="live-edit"><select class="select-status live-status-select" style="${getStRotaStyle(statusVal)}"><option value="" ${statusVal === "" ? 'selected' : ''}>-</option>${statusSelectOptions}</select></td>
+                        <td data-live="chegada" class="live-edit" contenteditable="true">${nota.chegada || ""}</td><td data-live="saida" class="live-edit" contenteditable="true">${nota.saida || ""}</td>
+                        <td data-live="obs" class="live-edit" contenteditable="true">${nota.obs || ""}</td><td data-live="parcial" class="live-edit" contenteditable="true">${nota.parcial || ""}</td>
+                        <td data-live="app" style="font-weight:700; color:var(--accent);">${nota.app || ""}</td>
+                    </tr>`;
+                        });
+                    } else { htmlBuffer = `<tr><td colspan="19" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem notas para esta data.</td></tr>`; }
+
+                    tbodyOperacaoNotas.innerHTML = htmlBuffer;
+                    applyFilters('tabela-operacao-notas');
+
+                    // DEVOLVE O CURSOR: Mantém a digitação do usuário fluida mesmo com o Firebase injetando dados ao vivo
+                    if (idFocado && idFocado.nf) {
+                        const row = Array.from(tbodyOperacaoNotas.querySelectorAll('tr')).find(r => r.querySelector('[data-live="nf"]')?.textContent === idFocado.nf);
+                        if (row) {
+                            const cell = row.querySelector(`[data-live="${idFocado.coluna}"]`);
+                            if (cell) {
+                                cell.focus();
+                                if (cell.contentEditable === "true") {
+                                    const range = document.createRange(); const sel = window.getSelection();
+                                    range.selectNodeContents(cell); range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
+                                }
+                            }
+                        }
+                    }
+                    hideLoader();
+                });
+
+            } catch (e) { console.error("Erro nas notas:", e); hideLoader(); }
         });
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
@@ -7118,18 +7285,79 @@
 
                     // ASSINATURAS
                     {
-                        columns: [
-                            { text: '____________________________________\nRecebido por (Conferência)', alignment: 'center', bold: true, fontSize: 9 },
-                            { text: '____________________________________\nResponsável (Motorista)', alignment: 'center', bold: true, fontSize: 9 }
-                        ]
+                        // Lógica para capturar o nome de quem está logado no Firebase (com fallback de segurança)
+                        columns: (() => {
+                            const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
+                                ? auth.currentUser.displayName
+                                : "Matheus Leite"; // Fallback caso o displayName não esteja setado
+
+                            return [
+                                { text: `____________________________________\n${nomeConferente}\nRecebido por (Conferência)`, alignment: 'center', bold: true, fontSize: 9 },
+                                { text: '____________________________________\nResponsável (Motorista)', alignment: 'center', bold: true, fontSize: 9 }
+                            ];
+                        })()
                     }
 
                 ]
             };
+
             // O regex replace(/\//g, '-') garante que datas com barra não quebrem o diretório do Windows ao salvar
             const nomeArquivoPC = `PC_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
+
+            // 1. GERA E ABRE O PDF
             abrirPreviewPDF(docDefinition, nomeArquivoPC);
+
+            // 2. BAIXA AUTOMÁTICA NAS PENDÊNCIAS
+            // Pega a data que está selecionada na tela (ajuste o ID se o seu input de data for outro)
+            const dataTela = document.querySelector('input[type="date"]').value;
+
+            if (window.marcarPrestacaoComoImpressa && dataTela) {
+                // Manda a data e a placa para o Firebase registrar que já foi impresso
+                window.marcarPrestacaoComoImpressa(dataTela, d.placa);
+            }
         });
+
+        window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada) => {
+            try {
+                if (!dataSel || !placaSelecionada) return;
+
+                // Limpa a placa alvo da mesma forma que o resto do sistema faz
+                const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                const docRef = doc(db, "painel_diario", dataSel);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    let rotas = docSnap.data().rotas || [];
+                    let modificou = false;
+
+                    rotas = rotas.map(r => {
+                        const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+
+                        // Verifica se bate com a placa principal ou com a placa de troca
+                        if (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa) {
+                            r.prestacao_impressa = true; // Seta a flag de impresso
+                            modificou = true;
+                        }
+                        return r;
+                    });
+
+                    if (modificou) {
+                        // Grava de volta no Firebase com merge para atualizar apenas as rotas
+                        await setDoc(docRef, { rotas }, { merge: true });
+                        console.log(`Prestação do veículo ${placaSelecionada} marcada como impressa com sucesso!`);
+
+                        // Recarrega a lista para o carro sumir do accordion na mesma hora
+                        window.carregarPendenciasContas();
+                    } else {
+                        console.warn(`A placa ${placaSelecionada} não foi encontrada na coleção do painel para a data ${dataSel}.`);
+                    }
+                }
+            } catch (e) {
+                console.error("Erro crítico ao dar baixa na prestação:", e);
+            }
+        };
 
         // ================= 2. PROTOCOLO DEVOLUÇÃO / REENTREGAS =================
         document.getElementById('btn-gerar-pc-devolucao').addEventListener('click', () => {
@@ -8634,6 +8862,113 @@
             });
         }
 
+        window.carregarPendenciasContas = async () => {
+            const container = document.getElementById('lista-pendencias-accordion');
+            if (!container) return;
+
+            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando pendências logísticas...</div>`;
+
+            const hoje = new Date();
+            const pendenciasPorData = {};
+            let totalPendencias = 0;
+
+            try {
+                // Varre os últimos 7 dias
+                for (let i = 0; i < 7; i++) {
+                    const dataIteracao = new Date(hoje);
+                    dataIteracao.setDate(hoje.getDate() - i);
+                    const dataIso = dataIteracao.toISOString().split('T')[0];
+
+                    const [snapPainel, snapNotas] = await Promise.all([
+                        getDoc(doc(db, "painel_diario", dataIso)),
+                        getDoc(doc(db, "notas_fiscais_diario", dataIso))
+                    ]);
+
+                    if (!snapPainel.exists() || !snapNotas.exists()) continue;
+
+                    const rotas = snapPainel.data().rotas || [];
+                    const notas = snapNotas.data().notas || [];
+
+                    rotas.forEach(rota => {
+                        // Se já imprimiu a prestação, pula
+                        if (rota.prestacao_impressa === true) return;
+
+                        const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
+
+                        const notasPlaca = notas.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
+                        if (notasPlaca.length === 0) return;
+
+                        let qtd_nf = notasPlaca.length;
+                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+
+                        // Cálculo exato
+                        let finalizou = false;
+                        if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
+                        else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
+
+                        // LOG DE TESTE: Abre o F12 e olha o console para ver o que ele está avaliando
+                        console.log(`Placa: ${rota.placa} | Data: ${dataIso} | Finalizou: ${finalizou} | Realizadas: ${realizada}/${qtd_nf}`);
+
+                        if (finalizou) {
+                            if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
+                            pendenciasPorData[dataIso].push({
+                                placa: rota.placa,
+                                motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                                qtd: qtd_nf,
+                                regiao: rota.regiao || "Sem rota def."
+                            });
+                            totalPendencias++;
+                        }
+                    });
+                }
+
+                if (totalPendencias === 0) {
+                    container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--success); font-weight: 700;">✅ Nenhuma pendência encontrada nos últimos 7 dias.</div>`;
+                    return;
+                }
+
+                let htmlFinal = "";
+                const datasOrdenadas = Object.keys(pendenciasPorData).sort((a, b) => new Date(b) - new Date(a));
+
+                datasOrdenadas.forEach(data => {
+                    const carros = pendenciasPorData[data];
+                    let linhasCarros = carros.map(c => `
+                        <div class="pendencia-row">
+                            <span class="p-placa">${c.placa}</span>
+                            <span class="p-mot">${c.motorista}</span>
+                            <span class="p-qtd">${c.qtd} NFs</span>
+                            <span class="p-rota" title="${c.regiao}">${c.regiao}</span>
+                        </div>
+                    `).join('');
+
+                    htmlFinal += `
+                        <div class="acc-item">
+                            <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
+                                <div class="acc-header-left">
+                                    <i class="ph ph-calendar-blank" style="color: var(--success); font-size: 16px;"></i>
+                                    ${formatarDataBR(data)}
+                                </div>
+                                <div class="acc-header-right">
+                                    <span class="acc-badge">${carros.length}</span>
+                                    <i class="ph-bold ph-caret-down acc-icon"></i>
+                                </div>
+                            </div>
+                            <div class="acc-body">
+                                ${linhasCarros}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = htmlFinal;
+
+            } catch (e) {
+                console.error("Erro ao buscar pendências:", e);
+                container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar pendências.</div>`;
+            }
+        };
     </script>
 </body>
 
