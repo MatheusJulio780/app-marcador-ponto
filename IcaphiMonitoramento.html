@@ -3020,16 +3020,28 @@
                     </div>
                 </div> <!-- AQUI FECHA A CAIXA BRANCA -->
 
-                <!-- BLOCO DE PENDÊNCIAS ENTRA AQUI, COLADO NA CAIXA BRANCA -->
+                <!-- Bloco de Gestão de Prestação de Contas -->
                 <div class="prestacao-pendencias-container"
                     style="max-width: 900px; margin: 20px auto; padding: 0 15px;">
-                    <h3
-                        style="font-size: 14px; color: var(--text-main); margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                        <i class="ph-fill ph-warning-circle" style="color: var(--warning);"></i>
-                        Veículos Pendentes de Prestação (Últimos 7 dias)
-                    </h3>
+
+                    <!-- ABAS DE NAVEGAÇÃO (PENDENTES / CONCLUÍDOS) -->
+                    <div
+                        style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
+                        <button class="btn btn-sm" id="tab-btn-pendentes"
+                            onclick="window.mudarAbaPrestacao('pendentes')"
+                            style="background: var(--accent); color: white; font-weight: 700; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer;">
+                            ⚠️ Pendentes
+                        </button>
+                        <button class="btn btn-sm" id="tab-btn-concluidos"
+                            onclick="window.mudarAbaPrestacao('concluidos')"
+                            style="background: var(--bg-panel); color: var(--text-muted); font-weight: 700; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 6px; cursor: pointer;">
+                            ✅ Prestados / Concluídos
+                        </button>
+                    </div>
+
+                    <!-- ONDE A LISTA SERÁ INJETADA -->
                     <div id="lista-pendencias-accordion" style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Os dias e placas pendentes serão injetados aqui via JS -->
+                        <!-- Os dias e placas serão injetados aqui via JS -->
                     </div>
                 </div>
 
@@ -8862,18 +8874,45 @@
             });
         }
 
+        // Variável global para controlar qual aba está aberta ('pendentes' ou 'concluidos')
+        window.abaPrestacaoAtual = 'pendentes';
+        window._dadosPrestacaoCache = null; // Guarda os dados para alternar rápido sem recarregar o banco
+
+        window.mudarAbaPrestacao = (tipo) => {
+            window.abaPrestacaoAtual = tipo;
+            const btnP = document.getElementById('tab-btn-pendentes');
+            const btnC = document.getElementById('tab-btn-concluidos');
+
+            if (tipo === 'pendentes') {
+                btnP.style.background = "var(--accent)";
+                btnP.style.color = "white";
+                btnC.style.background = "var(--bg-panel)";
+                btnC.style.color = "var(--text-muted)";
+            } else {
+                btnC.style.background = "var(--success)";
+                btnC.style.color = "white";
+                btnP.style.background = "var(--bg-panel)";
+                btnP.style.color = "var(--text-muted)";
+            }
+
+            if (window._dadosPrestacaoCache) {
+                window.renderizarAccordionPrestacao(window._dadosPrestacaoCache);
+            } else {
+                window.carregarPendenciasContas();
+            }
+        };
+
         window.carregarPendenciasContas = async () => {
             const container = document.getElementById('lista-pendencias-accordion');
             if (!container) return;
 
-            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando pendências logísticas...</div>`;
+            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando dados de prestação...</div>`;
 
             const hoje = new Date();
             const pendenciasPorData = {};
-            let totalPendencias = 0;
+            const concluidosPorData = {};
 
             try {
-                // Varre os últimos 7 dias
                 for (let i = 0; i < 7; i++) {
                     const dataIteracao = new Date(hoje);
                     dataIteracao.setDate(hoje.getDate() - i);
@@ -8890,11 +8929,7 @@
                     const notas = snapNotas.data().notas || [];
 
                     rotas.forEach(rota => {
-                        // Se já imprimiu a prestação, pula
-                        if (rota.prestacao_impressa === true) return;
-
                         const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
-
                         const notasPlaca = notas.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
                         if (notasPlaca.length === 0) return;
 
@@ -8903,70 +8938,125 @@
                         let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
                         let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
 
-                        // Cálculo exato
                         let finalizou = false;
                         if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
                         else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
 
-                        // LOG DE TESTE: Abre o F12 e olha o console para ver o que ele está avaliando
-                        console.log(`Placa: ${rota.placa} | Data: ${dataIso} | Finalizou: ${finalizou} | Realizadas: ${realizada}/${qtd_nf}`);
-
                         if (finalizou) {
-                            if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
-                            pendenciasPorData[dataIso].push({
+                            const infoCarro = {
+                                data: dataIso,
                                 placa: rota.placa,
                                 motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
                                 qtd: qtd_nf,
                                 regiao: rota.regiao || "Sem rota def."
-                            });
-                            totalPendencias++;
+                            };
+
+                            if (rota.prestacao_impressa === true) {
+                                if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
+                                concluidosPorData[dataIso].push(infoCarro);
+                            } else {
+                                if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
+                                pendenciasPorData[dataIso].push(infoCarro);
+                            }
                         }
                     });
                 }
 
-                if (totalPendencias === 0) {
-                    container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--success); font-weight: 700;">✅ Nenhuma pendência encontrada nos últimos 7 dias.</div>`;
-                    return;
-                }
-
-                let htmlFinal = "";
-                const datasOrdenadas = Object.keys(pendenciasPorData).sort((a, b) => new Date(b) - new Date(a));
-
-                datasOrdenadas.forEach(data => {
-                    const carros = pendenciasPorData[data];
-                    let linhasCarros = carros.map(c => `
-                        <div class="pendencia-row">
-                            <span class="p-placa">${c.placa}</span>
-                            <span class="p-mot">${c.motorista}</span>
-                            <span class="p-qtd">${c.qtd} NFs</span>
-                            <span class="p-rota" title="${c.regiao}">${c.regiao}</span>
-                        </div>
-                    `).join('');
-
-                    htmlFinal += `
-                        <div class="acc-item">
-                            <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
-                                <div class="acc-header-left">
-                                    <i class="ph ph-calendar-blank" style="color: var(--success); font-size: 16px;"></i>
-                                    ${formatarDataBR(data)}
-                                </div>
-                                <div class="acc-header-right">
-                                    <span class="acc-badge">${carros.length}</span>
-                                    <i class="ph-bold ph-caret-down acc-icon"></i>
-                                </div>
-                            </div>
-                            <div class="acc-body">
-                                ${linhasCarros}
-                            </div>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML = htmlFinal;
+                window._dadosPrestacaoCache = { pendentes: pendenciasPorData, concluidos: concluidosPorData };
+                window.renderizarAccordionPrestacao(window._dadosPrestacaoCache);
 
             } catch (e) {
-                console.error("Erro ao buscar pendências:", e);
-                container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar pendências.</div>`;
+                console.error("Erro ao buscar dados de prestação:", e);
+                container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar registros.</div>`;
+            }
+        };
+
+        window.renderizarAccordionPrestacao = (dados) => {
+            const container = document.getElementById('lista-pendencias-accordion');
+            const dataset = window.abaPrestacaoAtual === 'pendentes' ? dados.pendentes : dados.concluidos;
+
+            let htmlFinal = "";
+            const datasOrdenadas = Object.keys(dataset).sort((a, b) => new Date(b) - new Date(a));
+
+            if (datasOrdenadas.length === 0) {
+                const msg = window.abaPrestacaoAtual === 'pendentes'
+                    ? "✅ Nenhuma pendência encontrada nos últimos 7 dias."
+                    : "Nenhum veículo com prestação concluída nos últimos 7 dias.";
+                container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-weight: 600;">${msg}</div>`;
+                return;
+            }
+
+            datasOrdenadas.forEach(data => {
+                const carros = dataset[data];
+                let linhasCarros = carros.map(c => {
+                    // Se estiver na aba de concluídos, injeta o botão de desmarcar (estorno)
+                    const acaoBotao = window.abaPrestacaoAtual === 'concluidos'
+                        ? `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`
+                        : '';
+
+                    return `
+                <div class="pendencia-row" style="grid-template-columns: 1fr 2fr 1fr 1.5fr ${window.abaPrestacaoAtual === 'concluidos' ? '1fr' : ''};">
+                    <span class="p-placa">${c.placa}</span>
+                    <span class="p-mot">${c.motorista}</span>
+                    <span class="p-qtd">${c.qtd} NFs</span>
+                    <span class="p-rota" title="${c.regiao}">${c.regiao}</span>
+                    ${acaoBotao}
+                </div>
+            `;
+                }).join('');
+
+                htmlFinal += `
+            <div class="acc-item">
+                <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
+                    <div class="acc-header-left">
+                        <i class="ph ph-calendar-blank" style="color: ${window.abaPrestacaoAtual === 'pendentes' ? 'var(--warning)' : 'var(--success)'}; font-size: 16px;"></i>
+                        ${formatarDataBR(data)}
+                    </div>
+                    <div class="acc-header-right">
+                        <span class="acc-badge">${carros.length}</span>
+                        <i class="ph-bold ph-caret-down acc-icon"></i>
+                    </div>
+                </div>
+                <div class="acc-body">
+                    ${linhasCarros}
+                </div>
+            </div>
+        `;
+            });
+
+            container.innerHTML = htmlFinal;
+        };
+
+        // Função para estornar/desmarcar a prestação e mandar de volta para os pendentes
+        window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada) => {
+            try {
+                const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const docRef = doc(db, "painel_diario", dataSel);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    let rotas = docSnap.data().rotas || [];
+                    let modificou = false;
+
+                    rotas = rotas.map(r => {
+                        const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+
+                        if (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa) {
+                            delete r.prestacao_impressa; // Remove a flag de impresso
+                            modificou = true;
+                        }
+                        return r;
+                    });
+
+                    if (modificou) {
+                        await setDoc(docRef, { rotas }, { merge: true });
+                        window._dadosPrestacaoCache = null; // Limpa o cache para forçar nova leitura
+                        window.carregarPendenciasContas();
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao estornar prestação:", e);
             }
         };
     </script>
