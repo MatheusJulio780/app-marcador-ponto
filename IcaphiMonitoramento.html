@@ -4467,12 +4467,14 @@
             signInWithPopup(auth, provider).catch(err => alert("Erro Microsoft: " + err.message));
         });
 
-        // Salvar Onboarding
         document.getElementById('btn-salvar-onboarding').addEventListener('click', async () => {
-            const nome = document.getElementById('onboarding-nome').value.trim();
-            const sobrenome = document.getElementById('onboarding-sobrenome').value.trim();
-            const setor = document.getElementById('onboarding-setor').value;
-            const fotoSrc = document.getElementById('preview-onboarding-foto').src;
+            const nome = document.getElementById('onboarding-nome')?.value.trim() || "";
+            const sobrenome = document.getElementById('onboarding-sobrenome')?.value.trim() || "";
+            const setor = document.getElementById('onboarding-setor')?.value || "";
+
+            // Busca a foto de forma segura (se não achar o elemento, usa uma string vazia ou avatar padrão)
+            const imgFoto = document.getElementById('preview-onboarding-foto');
+            const fotoSrc = imgFoto ? imgFoto.src : "";
 
             if (!nome || !sobrenome || !setor) {
                 alert("Preencha todos os campos obrigatórios.");
@@ -4503,14 +4505,19 @@
                 await setDoc(doc(db, "users", auth.currentUser.uid), payload);
                 console.log("Usuário salvo com sucesso!");
 
-                // Força a remoção do overlay de onboarding manualmente se o onAuthStateChanged demorar
-                document.getElementById('onboarding-overlay').classList.remove('active');
+                // Remove o overlay de onboarding com segurança
+                const onboardingEl = document.getElementById('onboarding-overlay');
+                if (onboardingEl) {
+                    onboardingEl.classList.remove('active');
+                    onboardingEl.style.display = 'none';
+                }
+
                 iniciarSessaoColaborativa();
 
             } catch (e) {
                 console.error("Erro detalhado ao salvar cadastro:", e);
                 alert("Erro ao salvar cadastro: " + e.message);
-            } finally {
+            } tests: {
                 if (typeof hideLoader === 'function') hideLoader();
             }
         });
@@ -4518,25 +4525,39 @@
         // ================= INICIALIZAÇÃO COLABORATIVA (PRESENÇA E CHAT) =================
         function iniciarSessaoColaborativa() {
             const data = window.currentUserData;
+            if (!data) return;
 
-            // 1. Atualiza Header UI em todas as abas simultaneamente
+            // 1. Atualiza Header UI em todas as abas simultaneamente (com proteção contra null)
             const authContainer = document.getElementById('header-auth-container');
             if (authContainer) authContainer.style.display = 'flex';
 
-            document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => img.src = data.foto);
-            document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => el.innerText = data.nome);
+            if (data.foto) {
+                document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => {
+                    if (img) img.src = data.foto;
+                });
+            }
+            
+            if (data.nome) {
+                document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => {
+                    if (el) el.innerText = data.nome;
+                });
+            }
 
-            // 2. Preenche Modal de Edição de Perfil
-            document.getElementById('edit-nome').value = data.nome;
-            document.getElementById('edit-sobrenome').value = data.sobrenome;
-            document.getElementById('preview-edit-foto').src = data.foto;
+            // 2. Preenche Modal de Edição de Perfil (Com verificação se os inputs existem)
+            const editNome = document.getElementById('edit-nome');
+            const editSobrenome = document.getElementById('edit-sobrenome');
+            const editFoto = document.getElementById('preview-edit-foto');
+
+            if (editNome) editNome.value = data.nome || "";
+            if (editSobrenome) editSobrenome.value = data.sobrenome || "";
+            if (editFoto && data.foto) editFoto.src = data.foto;
 
             // 3. Marca como Online e Atualiza Página Atual
-            atualizarPresenca(true, "Monitoramento"); // Assume página inicial padrão
+            atualizarPresenca(true, "Monitoramento");
 
             // 4. Inicia Listeners de Presença e Chat Global
-            listenUsuariosOnline();
-            listenChatsGlobais();
+            if (typeof listenUsuariosOnline === 'function') listenUsuariosOnline();
+            if (typeof listenChatsGlobais === 'function') listenChatsGlobais();
         }
 
         // Atualização Atômica de Presença
