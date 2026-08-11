@@ -1592,7 +1592,7 @@
             height: 120vh;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(8px);
-            display: none;
+            display: none; /* Garante que nasce escondido */
             justify-content: center;
             align-items: center;
             z-index: 99999;
@@ -1656,6 +1656,11 @@
 
         .btn-auth.microsoft:hover {
             background: #005a9e;
+        }
+
+        #auth-overlay {
+            display: none;
+            /* Garante que ele nunca apareca sem ordem */
         }
 
         /* ================= HEADER UI & AVATARES EMPILHADOS ================= */
@@ -2523,6 +2528,30 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
+        /* ================= EXCEL DRAG-TO-FILL ================= */
+        #global-drag-handle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent, #2563eb);
+            border: 1px solid #fff;
+            cursor: crosshair;
+            z-index: 99999;
+            display: none;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .drag-highlight {
+            outline: 2px dashed var(--accent, #2563eb) !important;
+            outline-offset: -2px;
+            background-color: rgba(37, 99, 235, 0.1) !important;
+        }
+
+        /* Filtro Rápido dos Blocos do Painel */
+        .hide-by-block {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -3046,6 +3075,31 @@
                 </div>
 
             </div> <!-- AQUI FECHA O CONTENT-CONTAINER -->
+
+            <!-- Modal Customizado de Confirmação de Baixa -->
+            <div class="modal-overlay" id="modal-confirmar-baixa-pc">
+                <div class="modal-content" style="width: 450px; text-align: center; padding: 30px;">
+                    <div style="font-size: 45px; color: var(--success); margin-bottom: 10px;">
+                        <i class="ph-fill ph-check-circle"></i>
+                    </div>
+                    <h3 style="margin-bottom: 10px; color: var(--accent);">PDF Gerado com Sucesso!</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 14px;">
+                        Deseja marcar a prestação de contas do veículo <strong id="lbl-placa-baixa"
+                            style="color: var(--text-main); font-size: 16px;"></strong> como CONCLUÍDA no sistema?
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn"
+                            style="background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--border-color); flex: 1;"
+                            onclick="document.getElementById('modal-confirmar-baixa-pc').classList.remove('active')">
+                            Não, manter pendente
+                        </button>
+                        <button class="btn btn-success" id="btn-confirmar-baixa-sim" style="flex: 1;">
+                            Sim, Concluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <section id="view-montar-painel" class="view-section">
@@ -4000,7 +4054,7 @@
     </div>
 
     <!-- OVERLAY DE LOGIN / BLOQUEIO -->
-    <div id="auth-overlay" class="auth-overlay" style="display: flex; z-index: 99999999;">
+    <div id="auth-overlay" class="auth-overlay" style="display: none; z-index: 99999999;">
         <div class="auth-box">
             <div class="auth-logo">ICAPHI <span>LOG</span></div>
             <h2>Acesso ao Sistema</h2>
@@ -4358,6 +4412,9 @@
             const onboardingOverlay = document.getElementById('onboarding-overlay');
 
             if (user) {
+                // Garante que o login fica oculto imediatamente para quem já tem sessão
+                if (authOverlay) authOverlay.style.display = 'none';
+
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userSnap = await getDoc(userDocRef);
@@ -6059,24 +6116,25 @@
                                 ultimaHoraRota = notasComHora.map(n => n.statusHora).sort().pop();
                             }
 
-                            let linhaHtml = `<tr>
-                        <td style="font-weight:700;">${rota.placa}</td><td style="font-weight:800; color:var(--warning);">${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
-                        <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
-                        <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
-                        <td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
-                        <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
-                        <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
-                        <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
-                        <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
-                        <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
-                            <div class="status-pill" style="display:inline-flex;">
-                                ${getStRotaPill(stRotaCalc)}
-                                <div class="tooltip-box">Atualizado às ${ultimaHoraRota}</div>
-                            </div>
-                        </td>
-                        <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
-                        <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
-                    </tr>`;
+                            // Substitua o <tr> simples por este com a inteligência de status:
+                            let linhaHtml = `<tr data-st-rota="${stRotaCalc}">
+                                <td style="font-weight:700;">${rota.placa}</td><td style="font-weight:800; color:var(--warning);">${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
+                                <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
+                                <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
+                                <td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
+                                <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
+                                <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
+                                <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
+                                <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
+                                <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
+                                    <div class="status-pill" style="display:inline-flex;">
+                                        ${getStRotaPill(stRotaCalc)}
+                                        <div class="tooltip-box">Atualizado às ${ultimaHoraRota}</div>
+                                    </div>
+                                </td>
+                                <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
+                                <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
+                            </tr>`;
 
                             const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
                             linhasRenderizadas.push({ isPernoite: isPernoiteRoute, html: linhaHtml });
@@ -6093,11 +6151,30 @@
                     document.getElementById('progress-truck').style.left = `${porcentagem}%`;
 
                     let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
-                    for (const [status, count] of Object.entries(statusCounts)) { if (count > 0 && status !== "") { htmlSummary += `<div style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm);">${status} <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span></div>`; } }
+
+                    // Loop atualizado com botões interativos
+                    for (const [status, count] of Object.entries(statusCounts)) {
+                        if (count > 0 && status !== "") {
+                            htmlSummary += `<div class="summary-block-clickable" data-status="${status}" onclick="window.filtrarPainelPorStatus('${status}')" style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s ease;">
+                                ${status} 
+                                <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span>
+                            </div>`;
+                        }
+                    }
                     document.getElementById('painel-summary').innerHTML = htmlSummary;
                     applyFilters('tabela-monitoramento');
+
+                    // MÁGICA: Reaplica o filtro visual automaticamente caso o Firebase atualize a tabela ao vivo
+                    if (window.statusFiltroPainel) {
+                        const filtroSalvo = window.statusFiltroPainel;
+                        window.statusFiltroPainel = null;
+                        window.filtrarPainelPorStatus(filtroSalvo);
+                    }
+
+                    // 👉 COLOQUE ESTA LINHA AQUI! É ela que desliga a tela azul quando termina de desenhar
                     hideLoader();
-                };
+
+                }; // <--- FIM DA FUNÇÃO renderPainelLive
 
                 // ABRE OS CANAIS AO VIVO PARA ROTAS E NOTAS
                 window.unsubscribePainelRotas = onSnapshot(doc(db, "painel_diario", dataSel), (docSnap) => {
@@ -6112,6 +6189,57 @@
 
             } catch (e) { console.error("Erro no painel:", e); hideLoader(); }
         });
+
+        window.statusFiltroPainel = null; // Variável global de controle
+
+        window.filtrarPainelPorStatus = (statusClicado) => {
+            const tbody = document.querySelector('#tabela-monitoramento tbody');
+            if (!tbody) return;
+
+            const linhas = tbody.querySelectorAll('tr');
+            const blocos = document.querySelectorAll('.summary-block-clickable');
+
+            // Se clicar no bloco que já está selecionado, ele "desmarca" e mostra todos os carros de novo
+            if (window.statusFiltroPainel === statusClicado) {
+                window.statusFiltroPainel = null;
+
+                linhas.forEach(tr => tr.classList.remove('hide-by-block'));
+
+                blocos.forEach(b => {
+                    b.style.opacity = '1';
+                    b.style.transform = 'scale(1)';
+                    b.style.boxShadow = 'var(--shadow-sm)';
+                });
+                return;
+            }
+
+            // Aplica o novo filtro
+            window.statusFiltroPainel = statusClicado;
+
+            // Efeito visual moderno (Sem borda preta: usa elevação por sombra e leve escala)
+            blocos.forEach(b => {
+                if (b.dataset.status === statusClicado) {
+                    b.style.opacity = '1';
+                    b.style.transform = 'scale(1.03)';
+                    b.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)'; // Sombra elegante e suave
+                } else {
+                    b.style.opacity = '0.35';
+                    b.style.transform = 'scale(1)';
+                    b.style.boxShadow = 'none';
+                }
+            });
+
+            // Filtra as linhas na tabela
+            linhas.forEach(tr => {
+                if (tr.querySelector('td[colspan]')) return; // Ignora a linha de "Sem dados" se existir
+
+                if (tr.dataset.stRota === statusClicado) {
+                    tr.classList.remove('hide-by-block');
+                } else {
+                    tr.classList.add('hide-by-block');
+                }
+            });
+        };
 
         // ================= OPERAÇÃO NOTAS =================
         window.unsubscribeNotasAtivo = null; // Variável global de controle
@@ -7316,17 +7444,22 @@
             // O regex replace(/\//g, '-') garante que datas com barra não quebrem o diretório do Windows ao salvar
             const nomeArquivoPC = `PC_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
 
-            // 1. GERA E ABRE O PDF
+            // 1. GERA E ABRE O PDF (Ele vai ficar na frente)
             abrirPreviewPDF(docDefinition, nomeArquivoPC);
 
-            // 2. BAIXA AUTOMÁTICA NAS PENDÊNCIAS
-            // Pega a data que está selecionada na tela (ajuste o ID se o seu input de data for outro)
-            const dataTela = document.querySelector('input[type="date"]').value;
+            // 2. PREPARA E ABRE O POP-UP SILENCIOSAMENTE POR TRÁS
+            document.getElementById('lbl-placa-baixa').innerText = d.placa;
+            const modalConfirm = document.getElementById('modal-confirmar-baixa-pc');
+            modalConfirm.classList.add('active');
 
-            if (window.marcarPrestacaoComoImpressa && dataTela) {
-                // Manda a data e a placa para o Firebase registrar que já foi impresso
-                window.marcarPrestacaoComoImpressa(dataTela, d.placa);
-            }
+            // 3. CONFIGURA O BOTÃO "SIM" PARA RODAR A BAIXA QUANDO VOCÊ QUISER
+            document.getElementById('btn-confirmar-baixa-sim').onclick = () => {
+                const dataTela = document.getElementById('pc-data').value;
+                if (window.marcarPrestacaoComoImpressa && dataTela) {
+                    window.marcarPrestacaoComoImpressa(dataTela, d.placa);
+                }
+                modalConfirm.classList.remove('active');
+            };
         });
 
         window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada) => {
@@ -8943,12 +9076,25 @@
                         else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
 
                         if (finalizou) {
+                            // CÁLCULO DOS NOVOS INDICADORES LOGÍSTICOS
+                            const transporteStr = rota.transporte || "-";
+                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
+
+                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+
+                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                            let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
+
                             const infoCarro = {
                                 data: dataIso,
                                 placa: rota.placa,
                                 motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
                                 qtd: qtd_nf,
-                                regiao: rota.regiao || "Sem rota def."
+                                regiao: rota.regiao || "Sem rota def.",
+                                transporte: transporteStr,
+                                percentApp: percentApp,
+                                cemPorcentoAss: cemPorcentoAss
                             };
 
                             if (rota.prestacao_impressa === true) {
@@ -8989,44 +9135,54 @@
             datasOrdenadas.forEach(data => {
                 const carros = dataset[data];
                 let linhasCarros = carros.map(c => {
-                    // Se estiver na aba de concluídos, injeta o botão de desmarcar (estorno)
                     const acaoBotao = window.abaPrestacaoAtual === 'concluidos'
                         ? `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`
                         : '';
 
+                    // BLINDAGEM DO GRID: Força as 7 ou 8 colunas matando qualquer CSS externo
+                    const gridConfig = window.abaPrestacaoAtual === 'concluidos'
+                        ? 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr 1fr'
+                        : 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr';
+
                     return `
-                <div class="pendencia-row" style="grid-template-columns: 1fr 2fr 1fr 1.5fr ${window.abaPrestacaoAtual === 'concluidos' ? '1fr' : ''};">
-                    <span class="p-placa">${c.placa}</span>
-                    <span class="p-mot">${c.motorista}</span>
-                    <span class="p-qtd">${c.qtd} NFs</span>
-                    <span class="p-rota" title="${c.regiao}">${c.regiao}</span>
-                    ${acaoBotao}
-                </div>
-            `;
+                        <div class="pendencia-row" style="display: grid !important; grid-template-columns: ${gridConfig} !important; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border-color);">
+                            <span style="font-weight: 800; color: var(--accent);">${c.placa}</span>
+                            <span style="font-weight: 600; color: var(--text-main); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.motorista}</span>
+                            <span style="font-weight: 700; color: var(--success);">${c.qtd} NFs</span>
+                            <span style="color:var(--text-muted); font-weight:700; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.transporte}">
+                                <i class="ph-fill ph-truck" style="margin-right:3px;"></i>${c.transporte}
+                            </span>
+                            <span style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.regiao}">${c.regiao}</span>
+                            <span style="font-weight:700; color:var(--text-main); font-size:11.5px; text-align: center; background: var(--drag-bg); padding: 2px 6px; border-radius: 4px;">
+                                ${c.percentApp}% APP
+                            </span>
+                            <span style="text-align:center; font-size: 14px;" title="100% Assinatura">${c.cemPorcentoAss}</span>
+                            ${acaoBotao}
+                        </div>
+                    `;
                 }).join('');
 
                 htmlFinal += `
-            <div class="acc-item">
-                <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
-                    <div class="acc-header-left">
-                        <i class="ph ph-calendar-blank" style="color: ${window.abaPrestacaoAtual === 'pendentes' ? 'var(--warning)' : 'var(--success)'}; font-size: 16px;"></i>
-                        ${formatarDataBR(data)}
+                    <div class="acc-item">
+                        <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
+                            <div class="acc-header-left">
+                                <i class="ph ph-calendar-blank" style="color: ${window.abaPrestacaoAtual === 'pendentes' ? 'var(--warning)' : 'var(--success)'}; font-size: 16px;"></i>
+                                ${formatarDataBR(data)}
+                            </div>
+                            <div class="acc-header-right">
+                                <span class="acc-badge">${carros.length}</span>
+                                <i class="ph-bold ph-caret-down acc-icon"></i>
+                            </div>
+                        </div>
+                        <div class="acc-body">
+                            ${linhasCarros}
+                        </div>
                     </div>
-                    <div class="acc-header-right">
-                        <span class="acc-badge">${carros.length}</span>
-                        <i class="ph-bold ph-caret-down acc-icon"></i>
-                    </div>
-                </div>
-                <div class="acc-body">
-                    ${linhasCarros}
-                </div>
-            </div>
-        `;
+                `;
             });
 
             container.innerHTML = htmlFinal;
         };
-
         // Função para estornar/desmarcar a prestação e mandar de volta para os pendentes
         window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada) => {
             try {
@@ -9059,6 +9215,128 @@
                 console.error("Erro ao estornar prestação:", e);
             }
         };
+
+        // ================= MOTOR DE ARRASTE (EXCEL-LIKE) =================
+        (function iniciarMotorArraste() {
+            // 1. Cria a bolinha fantasma no DOM
+            const dragHandle = document.createElement('div');
+            dragHandle.id = 'global-drag-handle';
+            document.body.appendChild(dragHandle);
+
+            let dragState = { active: false, col: null, startIdx: -1, val: null };
+            const colunasPermitidas = ['placa', 'motorista', 'telefone', 'status'];
+            const tabelaOperacao = document.querySelector('#tabela-operacao-notas');
+
+            if (!tabelaOperacao) return;
+
+            // 2. Inteligência de Posicionamento (Hover)
+            tabelaOperacao.addEventListener('mousemove', (e) => {
+                if (dragState.active) return; // Se estiver arrastando, congela a bolinha
+
+                const td = e.target.closest('td');
+                if (td && colunasPermitidas.includes(td.dataset.live)) {
+                    const rect = td.getBoundingClientRect();
+                    const scale = 0.85; // O fator de escala do seu Body
+
+                    // Cálculos compensando o zoom e a rolagem da página
+                    const topPos = (rect.bottom / scale) + (window.scrollY / scale) - 5;
+                    const leftPos = (rect.right / scale) + (window.scrollX / scale) - 5;
+
+                    dragHandle.style.top = `${topPos}px`;
+                    dragHandle.style.left = `${leftPos}px`;
+                    dragHandle.style.display = 'block';
+
+                    // Armazena os dados da célula atual na bolinha
+                    dragHandle.dataset.targetCol = td.dataset.live;
+                    dragHandle.dataset.targetRowIdx = Array.from(td.closest('tbody').children).indexOf(td.closest('tr'));
+
+                    if (td.dataset.live === 'status') {
+                        const sel = td.querySelector('select');
+                        dragHandle.dataset.val = sel ? sel.value : "";
+                    } else {
+                        dragHandle.dataset.val = td.textContent.trim();
+                    }
+                } else if (e.target !== dragHandle) {
+                    dragHandle.style.display = 'none';
+                }
+            });
+
+            tabelaOperacao.addEventListener('mouseleave', (e) => {
+                if (!dragState.active && e.relatedTarget !== dragHandle) {
+                    dragHandle.style.display = 'none';
+                }
+            });
+
+            // 3. Início do Arraste (Mousedown)
+            dragHandle.addEventListener('mousedown', (e) => {
+                dragState.active = true;
+                dragState.col = dragHandle.dataset.targetCol;
+                dragState.startIdx = parseInt(dragHandle.dataset.targetRowIdx);
+                dragState.val = dragHandle.dataset.val;
+                document.body.style.userSelect = 'none'; // Bloqueia marcação de texto azul
+            });
+
+            // 4. Marcação das Células Alvo (Mouseover)
+            tabelaOperacao.addEventListener('mouseover', (e) => {
+                if (!dragState.active) return;
+                const td = e.target.closest('td');
+                if (!td || td.dataset.live !== dragState.col) return;
+
+                const tbody = td.closest('tbody');
+                const currentIdx = Array.from(tbody.children).indexOf(td.closest('tr'));
+
+                // Permite arrastar tanto para baixo quanto para cima
+                const minIdx = Math.min(dragState.startIdx, currentIdx);
+                const maxIdx = Math.max(dragState.startIdx, currentIdx);
+
+                // Limpa rastro anterior e desenha o novo quadrado
+                tbody.querySelectorAll('.drag-highlight').forEach(el => el.classList.remove('drag-highlight'));
+                const rows = Array.from(tbody.children);
+                for (let i = minIdx; i <= maxIdx; i++) {
+                    const targetTd = rows[i].querySelector(`td[data-live="${dragState.col}"]`);
+                    if (targetTd) targetTd.classList.add('drag-highlight');
+                }
+            });
+
+            // 5. Finalização e Execução do Preenchimento (Mouseup)
+            window.addEventListener('mouseup', () => {
+                if (dragState.active) {
+                    const highlights = document.querySelectorAll('.drag-highlight');
+                    let mudouAlgo = false;
+                    const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    highlights.forEach(td => {
+                        const tr = td.closest('tr');
+                        if (dragState.col === 'status') {
+                            const select = td.querySelector('select');
+                            if (select && select.value !== dragState.val) {
+                                select.value = dragState.val;
+                                select.style.cssText = getStRotaStyle(dragState.val);
+                                tr.style.backgroundColor = getRowBackgroundStyle(dragState.val);
+                                tr.dataset.horaStatus = horaAtual; // Carimba a hora para o Tooltip do Painel
+                                mudouAlgo = true;
+                            }
+                        } else {
+                            if (td.textContent.trim() !== dragState.val) {
+                                td.textContent = dragState.val;
+                                mudouAlgo = true;
+                            }
+                        }
+                        td.classList.remove('drag-highlight'); // Limpa a marcação
+                    });
+
+                    // Se alterou pelo menos uma linha, salva o lote todo no Firebase silenciosamente
+                    if (mudouAlgo && typeof autoSaveNotasSilencioso === 'function') {
+                        autoSaveNotasSilencioso();
+                    }
+
+                    dragState.active = false;
+                    dragHandle.style.display = 'none';
+                    document.body.style.userSelect = ''; // Devolve o cursor normal
+                }
+            });
+        })();
+
     </script>
 </body>
 
