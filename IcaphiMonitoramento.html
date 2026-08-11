@@ -1592,7 +1592,8 @@
             height: 120vh;
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(8px);
-            display: none; /* Garante que nasce escondido */
+            display: none;
+            /* Garante que nasce escondido */
             justify-content: center;
             align-items: center;
             z-index: 99999;
@@ -6155,7 +6156,8 @@
                     // Loop atualizado com botões interativos
                     for (const [status, count] of Object.entries(statusCounts)) {
                         if (count > 0 && status !== "") {
-                            htmlSummary += `<div class="summary-block-clickable" data-status="${status}" onclick="window.filtrarPainelPorStatus('${status}')" style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s ease;">
+                            // Localize o loop dos blocos e mude o onclick para passar o (event)
+                            htmlSummary += `<div class="summary-block-clickable" data-status="${status}" onclick="window.filtrarPainelPorStatus('${status}', event)" style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s ease;">
                                 ${status} 
                                 <span style="background:var(--bg-panel); color: inherit; padding:2px 8px; border-radius:12px; box-shadow: var(--shadow-sm);">${count}</span>
                             </div>`;
@@ -6190,53 +6192,68 @@
             } catch (e) { console.error("Erro no painel:", e); hideLoader(); }
         });
 
-        window.statusFiltroPainel = null; // Variável global de controle
+        // Armazena uma lista de status que estão ativos ao mesmo tempo
+        window.statusFiltrosMultiplos = [];
 
-        window.filtrarPainelPorStatus = (statusClicado) => {
+        window.filtrarPainelPorStatus = (statusClicado, event) => {
             const tbody = document.querySelector('#tabela-monitoramento tbody');
             if (!tbody) return;
 
             const linhas = tbody.querySelectorAll('tr');
             const blocos = document.querySelectorAll('.summary-block-clickable');
+            const isCtrlPressed = event && (event.ctrlKey || event.metaKey);
 
-            // Se clicar no bloco que já está selecionado, ele "desmarca" e mostra todos os carros de novo
-            if (window.statusFiltroPainel === statusClicado) {
-                window.statusFiltroPainel = null;
-
-                linhas.forEach(tr => tr.classList.remove('hide-by-block'));
-
-                blocos.forEach(b => {
-                    b.style.opacity = '1';
-                    b.style.transform = 'scale(1)';
-                    b.style.boxShadow = 'var(--shadow-sm)';
-                });
-                return;
+            if (isCtrlPressed) {
+                // --- SE ESTIVER SEGURANDO CTRL: ADICIONA OU REMOVE DA SELEÇÃO MÚLTIPLA ---
+                if (window.statusFiltrosMultiplos.includes(statusClicado)) {
+                    // Se já estava selecionado, remove (desfiltra)
+                    window.statusFiltrosMultiplos = window.statusFiltrosMultiplos.filter(s => s !== statusClicado);
+                } else {
+                    // Se não estava, adiciona ao grupo de filtros
+                    window.statusFiltrosMultiplos.push(statusClicado);
+                }
+            } else {
+                // --- CLIQUE NORMAL: SE COMPORTA COMO SELEÇÃO ÚNICA OU LIMPA SE JÁ ESTIVESSE ATIVO ---
+                if (window.statusFiltrosMultiplos.length === 1 && window.statusFiltrosMultiplos[0] === statusClicado) {
+                    window.statusFiltrosMultiplos = []; // Clicou de novo no único ativo, limpa tudo
+                } else {
+                    window.statusFiltrosMultiplos = [statusClicado]; // Foca apenas nele
+                }
             }
 
-            // Aplica o novo filtro
-            window.statusFiltroPainel = statusClicado;
-
-            // Efeito visual moderno (Sem borda preta: usa elevação por sombra e leve escala)
+            // --- ATUALIZA O ESTILO VISUAL DOS BLOCOS ---
             blocos.forEach(b => {
-                if (b.dataset.status === statusClicado) {
+                const estatusBloco = b.dataset.status;
+                if (window.statusFiltrosMultiplos.includes(estatusBloco)) {
                     b.style.opacity = '1';
                     b.style.transform = 'scale(1.03)';
-                    b.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)'; // Sombra elegante e suave
-                } else {
+                    b.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+                } else if (window.statusFiltrosMultiplos.length > 0) {
                     b.style.opacity = '0.35';
                     b.style.transform = 'scale(1)';
                     b.style.boxShadow = 'none';
+                } else {
+                    // Nenhum filtro ativo, restaura todos ao normal
+                    b.style.opacity = '1';
+                    b.style.transform = 'scale(1)';
+                    b.style.boxShadow = 'var(--shadow-sm)';
                 }
             });
 
-            // Filtra as linhas na tabela
+            // --- APLICA O FILTRO NA TABELA ---
             linhas.forEach(tr => {
-                if (tr.querySelector('td[colspan]')) return; // Ignora a linha de "Sem dados" se existir
+                if (tr.querySelector('td[colspan]')) return; // Ignora linha vazia
 
-                if (tr.dataset.stRota === statusClicado) {
+                if (window.statusFiltrosMultiplos.length === 0) {
+                    // Sem filtros ativos, mostra tudo
                     tr.classList.remove('hide-by-block');
                 } else {
-                    tr.classList.add('hide-by-block');
+                    // Mostra apenas se o status da linha estiver incluso no array de múltiplos selecionados
+                    if (window.statusFiltrosMultiplos.includes(tr.dataset.stRota)) {
+                        tr.classList.remove('hide-by-block');
+                    } else {
+                        tr.classList.add('hide-by-block');
+                    }
                 }
             });
         };
