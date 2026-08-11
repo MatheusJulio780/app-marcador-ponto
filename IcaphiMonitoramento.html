@@ -5974,26 +5974,39 @@
             if (!filterPopup.contains(e.target) && !e.target.classList.contains('filter-icon')) filterPopup.style.display = 'none';
         });
 
-        // ================= BOTÃO LIMPAR FILTROS GLOBAL (NOVO) =================
-        // CORREÇÃO 3: LÓGICA DE LIMPEZA ATÔMICA DA MEMÓRIA
+        // ================= BOTÃO LIMPAR FILTROS GLOBAL (ATUALIZADO) =================
         document.addEventListener('click', (e) => {
             const btnLimpar = e.target.closest('.btn-limpar-filtros');
             if (btnLimpar) {
                 const idTabela = btnLimpar.getAttribute('data-tabela');
 
-                // 1. Zera a memória matemática de filtros
+                // 1. Zera a memória matemática de filtros das colunas
                 if (activeFilters[idTabela]) {
                     activeFilters[idTabela] = {};
                 }
 
+                // 2. SE FOR O MONITORAMENTO: Zera também os filtros dos blocos rápidos (Ctrl + Clique)
+                if (idTabela === 'tabela-monitoramento') {
+                    window.statusFiltrosMultiplos = []; // Limpa o array de múltiplos status
+                    window.statusFiltroPainel = null;   // Limpa o status único antigo
+
+                    // Restaura o visual padrão de todos os blocos rápidos no topo
+                    document.querySelectorAll('.summary-block-clickable').forEach(b => {
+                        b.style.opacity = '1';
+                        b.style.transform = 'scale(1)';
+                        b.style.boxShadow = 'var(--shadow-sm)';
+                    });
+                }
+
                 const tabela = document.getElementById(idTabela);
                 if (tabela) {
-                    // 2. Remove o azul escuro dos ícones
+                    // 3. Remove o azul escuro dos ícones de filtro das colunas
                     tabela.querySelectorAll('.filter-icon').forEach(icon => icon.classList.remove('filter-active'));
 
-                    // 3. Força a exibição de todas as linhas e colunas
+                    // 4. Força a exibição de todas as linhas (removendo o display none e a classe hide-by-block)
                     tabela.querySelectorAll('tbody tr').forEach(tr => {
                         tr.style.display = '';
+                        tr.classList.remove('hide-by-block');
                     });
                 }
             }
