@@ -2086,20 +2086,26 @@
             background: var(--bg-body);
         }
 
+        /* Limpa o comportamento antigo que centralizava mensagens */
         .chat-msg-wrapper {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            margin-bottom: 12px !important;
+            /* Removemos o align-self daqui para permitir que o JS controle pelo alinhamento do pai */
         }
 
         .chat-msg-wrapper.sent {
-            align-self: flex-end;
-            align-items: flex-end;
+            align-items: flex-end !important;
         }
 
         .chat-msg-wrapper.received {
-            align-self: flex-start;
-            align-items: flex-start;
+            align-items: flex-start !important;
+        }
+
+        /* Garantir que o balão não tente se alinhar sozinho */
+        .chat-bubble {
+            flex-shrink: 0 !important;
         }
 
         .chat-msg {
@@ -4074,10 +4080,10 @@
             <h2>Complete seu Perfil</h2>
             <div class="profile-pic-upload">
                 <img id="preview-onboarding-foto" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                
-                <input type="file" id="input-onboarding-foto" accept="image/png, image/jpeg" 
-                       style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;"
-                       onchange="
+
+                <input type="file" id="input-onboarding-foto" accept="image/png, image/jpeg"
+                    style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+                    onchange="
                     if(this.files && this.files[0]) {
                         const reader = new FileReader();
                         reader.onload = (e) => {
@@ -4482,7 +4488,7 @@
             const nome = document.getElementById('onboarding-nome')?.value.trim() || "";
             const sobrenome = document.getElementById('onboarding-sobrenome')?.value.trim() || "";
             const setor = document.getElementById('onboarding-setor')?.value || "";
-            
+
             const imgFoto = document.getElementById('preview-onboarding-foto');
             let fotoSrc = imgFoto ? (imgFoto.src || "") : "";
 
@@ -4526,7 +4532,7 @@
                     onboardingEl.classList.remove('active');
                     onboardingEl.style.display = 'none';
                 }
-                
+
                 iniciarSessaoColaborativa();
 
             } catch (e) {
@@ -4563,7 +4569,7 @@
             for (let i = 0; i < nomeLimpo.length; i++) {
                 hash = nomeLimpo.charCodeAt(i) + ((hash << 5) - hash);
             }
-            
+
             // Captura o índice matemático exato da cor correspondente
             const indiceCor = Math.abs(hash) % coresHex.length;
             const corEscolhida = coresHex[indiceCor];
@@ -4590,7 +4596,7 @@
                     img.onerror = () => { img.src = window.obterAvatarSeguro(data.nome, ""); };
                 }
             });
-            
+
             if (data.nome) {
                 document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => {
                     if (el) el.innerText = data.nome;
@@ -4604,7 +4610,7 @@
 
             if (editNome) editNome.value = data.nome || "";
             if (editSobrenome) editSobrenome.value = data.sobrenome || "";
-            
+
             if (editFoto) {
                 editFoto.src = fotoFinal;
                 editFoto.onerror = () => { editFoto.src = window.obterAvatarSeguro(data.nome, ""); };
@@ -4654,7 +4660,7 @@
         function listenUsuariosOnline() {
             onSnapshot(collection(db, "users"), (snapshot) => {
                 const listModal = document.getElementById('lista-online-detalhada');
-                
+
                 let onlineCount = 0;
                 let stackHTML = ''; // Guarda o HTML dos avatares para injetar depois
                 let modalItemsHTML = []; // Otimização de performance para renderizar o modal limpo
@@ -4744,42 +4750,42 @@
         document.getElementById('btn-salvar-perfil').addEventListener('click', async () => {
             const nome = document.getElementById('edit-nome').value.trim();
             const sobrenome = document.getElementById('edit-sobrenome').value.trim();
-            
+
             // CORREÇÃO DO ID: Captura a imagem do ID correto do preview do perfil
             const imgElement = document.getElementById('preview-edit-profile-foto');
             const fotoSrc = window.tempCompressedPhotoBase64 || (imgElement ? imgElement.src : "");
 
             if (!nome) return alert("Nome é obrigatório.");
-            
+
             if (typeof showLoader === 'function') showLoader();
             try {
                 const fotoFinal = window.obterAvatarSeguro(nome, fotoSrc);
 
-                await updateDoc(doc(db, "users", window.currentUserData.uid), { 
-                    nome, 
-                    sobrenome, 
-                    foto: fotoFinal 
+                await updateDoc(doc(db, "users", window.currentUserData.uid), {
+                    nome,
+                    sobrenome,
+                    foto: fotoFinal
                 });
 
                 // Sincroniza dados locais na memória global da aplicação
-                window.currentUserData.nome = nome; 
-                window.currentUserData.sobrenome = sobrenome; 
+                window.currentUserData.nome = nome;
+                window.currentUserData.sobrenome = sobrenome;
                 window.currentUserData.foto = fotoFinal;
 
                 // Atualiza elementos da interface reativa em tempo real
                 document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => el.innerText = nome);
                 document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => img.src = fotoFinal);
-                
+
                 // Limpa cache temporário de upload de mídia após o sucesso
                 window.tempCompressedPhotoBase64 = null;
 
                 const modalPerfil = document.getElementById('modal-edit-profile');
                 if (modalPerfil) modalPerfil.classList.remove('active');
-                
+
                 alert("Perfil atualizado com sucesso!");
-            } catch (e) { 
+            } catch (e) {
                 console.error("Erro ao salvar perfil:", e);
-                alert("Erro ao salvar: " + e.message); 
+                alert("Erro ao salvar: " + e.message);
             } finally {
                 if (typeof hideLoader === 'function') hideLoader();
             }
@@ -5006,67 +5012,82 @@
             const container = document.getElementById('chat-contact-list');
             const btnNewHTML = `<button id="btn-open-new-chat" class="btn-new-chat" title="Nova Conversa"><i class="ph ph-plus"></i></button>`;
 
+            if (!container) return;
+
             container.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Carregando conversas...</div>' + btnNewHTML;
 
-            // Busca dados dos usuários para cruzar com as conversas
-            const snapUsers = await getDocs(collection(db, "users"));
-            let usersMap = {};
-            snapUsers.forEach(d => { usersMap[d.id] = { uid: d.id, ...d.data() }; });
+            try {
+                // Busca dados dos usuários para cruzar com as conversas
+                const snapUsers = await getDocs(collection(db, "users"));
+                let usersMap = {};
+                snapUsers.forEach(d => { usersMap[d.id] = { uid: d.id, ...d.data() }; });
 
-            // Busca todos os chats
-            const snapChats = await getDocs(collection(db, "chats"));
-            let activeUsers = [];
+                // Busca todos os chats
+                const snapChats = await getDocs(collection(db, "chats"));
+                let activeUsers = [];
 
-            snapChats.forEach(docSnap => {
-                if (docSnap.id.includes(myUid)) {
-                    const data = docSnap.data();
-                    // Se a conversa foi apagada por mim, não renderiza na lista principal
-                    if (data[`deletedBy_${myUid}`] === true) return;
+                snapChats.forEach(chatDoc => {
+                    if (chatDoc.id.includes(myUid)) {
+                        const data = chatDoc.data();
 
-                    const otherUid = docSnap.id.replace(myUid, '').replace('_', '');
-                    if (usersMap[otherUid]) {
-                        activeUsers.push({
-                            ...usersMap[otherUid],
-                            chatId: docSnap.id,
-                            lastTime: data.lastMessageTime ? data.lastMessageTime.toMillis() : 0
-                        });
+                        // Se foi apagada por mim ou não tem mensagem real enviada, ignora
+                        if (data[`deletedBy_${myUid}`] === true || !data.lastMessageText) return;
+
+                        const otherUid = chatDoc.id.replace(myUid, '').replace('_', '');
+                        if (usersMap[otherUid]) {
+                            activeUsers.push({
+                                ...usersMap[otherUid],
+                                chatId: chatDoc.id,
+                                lastTime: data.lastMessageTime ? data.lastMessageTime.toMillis() : 0
+                            });
+                        }
                     }
+                });
+
+                // Ordena conversas pelas mais recentes
+                activeUsers.sort((a, b) => b.lastTime - a.lastTime);
+
+                // Limpa a tela e INSERE O BOTÃO ANTES
+                container.innerHTML = btnNewHTML;
+
+                if (activeUsers.length === 0) {
+                    container.insertAdjacentHTML('beforeend', '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.9rem;">Nenhuma conversa ativa no momento.</div>');
                 }
-            });
 
-            // Ordena conversas pelas mais recentes
-            activeUsers.sort((a, b) => b.lastTime - a.lastTime);
+                activeUsers.forEach(u => {
+                    const unread = unreadCountsGlobal[u.chatId] || 0;
+                    const fotoValidada = window.obterAvatarSeguro(u.nome, u.foto);
 
-            // Limpa a tela e INSERE O BOTÃO ANTES de renderizar as divs (Evita matar os cliques)
-            container.innerHTML = btnNewHTML;
+                    const div = document.createElement('div');
+                    div.className = 'chat-contact-item';
+                    div.innerHTML = `
+                        <img src="${fotoValidada}" 
+                            onerror="this.src=window.obterAvatarSeguro('${u.nome}', '')"
+                            style="border: ${u.online ? '2px solid #16a34a' : '2px solid transparent'};">
+                        <div class="chat-contact-info">
+                            <strong>${u.nome} ${u.sobrenome || ''}</strong>
+                            <span>${u.setor || ''}</span>
+                        </div>
+                        ${unread > 0 ? `<span class="contact-unread">${unread}</span>` : ''}
+                    `;
 
-            if (activeUsers.length === 0) {
-                container.insertAdjacentHTML('beforeend', '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.9rem;">Nenhuma conversa ativa no momento.</div>');
+                    div.addEventListener('click', () => abrirConversa(u, u.chatId));
+                    container.appendChild(div);
+                });
+
+                // Ativa o clique do botão "+"
+                const btnOpenNew = document.getElementById('btn-open-new-chat');
+                if (btnOpenNew) {
+                    btnOpenNew.addEventListener('click', () => {
+                        document.getElementById('chat-contact-list').classList.remove('active');
+                        document.getElementById('chat-new-chat-view').style.display = 'block';
+                        renderizarTodosUsuarios();
+                    });
+                }
+            } catch (e) {
+                console.error("Erro ao carregar lista de conversas:", e);
+                container.innerHTML = btnNewHTML + '<div style="padding:20px; text-align:center; color:var(--danger); font-size:0.85rem;">Erro ao sincronizar chats.</div>';
             }
-
-            activeUsers.forEach(u => {
-                const unread = unreadCountsGlobal[u.chatId] || 0;
-                const div = document.createElement('div');
-                div.className = 'chat-contact-item';
-                div.innerHTML = `
-            <img src="${u.foto}" style="border: ${u.online ? '2px solid #16a34a' : '2px solid transparent'};">
-            <div class="chat-contact-info">
-                <strong>${u.nome} ${u.sobrenome || ''}</strong>
-                <span>${u.setor || ''}</span>
-            </div>
-            ${unread > 0 ? `<span class="contact-unread">${unread}</span>` : ''}
-        `;
-                // O evento de clique agora fica blindado
-                div.addEventListener('click', () => abrirConversa(u, u.chatId));
-                container.appendChild(div);
-            });
-
-            // Ativa o clique do botão "+"
-            document.getElementById('btn-open-new-chat').addEventListener('click', () => {
-                document.getElementById('chat-contact-list').classList.remove('active');
-                document.getElementById('chat-new-chat-view').style.display = 'block';
-                renderizarTodosUsuarios();
-            });
         }
 
         // ================= RENDERIZAR TODOS OS USUÁRIOS (NOVA CONVERSA) =================
@@ -5074,7 +5095,7 @@
             const myUid = window.currentUserData.uid;
             const container = document.getElementById('chat-all-users-list');
             if (!container) return;
-            
+
             container.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Buscando equipe...</div>';
 
             try {
@@ -5089,7 +5110,7 @@
                     const chatId = myUid < u.uid ? `${myUid}_${u.uid}` : `${u.uid}_${myUid}`;
                     const div = document.createElement('div');
                     div.className = 'chat-contact-item';
-                    
+
                     // Tratamento da imagem via função de contingência
                     const fotoValidada = window.obterAvatarSeguro(u.nome, u.foto);
 
@@ -5100,7 +5121,7 @@
                             <span>${u.setor || ''}</span>
                         </div>
                     `;
-                    
+
                     div.addEventListener('click', () => {
                         const targetView = document.getElementById('chat-new-chat-view');
                         if (targetView) targetView.style.display = 'none';
@@ -5118,7 +5139,6 @@
         window.deletarMensagemIcaphi = async (chatId, msgId) => {
             if (confirm("Apagar esta mensagem para você?")) {
                 const myUid = window.currentUserData.uid;
-                // Não deleta o documento, apenas marca como invisível para você
                 await setDoc(doc(db, `chats/${chatId}/messages`, msgId), {
                     [`deletedBy_${myUid}`]: true
                 }, { merge: true });
@@ -5127,15 +5147,27 @@
 
         window.editarMensagemIcaphi = async (chatId, msgId, btnElem) => {
             const msgWrapper = btnElem.closest('.chat-msg-wrapper');
+            if (!msgWrapper) return;
+            
             const textSpan = msgWrapper.querySelector('.msg-text-content');
-            const currentText = textSpan.innerText;
+            if (!textSpan) {
+                alert("Erro ao localizar o texto da mensagem.");
+                return;
+            }
 
+            const currentText = textSpan.innerText;
             const newText = prompt("Editar mensagem:", currentText);
-            if (newText && newText.trim() !== "" && newText !== currentText) {
-                await updateDoc(doc(db, `chats/${chatId}/messages`, msgId), {
-                    text: newText.trim(),
-                    editado: true
-                });
+            
+            if (newText !== null && newText.trim() !== "" && newText.trim() !== currentText) {
+                try {
+                    await updateDoc(doc(db, `chats/${chatId}/messages`, msgId), {
+                        text: newText.trim(),
+                        editado: true
+                    });
+                } catch (e) {
+                    console.error("Erro ao editar mensagem:", e);
+                    alert("Erro ao atualizar mensagem.");
+                }
             }
         };
 
@@ -5147,6 +5179,9 @@
             document.getElementById('chat-active-name').innerText = targetUser.nome;
 
             const msgArea = document.getElementById('chat-messages-area');
+            // 🔥 CORREÇÃO 1: Forçamos o display do container de mensagens para ser coluna flexível
+            msgArea.style.display = 'flex';
+            msgArea.style.flexDirection = 'column';
             msgArea.innerHTML = '<div style="text-align:center; padding: 20px; font-size:12px; color:var(--text-muted);">Sincronizando...</div>';
 
             // Zera mensagens não lidas
@@ -5183,7 +5218,7 @@
             if (unsubscribeChat) unsubscribeChat();
 
             unsubscribeChat = onSnapshot(q, (snapshot) => {
-                msgArea.innerHTML = '';
+                msgArea.innerHTML = ''; // Limpa antes de renderizar
                 let countVisible = 0;
                 const myUid = window.currentUserData.uid;
 
@@ -5199,25 +5234,23 @@
                     const dataStr = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                     const editadoStr = msg.editado ? `<span style="font-size:0.65rem; opacity:0.6; margin-left:5px;">(editado)</span>` : '';
 
-                    // LÓGICA DE RENDERIZAÇÃO BLINDADA (FLEXBOX)
+                    // LÓGICA DE RENDERIZAÇÃO CORRIGIDA (ALINHAMENTO EXATO À DIREITA/ESQUERDA)
                     msgArea.innerHTML += `
-                    <div class="chat-msg-wrapper" style="display: flex; width: 100%; margin-bottom: 12px; justify-content: ${isMe ? 'flex-end' : 'flex-start'};">
-                        <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; max-width: 85%;">
-                            
-                            <div class="chat-bubble" style="padding: 10px 14px; border-radius: 12px; background: ${isMe ? 'var(--accent)' : 'var(--bg-secondary)'}; color: ${isMe ? '#ffffff' : 'var(--text-main)'}; border-bottom-${isMe ? 'right' : 'left'}-radius: 2px; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                                <span style="font-size: 0.9rem; line-height: 1.4;">${msg.text}</span> ${editadoStr}
-                                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
-                                    <span style="font-size: 0.7rem; opacity: 0.7;">${dataStr}</span>
-                                </div>
+                    <div class="chat-msg-wrapper" style="display: flex !important; flex-direction: column !important; width: 100% !important; margin-bottom: 14px !important; align-items: ${isMe ? 'flex-end' : 'flex-start'} !important;">
+                        
+                        <div class="chat-bubble" style="max-width: 75% !important; padding: 10px 14px !important; border-radius: 12px !important; background: ${isMe ? 'var(--accent)' : 'var(--bg-secondary)'} !important; color: ${isMe ? '#ffffff' : 'var(--text-main)'} !important; border-bottom-${isMe ? 'right' : 'left'}-radius: 2px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;">
+                            <span class="msg-text-content" style="font-size: 0.9rem !important;">${msg.text}</span> ${editadoStr}
+                            <div style="text-align: right !important; margin-top: 4px !important;">
+                                <span style="font-size: 0.7rem !important; opacity: 0.7 !important;">${dataStr}</span>
                             </div>
-
-                            ${isMe ? `
-                            <div class="msg-actions" style="display: flex; gap: 8px; margin-top: 4px;">
-                                <button onclick="window.editarMensagemIcaphi('${chatId}', '${msgId}', this)" title="Editar" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;"><i class="ph ph-pencil-simple"></i></button>
-                                <button onclick="window.deletarMensagemIcaphi('${chatId}', '${msgId}')" title="Apagar" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:14px;"><i class="ph ph-trash"></i></button>
-                            </div>
-                            ` : ''}
                         </div>
+
+                        ${isMe ? `
+                        <div class="msg-actions" style="display: flex !important; gap: 8px !important; margin-top: 4px !important;">
+                            <button onclick="window.editarMensagemIcaphi('${chatId}', '${msgId}', this)" style="background:none !important; border:none !important; color:var(--text-muted) !important; cursor:pointer !important; font-size:11px !important;">Editar</button>
+                            <button onclick="window.deletarMensagemIcaphi('${chatId}', '${msgId}')" style="background:none !important; border:none !important; color:var(--danger) !important; cursor:pointer !important; font-size:11px !important;">Apagar</button>
+                        </div>
+                        ` : ''}
                     </div>
                     `;
                 });
@@ -9449,13 +9482,13 @@
                 // Limpa rastro anterior e desenha o novo quadrado
                 tbody.querySelectorAll('.drag-highlight').forEach(el => el.classList.remove('drag-highlight'));
                 const rows = Array.from(tbody.children);
-                
+
                 for (let i = minIdx; i <= maxIdx; i++) {
                     const trTarget = rows[i];
-                    
+
                     // 🔥 PROTEÇÃO 1: Ignora a marcação azul em linhas ocultas pelos filtros
                     if (trTarget.style.display === 'none' || trTarget.classList.contains('hide-by-block')) {
-                        continue; 
+                        continue;
                     }
 
                     const targetTd = trTarget.querySelector(`td[data-live="${dragState.col}"]`);
@@ -9472,7 +9505,7 @@
 
                     highlights.forEach(td => {
                         const tr = td.closest('tr');
-                        
+
                         // 🔥 PROTEÇÃO 2: Garante que os dados nunca sejam sobrescritos se a linha estiver oculta
                         if (tr.style.display === 'none' || tr.classList.contains('hide-by-block')) {
                             td.classList.remove('drag-highlight');
