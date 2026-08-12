@@ -4073,9 +4073,19 @@
         <div class="auth-box">
             <h2>Complete seu Perfil</h2>
             <div class="profile-pic-upload">
-                <img id="preview-edit-foto" src="" alt="">
-                <!-- O evento onchange abaixo garante 100% de funcionamento da pré-visualização -->
-                <input type="file" id="input-edit-foto" accept="image/png, image/jpeg">
+                <img id="preview-onboarding-foto" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                
+                <input type="file" id="input-onboarding-foto" accept="image/png, image/jpeg" 
+                       style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+                       onchange="
+                    if(this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            document.getElementById('preview-onboarding-foto').src = e.target.result;
+                        };
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                ">
             </div>
             <input type="text" id="onboarding-nome" placeholder="Primeiro Nome" class="sys-input" required>
             <input type="text" id="onboarding-sobrenome" placeholder="Sobrenome" class="sys-input" required>
@@ -4467,14 +4477,14 @@
             signInWithPopup(auth, provider).catch(err => alert("Erro Microsoft: " + err.message));
         });
 
+        // Salvar Onboarding - Correção Crítica de Captura de Mídia
         document.getElementById('btn-salvar-onboarding').addEventListener('click', async () => {
             const nome = document.getElementById('onboarding-nome')?.value.trim() || "";
             const sobrenome = document.getElementById('onboarding-sobrenome')?.value.trim() || "";
             const setor = document.getElementById('onboarding-setor')?.value || "";
-
-            // Busca a foto de forma segura (se não achar o elemento, usa uma string vazia ou avatar padrão)
+            
             const imgFoto = document.getElementById('preview-onboarding-foto');
-            const fotoSrc = imgFoto ? imgFoto.src : "";
+            let fotoSrc = imgFoto ? (imgFoto.src || "") : "";
 
             if (!nome || !sobrenome || !setor) {
                 alert("Preencha todos os campos obrigatórios.");
@@ -4482,7 +4492,7 @@
             }
 
             if (!auth.currentUser) {
-                alert("Erro: Usuário não autenticado no Firebase Auth. Faça login novamente.");
+                alert("Erro: Usuário não autenticado no Firebase Auth.");
                 location.reload();
                 return;
             }
@@ -4490,11 +4500,14 @@
             if (typeof showLoader === 'function') showLoader();
 
             try {
+                // Valida se o conteúdo é uma imagem real do upload ou se precisa gerar o avatar colorido
+                const fotoFinal = window.obterAvatarSeguro(nome, fotoSrc);
+
                 const payload = {
                     nome,
                     sobrenome,
                     setor,
-                    foto: fotoSrc,
+                    foto: fotoFinal,
                     email: auth.currentUser.email || "",
                     online: true,
                     currentPage: "Início",
@@ -4505,37 +4518,78 @@
                 await setDoc(doc(db, "users", auth.currentUser.uid), payload);
                 console.log("Usuário salvo com sucesso!");
 
-                // Remove o overlay de onboarding com segurança
+                // Seta o cache global de forma idêntica ao payload persistido
+                window.currentUserData = { uid: auth.currentUser.uid, ...payload };
+
                 const onboardingEl = document.getElementById('onboarding-overlay');
                 if (onboardingEl) {
                     onboardingEl.classList.remove('active');
                     onboardingEl.style.display = 'none';
                 }
-
+                
                 iniciarSessaoColaborativa();
 
             } catch (e) {
                 console.error("Erro detalhado ao salvar cadastro:", e);
                 alert("Erro ao salvar cadastro: " + e.message);
-            } tests: {
+            } finally {
                 if (typeof hideLoader === 'function') hideLoader();
             }
         });
+
+        // ================= GERADOR DE AVATAR SEGURO COM CORES DINÂMICAS FIXAS =================
+        window.obterAvatarSeguro = (nome, urlFoto) => {
+            const nomeLimpo = nome ? nome.trim() : "Usuario";
+
+            // Verifica de forma blindada se a string contém dados de upload reais (Base64 ou Blob de memória)
+            if (urlFoto && (urlFoto.startsWith('data:image') || urlFoto.startsWith('blob:') || (urlFoto.startsWith('http') && !urlFoto.includes('ui-avatars.com') && !urlFoto.includes(window.location.host)))) {
+                return urlFoto;
+            }
+
+            // Paleta de cores corporativas estáveis e legíveis
+            const coresHex = [
+                "2563eb", // Azul
+                "db2777", // Rosa
+                "059669", // Verde
+                "d97706", // Laranja
+                "7c3aed", // Roxo
+                "0369a1", // Ciano Escuro
+                "b91c1c", // Vermelho
+                "4d7c0f"  // Oliva
+            ];
+
+            // Calcula o hash baseado nos caracteres do nome + sobrenome para fixar uma cor única por pessoa
+            let hash = 0;
+            for (let i = 0; i < nomeLimpo.length; i++) {
+                hash = nomeLimpo.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            // Captura o índice matemático exato da cor correspondente
+            const indiceCor = Math.abs(hash) % coresHex.length;
+            const corEscolhida = coresHex[indiceCor];
+
+            const nomeParam = encodeURIComponent(nomeLimpo);
+            // Retorna a URL com a cor única fixada no link da API
+            return `https://ui-avatars.com/api/?name=${nomeParam}&background=${corEscolhida}&color=fff&bold=true&rounded=true`;
+        };
 
         // ================= INICIALIZAÇÃO COLABORATIVA (PRESENÇA E CHAT) =================
         function iniciarSessaoColaborativa() {
             const data = window.currentUserData;
             if (!data) return;
 
-            // 1. Atualiza Header UI em todas as abas simultaneamente (com proteção contra null)
             const authContainer = document.getElementById('header-auth-container');
             if (authContainer) authContainer.style.display = 'flex';
 
-            if (data.foto) {
-                document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => {
-                    if (img) img.src = data.foto;
-                });
-            }
+            // 1. Gera a foto final ou as iniciais dinâmicas com cores por hash
+            const fotoFinal = window.obterAvatarSeguro(data.nome, data.foto);
+
+            document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => {
+                if (img) {
+                    img.src = fotoFinal;
+                    img.onerror = () => { img.src = window.obterAvatarSeguro(data.nome, ""); };
+                }
+            });
             
             if (data.nome) {
                 document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => {
@@ -4543,19 +4597,21 @@
                 });
             }
 
-            // 2. Preenche Modal de Edição de Perfil (Com verificação se os inputs existem)
             const editNome = document.getElementById('edit-nome');
             const editSobrenome = document.getElementById('edit-sobrenome');
-            const editFoto = document.getElementById('preview-edit-foto');
+            // CORREÇÃO DO ID: Apontando para o ID correto existente no seu HTML do modal de perfil
+            const editFoto = document.getElementById('preview-edit-profile-foto');
 
             if (editNome) editNome.value = data.nome || "";
             if (editSobrenome) editSobrenome.value = data.sobrenome || "";
-            if (editFoto && data.foto) editFoto.src = data.foto;
+            
+            if (editFoto) {
+                editFoto.src = fotoFinal;
+                editFoto.onerror = () => { editFoto.src = window.obterAvatarSeguro(data.nome, ""); };
+            }
 
-            // 3. Marca como Online e Atualiza Página Atual
             atualizarPresenca(true, "Monitoramento");
 
-            // 4. Inicia Listeners de Presença e Chat Global
             if (typeof listenUsuariosOnline === 'function') listenUsuariosOnline();
             if (typeof listenChatsGlobais === 'function') listenChatsGlobais();
         }
@@ -4598,10 +4654,10 @@
         function listenUsuariosOnline() {
             onSnapshot(collection(db, "users"), (snapshot) => {
                 const listModal = document.getElementById('lista-online-detalhada');
-                if (listModal) listModal.innerHTML = '';
-
+                
                 let onlineCount = 0;
                 let stackHTML = ''; // Guarda o HTML dos avatares para injetar depois
+                let modalItemsHTML = []; // Otimização de performance para renderizar o modal limpo
 
                 snapshot.forEach(docSnap => {
                     const user = docSnap.data();
@@ -4610,35 +4666,41 @@
                     if (user.online) {
                         onlineCount++;
 
-                        // Monta os avatares empilhados
+                        // Garante que a foto do usuário é válida ou puxa o avatar de iniciais colorido
+                        const fotoValidada = window.obterAvatarSeguro(user.nome, user.foto);
+
+                        // Monta os avatares empilhados no cabeçalho
                         if (onlineCount <= 4 && !isMe) {
-                            stackHTML += `<img src="${user.foto}" title="${user.nome} (${user.setor})">`;
+                            stackHTML += `<img src="${fotoValidada}" title="${user.nome} (${user.setor})">`;
                         }
 
-                        // Preenche a lista do modal
-                        if (listModal) {
-                            listModal.innerHTML += `
-                                    <div class="online-user-item">
-                                        <img src="${user.foto}" alt="${user.nome}">
-                                        <div class="online-user-info">
-                                            <strong>${user.nome} ${user.sobrenome} ${isMe ? '(Você)' : ''}</strong>
-                                            <span>${user.setor} | 📍 ${user.currentPage}</span>
-                                        </div>
-                                        <span class="online-badge">Online</span>
-                                    </div>
-                                `;
-                        }
+                        // Acumula os itens formatados do modal de forma atômica
+                        modalItemsHTML.push(`
+                            <div class="online-user-item">
+                                <img src="${fotoValidada}" alt="${user.nome}" onerror="this.src=window.obterAvatarSeguro('${user.nome}', '')">
+                                <div class="online-user-info">
+                                    <strong>${user.nome} ${user.sobrenome} ${isMe ? '(Você)' : ''}</strong>
+                                    <span>${user.setor} | 📍 ${user.currentPage || 'Operação'}</span>
+                                </div>
+                                <span class="online-badge">Online</span>
+                            </div>
+                        `);
                     }
                 });
 
-                // Se tiver mais de 4, adiciona o contador
+                // Se tiver mais de 4 usuários online, adiciona o indicador numérico no stack
                 if (onlineCount > 4) {
                     stackHTML += `<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-secondary); border: 2px solid var(--bg-main); margin-left: -10px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold;">+${onlineCount - 4}</div>`;
                 }
 
-                // INJETA NOS CABEÇALHOS DE TODAS AS ABAS DE UMA VEZ
+                // Injeta a lista detalhada no modal de uma única vez evitando re-renderização pesada
+                if (listModal) {
+                    listModal.innerHTML = modalItemsHTML.join('');
+                }
+
+                // Injeta nos cabeçalhos de todas as abas simultaneamente
                 document.querySelectorAll('#online-users-stack, .online-users-stack').forEach(container => {
-                    container.innerHTML = stackHTML;
+                    if (container) container.innerHTML = stackHTML;
                 });
             });
         }
@@ -4678,25 +4740,49 @@
             }
         });
 
-        // Salvar Edição de Perfil
+        // Salvar Edição de Perfil - IDs Unificados
         document.getElementById('btn-salvar-perfil').addEventListener('click', async () => {
             const nome = document.getElementById('edit-nome').value.trim();
             const sobrenome = document.getElementById('edit-sobrenome').value.trim();
-            // CORREÇÃO AQUI: Pega a foto comprimida global ou recorre ao src atual do preview
-            const fotoSrc = window.tempCompressedPhotoBase64 || document.getElementById('preview-edit-foto').src;
+            
+            // CORREÇÃO DO ID: Captura a imagem do ID correto do preview do perfil
+            const imgElement = document.getElementById('preview-edit-profile-foto');
+            const fotoSrc = window.tempCompressedPhotoBase64 || (imgElement ? imgElement.src : "");
 
             if (!nome) return alert("Nome é obrigatório.");
-            showLoader();
+            
+            if (typeof showLoader === 'function') showLoader();
             try {
-                await updateDoc(doc(db, "users", window.currentUserData.uid), { nome, sobrenome, foto: fotoSrc });
-                window.currentUserData.nome = nome; window.currentUserData.sobrenome = sobrenome; window.currentUserData.foto = fotoSrc;
-                // Atualiza todas as interfaces simultaneamente
+                const fotoFinal = window.obterAvatarSeguro(nome, fotoSrc);
+
+                await updateDoc(doc(db, "users", window.currentUserData.uid), { 
+                    nome, 
+                    sobrenome, 
+                    foto: fotoFinal 
+                });
+
+                // Sincroniza dados locais na memória global da aplicação
+                window.currentUserData.nome = nome; 
+                window.currentUserData.sobrenome = sobrenome; 
+                window.currentUserData.foto = fotoFinal;
+
+                // Atualiza elementos da interface reativa em tempo real
                 document.querySelectorAll('#header-user-nome, .header-user-nome').forEach(el => el.innerText = nome);
-                document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => img.src = fotoSrc);
-                document.getElementById('modal-edit-profile').classList.remove('active');
-                alert("Perfil atualizado!");
-            } catch (e) { alert("Erro ao salvar: " + e.message); }
-            hideLoader();
+                document.querySelectorAll('#header-user-foto, .header-user-foto').forEach(img => img.src = fotoFinal);
+                
+                // Limpa cache temporário de upload de mídia após o sucesso
+                window.tempCompressedPhotoBase64 = null;
+
+                const modalPerfil = document.getElementById('modal-edit-profile');
+                if (modalPerfil) modalPerfil.classList.remove('active');
+                
+                alert("Perfil atualizado com sucesso!");
+            } catch (e) { 
+                console.error("Erro ao salvar perfil:", e);
+                alert("Erro ao salvar: " + e.message); 
+            } finally {
+                if (typeof hideLoader === 'function') hideLoader();
+            }
         });
 
         // ================= MOTOR DE CADASTRO DE FROTA (CORRIGIDO PARA O HTML ORIGINAL) =================
