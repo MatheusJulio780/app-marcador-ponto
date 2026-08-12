@@ -9429,8 +9429,16 @@
                 // Limpa rastro anterior e desenha o novo quadrado
                 tbody.querySelectorAll('.drag-highlight').forEach(el => el.classList.remove('drag-highlight'));
                 const rows = Array.from(tbody.children);
+                
                 for (let i = minIdx; i <= maxIdx; i++) {
-                    const targetTd = rows[i].querySelector(`td[data-live="${dragState.col}"]`);
+                    const trTarget = rows[i];
+                    
+                    // 🔥 PROTEÇÃO 1: Ignora a marcação azul em linhas ocultas pelos filtros
+                    if (trTarget.style.display === 'none' || trTarget.classList.contains('hide-by-block')) {
+                        continue; 
+                    }
+
+                    const targetTd = trTarget.querySelector(`td[data-live="${dragState.col}"]`);
                     if (targetTd) targetTd.classList.add('drag-highlight');
                 }
             });
@@ -9444,6 +9452,13 @@
 
                     highlights.forEach(td => {
                         const tr = td.closest('tr');
+                        
+                        // 🔥 PROTEÇÃO 2: Garante que os dados nunca sejam sobrescritos se a linha estiver oculta
+                        if (tr.style.display === 'none' || tr.classList.contains('hide-by-block')) {
+                            td.classList.remove('drag-highlight');
+                            return;
+                        }
+
                         if (dragState.col === 'status') {
                             const select = td.querySelector('select');
                             if (select && select.value !== dragState.val) {
