@@ -6612,8 +6612,10 @@
                     if (snapOntemNotas.exists()) {
                         snapOntemNotas.data().notas.forEach(no => {
                             if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                                let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                                // CORREÇÃO CRIDÚRGICA: Aplica o dicionário de troca do painel de HOJE nas notas herdadas
+                                let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                                 let placaFinal = deParaTroca[placaOriginal] || no.placa;
+
                                 notasRollover.push({ ...no, status: "", placa: placaFinal });
                             }
                         });
@@ -6885,13 +6887,13 @@
                     });
                 }
 
-                if (sOntemNotas.exists()) {
-                    sOntemNotas.data().notas.forEach(no => { 
+                if (sOntem.exists()) {
+                    sOntem.data().notas.forEach(no => { 
                         if (trimUpper(no.status).includes('PERNOITE') && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { 
-                            // 🔥 MÁGICA: Aplica o de->para do transbordo nas notas resgatadas antes de jogar no Editor
-                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            // CORREÇÃO CIRÚRGICA: Garante que o pernoite venha para a placa nova do transbordo e não a original
+                            let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                            
+
                             notasParaApresentar.push({ ...no, status: "", placa: placaFinal }); 
                         } 
                     });
@@ -6926,29 +6928,35 @@
             document.getElementById('modal-motoristas').classList.add('active');
         });
 
-        // ================= IMPORTAÇÃO NOTAS COM FILTRO DE TRANSPORTE =================
+        // ================= IMPORTAÇÃO NOTAS COM BLINDAGEM CIRÚRGICA =================
         document.getElementById('file-import-notas').addEventListener('change', async function (e) {
-            const file = e.target.files[0]; if (!file) return; const dSel = document.getElementById('editor-notas-data').value; if (!dSel) { alert("Selecione Data do Painel!"); e.target.value = ''; return; }
+            const file = e.target.files[0]; if (!file) return; 
+            const dSel = document.getElementById('editor-notas-data').value; 
+            if (!dSel) { alert("Selecione Data do Painel!"); e.target.value = ''; return; }
             showLoader();
 
-            // MUDANÇA LOGÍSTICA: O mapa agora usa o TRANSPORTE (Viagem) como chave primária, isolando as operações
             let mapFiltroTransporte = {};
+            
+            // LISTA DE STATUS INTOCÁVEIS: Se o transporte no painel tiver um desses, a planilha NÃO pode alterar as notas dele.
+            const statusIgnorados = ['PERNOITE', 'PERNOITE/VIAGEM', 'APOIO', 'SEG. VIAGEM', 'SEGUNDA VIAGEM'];
+
             try {
+                // Busca o painel de HOJE para mapear a operação
                 const sp = await getDoc(doc(db, "painel_diario", dSel));
                 if (sp.exists()) {
                     sp.data().rotas.forEach(r => {
-                        const statusRota = r.status ? r.status.trim().toUpperCase() : "";
                         const placaNormal = r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
-                        const isPernoite = statusRota.includes('PERNOITE');
+                        const statusRota = r.status ? r.status.trim().toUpperCase() : "";
+                        
+                        const isBloqueado = statusIgnorados.includes(statusRota);
 
-                        // Extrai todos os números de transporte (viagem) desta linha do painel
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
-
                         transpsValidos.forEach(t => {
-                            mapFiltroTransporte[t] = {
-                                placaFinal: placaFinal,
-                                bloqueado: isPernoite
+                            mapFiltroTransporte[t] = { 
+                                placaFinal: placaFinal, 
+                                statusRota: statusRota,
+                                bloqueado: isBloqueado // Trava a alteração para Pernoites e Apoios
                             };
                         });
                     });
@@ -6963,28 +6971,26 @@
                 if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; }
 
                 const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
-                // Mapeamento atualizado para capturar a coluna NºPARC.
                 const cols = {
                     nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"),
                     data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"),
                     cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"),
                     endereco: h.indexOf("RUA"), codcli: h.indexOf("COD.CLI."), repres: h.indexOf("REPRES."),
-                    sup: h.indexOf("SUPERVISOR"), placa: h.indexOf("PLACA"),
-                    parcial: h.indexOf("NºPARC.") // <- NOVA COLUNA MAPEADA AQUI
+                    sup: h.indexOf("SUPERVISOR"), placa: h.indexOf("PLACA"), parcial: h.indexOf("NºPARC.")
                 };
 
                 let qtd = 0;
                 for (let i = hIdx + 1; i < raw.length; i++) {
                     const row = raw[i]; if (!row || !row[cols.nf]) continue;
-                    const nfTratada = cleanNF(row[cols.nf]);
                     const viagemPlanilha = String(row[cols.viagem] || "").trim();
 
-                    // Dentro do file-import-notas, no loop de salvamento das linhas:
                     const filtroViagem = mapFiltroTransporte[viagemPlanilha];
-
+                    
                     if (filtroViagem) {
+                        // REGRA DE OURO: Se o painel diz que é Pernoite/Apoio, pula essa linha do Excel.
                         if (filtroViagem.bloqueado) continue;
 
+                        const nfTratada = cleanNF(row[cols.nf]);
                         let existsInTable = false;
                         document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
                             if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) existsInTable = true;
@@ -6992,34 +6998,22 @@
                         if (existsInTable) continue;
 
                         let dSaida = cols.data !== -1 ? row[cols.data] : "";
-                        if (!isNaN(dSaida) && dSaida.toString().trim() !== "") {
-                            dSaida = excelToDateStr(parseFloat(dSaida));
-                        }
+                        if (!isNaN(dSaida) && dSaida.toString().trim() !== "") dSaida = excelToDateStr(parseFloat(dSaida));
 
                         qtd++;
                         window.adicionarLinhaNotas({
-                            nf: nfTratada,
-                            viagem: viagemPlanilha,
-                            ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
-                            data: dSaida,
-                            peso: cols.peso !== -1 ? row[cols.peso] : "",
-                            qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
-                            cliente: cols.cliente !== -1 ? row[cols.cliente] : "",
-                            cidade: cols.cidade !== -1 ? row[cols.cidade] : "",
-                            bairro: cols.bairro !== -1 ? row[cols.bairro] : "",
-                            endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
-                            placa: filtroViagem.placaFinal,
-                            codcli: cols.codcli !== -1 ? row[cols.codcli] : "",
-                            repres: cols.repres !== -1 ? row[cols.repres] : "",
-                            sup: cols.sup !== -1 ? row[cols.sup] : "",
+                            nf: nfTratada, viagem: viagemPlanilha, ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
+                            data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
+                            cliente: cols.cliente !== -1 ? row[cols.cliente] : "", cidade: cols.cidade !== -1 ? row[cols.cidade] : "",
+                            bairro: cols.bairro !== -1 ? row[cols.bairro] : "", endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
+                            placa: filtroViagem.placaFinal, codcli: cols.codcli !== -1 ? row[cols.codcli] : "",
+                            repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : "",
                             parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : "",
-
-                            // HERANÇA CIRÚRGICA: Puxa o status/tipo direto do painel para a nota
                             tipo_viagem: filtroViagem.statusRota || ""
                         });
                     }
                 }
-                alert(`Importação concluída: ${qtd} notas novas vinculadas aos transportes ativos do painel.`); hideLoader();
+                alert(`Importação concluída: ${qtd} notas vinculadas (Pernoites e Apoios preservados).`); hideLoader();
             }; reader.readAsArrayBuffer(file); e.target.value = '';
         });
 
@@ -7060,13 +7054,58 @@
             await setDoc(doc(db, "painel_diario", d), { rotas }); if (document.getElementById('mon-data-select').value === d) { document.getElementById('btn-carregar-painel').click(); } alert("Painel Salvo com sucesso!"); document.getElementById('modal-editor-painel').classList.remove('active'); hideLoader();
         });
 
+        // ================= IMPORTAÇÃO PAINEL COM VALIDAÇÃO DE DATA =================
         document.getElementById('file-import-painel').addEventListener('change', function (e) {
-            const file = e.target.files[0]; if (!file) return; showLoader(); const reader = new FileReader();
+            const file = e.target.files[0]; if (!file) return; 
+            const dSel = document.getElementById('editor-painel-data').value;
+            if (!dSel) { alert("Selecione a data no topo antes de importar a planilha!"); e.target.value = ''; return; }
+            
+            showLoader(); const reader = new FileReader();
             reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' }); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' }); 
+                const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+
+                // LÓGICA DE VALIDAÇÃO: Linha 5 (index 4), Colunas I (8) e J (9)
+                let rawDate = raw[4] ? (raw[4][8] || raw[4][9]) : null;
+                let dataPlanilhaFormatada = "Desconhecida";
+                let dataPlanilhaISO = "";
+
+                if (rawDate) {
+                    if (!isNaN(rawDate) && typeof rawDate === 'number') {
+                        // Converte data serial do Excel
+                        const dateObj = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
+                        dataPlanilhaISO = dateObj.toISOString().split('T')[0];
+                        dataPlanilhaFormatada = dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                    } else {
+                        // Tenta ler formato texto DD/MM/YYYY
+                        const parts = String(rawDate).trim().split('/');
+                        if (parts.length === 3) {
+                            const ano = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                            dataPlanilhaISO = `${ano}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            dataPlanilhaFormatada = `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${ano}`;
+                        }
+                    }
+                }
+
+                const dSelFormatada = dSel.split('-').reverse().join('/');
+
+                // Pop-ups orientados à decisão
+                if (dataPlanilhaISO) {
+                    if (dataPlanilhaISO === dSel) {
+                        if (!confirm(`A data da planilha (${dataPlanilhaFormatada}) confere com a data selecionada.\nDeseja prosseguir com a importação?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                    } else {
+                        if (!confirm(`ATENÇÃO CRÍTICA!\n\nA data lida na planilha é ${dataPlanilhaFormatada}, mas você selecionou a data ${dSelFormatada} no painel.\n\nDeseja ignorar a planilha e forçar a montagem na data selecionada (${dSelFormatada})?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                    }
+                } else {
+                    if (!confirm(`Não foi possível identificar a data na planilha (células I5/J5).\nVocê selecionou ${dSelFormatada}.\nDeseja prosseguir assim mesmo?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                }
+
                 let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && raw[i].includes("EMPLACAMENTO")) { hIdx = i; break; } }
-                if (hIdx === -1) { alert("Sem EMPLACAMENTO."); hideLoader(); return; } tbodyPainel.innerHTML = ''; const h = raw[hIdx];
+                if (hIdx === -1) { alert("Sem cabeçalho EMPLACAMENTO."); hideLoader(); return; } 
+                
+                tbodyPainel.innerHTML = ''; const h = raw[hIdx];
                 const cols = { placa: h.indexOf("EMPLACAMENTO"), troca: h.indexOf("TROCA"), regiao: h.indexOf("Cidades"), oc: h.indexOf("NUMEROS O.C"), km: h.indexOf("KM ROTA"), ajudante: h.indexOf("AJUDANTE") };
+                
                 for (let i = hIdx + 1; i < raw.length; i++) {
                     const r = raw[i]; if (!r || !r[cols.placa]) continue;
                     const pOriginal = String(r[cols.placa]).trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (pOriginal === "" || pOriginal.includes("1899")) continue;
@@ -9792,6 +9831,93 @@
             // Inicializa a inteligência de ordenação e filtro nas tabelas dos editores
             habilitarOrdenacaoFiltroEditor('tabela-editor-painel', 'filtro-editor-painel');
             habilitarOrdenacaoFiltroEditor('tabela-editor-notas', 'filtro-editor-notas');
+        });
+
+        // ================= DATA ATUAL COMO PADRÃO =================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Calcula a data atual de forma confiável
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const dataHoje = `${year}-${month}-${day}`;
+
+            // Lista de IDs dos calendários
+            const dateInputs = [
+                'mon-data-select', 
+                'notas-data-select', 
+                'editor-painel-data', 
+                'editor-notas-data'
+            ];
+
+            dateInputs.forEach(id => {
+                const el = document.getElementById(id);
+                // Se o campo existir e estiver vazio, preenche com hoje
+                if (el && !el.value) {
+                    el.value = dataHoje;
+                }
+            });
+        });
+
+        // ================= COMPORTAMENTO ESTILO EXCEL (ENTER E COLAR) =================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const target = e.target;
+                // Verifica se está dentro de uma célula editável
+                if (target.tagName === 'TD' && target.isContentEditable) {
+                    e.preventDefault(); // Trava a criação de nova linha (<br>) dentro da célula
+                    
+                    const tr = target.closest('tr');
+                    const colIndex = Array.from(tr.children).indexOf(target);
+                    const nextTr = tr.nextElementSibling;
+                    
+                    // Move o foco para a célula debaixo
+                    if (nextTr) {
+                        const nextTd = nextTr.children[colIndex];
+                        if (nextTd && nextTd.isContentEditable) {
+                            nextTd.focus();
+                            
+                            // Seleciona o texto todo ao focar (facilita digitar por cima)
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            range.selectNodeContents(nextTd);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('paste', function(e) {
+            const target = e.target;
+            if (target.tagName === 'TD' && target.isContentEditable) {
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+
+                // Se for múltiplas linhas (copiado de uma coluna do Excel)
+                if (lines.length > 1) {
+                    e.preventDefault(); // Impede de colar tudo na mesma célula
+                    
+                    const tr = target.closest('tr');
+                    const colIndex = Array.from(tr.children).indexOf(target);
+                    let currentTr = tr;
+                    
+                    // Desce preenchendo as linhas
+                    for (let i = 0; i < lines.length; i++) {
+                        if (!currentTr) break; // Para se acabarem as linhas da tabela
+                        const currentTd = currentTr.children[colIndex];
+                        if (currentTd && currentTd.isContentEditable) {
+                            currentTd.textContent = lines[i].trim();
+                        }
+                        currentTr = currentTr.nextElementSibling;
+                    }
+                } else {
+                    // Se for só uma linha, deixa colar normalmente, mas limpa a formatação HTML
+                    e.preventDefault();
+                    document.execCommand("insertText", false, lines[0]);
+                }
+            }
         });
 
     </script>
