@@ -5654,15 +5654,22 @@
                 return;
             }
 
+            // Onde o sistema busca as rotas do painel para a prestação de contas, altere para isto:
             const placaLimpa = trimUpper(placaSelecionada).replace(/[^A-Z0-9]/g, '');
 
-            // Identifica quantas vezes essa placa aparece no painel de hoje
-            window.rotasDisponiveisParaExportacao = window.pcRotasCache.filter(r => {
+            window.rotasDisponiveisParaExportacao = (window.pcRotasCache || []).filter(r => {
                 let pOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
                 let pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
-                return pOrig === placaLimpa || pTroca === placaLimpa;
-            });
+                
+                // Verifica se a placa bate
+                const batePlaca = (pOrig === placaLimpa || pTroca === placaLimpa);
+                
+                // BLINDAGEM: Ignora completamente rotas cujo status contenha 'PERNOITE' para prestação de contas do dia
+                const statusRota = trimUpper(r.status || "");
+                const isPernoite = statusRota.includes('PERNOITE');
 
+                return batePlaca && !isPernoite;
+            });
             // Se a placa estiver em mais de uma rota, mostra o select
             if (window.rotasDisponiveisParaExportacao.length > 1) {
                 let optionsHTML = '';
@@ -6872,8 +6879,8 @@
                 const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1);
                 const dataOntem = dObj.toISOString().split('T')[0];
                 
-                // 🔥 CORREÇÃO 1: Busca as notas de ontem E O PAINEL DE ONTEM para resgatar o histórico de transbordo
-                const [sOntemNotas, sOntemPainel] = await Promise.all([
+                // CORREÇÃO: Declaração correta de sOntem e sOntemPainel em conjunto
+                const [sOntem, sOntemPainel] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
                     getDoc(doc(db, "painel_diario", dataOntem))
                 ]);
@@ -6890,7 +6897,6 @@
                 if (sOntem.exists()) {
                     sOntem.data().notas.forEach(no => { 
                         if (trimUpper(no.status).includes('PERNOITE') && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { 
-                            // CORREÇÃO CIRÚRGICA: Garante que o pernoite venha para a placa nova do transbordo e não a original
                             let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
 
@@ -7496,7 +7502,7 @@
             return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
         }
 
-        // ================= MOTOR DE FILTRAGEM (COM CORREÇÃO DE PARCIAIS NUMÉRICAS E VIAGENS) =================
+        // ================= MOTOR DE FILTRAGEM CORRIGIDO PARA PERNOITES E VIAGENS =================
         function obterDadosFiltradosPC() {
             const placaSelecionada = document.getElementById('pc-placa').value;
             const dataSaidaInput = document.getElementById('pc-data').value;
@@ -7528,28 +7534,32 @@
                 rotaAlvo = { placa: placaSelecionada };
             }
 
+            // CORREÇÃO CRIRÚRGICA: O filtro principal deve ser a rota/transporte do painel, 
+            // pois o painel já fez o cruzamento correto do pernoite e do transbordo.
             let notas = filtrarNotasDaRotaEspecifica(rotaAlvo, todasNotas);
 
-            if (dataSaidaInput) {
-                notas = notas.filter(n => {
-                    let dNota = String(n.data_nf || n.data || "").trim();
-                    const [y, m, d] = dataSaidaInput.split('-');
-                    const dataFormatoBR = `${d}/${m}/${y}`;
-                    const dataSemZero = `${parseInt(d)}/${parseInt(m)}/${y}`;
+            // Se por acaso a função de rota específica vier vazia, fazemos o fallback seguro pelo número do transporte e placa
+            if (!notas || notas.length === 0) {
+                const placaAlvoLimpa = trimUpper(placaSelecionada).replace(/[^A-Z0-9]/g, '');
+                const transpsRota = String(rotaAlvo.transporte || "").match(/\d+/g) || [];
 
-                    // CORREÇÃO: Liberar Pernoites/Transbordos com datas anteriores
-                    if (dNota < dataSaidaInput) return true;
-
-                    return dNota.includes(dataSaidaInput) || dNota.includes(dataFormatoBR) || dNota.includes(dataSemZero);
+                notas = todasNotas.filter(n => {
+                    const placaNotaLimpa = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                    const viagemNota = String(n.viagem || "").trim();
+                    const mesmaPlaca = placaNotaLimpa === placaAlvoLimpa;
+                    const mesmoTransp = transpsRota.some(t => viagemNota.includes(t));
+                    
+                    return mesmaPlaca || mesmoTransp;
                 });
             }
 
+            // Separadores de status corretos baseados exclusivamente nas notas filtradas da rota
             const entregues = notas.filter(n => ['ENTREGUE', 'REALIZADA', 'VEÍCULO VAZIO'].includes(trimUpper(n.status)));
             const reentregas = notas.filter(n => trimUpper(n.status) === 'REENTREGA');
             const devolucoes = notas.filter(n => ['DEVOLUÇÃO', 'PARADA', 'SINISTRADA'].includes(trimUpper(n.status)));
             const parciais = notas.filter(n => n.parcial && String(n.parcial).trim() !== "");
 
-            const motorista = notas.length > 0 ? (notas[0].motorista || "NÃO INFORMADO") : "NÃO INFORMADO";
+            const motorista = notas.length > 0 ? (notas[0].motorista || rotaAlvo.motorista || "NÃO INFORMADO") : "NÃO INFORMADO";
             const placa = placaSelecionada || "N/A";
             const transporte = rotaAlvo.transporte || (notas.length > 0 ? (notas[0].viagem || "") : "");
             const dataSaida = dataSaidaInput || "";
@@ -7909,6 +7919,11 @@
                 gridExcecoes.push(row);
             }
 
+            // Lógica inteligente: Se a logo foi carregada, usa a imagem. Se não, usa texto (fallback)
+            const headerElemento = window.logoIcaphiBase64
+                ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
+                : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
+
             const docDefinition = {
                 pageSize: 'A4',
                 pageMargins: [30, 30, 30, 30],
@@ -7917,7 +7932,7 @@
                     // CABEÇALHO
                     {
                         columns: [
-                            { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c', width: '30%' },
+                            { stack: [headerElemento], width: '30%' },
                             { text: 'PROTOCOLO DE DEVOLUÇÕES E REENTREGAS', fontSize: 12, bold: true, alignment: 'center', width: '40%', margin: [0, 5, 0, 0] },
                             { text: `EMISSÃO\n${getDataAtualFormatada()}`, fontSize: 8, alignment: 'right', bold: true, color: '#64748b', width: '30%', margin: [0, 5, 0, 0] }
                         ],
@@ -7979,10 +7994,17 @@
 
                     // ASSINATURAS
                     {
-                        columns: [
-                            { text: '____________________________________\nRecebido por (Baia/Logística)', alignment: 'center', bold: true, fontSize: 9 },
-                            { text: '____________________________________\nResponsável (Motorista)', alignment: 'center', bold: true, fontSize: 9 }
-                        ]
+                        // Lógica para capturar o nome de quem está logado no Firebase (com fallback de segurança)
+                        columns: (() => {
+                            const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
+                                ? auth.currentUser.displayName
+                                : "Matheus Leite"; // Fallback caso o displayName não esteja setado
+
+                            return [
+                                { text: `____________________________________\n${nomeConferente}\nResponsavel`, alignment: 'center', bold: true, fontSize: 9 },
+                                { text: '____________________________________\nRecebido por', alignment: 'center', bold: true, fontSize: 9 }
+                            ];
+                        })()
                     }
                 ]
             };
@@ -8038,15 +8060,31 @@
                     let pOrig = placaRaw;
                     let pAtiva = placaRaw;
 
+                    // Extração blindada: Se o texto da tabela tem indicador de transbordo, separa as placas.
                     if (placaRaw.includes('TROCA;')) {
-                        pOrig = placaRaw.split('TROCA;')[0].trim();
-                        pAtiva = placaRaw.split('TROCA;')[1].trim();
+                        let partes = placaRaw.split('TROCA;');
+                        pOrig = partes[0].trim();
+                        pAtiva = partes[1].trim();
                     } else if (placaRaw.includes('TROCA:')) {
-                        pOrig = placaRaw.split('TROCA:')[0].trim();
-                        pAtiva = placaRaw.split('TROCA:')[1].trim();
+                        let partes = placaRaw.split('TROCA:');
+                        pOrig = partes[0].trim();
+                        pAtiva = partes[1].trim();
+                    } else if (placaRaw.includes('-')) {
+                        // Caso a tabela junte com hífen (ex: LRU3H16-KOY8802)
+                        let partes = placaRaw.split('-');
+                        if (partes.length === 2 && partes[0].length >= 5 && partes[1].length >= 5) {
+                            pOrig = partes[0].trim();
+                            pAtiva = partes[1].trim();
+                        }
                     }
 
-                    if (pAtiva) placasEncontradas.set(pAtiva, pOrig);
+                    // Remove caracteres estranhos (limpeza pesada)
+                    pOrig = pOrig.replace(/[^A-Z0-9]/g, '');
+                    pAtiva = pAtiva.replace(/[^A-Z0-9]/g, '');
+
+                    if (pAtiva && pOrig) {
+                        placasEncontradas.set(pAtiva, pOrig);
+                    }
                 }
             });
 
@@ -8207,7 +8245,6 @@
             modalConfirmTransbordo.classList.add('active');
         });
 
-        // 5. EXECUÇÃO IMPLACÁVEL: ALTERA O DOM E SALVA NO FIREBASE
         // ================= FINALIZAÇÃO DE TRANSBORDO CORRIGIDA (PAINEL + NOTAS) =================
         document.getElementById('btn-finalizar-transbordo').addEventListener('click', async () => {
             const selectElem = document.getElementById('transbordo-origem');
@@ -8238,22 +8275,26 @@
             showLoader();
 
             try {
+                // DECLARAÇÃO GLOBAL: Para o Painel e as Notas enxergarem os mesmos dados
+                let notasGlobaisTransbordo = []; 
+
                 // 1. ATUALIZA AS NOTAS DIRETAMENTE NO FIREBASE (notas_fiscais_diario)
                 if (dataOperacao) {
                     const notasDocRef = doc(db, "notas_fiscais_diario", dataOperacao);
                     const docSnap = await getDoc(notasDocRef);
 
                     if (docSnap.exists()) {
-                        let dadosNotas = docSnap.data().notas || [];
+                        notasGlobaisTransbordo = docSnap.data().notas || [];
                         let alterouBancoNotas = false;
 
-                        dadosNotas = dadosNotas.map(nota => {
+                        notasGlobaisTransbordo = notasGlobaisTransbordo.map(nota => {
                             let placaNotaLimpa = (nota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                             let placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                            if (tipo === 'todas' || nfsSel.includes(String(nota.nf))) {
+                            // Verifica se é pra transferir todas OU apenas as marcadas E se a placa da nota bate com a origem
+                            if (placaNotaLimpa === placaAtivaLimpa && (tipo === 'todas' || nfsSel.includes(String(nota.nf)))) {
                                 nota.placa = destino;
-                                nota.tipo_viagem = novoStatusPainel; // GRAVA SE É APOIO, SEG. VIAGEM, ETC. NA NOTA!
+                                nota.tipo_viagem = novoStatusPainel;
                                 if (novoMot) nota.motorista = novoMot;
                                 if (novoTel) nota.telefone = novoTel;
                                 alterouBancoNotas = true;
@@ -8262,7 +8303,7 @@
                         });
 
                         if (alterouBancoNotas) {
-                            await setDoc(notasDocRef, { notas: dadosNotas });
+                            await setDoc(notasDocRef, { notas: notasGlobaisTransbordo });
                         }
                     }
                 }
@@ -8274,10 +8315,41 @@
                         let rotas = snapPainel.data().rotas || [];
                         let alterouPainelDb = false;
 
+                        const placaOrigemLimpa = placaOriginal.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                        // 🟢 BUSCA CIRÚRGICA: Localiza a rota pela placa E pelo transporte associado às notas
                         let rotaOriginalIndex = rotas.findIndex(r => {
-                            let pOrigDb = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                            let pAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                            return (pOrigDb === pAtivaLimpa || r.placa.toUpperCase().replace(/[^A-Z0-9]/g, '') === pAtivaLimpa);
+                            let placaBate = false;
+                            if (r.placa) {
+                                let pBaseDb = r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                if (pBaseDb === placaOrigemLimpa) placaBate = true;
+                            }
+                            if (r.troca && !placaBate) {
+                                let pTrocaDb = r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                if (pTrocaDb === placaOrigemLimpa || pTrocaDb === placaAtivaLimpa) placaBate = true;
+                            }
+
+                            let transporteBate = false;
+                            if (r.transporte) {
+                                let transportesRota = String(r.transporte).match(/\d+/g) || [];
+                                if (transportesRota.length > 0) {
+                                     let nfsAlteradas = notasGlobaisTransbordo.filter(n => {
+                                        let pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                        return pNota === destino && (tipo === 'todas' || nfsSel.includes(String(n.nf)));
+                                     });
+
+                                     transporteBate = nfsAlteradas.some(notaAlterada => {
+                                         return transportesRota.includes(String(notaAlterada.viagem).trim());
+                                     });
+                                } else {
+                                    transporteBate = true;
+                                }
+                            } else {
+                                transporteBate = true;
+                            }
+
+                            return placaBate && transporteBate;
                         });
 
                         if (rotaOriginalIndex !== -1) {
@@ -8298,6 +8370,30 @@
                                 if (novoTel) r.contato = novoTel;
                             }
                             alterouPainelDb = true;
+                        } else {
+                            // Fallback
+                            let fallbackIndex = rotas.findIndex(r => {
+                                let pBaseDb = r.placa ? r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+                                return pBaseDb === placaOrigemLimpa;
+                            });
+                             if (fallbackIndex !== -1) {
+                                let r = rotas[fallbackIndex];
+                                 if (novoStatusPainel.toUpperCase() === 'APOIO') {
+                                    let novaRota = { ...r };
+                                    novaRota.placa = r.troca ? r.troca : r.placa;
+                                    novaRota.troca = destino;
+                                    novaRota.status = 'Apoio';
+                                    if (novoMot) novaRota.motorista = novoMot;
+                                    if (novoTel) novaRota.contato = novoTel;
+                                    rotas.push(novaRota);
+                                } else {
+                                    r.troca = destino;
+                                    r.status = novoStatusPainel;
+                                    if (novoMot) r.motorista = novoMot;
+                                    if (novoTel) r.contato = novoTel;
+                                }
+                                alterouPainelDb = true;
+                             }
                         }
 
                         if (alterouPainelDb) {
