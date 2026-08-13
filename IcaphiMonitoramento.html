@@ -6444,15 +6444,15 @@
             const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1); const dataOntem = dObj.toISOString().split('T')[0];
 
             try {
-                // Busca estática apenas do Painel e do dia anterior
-                const [snapOntemNotas, snapPainel] = await Promise.all([
+                // 🔥 CORREÇÃO 2: Buscar o painel de 'dataOntem' (não 'dataSel') para encontrar a coluna de 'troca' original!
+                const [snapOntemNotas, snapOntemPainel] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
-                    getDoc(doc(db, "painel_diario", dataSel))
+                    getDoc(doc(db, "painel_diario", dataOntem)) 
                 ]);
 
                 let deParaTroca = {};
-                if (snapPainel.exists()) {
-                    snapPainel.data().rotas.forEach(r => {
+                if (snapOntemPainel.exists()) {
+                    snapOntemPainel.data().rotas.forEach(r => {
                         if (r.placa && r.troca && r.troca.trim() !== "") {
                             deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
                         }
@@ -6731,11 +6731,35 @@
             try {
                 const sHoje = await getDoc(doc(db, "notas_fiscais_diario", dataSel));
                 if (sHoje.exists()) notasParaApresentar = sHoje.data().notas || [];
+                
                 const dObj = new Date(dataSel); dObj.setUTCDate(dObj.getUTCDate() - 1);
                 const dataOntem = dObj.toISOString().split('T')[0];
-                const sOntem = await getDoc(doc(db, "notas_fiscais_diario", dataOntem));
-                if (sOntem.exists()) {
-                    sOntem.data().notas.forEach(no => { if (trimUpper(no.status).includes('PERNOITE') && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { notasParaApresentar.push({ ...no, status: "" }); } });
+                
+                // 🔥 CORREÇÃO 1: Busca as notas de ontem E O PAINEL DE ONTEM para resgatar o histórico de transbordo
+                const [sOntemNotas, sOntemPainel] = await Promise.all([
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
+                    getDoc(doc(db, "painel_diario", dataOntem))
+                ]);
+
+                let deParaTroca = {};
+                if (sOntemPainel.exists()) {
+                    sOntemPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
+
+                if (sOntemNotas.exists()) {
+                    sOntemNotas.data().notas.forEach(no => { 
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasParaApresentar.find(n => cleanNF(n.nf) === cleanNF(no.nf))) { 
+                            // 🔥 MÁGICA: Aplica o de->para do transbordo nas notas resgatadas antes de jogar no Editor
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            
+                            notasParaApresentar.push({ ...no, status: "", placa: placaFinal }); 
+                        } 
+                    });
                 }
 
                 tbodyEditorNotas.style.display = 'none';
