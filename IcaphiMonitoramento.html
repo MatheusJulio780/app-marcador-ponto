@@ -5040,6 +5040,9 @@
 
         // ================= NOTIFICAÇÃO EM FORMATO DE GOTA UNIVERSAL =================
         window.mostrarGotaNotificacao = (titulo, mensagem, fotoUrl = "", statusNome = "") => {
+            const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
+            if (!visualAtivo) return;
+
             const toast = document.getElementById('chat-toast-container');
             const imgEl = document.getElementById('chat-toast-img');
             const nameEl = document.getElementById('chat-toast-name');
@@ -5047,12 +5050,12 @@
 
             if (!toast) return;
 
-            // Reseta estilos inline anteriores para evitar conflito
+            // Limpa apenas as cores inline anteriores (mantém o CSS de posição intacto)
             toast.style.background = "";
             toast.style.color = "";
             toast.style.borderColor = "";
 
-            // Se recebeu um status, aplica as variáveis CSS correspondentes da pílula
+            // Se recebeu um status, aplica as cores correspondentes
             if (statusNome) {
                 const stUpper = statusNome.toUpperCase();
                 if (stUpper.includes("VAZIO")) {
@@ -5096,16 +5099,22 @@
             if (nameEl) nameEl.innerText = titulo;
             if (msgEl) msgEl.innerText = mensagem;
 
+            // Força a remoção e reinício da classe para disparar a animação do CSS
+            toast.classList.remove('show');
+            void toast.offsetWidth; // Truque do navegador para reiniciar o fluxo de animação
             toast.classList.add('show');
 
-            setTimeout(() => {
+            // Limpa o timer anterior se houver para evitar conflitos de múltiplos disparos
+            if (window._toastTimeout) clearTimeout(window._toastTimeout);
+
+            window._toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
             }, 4000);
         };
 
         function listenChatsGlobais() {
             const myUid = window.currentUserData.uid;
-            onSnapshot(collection(db, "chats"), (snapshot) => {
+            onSnapshot(collection(db, "chats"), async (snapshot) => {
                 let totalUnread = 0;
                 let toqueSound = false;
                 let ultimoSender = null;
@@ -5118,7 +5127,6 @@
                         const myUnread = data.unreadCount ? (data.unreadCount[myUid] || 0) : 0;
                         unreadCountsGlobal[docId] = myUnread;
 
-                        // Toca som e mostra a gota apenas se for modificação e eu tiver não lidas e não for a minha janela ativa
                         if (change.type === 'modified' && myUnread > 0 && data.lastMessageSender !== myUid && activeChatId !== docId) {
                             toqueSound = true;
                             ultimoSender = data.lastMessageSender;
@@ -5134,11 +5142,39 @@
                     badge.innerText = totalUnread;
                     badge.style.display = 'flex';
                     if (toqueSound) {
-                        // Toca o som de notificação
-                        const sound = document.getElementById('chat-notification-sound');
-                        if (sound) sound.play().catch(e => console.log("Áudio bloqueado pelo navegador até primeira interação."));
-                        // Dispara a Gota Flutuante
-                        mostrarToastNotificacao(ultimoSender, ultimaMensagemTexto);
+                        // 1. Toca o som respeitando a configuração
+                        const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
+                        if (somAtivo) {
+                            const sound = document.getElementById('chat-notification-sound');
+                            if (sound) {
+                                sound.currentTime = 0;
+                                sound.play().catch(e => console.log("Áudio bloqueado pelo navegador."));
+                            }
+                        }
+
+                        // 2. Busca o nome e a foto real de quem enviou para exibir na Gota
+                        try {
+                            const userDocRef = doc(db, "users", ultimoSender);
+                            const userSnap = await getDoc(userDocRef);
+                            let nomeRemetente = "Nova Mensagem";
+                            let fotoRemetente = "";
+
+                            if (userSnap.exists()) {
+                                const uData = userSnap.data();
+                                nomeRemetente = `${uData.nome || ""} ${uData.sobrenome || ""}`.trim() || "Colega";
+                                fotoRemetente = window.obterAvatarSeguro(uData.nome, uData.foto);
+                            }
+
+                            // Dispara a Gota Universal do Chat
+                            if (typeof mostrarGotaNotificacao === 'function') {
+                                mostrarGotaNotificacao(nomeRemetente, ultimaMensagemTexto, fotoRemetente);
+                            }
+                        } catch (e) {
+                            console.error("Erro ao buscar dados do remetente para notificação:", e);
+                            if (typeof mostrarGotaNotificacao === 'function') {
+                                mostrarGotaNotificacao("Nova Mensagem", ultimaMensagemTexto);
+                            }
+                        }
                     }
                 } else {
                     badge.style.display = 'none';
@@ -10355,37 +10391,26 @@
             });
         }
 
-        // 🛡️ BLINDA A FUNÇÃO DE GOTA PARA RESPEITAR A CONFIGURAÇÃO
+        // Função segura para tocar o som respeitando a preferência
+        window.tocarSomNotificacao = () => {
+            const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
+            if (!somAtivo) return;
+            const sound = document.getElementById('chat-notification-sound');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Áudio bloqueado."));
+            }
+        };
+
+        // Função segura para exibir a Gota respeitando a preferência
         const _originalMostrarGota = window.mostrarGotaNotificacao;
         if (typeof _originalMostrarGota === 'function') {
             window.mostrarGotaNotificacao = (titulo, mensagem, fotoUrl = "", statusNome = "") => {
                 const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
-                if (!visualAtivo) return; // Se desativado, bloqueia a exibição da gota
+                if (!visualAtivo) return; 
                 _originalMostrarGota(titulo, mensagem, fotoUrl, statusNome);
             };
         }
-
-        // 🛡️ BLINDA O DISPARO DE SOM PARA RESPEITAR A CONFIGURAÇÃO
-        const observerSom = new MutationObserver(() => {
-            const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
-            if (!somAtivo) {
-                const sound = document.getElementById('chat-notification-sound');
-                if (sound) {
-                    sound.pause();
-                    sound.currentTime = 0;
-                }
-            }
-        });
-        
-        // Intercepta a reprodução global de áudio se o som estiver desativado
-        const originalPlayAudio = HTMLAudioElement.prototype.play;
-        HTMLAudioElement.prototype.play = function() {
-            const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
-            if (this.id === 'chat-notification-sound' && !somAtivo) {
-                return Promise.resolve(); // Simula sucesso sem tocar nada
-            }
-            return originalPlayAudio.apply(this, arguments);
-        };
 
     </script>
 </body>
