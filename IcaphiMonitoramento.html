@@ -3736,6 +3736,30 @@
                     </label>
                 </div>
 
+                <!-- 🟢 NOVO: Desativar Sons -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
+                    <div>
+                        <strong style="display: block; font-size: 14px;">Som de Notificação</strong>
+                        <span style="font-size: 11px; color: var(--text-muted);">Tocar alerta sonoro ao receber avisos.</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-som-notif" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- 🟢 NOVO: Desativar Notificações Visuais (Gota) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
+                    <div>
+                        <strong style="display: block; font-size: 14px;">Notificações Visuais (Gota)</strong>
+                        <span style="font-size: 11px; color: var(--text-muted);">Exibir balões flutuantes na tela.</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-visual-notif" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div
                     style="background: var(--bg-table-row-alt); padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
                     <strong style="display: block; font-size: 14px; margin-bottom: 5px;">Editor de Layout
@@ -4689,34 +4713,59 @@
             atualizarPresenca(false);
         });
 
+        // ================= MOTOR DE AVATARES ONLINE COM NOTIFICAÇÃO DE ENTRADA =================
+        let cacheUsuariosOnlineAnterior = {}; // Guarda quem já estava online para comparar
 
-
-
-        // ================= MOTOR DE AVATARES ONLINE (BLINDADO) =================
         function listenUsuariosOnline() {
             onSnapshot(collection(db, "users"), (snapshot) => {
                 const listModal = document.getElementById('lista-online-detalhada');
 
                 let onlineCount = 0;
-                let stackHTML = ''; // Guarda o HTML dos avatares para injetar depois
-                let modalItemsHTML = []; // Otimização de performance para renderizar o modal limpo
+                let stackHTML = '';
+                let modalItemsHTML = [];
+
+                const agora = Date.now();
+                const LIMITE_INATIVIDADE_MS = 3 * 60 * 1000; // 3 minutos
+                const novosUsuariosOnline = [];
 
                 snapshot.forEach(docSnap => {
+                    const userId = docSnap.id;
                     const user = docSnap.data();
-                    const isMe = docSnap.id === window.currentUserData?.uid;
+                    const isMe = userId === window.currentUserData?.uid;
 
-                    if (user.online) {
+                    let ultimaAtividadeMs = 0;
+                    if (user.lastActive) {
+                        if (typeof user.lastActive.toMillis === 'function') {
+                            ultimaAtividadeMs = user.lastActive.toMillis();
+                        } else if (user.lastActive.seconds) {
+                            ultimaAtividadeMs = user.lastActive.seconds * 1000;
+                        } else {
+                            ultimaAtividadeMs = new Date(user.lastActive).getTime();
+                        }
+                    }
+
+                    const estaRealmenteOnline = user.online && (isMe || (agora - ultimaAtividadeMs < LIMITE_INATIVIDADE_MS));
+
+                    // 🟢 DETECTOR DE NOVO USUÁRIO ONLINE (CORRETO)
+                    if (estaRealmenteOnline && !cacheUsuariosOnlineAnterior[userId] && !isMe) {
+                        const nomeCompleto = `${user.nome || ""} ${user.sobrenome || ""}`.trim() || "Usuário";
+                        const fotoUser = window.obterAvatarSeguro(user.nome, user.foto);
+
+                        // Dispara a Gota com a foto real do operador!
+                        mostrarGotaNotificacao("Usuário Online", `${nomeCompleto} acabou de entrar no sistema.`, fotoUser);
+                    }
+
+                    // Atualiza o cache atual
+                    cacheUsuariosOnlineAnterior[userId] = estaRealmenteOnline;
+
+                    if (estaRealmenteOnline) {
                         onlineCount++;
-
-                        // Garante que a foto do usuário é válida ou puxa o avatar de iniciais colorido
                         const fotoValidada = window.obterAvatarSeguro(user.nome, user.foto);
 
-                        // Monta os avatares empilhados no cabeçalho
                         if (onlineCount <= 4 && !isMe) {
                             stackHTML += `<img src="${fotoValidada}" title="${user.nome} (${user.setor})">`;
                         }
 
-                        // Acumula os itens formatados do modal de forma atômica
                         modalItemsHTML.push(`
                             <div class="online-user-item">
                                 <img src="${fotoValidada}" alt="${user.nome}" onerror="this.src=window.obterAvatarSeguro('${user.nome}', '')">
@@ -4730,17 +4779,25 @@
                     }
                 });
 
-                // Se tiver mais de 4 usuários online, adiciona o indicador numérico no stack
+                // Dispara o toast visual para cada novo usuário que entrou (evita spam se entrarem vários juntos)
+                if (novosUsuariosOnline.length > 0 && typeof dispararToastStatus === 'function') {
+                    novosUsuariosOnline.forEach(nomeUser => {
+                        dispararToastStatus(`🟢 <b>${nomeUser}</b> acabou de ficar online.`);
+                    });
+
+                    // Toca o som opcional de notificação
+                    const sound = document.getElementById('chat-notification-sound');
+                    if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                }
+
                 if (onlineCount > 4) {
                     stackHTML += `<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-secondary); border: 2px solid var(--bg-main); margin-left: -10px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold;">+${onlineCount - 4}</div>`;
                 }
 
-                // Injeta a lista detalhada no modal de uma única vez evitando re-renderização pesada
                 if (listModal) {
                     listModal.innerHTML = modalItemsHTML.join('');
                 }
 
-                // Injeta nos cabeçalhos de todas as abas simultaneamente
                 document.querySelectorAll('#online-users-stack, .online-users-stack').forEach(container => {
                     if (container) container.innerHTML = stackHTML;
                 });
@@ -4981,29 +5038,66 @@
             document.getElementById('chat-contact-list').classList.add('active');
         });
 
-        // ================= NOTIFICAÇÕES VISUAIS E SONORAS =================
-        window.mostrarToastNotificacao = async (senderId, text) => {
+        // ================= NOTIFICAÇÃO EM FORMATO DE GOTA UNIVERSAL =================
+        window.mostrarGotaNotificacao = (titulo, mensagem, fotoUrl = "", statusNome = "") => {
             const toast = document.getElementById('chat-toast-container');
+            const imgEl = document.getElementById('chat-toast-img');
+            const nameEl = document.getElementById('chat-toast-name');
+            const msgEl = document.getElementById('chat-toast-msg');
+
             if (!toast) return;
 
-            let nome = "Novo Mensagem";
-            let foto = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Padrão
+            // Reseta estilos inline anteriores para evitar conflito
+            toast.style.background = "";
+            toast.style.color = "";
+            toast.style.borderColor = "";
 
-            try {
-                const userSnap = await getDoc(doc(db, "users", senderId));
-                if (userSnap.exists()) {
-                    nome = userSnap.data().nome;
-                    foto = userSnap.data().foto || foto;
+            // Se recebeu um status, aplica as variáveis CSS correspondentes da pílula
+            if (statusNome) {
+                const stUpper = statusNome.toUpperCase();
+                if (stUpper.includes("VAZIO")) {
+                    toast.style.background = "var(--st-vazio-bg)";
+                    toast.style.color = "var(--st-vazio-txt)";
+                    toast.style.borderColor = "var(--st-vazio-bd)";
+                } else if (stUpper.includes("FINALIZADO")) {
+                    toast.style.background = "var(--st-finalizado-bg)";
+                    toast.style.color = "var(--st-finalizado-txt)";
+                    toast.style.borderColor = "var(--st-finalizado-bd)";
+                } else if (stUpper.includes("PRÓXIMO")) {
+                    toast.style.background = "var(--st-prox-bg)";
+                    toast.style.color = "var(--st-prox-txt)";
+                    toast.style.borderColor = "var(--st-prox-bd)";
+                } else if (stUpper.includes("PERNOITE")) {
+                    toast.style.background = "var(--st-pernoite-bg)";
+                    toast.style.color = "var(--st-pernoite-txt)";
+                    toast.style.borderColor = "var(--st-pernoite-bd)";
+                } else if (stUpper.includes("AGUARDANDO")) {
+                    toast.style.background = "var(--st-aguardando-bg)";
+                    toast.style.color = "var(--st-aguardando-txt)";
+                    toast.style.borderColor = "var(--st-aguardando-bd)";
+                } else if (stUpper.includes("TRAFEGANDO")) {
+                    toast.style.background = "var(--st-trafegando-bg)";
+                    toast.style.color = "var(--st-trafegando-txt)";
+                    toast.style.borderColor = "var(--st-trafegando-bd)";
+                } else if (stUpper.includes("DESCARREGANDO")) {
+                    toast.style.background = "var(--st-desc-bg)";
+                    toast.style.color = "var(--st-desc-txt)";
+                    toast.style.borderColor = "var(--st-desc-bd)";
+                } else if (stUpper.includes("PARADA")) {
+                    toast.style.background = "var(--st-parada-bg)";
+                    toast.style.color = "var(--st-parada-txt)";
+                    toast.style.borderColor = "var(--st-parada-bd)";
                 }
-            } catch (e) { }
+            }
 
-            document.getElementById('chat-toast-img').src = foto;
-            document.getElementById('chat-toast-name').innerText = nome;
-            document.getElementById('chat-toast-msg').innerText = text;
+            if (imgEl) {
+                imgEl.src = fotoUrl || "https://cdn-icons-png.flaticon.com/512/3067/3067417.png";
+            }
+            if (nameEl) nameEl.innerText = titulo;
+            if (msgEl) msgEl.innerText = mensagem;
 
             toast.classList.add('show');
 
-            // Oculta após 4 segundos
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 4000);
@@ -6503,6 +6597,24 @@
 
                             let stRotaCalc = "";
                             if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
+                            // 🟢 DETECTOR CIRÚRGICO DE ST. ROTA COM CORES DINÂMICAS
+                            if (!window._cacheStRotaMemoria) window._cacheStRotaMemoria = {};
+                            const chaveMemoriaCalc = `${dataSel}_${placaRef}`;
+                            const statusAntigo = window._cacheStRotaMemoria[chaveMemoriaCalc];
+
+                            if (statusAntigo !== undefined && statusAntigo !== stRotaCalc && stRotaCalc !== "") {
+                                if (typeof mostrarGotaNotificacao === 'function') {
+                                    mostrarGotaNotificacao(
+                                        "Atualização de Frota", 
+                                        `${placaRef} ${stRotaCalc}`, 
+                                        "https://cdn-icons-png.flaticon.com/512/3067/3067417.png",
+                                        stRotaCalc // <-- Passa o status aqui para pintar a notificação
+                                    );
+                                }
+                                const sound = document.getElementById('chat-notification-sound');
+                                if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                            }
+                            window._cacheStRotaMemoria[chaveMemoriaCalc] = stRotaCalc;
 
                             if (stRotaCalc) statusCounts[stRotaCalc] = (statusCounts[stRotaCalc] || 0) + 1;
                             const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
@@ -6591,6 +6703,48 @@
 
                 // ABRE OS CANAIS AO VIVO PARA ROTAS E NOTAS
                 window.unsubscribePainelRotas = onSnapshot(doc(db, "painel_diario", dataSel), (docSnap) => {
+
+                    // 🟢 DETECTOR DE MUDANÇA DE ST. ROTA DIRETO NA FONTE (FIREBASE)
+                    if (cacheSnapPainel && cacheSnapPainel.exists() && docSnap.exists()) {
+                        const rotasAntigas = cacheSnapPainel.data().rotas || [];
+                        const rotasNovas = docSnap.data().rotas || [];
+
+                        // APLIQUE ISSO EM TODOS OS BLOCOS DE DETECTOR QUE VOCÊ TEM:
+                        if (window.ultimaNotificacaoDisparada === `${placaRef}_${stRotaCalc}`) return; 
+                        window.ultimaNotificacaoDisparada = `${placaRef}_${stRotaCalc}`;
+
+                        rotasNovas.forEach(rotaNova => {
+                            const placaRef = (rotaNova.troca && rotaNova.troca.trim() !== "") ? trimUpper(rotaNova.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rotaNova.placa).replace(/[^A-Z0-9]/g, '');
+                            const statusNovo = rotaNova.status || "Sem Status";
+
+                            // Acha o mesmo veículo no array antigo para comparar o status
+                            const rotaAntiga = rotasAntigas.find(r => {
+                                const pOld = (r.troca && r.troca.trim() !== "") ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                                return pOld === placaRef;
+                            });
+
+                            if (rotaAntiga) {
+                                const statusAntigo = rotaAntiga.status || "Sem Status";
+
+                                // Se o status mudou de verdade em relação ao que estava salvo no banco
+                                if (statusAntigo !== statusNovo) {
+                                    // Dispara a Gota no formato correto
+                                    if (typeof mostrarGotaNotificacao === 'function') {
+                                        mostrarGotaNotificacao(
+                                            "Atualização de Frota",
+                                            `Veículo ${placaRef} alterou para: ${statusNovo}`,
+                                            "https://cdn-icons-png.flaticon.com/512/3067/3067417.png"
+                                        );
+                                    }
+
+                                    // Toca o som de notificação
+                                    const sound = document.getElementById('chat-notification-sound');
+                                    if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                                }
+                            }
+                        });
+                    }
+
                     cacheSnapPainel = docSnap;
                     renderPainelLive();
                 });
@@ -6713,7 +6867,6 @@
                     if (snapOntemNotas.exists()) {
                         snapOntemNotas.data().notas.forEach(no => {
                             if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                                // CORREÇÃO CRIDÚRGICA: Aplica o dicionário de troca do painel de HOJE nas notas herdadas
                                 let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                                 let placaFinal = deParaTroca[placaOriginal] || no.placa;
 
@@ -6722,7 +6875,8 @@
                         });
                     }
 
-                    let notasParaProcessar = [...notasRollover, ...notasDoDia]; let htmlBuffer = "";
+                    let notasParaProcessar = [...notasRollover, ...notasDoDia]; 
+                    let htmlBuffer = "";
 
                     if (notasParaProcessar.length > 0) {
                         notasParaProcessar.forEach(nota => {
@@ -8882,13 +9036,21 @@
                             // 🟢 DETECTOR DE MUDANÇA DE STATUS EM TEMPO REAL
                             if (!window._cacheStatusPainelGlobal) window._cacheStatusPainelGlobal = {};
                             const chaveCacheStatus = `${dataSel}_${placaRef}`;
-                            
+
+                            // APLIQUE ISSO EM TODOS OS BLOCOS DE DETECTOR QUE VOCÊ TEM:
+                            if (window.ultimaNotificacaoDisparada === `${placaRef}_${stRotaCalc}`) return; 
+                            window.ultimaNotificacaoDisparada = `${placaRef}_${stRotaCalc}`;
+
                             // Se já estava na memória e o status mudou comparado ao que estava gravado antes
                             if (window._cacheStatusPainelGlobal[chaveCacheStatus] && window._cacheStatusPainelGlobal[chaveCacheStatus] !== stRotaCalc) {
-                                // Dispara o balão de notificação visual que você já criou!
-                                dispararToastStatus(`Veículo <b>${placaRef}</b> alterou para: <b>${stRotaCalc}</b>`);
-                                
-                                // Toca o som opcional de notificação
+
+                                // Dispara a Gota estilizada para alteração de frota
+                                mostrarGotaNotificacao(
+                                    "Atualização de Frota",
+                                    `Veículo ${placaRef} alterou para: ${stRotaCalc}`,
+                                    "https://cdn-icons-png.flaticon.com/512/3067/3067417.png" // Ícone de caminhão/frota
+                                );
+
                                 const sound = document.getElementById('chat-notification-sound');
                                 if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
                             }
@@ -9583,19 +9745,19 @@
         // ================= MONITORAMENTO EM TEMPO REAL DE ST. ROTA =================
         window.iniciarMonitoramentoDeRota = (dataOperacao) => {
             if (!dataOperacao) return;
-            
+
             // Cancela o monitoramento anterior para não acumular ouvidores abertos
             if (typeof listenerStatusPainel === 'function') {
                 listenerStatusPainel();
             }
-            
+
             cacheStatusAnterior = {}; // Reseta a memória para o novo dia
             console.log(`[Monitoramento] Ativado com sucesso para o dia: ${dataOperacao}`);
 
             listenerStatusPainel = onSnapshot(doc(db, "painel_diario", dataOperacao), (docSnap) => {
                 if (docSnap.exists()) {
                     const rotas = docSnap.data().rotas || [];
-                    
+
                     rotas.forEach(rota => {
                         const placaVeiculo = rota.troca ? rota.troca : rota.placa;
                         const statusAtual = rota.status || "Sem Status";
@@ -9605,10 +9767,10 @@
                         // Se a placa já estava no cache e o status mudou
                         if (cacheStatusAnterior[placaVeiculo] && cacheStatusAnterior[placaVeiculo] !== statusAtual) {
                             console.log(`[Alerta Status] Veículo ${placaVeiculo} mudou de '${cacheStatusAnterior[placaVeiculo]}' para '${statusAtual}'`);
-                            
+
                             // Dispara o balão visual
                             dispararToastStatus(`Veículo <b>${placaVeiculo}</b> alterou para: <b>${statusAtual}</b>`);
-                            
+
                             // Toca o som opcional
                             const sound = document.getElementById('chat-notification-sound');
                             if (sound) sound.play().catch(e => console.log("Áudio bloqueado pelo navegador."));
@@ -10173,6 +10335,57 @@
                 }
             }
         });
+
+        // ================= CONTROLE DE CONFIGURAÇÕES DE NOTIFICAÇÃO =================
+        const chkSom = document.getElementById('toggle-som-notif');
+        const chkVisual = document.getElementById('toggle-visual-notif');
+
+        // Carrega preferências salvas ao abrir o sistema
+        if (chkSom) {
+            chkSom.checked = localStorage.getItem('app_som_ativo') !== 'false';
+            chkSom.addEventListener('change', () => {
+                localStorage.setItem('app_som_ativo', chkSom.checked);
+            });
+        }
+
+        if (chkVisual) {
+            chkVisual.checked = localStorage.getItem('app_visual_ativo') !== 'false';
+            chkVisual.addEventListener('change', () => {
+                localStorage.setItem('app_visual_ativo', chkVisual.checked);
+            });
+        }
+
+        // 🛡️ BLINDA A FUNÇÃO DE GOTA PARA RESPEITAR A CONFIGURAÇÃO
+        const _originalMostrarGota = window.mostrarGotaNotificacao;
+        if (typeof _originalMostrarGota === 'function') {
+            window.mostrarGotaNotificacao = (titulo, mensagem, fotoUrl = "", statusNome = "") => {
+                const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
+                if (!visualAtivo) return; // Se desativado, bloqueia a exibição da gota
+                _originalMostrarGota(titulo, mensagem, fotoUrl, statusNome);
+            };
+        }
+
+        // 🛡️ BLINDA O DISPARO DE SOM PARA RESPEITAR A CONFIGURAÇÃO
+        const observerSom = new MutationObserver(() => {
+            const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
+            if (!somAtivo) {
+                const sound = document.getElementById('chat-notification-sound');
+                if (sound) {
+                    sound.pause();
+                    sound.currentTime = 0;
+                }
+            }
+        });
+        
+        // Intercepta a reprodução global de áudio se o som estiver desativado
+        const originalPlayAudio = HTMLAudioElement.prototype.play;
+        HTMLAudioElement.prototype.play = function() {
+            const somAtivo = localStorage.getItem('app_som_ativo') !== 'false';
+            if (this.id === 'chat-notification-sound' && !somAtivo) {
+                return Promise.resolve(); // Simula sucesso sem tocar nada
+            }
+            return originalPlayAudio.apply(this, arguments);
+        };
 
     </script>
 </body>
