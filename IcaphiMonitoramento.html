@@ -7940,12 +7940,55 @@
         // ================= 1. FORMULÁRIO PADRÃO DE PRESTAÇÃO DE CONTAS =================
         document.getElementById('btn-gerar-pc-padrao').addEventListener('click', () => {
             if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
-            const d = obterDadosFiltradosPC();
+            
+            const d = obterDadosFiltradosPC(); // Deixa a função antiga puxar nome do motorista, data, etc.
+
+            // 🟢 FILTRO ABSOLUTO: Substitui completamente as notas da função antiga direto da fonte
+            const placaSelecionada = document.getElementById('pc-placa').value;
+            const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            
+            // Pega TODAS as notas deste veículo puro do cache
+            let notasBrutas = window.pcNotasCache.filter(n => {
+                const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return pNota === pSelecionadaLimpa;
+            });
+
+            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+            // Se selecionou uma viagem, fatia as notas brutas
+            if (viagemSelecionada && viagemSelecionada !== "") {
+                const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                notasBrutas = notasBrutas.filter(n => {
+                    const vNota = String(n.viagem || "").trim();
+                    return transpArray.some(t => vNota.includes(t) || t.includes(vNota));
+                });
+                
+                d.transporte = viagemSelecionada; // Coloca os transportes juntos no PDF
+                if (window.pcRotasCache) {
+                    const rotaSelect = window.pcRotasCache.find(r => r.transporte === viagemSelecionada);
+                    if (rotaSelect) d.statusViagem = rotaSelect.status || d.statusViagem;
+                }
+            } else {
+                // Se for "Todas", junta os transportes só pra ficar bonito no cabeçalho
+                const viagensUnicas = [...new Set(notasBrutas.map(n => String(n.viagem || '').trim()))].filter(v => v !== '');
+                if (viagensUnicas.length > 0) d.transporte = viagensUnicas.join(' / ');
+            }
+
+            // Sobrescreve as variáveis do PDF com a nossa própria matemática blindada
+            const getSt = (s) => String(s || "").trim().toUpperCase();
+            d.notas = notasBrutas;
+            d.entregues = notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE');
+            d.reentregas = notasBrutas.filter(n => getSt(n.status) === 'REENTREGA');
+            d.devolucoes = notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO');
+            d.parciais = notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "");
+
+            if (d.notas.length === 0) return alert("Não há notas para o transporte selecionado.");
 
             // MAPEAMENTO E ORDENAÇÃO DE CANHOTOS (COLUMN-MAJOR)
-
-            // 1. Correção Lógica: Ordena numericamente e aplica a base limpa
             let notasOrdenadas = [...d.entregues].sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
+
+            // ... (restante do código segue igual)
 
             let canhotosMapeados = notasOrdenadas.map(n => {
                 let statusApp = trimUpper(n.app || '');
@@ -7957,25 +8000,26 @@
                 return { text: cleanNF(n.nf), color: cor, alignment: 'center', fontSize: 10, bold: true };
             });
 
-            // 2. Parâmetros da Matriz
-            const numColunas = 6;
-            // Força um mínimo de 5 linhas para não quebrar a estética do seu PDF
-            let numLinhas = Math.max(5, Math.ceil(canhotosMapeados.length / numColunas));
+            // 🟢 MATRIZ EXATA: 10 Colunas e 11 Linhas (110 células garantidas)
+            const numColunas = 10;
+            const numLinhas = 11; 
 
-            // 3. Matriz vazia pré-alocada (Engana o construtor Row-Major do pdfMake)
+            // Pré-aloca a matriz 10x11 preenchida com células vazias
             let linhasCanhotos = Array.from({ length: numLinhas }, () =>
                 Array.from({ length: numColunas }, () => ({ text: '', alignment: 'center' }))
             );
 
-            // 4. Preenchimento Cruzado (A matemática empurra os dados verticalmente primeiro)
+            // Preenchimento Cruzado (Vertical primeiro)
             canhotosMapeados.forEach((canhoto, index) => {
-                let c = Math.floor(index / numLinhas); // Índice da Coluna
-                let r = index % numLinhas;             // Índice da Linha
-                linhasCanhotos[r][c] = canhoto;
+                let c = Math.floor(index / numLinhas); 
+                let r = index % numLinhas;             
+                
+                // Trava de segurança para não ultrapassar as 10 colunas (110 canhotos max)
+                if (c < numColunas) {
+                    linhasCanhotos[r][c] = canhoto;
+                }
             });
-            while (linhasCanhotos.length < 5) linhasCanhotos.push([{ text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }, { text: '' }]);
 
-            // Lógica inteligente: Se a logo foi carregada, usa a imagem. Se não, usa texto (fallback)
             const headerElemento = window.logoIcaphiBase64
                 ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
                 : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
@@ -8033,21 +8077,27 @@
                     },
 
 
-                    // RELAÇÃO DE CANHOTOS
+                    // RELAÇÃO DE CANHOTOS (ATUALIZADA PARA 10 COLUNAS)
                     {
                         table: {
-                            widths: ['*', '*', '*', '*', '*', '*'],
+                            // Define exatamente 10 colunas de tamanho igual '*'
+                            widths: Array(10).fill('*'),
                             body: [
-                                [{ text: 'RELAÇÃO DE CANHOTOS ENTREGUES', colSpan: 6, alignment: 'center', bold: true, fontSize: 10, fillColor: '#e2e8f0' }, {}, {}, {}, {}, {}],
+                                // Header com colSpan 10 seguido de 9 objetos vazios
+                                [{ text: 'RELAÇÃO DE CANHOTOS ENTREGUES', colSpan: 10, alignment: 'center', bold: true, fontSize: 10, fillColor: '#e2e8f0' }, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                                
+                                // Insere as 11 linhas geradas dinamicamente
                                 ...linhasCanhotos,
-                                [{ text: `RESUMO: ${d.entregues.length} Entregues   |   ${d.reentregas.length} Reentregas   |   ${d.devolucoes.length} Devoluções`, colSpan: 6, alignment: 'center', bold: true, fillColor: '#f8fafc' }, {}, {}, {}, {}, {}]
+                                
+                                // Footer com colSpan 10 seguido de 9 objetos vazios
+                                [{ text: `RESUMO: ${d.entregues.length} Entregues   |   ${d.reentregas.length} Reentregas   |   ${d.devolucoes.length} Devoluções`, colSpan: 10, alignment: 'center', bold: true, fillColor: '#f8fafc' }, {}, {}, {}, {}, {}, {}, {}, {}, {}]
                             ]
                         },
                         layout: layoutPremium,
                         margin: [0, 0, 0, 15]
                     },
 
-                    // LEGENDA GRÁFICA DE AUDITORIA (SEM TEXTO ESCRITO VERDE/CINZA)
+                    // LEGENDA GRÁFICA DE AUDITORIA
                     {
                         text: [
                             { text: '■ ', color: '#16a34a', fontSize: 11 },
@@ -8109,11 +8159,10 @@
 
                     // ASSINATURAS
                     {
-                        // Lógica para capturar o nome de quem está logado no Firebase (com fallback de segurança)
                         columns: (() => {
                             const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
                                 ? auth.currentUser.displayName
-                                : "Matheus Leite"; // Fallback caso o displayName não esteja setado
+                                : "Matheus Leite";
 
                             return [
                                 { text: `____________________________________\n${nomeConferente}\nRecebido por (Conferência)`, alignment: 'center', bold: true, fontSize: 9 },
@@ -8125,18 +8174,14 @@
                 ]
             };
 
-            // O regex replace(/\//g, '-') garante que datas com barra não quebrem o diretório do Windows ao salvar
             const nomeArquivoPC = `PC_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
 
-            // 1. GERA E ABRE O PDF (Ele vai ficar na frente)
             abrirPreviewPDF(docDefinition, nomeArquivoPC);
 
-            // 2. PREPARA E ABRE O POP-UP SILENCIOSAMENTE POR TRÁS
             document.getElementById('lbl-placa-baixa').innerText = d.placa;
             const modalConfirm = document.getElementById('modal-confirmar-baixa-pc');
             modalConfirm.classList.add('active');
 
-            // 3. CONFIGURA O BOTÃO "SIM" PARA RODAR A BAIXA QUANDO VOCÊ QUISER
             document.getElementById('btn-confirmar-baixa-sim').onclick = () => {
                 const dataTela = document.getElementById('pc-data').value;
                 if (window.marcarPrestacaoComoImpressa && dataTela) {
@@ -8144,6 +8189,68 @@
                 }
                 modalConfirm.classList.remove('active');
             };
+        });
+
+        // ================= SELETOR INTELIGENTE POR ROTA/VIAGEM DO PAINEL =================
+        document.getElementById('pc-placa').addEventListener('change', (e) => {
+            const placaSelecionada = e.target.value;
+            const containerViagem = document.getElementById('container-seletor-viagem');
+            
+            if (!containerViagem) return;
+            const selectViagem = containerViagem.querySelector('select'); 
+
+            if (!placaSelecionada || !window.pcRotasCache) {
+                containerViagem.style.display = 'none';
+                if (selectViagem) selectViagem.innerHTML = `<option value="">-</option>`;
+                return;
+            }
+
+            const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+            // 1. Pega todas as rotas do painel que pertencem a este veículo
+            const rotasDoVeiculo = window.pcRotasCache.filter(r => {
+                const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa;
+            });
+
+            // Se houver mais de uma linha de rota/viagem cadastrada no painel para este carro
+            if (rotasDoVeiculo.length > 1) {
+                containerViagem.style.display = 'flex'; 
+                
+                if (selectViagem) {
+                    let opcoesHtml = `<option value="">Todas as Viagens (Geral)</option>`;
+
+                    rotasDoVeiculo.forEach((rota, index) => {
+                        const transp = rota.transporte || "S/N";
+                        const stPainel = rota.status || "Sem Status";
+                        const regiao = rota.regiao || "N/I";
+
+                        // Conta quantas NFs nas notas do dia pertencem a este(s) transporte(s) da rota
+                        let qtdNfsRota = 0;
+                        if (window.pcNotasCache) {
+                            const transpArray = String(transp).match(/\d+/g) || [];
+                            qtdNfsRota = window.pcNotasCache.filter(n => {
+                                const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                if (pNota !== pSelecionadaLimpa) return false;
+                                const vNota = String(n.viagem || "").trim();
+                                if (transpArray.length > 0 && vNota !== "") {
+                                    return transpArray.some(t => vNota.includes(t));
+                                }
+                                return false;
+                            }).length;
+                        }
+
+                        // Monta a string descritiva idêntica ao que você precisa: Status, Transp, NFs e Região
+                        opcoesHtml += `<option value="${transp}">[${stPainel}] Transp: ${transp} — ${qtdNfsRota} NFs — ${regiao}</option>`;
+                    });
+
+                    selectViagem.innerHTML = opcoesHtml;
+                }
+            } else {
+                containerViagem.style.display = 'none';
+                if (selectViagem) selectViagem.innerHTML = `<option value="">-</option>`;
+            }
         });
 
         window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada) => {
@@ -8191,10 +8298,51 @@
         // ================= 2. PROTOCOLO DEVOLUÇÃO / REENTREGAS =================
         document.getElementById('btn-gerar-pc-devolucao').addEventListener('click', () => {
             if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
-            const d = obterDadosFiltradosPC();
+            
+            const d = obterDadosFiltradosPC(); 
+
+            // 🟢 FILTRO ABSOLUTO: Substitui completamente as notas da função antiga direto da fonte
+            const placaSelecionada = document.getElementById('pc-placa').value;
+            const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            
+            let notasBrutas = window.pcNotasCache.filter(n => {
+                const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return pNota === pSelecionadaLimpa;
+            });
+
+            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+            if (viagemSelecionada && viagemSelecionada !== "") {
+                const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                notasBrutas = notasBrutas.filter(n => {
+                    const vNota = String(n.viagem || "").trim();
+                    return transpArray.some(t => vNota.includes(t) || t.includes(vNota));
+                });
+                
+                d.transporte = viagemSelecionada; 
+                if (window.pcRotasCache) {
+                    const rotaSelect = window.pcRotasCache.find(r => r.transporte === viagemSelecionada);
+                    if (rotaSelect) d.statusViagem = rotaSelect.status || d.statusViagem;
+                }
+            } else {
+                const viagensUnicas = [...new Set(notasBrutas.map(n => String(n.viagem || '').trim()))].filter(v => v !== '');
+                if (viagensUnicas.length > 0) d.transporte = viagensUnicas.join(' / ');
+            }
+
+            const getSt = (s) => String(s || "").trim().toUpperCase();
+            d.notas = notasBrutas;
+            d.entregues = notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE');
+            d.reentregas = notasBrutas.filter(n => getSt(n.status) === 'REENTREGA');
+            d.devolucoes = notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO');
+            d.parciais = notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "");
+
+            if (d.notas.length === 0) return alert("Não há notas para o transporte selecionado.");
 
             const maxRows = Math.max(d.reentregas.length, d.devolucoes.length, 6);
             let gridExcecoes = [];
+
+            // ... (restante do código segue igual)
 
             for (let i = 0; i < maxRows; i += 4) {
                 let row = [];
