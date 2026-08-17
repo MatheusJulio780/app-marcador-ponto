@@ -7995,54 +7995,95 @@
         document.getElementById('btn-gerar-pc-padrao').addEventListener('click', () => {
             if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
             
-            const d = obterDadosFiltradosPC(); // Deixa a função antiga puxar nome do motorista, data, etc.
-
-            // 🟢 FILTRO ABSOLUTO: Substitui completamente as notas da função antiga direto da fonte
             const placaSelecionada = document.getElementById('pc-placa').value;
             const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-            
-            // Pega TODAS as notas deste veículo puro do cache
+            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+            // 1. Encontra EXATAMENTE a rota do painel correspondente a esta placa E a este transporte específico
+            let rotaExata = null;
+            if (window.pcRotasCache) {
+                rotaExata = window.pcRotasCache.find(r => {
+                    const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const matchPlaca = (pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa);
+                    if (!matchPlaca) return false;
+
+                    if (viagemSelecionada && viagemSelecionada !== "") {
+                        return String(r.transporte || "").trim() === viagemSelecionada;
+                    }
+                    return true;
+                });
+            }
+
+            // 2. Filtra estritamente as notas desta placa e desta viagem
             let notasBrutas = window.pcNotasCache.filter(n => {
                 const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                 return pNota === pSelecionadaLimpa;
             });
 
-            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
-            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
-
-            // Se selecionou uma viagem, fatia as notas brutas
             if (viagemSelecionada && viagemSelecionada !== "") {
                 const transpArray = viagemSelecionada.match(/\d+/g) || [];
                 notasBrutas = notasBrutas.filter(n => {
                     const vNota = String(n.viagem || "").trim();
                     return transpArray.some(t => vNota.includes(t) || t.includes(vNota));
                 });
-                
-                d.transporte = viagemSelecionada; // Coloca os transportes juntos no PDF
-                if (window.pcRotasCache) {
-                    const rotaSelect = window.pcRotasCache.find(r => r.transporte === viagemSelecionada);
-                    if (rotaSelect) d.statusViagem = rotaSelect.status || d.statusViagem;
-                }
-            } else {
-                // Se for "Todas", junta os transportes só pra ficar bonito no cabeçalho
-                const viagensUnicas = [...new Set(notasBrutas.map(n => String(n.viagem || '').trim()))].filter(v => v !== '');
-                if (viagensUnicas.length > 0) d.transporte = viagensUnicas.join(' / ');
             }
 
-            // Sobrescreve as variáveis do PDF com a nossa própria matemática blindada
-            const getSt = (s) => String(s || "").trim().toUpperCase();
-            d.notas = notasBrutas;
-            d.entregues = notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE');
-            d.reentregas = notasBrutas.filter(n => getSt(n.status) === 'REENTREGA');
-            d.devolucoes = notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO');
-            d.parciais = notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "");
+            if (notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
 
-            if (d.notas.length === 0) return alert("Não há notas para o transporte selecionado.");
+            // 3. Monta o objeto de dados (d) do zero, de forma blindada e correta
+            const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
+            
+            // Define o motorista correto: Prioriza a rota exata do painel, depois tenta nas notas, senão "NÃO INFORMADO"
+            let motoristaCorreto = "NÃO INFORMADO";
+            if (rotaExata && rotaExata.motorista && rotaExata.motorista.trim() !== "") {
+                motoristaCorreto = rotaExata.motorista;
+            } else {
+                const nMot = notasBrutas.find(n => n.motorista && n.motorista.trim() !== "");
+                if (nMot) motoristaCorreto = nMot.motorista;
+            }
+
+            const getSt = (s) => String(s || "").trim().toUpperCase();
+            
+            const d = {
+                placa: placaSelecionada,
+                motorista: motoristaCorreto,
+                transporte: viagemSelecionada || (rotaExata ? rotaExata.transporte : "GERAL"),
+                dataSaida: dataTela,
+                statusViagem: rotaExata ? (rotaExata.status || "EM ROTA") : "EM ROTA",
+                notas: notasBrutas,
+                entregues: notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE'),
+                reentregas: notasBrutas.filter(n => getSt(n.status) === 'REENTREGA'),
+                devolucoes: notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO'),
+                parciais: notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "")
+            };
+
+            // 4. Cálculo rigoroso do selo de anexo (Foto vs Assinatura) com base nas notas reais da viagem
+            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+            let qtdNotas = d.notas.length;
+
+            let notasComFoto = d.notas.filter(n => {
+                const appStr = String(n.app || "").trim().toUpperCase();
+                const statusStr = String(n.status || "").trim().toUpperCase();
+                return appStr === "FOTO" || appStr.includes("FOTO") || excecoesApp.includes(statusStr);
+            }).length;
+
+            let notasComAssinatura = d.notas.filter(n => {
+                const appStr = String(n.app || "").trim().toUpperCase();
+                return appStr === "ASSINATURA";
+            }).length;
+
+            if (qtdNotas > 0 && notasComFoto === qtdNotas) {
+                d.textoApp = "100% FOTO";
+            } else if (qtdNotas > 0 && notasComAssinatura === qtdNotas) {
+                d.textoApp = "100% ASSINATURA";
+            } else {
+                d.textoApp = `${Math.round((notasComFoto / qtdNotas) * 100)}% FOTO / ${Math.round((notasComAssinatura / qtdNotas) * 100)}% ASSINATURA`;
+            }
 
             // MAPEAMENTO E ORDENAÇÃO DE CANHOTOS (COLUMN-MAJOR)
             let notasOrdenadas = [...d.entregues].sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
-
-            // ... (restante do código segue igual)
 
             let canhotosMapeados = notasOrdenadas.map(n => {
                 let statusApp = trimUpper(n.app || '');
@@ -8054,21 +8095,16 @@
                 return { text: cleanNF(n.nf), color: cor, alignment: 'center', fontSize: 10, bold: true };
             });
 
-            // 🟢 MATRIZ EXATA: 10 Colunas e 11 Linhas (110 células garantidas)
             const numColunas = 10;
             const numLinhas = 11; 
 
-            // Pré-aloca a matriz 10x11 preenchida com células vazias
             let linhasCanhotos = Array.from({ length: numLinhas }, () =>
                 Array.from({ length: numColunas }, () => ({ text: '', alignment: 'center' }))
             );
 
-            // Preenchimento Cruzado (Vertical primeiro)
             canhotosMapeados.forEach((canhoto, index) => {
                 let c = Math.floor(index / numLinhas); 
-                let r = index % numLinhas;             
-                
-                // Trava de segurança para não ultrapassar as 10 colunas (110 canhotos max)
+                let r = index % numLinhas;            
                 if (c < numColunas) {
                     linhasCanhotos[r][c] = canhoto;
                 }
@@ -8080,11 +8116,9 @@
 
             const docDefinition = {
                 pageSize: 'A4',
-                // 🟢 Devolve o espaço vazio na parte superior para a colagem dos canhotos
                 pageMargins: [30, 100, 30, 30], 
                 defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
                 content: [
-                    // ... (restante do seu código continua idêntico)
                     {
                         columns: [
                             { stack: [headerElemento], width: '30%' },
@@ -8093,8 +8127,6 @@
                         ],
                         margin: [0, 0, 0, 15]
                     },
-
-                    // DADOS DA OPERAÇÃO
                     {
                         table: {
                             widths: ['40%', '20%', '20%', '20%'],
@@ -8116,8 +8148,6 @@
                         layout: layoutPremium,
                         margin: [0, 0, 0, 10]
                     },
-
-                    // AUDITORIA E RESUMO
                     {
                         table: {
                             widths: ['50%', '50%'],
@@ -8131,8 +8161,6 @@
                         layout: layoutPremium,
                         margin: [0, 0, 0, 10]
                     },
-
-                    // RELAÇÃO DE CANHOTOS (MATRIZ 10 COLUNAS)
                     {
                         table: {
                             widths: Array(10).fill('*'),
@@ -8145,22 +8173,18 @@
                         layout: layoutPremium,
                         margin: [0, 0, 0, 10]
                     },
-
-                    // LEGENDA GRÁFICA DE AUDITORIA
                     {
                         text: [
                             { text: '■ ', color: '#16a34a', fontSize: 11 },
-                            { text: 'FOTO / ANEXADO       ', fontSize: 8, bold: true, color: '#475569' },
+                            { text: 'FOTO / ANEXADO      ', fontSize: 8, bold: true, color: '#475569' },
                             { text: '■ ', color: '#000000', fontSize: 11 },
-                            { text: 'ASSINATURA       ', fontSize: 8, bold: true, color: '#475569' },
+                            { text: 'ASSINATURA      ', fontSize: 8, bold: true, color: '#475569' },
                             { text: '■ ', color: '#94a3b8', fontSize: 11 },
                             { text: 'SEM ANEXO', fontSize: 8, bold: true, color: '#475569' }
                         ],
                         alignment: 'center',
                         margin: [0, -5, 0, 10]
                     },
-
-                    // EXCEÇÕES
                     {
                         table: {
                             widths: ['30%', '30%', '40%'],
@@ -8180,8 +8204,6 @@
                         layout: layoutPremium,
                         margin: [0, 0, 0, 10]
                     },
-
-                    // DESPESAS
                     {
                         table: {
                             widths: ['33%', '33%', '34%'],
@@ -8199,19 +8221,12 @@
                             ]
                         },
                         layout: layoutPremium,
-                        margin: [0, 0, 0, 15] // Reduzido
+                        margin: [0, 0, 0, 15]
                     },
-
-                    // TERMOS DE RESPONSABILIDADE
                     { text: 'TERMO DE RESPONSABILIDADE E ORIENTAÇÕES', bold: true, fontSize: 9, margin: [0, 0, 0, 4] },
-                    
-                    // 🟢 AJUSTE 2: Reduzida a margem inferior (de 30 para 15) para grudar na assinatura
                     { text: '1. Declaro que as informações aqui prestadas são de minha inteira responsabilidade, e que não ficou nenhum documento faltante.\n2. Todas as NFs entregues deverão ter seus canhotos devidamente assinados e carimbados pelo cliente com o número de RG da pessoa que recebeu a mercadoria.\nOBS.: É obrigatória a apresentação dos documentos comprobatórios das despesas adicionais declaradas acima.', fontSize: 8, color: '#334155', margin: [0, 0, 0, 15] },
-
-                    // ASSINATURAS
                     {
-                        // 🟢 AJUSTE 3: Trava Absoluta. Impede que o PDF "corte" o bloco de assinatura no meio[cite: 3].
-                        unbreakable: true, 
+                        unbreakable: true,
                         columns: (() => {
                             const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
                                 ? auth.currentUser.displayName
@@ -8227,17 +8242,30 @@
             };
 
             const nomeArquivoPC = `PC_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
-
             abrirPreviewPDF(docDefinition, nomeArquivoPC);
 
+            // 🟢 Validação limpa: Se a viagem já estiver prestada, não exibe o modal por cima
+            let viagemJaPrestada = false;
+            if (rotaExata && rotaExata.prestacao_impressa === true) {
+                const transpRota = String(rotaExata.transporte || "").trim();
+                if (!rotaExata.transporte_prestado || rotaExata.transporte_prestado === transpRota || rotaExata.transporte_prestado === d.transporte) {
+                    viagemJaPrestada = true;
+                }
+            }
+
+            if (viagemJaPrestada) return; // Sai e exibe apenas o PDF limpo na tela
+
+            // 🟢 Adiciona o atraso de 500ms para o preview carregar antes do pop-up
             document.getElementById('lbl-placa-baixa').innerText = d.placa;
             const modalConfirm = document.getElementById('modal-confirmar-baixa-pc');
-            modalConfirm.classList.add('active');
+            
+            setTimeout(() => {
+                modalConfirm.classList.add('active');
+            }, 500);
 
             document.getElementById('btn-confirmar-baixa-sim').onclick = () => {
                 const dataTela = document.getElementById('pc-data').value;
                 if (window.marcarPrestacaoComoImpressa && dataTela) {
-                    // Passa a placa e o transporte exato que está sendo prestado agora
                     window.marcarPrestacaoComoImpressa(dataTela, d.placa, d.transporte);
                 }
                 modalConfirm.classList.remove('active');
@@ -8260,26 +8288,33 @@
 
             const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-            // 1. Pega todas as rotas do painel que pertencem a este veículo
+            // 🟢 CORREÇÃO: Valida estritamente se a linha pertence à placa (seja na coluna principal ou na troca)
             const rotasDoVeiculo = window.pcRotasCache.filter(r => {
                 const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                 const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                return pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa;
+                
+                // Se preencheu troca, a placa real da operação passa a ser a troca. 
+                // Logo, só deve pertencer se a placa selecionada bater com a troca ativa da linha.
+                if (pTroca !== "") {
+                    return pTroca === pSelecionadaLimpa;
+                }
+                
+                // Se não tem troca, valida pela placa principal
+                return pRota === pSelecionadaLimpa;
             });
 
-            // Se houver mais de uma linha de rota/viagem cadastrada no painel para este carro
+            // Se houver mais de uma linha de rota/viagem real para este veículo
             if (rotasDoVeiculo.length > 1) {
                 containerViagem.style.display = 'flex'; 
                 
                 if (selectViagem) {
                     let opcoesHtml = `<option value="">Todas as Viagens (Geral)</option>`;
 
-                    rotasDoVeiculo.forEach((rota, index) => {
+                    rotasDoVeiculo.forEach((rota) => {
                         const transp = rota.transporte || "S/N";
                         const stPainel = rota.status || "Sem Status";
                         const regiao = rota.regiao || "N/I";
 
-                        // Conta quantas NFs nas notas do dia pertencem a este(s) transporte(s) da rota
                         let qtdNfsRota = 0;
                         if (window.pcNotasCache) {
                             const transpArray = String(transp).match(/\d+/g) || [];
@@ -8294,7 +8329,6 @@
                             }).length;
                         }
 
-                        // Monta a string descritiva idêntica ao que você precisa: Status, Transp, NFs e Região
                         opcoesHtml += `<option value="${transp}">[${stPainel}] Transp: ${transp} — ${qtdNfsRota} NFs — ${regiao}</option>`;
                     });
 
@@ -8355,17 +8389,32 @@
             
             const d = obterDadosFiltradosPC(); 
 
-            // 🟢 FILTRO ABSOLUTO: Substitui completamente as notas da função antiga direto da fonte
+            // 🟢 FILTRO ABSOLUTO POR VIAGEM/ROTA DO PAINEL
             const placaSelecionada = document.getElementById('pc-placa').value;
             const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             
+            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+            let rotaSelecionadaPainel = null;
+            if (window.pcRotasCache) {
+                rotaSelecionadaPainel = window.pcRotasCache.find(r => {
+                    const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const matchPlaca = (pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa);
+                    if (!matchPlaca) return false;
+
+                    if (viagemSelecionada && viagemSelecionada !== "") {
+                        return String(r.transporte || "").trim() === viagemSelecionada;
+                    }
+                    return true;
+                });
+            }
+
             let notasBrutas = window.pcNotasCache.filter(n => {
                 const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                 return pNota === pSelecionadaLimpa;
             });
-
-            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
-            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
 
             if (viagemSelecionada && viagemSelecionada !== "") {
                 const transpArray = viagemSelecionada.match(/\d+/g) || [];
@@ -8375,13 +8424,48 @@
                 });
                 
                 d.transporte = viagemSelecionada; 
-                if (window.pcRotasCache) {
-                    const rotaSelect = window.pcRotasCache.find(r => r.transporte === viagemSelecionada);
-                    if (rotaSelect) d.statusViagem = rotaSelect.status || d.statusViagem;
+                if (rotaSelecionadaPainel) {
+                    d.statusViagem = rotaSelecionadaPainel.status || d.statusViagem;
                 }
             } else {
                 const viagensUnicas = [...new Set(notasBrutas.map(n => String(n.viagem || '').trim()))].filter(v => v !== '');
                 if (viagensUnicas.length > 0) d.transporte = viagensUnicas.join(' / ');
+            }
+
+            // 🟢 CORREÇÃO CRIRÚRGICA 1: MOTORISTA EXATO DA VIAGEM
+            let motoristaFinal = "NÃO INFORMADO";
+            if (rotaSelecionadaPainel && rotaSelecionadaPainel.motorista) {
+                motoristaFinal = rotaSelecionadaPainel.motorista;
+            } else {
+                const notaComMotorista = notasBrutas.find(n => n.motorista && n.motorista.trim() !== "");
+                if (notaComMotorista) motoristaFinal = notaComMotorista.motorista;
+            }
+            d.motorista = motoristaFinal;
+
+            // 🟢 CORREÇÃO CIRÚRGICA 2: CÁLCULO CORRETO DE FOTO VS ASSINATURA
+            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+            let qtdNotas = notasBrutas.length;
+
+            let notasComFoto = notasBrutas.filter(n => {
+                const appStr = String(n.app || "").trim().toUpperCase();
+                const statusStr = String(n.status || "").trim().toUpperCase();
+                return appStr === "FOTO" || appStr.includes("FOTO") || excecoesApp.includes(statusStr);
+            }).length;
+
+            let notasComAssinatura = notasBrutas.filter(n => {
+                const appStr = String(n.app || "").trim().toUpperCase();
+                return appStr === "ASSINATURA";
+            }).length;
+
+            if (qtdNotas > 0 && notasComFoto === qtdNotas) {
+                d.textoApp = "100% FOTO";
+                d.anexo = "100% FOTO"; // <--- Adicione esta linha
+            } else if (qtdNotas > 0 && notasComAssinatura === qtdNotas) {
+                d.textoApp = "100% ASSINATURA";
+                d.anexo = "100% ASSINATURA"; // <--- Adicione esta linha
+            } else {
+                d.textoApp = `${Math.round((notasComFoto / qtdNotas) * 100)}% FOTO / ${Math.round((notasComAssinatura / qtdNotas) * 100)}% ASSINATURA`;
+                d.anexo = d.textoApp; // <--- Adicione esta linha
             }
 
             const getSt = (s) => String(s || "").trim().toUpperCase();
@@ -10143,9 +10227,12 @@
                             let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
                             let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
 
+                            // 🟢 Identifica a placa correta (respeitando a troca se ela existir)
+                            const placaExibicao = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
+
                             const infoCarro = {
                                 data: dataIso,
-                                placa: rota.placa,
+                                placa: placaExibicao, // <--- Agora exibe a placa certa (ou a troca)
                                 motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
                                 qtd: qtd_nf,
                                 regiao: rota.regiao || "Sem rota def.",
