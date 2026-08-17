@@ -2561,6 +2561,29 @@
         .hide-by-block {
             display: none !important;
         }
+
+        /* ================= DEGRADÊ DINÂMICO REALÇADO (MAIS VISÍVEL) ================= */
+
+        /* Cor Azul (Veículo Vazio) - Realçada */
+        tr.gradiente-vazio td:nth-child(19) { background: var(--st-vazio-bg) !important; }
+        tr.gradiente-vazio td:nth-child(20) { background: linear-gradient(to right, var(--st-vazio-bg), rgba(37, 99, 235, 0.18)) !important; }
+        tr.gradiente-vazio td:nth-child(21) { background: linear-gradient(to right, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.08)) !important; }
+        tr.gradiente-vazio td:nth-child(22) { background: linear-gradient(to right, rgba(37, 99, 235, 0.08), transparent) !important; }
+        tr.gradiente-vazio td:nth-child(23) { background: transparent !important; }
+
+        /* Cor Rosa/Magenta (Finalizado) - Realçada */
+        tr.gradiente-finalizado td:nth-child(19) { background: var(--st-finalizado-bg) !important; }
+        tr.gradiente-finalizado td:nth-child(20) { background: linear-gradient(to right, var(--st-finalizado-bg), rgba(219, 39, 119, 0.18)) !important; }
+        tr.gradiente-finalizado td:nth-child(21) { background: linear-gradient(to right, rgba(219, 39, 119, 0.18), rgba(219, 39, 119, 0.08)) !important; }
+        tr.gradiente-finalizado td:nth-child(22) { background: linear-gradient(to right, rgba(219, 39, 119, 0.08), transparent) !important; }
+        tr.gradiente-finalizado td:nth-child(23) { background: transparent !important; }
+
+        /* Cor Marrom/Pernoite - Realçada */
+        tr.gradiente-pernoite td:nth-child(19) { background: var(--st-pernoite-bg) !important; }
+        tr.gradiente-pernoite td:nth-child(20) { background: linear-gradient(to right, var(--st-pernoite-bg), rgba(120, 53, 15, 0.18)) !important; }
+        tr.gradiente-pernoite td:nth-child(21) { background: linear-gradient(to right, rgba(120, 53, 15, 0.18), rgba(120, 53, 15, 0.08)) !important; }
+        tr.gradiente-pernoite td:nth-child(22) { background: linear-gradient(to right, rgba(120, 53, 15, 0.08), transparent) !important; }
+        tr.gradiente-pernoite td:nth-child(23) { background: transparent !important; }
     </style>
 </head>
 
@@ -6676,15 +6699,37 @@
                                 ultimaHoraRota = notasComHora.map(n => n.statusHora).sort().pop();
                             }
 
-                            // Substitua o <tr> simples por este com a inteligência de status:
-                            let linhaHtml = `<tr data-st-rota="${stRotaCalc}">
-                                <td style="font-weight:700;">${rota.placa}</td><td style="font-weight:800; color:var(--warning);">${rota.troca}</td><td>${infoViva.perfil}</td><td>${infoViva.tipo}</td>
-                                <td>${rota.oc}</td><td title="${rota.transporte}">${rota.transporte}</td><td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
+                            // ================= IDENTIFICAÇÃO DA CLASSE (SEU CÓDIGO ORIGINAL) =================
+                            let classeStatusLinha = "";
+                            const stUpper = stRotaCalc.toUpperCase();
+
+                            if (stUpper.includes("VEÍCULO VAZIO")) {
+                                classeStatusLinha = "gradiente-vazio";
+                            } else if (stUpper.includes("FINALIZADO")) {
+                                classeStatusLinha = "gradiente-finalizado";
+                            } else if (stUpper.includes("PERNOITE")) {
+                                classeStatusLinha = "gradiente-pernoite";
+                            }
+
+                            // Linha com a classe injetada no <tr> (Exatamente como estava)
+                            let linhaHtml = `<tr class="${classeStatusLinha}" data-st-rota="${stRotaCalc}">
+                                <td style="font-weight:700;">${rota.placa}</td>
+                                <td style="font-weight:800; color:var(--warning);">${rota.troca}</td>
+                                <td>${infoViva.perfil}</td>
+                                <td>${infoViva.tipo}</td>
+                                <td>${rota.oc}</td>
+                                <td title="${rota.transporte}">${rota.transporte}</td>
+                                <td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
                                 <td style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
                                 <td style="font-weight:700;">${getStRotaPill(rota.status)}</td>
-                                <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td><td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
-                                <td>${formatNumber(rota.km)}</td><td title="${rota.regiao}">${vRegiao}</td><td title="${rota.ajudante}">${rota.ajudante}</td>
-                                <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td><td style="color:var(--warning); font-weight:700;">${vReentrega}</td><td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
+                                <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td>
+                                <td style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
+                                <td>${formatNumber(rota.km)}</td>
+                                <td title="${rota.regiao}">${vRegiao}</td>
+                                <td title="${rota.ajudante}">${rota.ajudante}</td>
+                                <td style="color:var(--danger); font-weight:700;">${vDevolucao}</td>
+                                <td style="color:var(--warning); font-weight:700;">${vReentrega}</td>
+                                <td style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
                                 <td style="color:var(--accent); font-weight:700;">${vParcial}</td>
                                 <td style="overflow: visible !important; position: relative;" onmouseover="this.style.zIndex='9999'" onmouseout="this.style.zIndex='1'">
                                     <div class="status-pill" style="display:inline-flex;">
@@ -6692,8 +6737,12 @@
                                         <div class="tooltip-box">Atualizado às ${ultimaHoraRota}</div>
                                     </div>
                                 </td>
-                                <td style="font-weight:700;">${vPendente}</td><td style="color:var(--success); font-weight:700;">${vRealizada}</td>
-                                <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td><td align="center">${cemPorcentoAss}</td><td>${vPalete}</td><td>${vQtde}</td>
+                                <td style="font-weight:700;">${vPendente}</td>
+                                <td style="color:var(--success); font-weight:700;">${vRealizada}</td>
+                                <td style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td>
+                                <td align="center">${cemPorcentoAss}</td>
+                                <td>${vPalete}</td>
+                                <td>${vQtde}</td>
                             </tr>`;
 
                             const isPernoiteRoute = trimUpper(rota.status).includes('PERNOITE') || stRotaCalc === 'PERNOITE';
