@@ -8080,10 +8080,11 @@
 
             const docDefinition = {
                 pageSize: 'A4',
-                // 🟢 AJUSTE 1: Reduz a margem superior (de 100 para 30) para ganhar área útil na folha
-                pageMargins: [30, 30, 30, 30],
+                // 🟢 Devolve o espaço vazio na parte superior para a colagem dos canhotos
+                pageMargins: [30, 100, 30, 30], 
                 defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
                 content: [
+                    // ... (restante do seu código continua idêntico)
                     {
                         columns: [
                             { stack: [headerElemento], width: '30%' },
@@ -8236,7 +8237,8 @@
             document.getElementById('btn-confirmar-baixa-sim').onclick = () => {
                 const dataTela = document.getElementById('pc-data').value;
                 if (window.marcarPrestacaoComoImpressa && dataTela) {
-                    window.marcarPrestacaoComoImpressa(dataTela, d.placa);
+                    // Passa a placa e o transporte exato que está sendo prestado agora
+                    window.marcarPrestacaoComoImpressa(dataTela, d.placa, d.transporte);
                 }
                 modalConfirm.classList.remove('active');
             };
@@ -8304,13 +8306,11 @@
             }
         });
 
-        window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada) => {
+        window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada, transporteSelecionado) => {
             try {
                 if (!dataSel || !placaSelecionada) return;
 
-                // Limpa a placa alvo da mesma forma que o resto do sistema faz
                 const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
-
                 const docRef = doc(db, "painel_diario", dataSel);
                 const docSnap = await getDoc(docRef);
 
@@ -8321,28 +8321,31 @@
                     rotas = rotas.map(r => {
                         const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+                        const transpRota = String(r.transporte || "").trim();
 
-                        // Verifica se bate com a placa principal ou com a placa de troca
-                        if (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa) {
-                            r.prestacao_impressa = true; // Seta a flag de impresso
-                            modificou = true;
+                        // Verifica se bate a placa/troca E se bate o transporte específico selecionado (se houver)
+                        const batePlaca = (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa);
+                        
+                        if (batePlaca) {
+                            if (!transporteSelecionado || transporteSelecionado === "" || transpRota === transporteSelecionado) {
+                                r.prestacao_impressa = true; 
+                                r.transporte_prestado = transporteSelecionado || transpRota; // Salva o transporte exato
+                                modificou = true;
+                            }
                         }
                         return r;
                     });
 
                     if (modificou) {
-                        // Grava de volta no Firebase com merge para atualizar apenas as rotas
                         await setDoc(docRef, { rotas }, { merge: true });
-                        console.log(`Prestação do veículo ${placaSelecionada} marcada como impressa com sucesso!`);
-
-                        // Recarrega a lista para o carro sumir do accordion na mesma hora
-                        window.carregarPendenciasContas();
-                    } else {
-                        console.warn(`A placa ${placaSelecionada} não foi encontrada na coleção do painel para a data ${dataSel}.`);
+                        console.log(`Prestação da placa ${placaSelecionada} (Transp: ${transporteSelecionado}) marcada como concluída!`);
+                        if (typeof window.carregarPendenciasContas === 'function') {
+                            window.carregarPendenciasContas();
+                        }
                     }
                 }
             } catch (e) {
-                console.error("Erro crítico ao dar baixa na prestação:", e);
+                console.error("Erro crítico ao dar baixa na prestação por viagem:", e);
             }
         };
 
@@ -10104,7 +10107,22 @@
 
                     rotas.forEach(rota => {
                         const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
-                        const notasPlaca = notas.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
+                        
+                        const transporteStr = String(rota.transporte || "").trim();
+                        const transpNumArray = transporteStr.match(/\d+/g) || [];
+
+                        const notasPlaca = notas.filter(n => {
+                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                            const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
+                            if (!matchPlaca) return false;
+
+                            const viagemNota = String(n.viagem || "").trim();
+                            if (transpNumArray.length > 0 && viagemNota !== "") {
+                                return transpNumArray.some(t => viagemNota.includes(t));
+                            }
+                            return true;
+                        });
+
                         if (notasPlaca.length === 0) return;
 
                         let qtd_nf = notasPlaca.length;
@@ -10117,8 +10135,6 @@
                         else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
 
                         if (finalizou) {
-                            // CÁLCULO DOS NOVOS INDICADORES LOGÍSTICOS
-                            const transporteStr = rota.transporte || "-";
                             const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
 
                             let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
@@ -10133,12 +10149,14 @@
                                 motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
                                 qtd: qtd_nf,
                                 regiao: rota.regiao || "Sem rota def.",
-                                transporte: transporteStr,
+                                transporte: transporteStr || "-",
                                 percentApp: percentApp,
                                 cemPorcentoAss: cemPorcentoAss
                             };
 
-                            if (rota.prestacao_impressa === true) {
+                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || rota.transporte_prestado === transporteStr);
+
+                            if (foiPrestado) {
                                 if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
                                 concluidosPorData[dataIso].push(infoCarro);
                             } else {
@@ -10177,8 +10195,8 @@
                 const carros = dataset[data];
                 let linhasCarros = carros.map(c => {
                     const acaoBotao = window.abaPrestacaoAtual === 'concluidos'
-                        ? `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`
-                        : '';
+                    ? `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`
+                    : '';
 
                     // BLINDAGEM DO GRID: Força as 7 ou 8 colunas matando qualquer CSS externo
                     const gridConfig = window.abaPrestacaoAtual === 'concluidos'
@@ -10225,7 +10243,7 @@
             container.innerHTML = htmlFinal;
         };
         // Função para estornar/desmarcar a prestação e mandar de volta para os pendentes
-        window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada) => {
+        window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada, transporteSelecionado) => {
             try {
                 const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
                 const docRef = doc(db, "painel_diario", dataSel);
@@ -10238,17 +10256,23 @@
                     rotas = rotas.map(r => {
                         const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+                        const transpRota = String(r.transporte || "").trim();
 
-                        if (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa) {
-                            delete r.prestacao_impressa; // Remove a flag de impresso
-                            modificou = true;
+                        const batePlaca = (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa);
+
+                        if (batePlaca) {
+                            if (!transporteSelecionado || transporteSelecionado === "" || transpRota === transporteSelecionado) {
+                                delete r.prestacao_impressa; 
+                                delete r.transporte_prestado;
+                                modificou = true;
+                            }
                         }
                         return r;
                     });
 
                     if (modificou) {
                         await setDoc(docRef, { rotas }, { merge: true });
-                        window._dadosPrestacaoCache = null; // Limpa o cache para forçar nova leitura
+                        window._dadosPrestacaoCache = null; 
                         window.carregarPendenciasContas();
                     }
                 }
