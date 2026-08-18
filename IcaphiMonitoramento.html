@@ -2905,6 +2905,10 @@
                         <span id="header-user-nome">Carregando...</span>
                     </div>
                     <div class="header-controls">
+                        <!-- Botão para abrir a Busca Global de Notas -->
+                        <button class="btn btn-secondary" onclick="window.abrirModalBuscaGlobal()" style="background: var(--accent); color: white; border: none;">
+                            <i class="ph-bold ph-magnifying-glass"></i> Rastreio Global de NFs
+                        </button>
                         <button class="btn btn-success" onclick="window.abrirModalExportarCanhotos()"><i
                                 class="ph ph-file-xls"></i> Exportar Excel</button>
                         <div style="border-left: 1px solid var(--border-color); height: 30px; margin: 0 5px;"></div>
@@ -2957,6 +2961,10 @@
 
                 <!-- CONTAINER DIREITO PADRONIZADO -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
+                    <!-- Botão de Auditoria de Exceções Pendentes -->
+                    <button class="btn btn-secondary" onclick="abrirModalExcecoesPendentes()" style="background: var(--warning); color: #000; border: none; font-weight: bold;">
+                        <i class="ph-bold ph-warning-circle"></i> Auditar Exceções Travadas
+                    </button>
                     <div id="online-users-stack" class="avatar-stack" title="Usuários Online"></div>
                     <div id="current-user-profile" class="user-profile-btn">
                         <img id="header-user-foto" src="" alt="Perfil">
@@ -4167,6 +4175,71 @@
         </div>
     </div>
 
+    <!-- ================= MODAL 1: COLAR NOTAS PARA BUSCA ================= -->
+    <div class="modal-overlay" id="modal-busca-nfs-input">
+        <div class="modal-content" style="width: 450px;">
+            <div class="modal-header">
+                <h3><i class="ph ph-magnifying-glass"></i> Rastreamento Global de NFs</h3>
+                <button class="btn-close" onclick="document.getElementById('modal-busca-nfs-input').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Cole as notas abaixo (uma por linha ou separadas por espaço/vírgula):</p>
+                <textarea id="txt-nfs-busca" rows="6" style="width: 100%; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-family: monospace; resize: vertical;" placeholder="Ex: 123456&#10;789012&#10;345678"></textarea>
+                <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="executarBuscaGlobalNFs()" id="btn-executar-busca-nfs">
+                        <i class="ph-bold ph-magnifying-glass"></i> Pesquisar NFs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 2: RESULTADOS DO RASTREIO EXPANDIDO ================= -->
+    <div class="modal-overlay" id="modal-busca-nfs-resultados">
+        <div class="modal-content" style="width: 98vw; max-width: 98vw; height: 92vh; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h3><i class="ph ph-list-magnifying-glass"></i> Resultados do Rastreio Completo</h3>
+                
+                <!-- 🟢 BOTÃO DE EXPORTAR EXCEL AQUI -->
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-success" onclick="exportarRastreioExcel()" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                        <i class="ph-bold ph-file-xls"></i> Exportar Excel
+                    </button>
+                    <button class="btn-close" onclick="document.getElementById('modal-busca-nfs-resultados').classList.remove('active')">×</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="flex: 1; overflow: auto; padding: 0;">
+                <table class="data-table" id="tabela-resultados-busca" style="width: 100%; text-align: center; white-space: nowrap;">
+                    <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
+                        <tr>
+                            <th>NF</th>
+                            <th>VIAG</th>
+                            <th>DATA</th>
+                            <th>PESO</th>
+                            <th>QTD</th>
+                            <th>CLIENTE</th>
+                            <th>CIDADE</th>
+                            <th>BAIRRO</th>
+                            <th>ENDEREÇO</th>
+                            <th>PLACA</th>
+                            <th>MOT.</th>
+                            <th>TEL.</th>
+                            <th>STATUS</th>
+                            <th>OBS</th>
+                            <th>NºPARC.</th>
+                            <th>APP</th>
+                            <th>HISTORICO / SEQ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas injetadas via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- TELA DE CARREGAMENTO INICIAL (MÁSCARA PARA O FIREBASE) -->
     <div id="splash-screen"
         style="position: fixed; top: 0; left: 0; width: 120vw; height: 120vh; background: var(--bg-sidebar); z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -4400,14 +4473,50 @@
             </div>
         </div>
     </div>
+
+    <!-- ================= MODAL DE AUDITORIA DE EXCEÇÕES PENDENTES ================= -->
+    <div class="modal-overlay" id="modal-excecoes-pendentes">
+        <div class="modal-content" style="width: 98vw; max-width: 98vw; height: 92vh; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h3><i class="ph ph-shield-warning" style="color: var(--warning);"></i> Auditoria de Exceções Travadas (Não Reenviadas/Devolvidas sem finalização)</h3>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-success" onclick="exportarExcecoesExcel()" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                        <i class="ph-bold ph-file-xls"></i> Exportar Excel
+                    </button>
+                    <button class="btn-close" onclick="document.getElementById('modal-excecoes-pendentes').classList.remove('active')">×</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="flex: 1; overflow: auto; padding: 0;">
+                <table class="data-table" id="tabela-excecoes-pendentes" style="width: 100%; text-align: center; white-space: nowrap;">
+                    <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
+                        <tr>
+                            <th>NF</th>
+                            <th>STATUS DA EXCEÇÃO</th>
+                            <th>DATA DA OCORRÊNCIA</th>
+                            <th>PLACA ORIGINAL</th>
+                            <th>CLIENTE</th>
+                            <th>CIDADE</th>
+                            <th>BAIRRO</th>
+                            <th>VALOR/PESO</th>
+                            <th>TEVE SAÍDA POSTERIOR?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injetado via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, query, where, documentId, writeBatch, serverTimestamp, updateDoc, onSnapshot, orderBy, increment, addDoc, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        // 🟢 ADICIONE "arrayUnion" LOGO ABAIXO:
+        import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, query, where, documentId, writeBatch, serverTimestamp, updateDoc, onSnapshot, orderBy, increment, addDoc, limit, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         // NOVO IMPORT DO AUTH NA VERSÃO 10.8.1
         import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-
         // MANTIDO O FIREBASE CONFIG QUE VOCÊ EXIGIU
         const app = initializeApp({
             apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y",
@@ -7204,6 +7313,11 @@
                 // 4. Executa a gravação atômica em bloco no Firestore
                 batch.set(notasDocRef, { notas });
                 await batch.commit();
+
+                // 🟢 PULO DO GATO: Alimenta o buscador global em segundo plano com as notas que acabaram de ser salvas
+                if (typeof window.atualizarMotorBuscaNotasAbsoluto === 'function') {
+                    window.atualizarMotorBuscaNotasAbsoluto(notas, d); // 'notas' é o array montado acima, 'd' é a data
+                }
 
                 if (document.getElementById('notas-data-select').value === d) {
                     document.getElementById('btn-carregar-notas').click();
@@ -10798,6 +10912,394 @@
                 _originalMostrarGota(titulo, mensagem, fotoUrl, statusNome);
             };
         }
+
+        // ================= MOTOR DE BUSCA GLOBAL DE NOTAS =================
+        window.cacheRastreioNFs = {}; // Guarda os históricos baixados para o Switch funcionar
+
+        // Função para abrir o primeiro modal (chame ela no botão do header da aba Canhotos)
+        window.abrirModalBuscaGlobal = () => {
+            document.getElementById('txt-nfs-busca').value = '';
+            document.getElementById('modal-busca-nfs-input').classList.add('active');
+        };
+
+        window.executarBuscaGlobalNFs = async () => {
+            const rawText = document.getElementById('txt-nfs-busca').value;
+            // Pega os números, remove lixo e deixa apenas numéricos únicos
+            const nfsParaBuscar = [...new Set(rawText.match(/\d+/g) || [])];
+            
+            if (nfsParaBuscar.length === 0) return alert("Nenhuma NF válida encontrada.");
+
+            const btn = document.getElementById('btn-executar-busca-nfs');
+            btn.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Buscando...`;
+            btn.disabled = true;
+
+            window.cacheRastreioNFs = {}; // Reseta o cache
+            const tbody = document.querySelector('#tabela-resultados-busca tbody');
+            tbody.innerHTML = '';
+
+            try {
+                // Busca em lotes para não sobrecarregar o Firebase
+                for (const nf of nfsParaBuscar) {
+                    const docRef = doc(db, "rastreio_notas", String(nf));
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const dados = docSnap.data();
+                        // Ordena o histórico da nota para a data mais recente ficar por último
+                        let historico = dados.historico || [];
+                        historico.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+                        // O índice ativo inicial será sempre a última aparição da nota
+                        window.cacheRastreioNFs[nf] = {
+                            historico: historico,
+                            idxAtivo: historico.length - 1 
+                        };
+                    } else {
+                        // Nota não encontrada no banco de rastreio
+                        window.cacheRastreioNFs[nf] = { historico: [], idxAtivo: -1 };
+                    }
+                }
+
+                renderizarTabelaRastreio();
+
+                document.getElementById('modal-busca-nfs-input').classList.remove('active');
+                document.getElementById('modal-busca-nfs-resultados').classList.add('active');
+
+            } catch (e) {
+                console.error("Erro ao rastrear NFs:", e);
+                alert("Erro ao buscar notas.");
+            } finally {
+                btn.innerHTML = `<i class="ph-bold ph-magnifying-glass"></i> Pesquisar NFs`;
+                btn.disabled = false;
+            }
+        };
+
+        window.renderizarTabelaRastreio = () => {
+            const tbody = document.querySelector('#tabela-resultados-busca tbody');
+            let html = '';
+
+            for (const [nf, dados] of Object.entries(window.cacheRastreioNFs)) {
+                if (dados.idxAtivo === -1) {
+                    html += `<tr><td style="font-weight: bold; color: var(--danger);">${nf}</td><td colspan="15">Nota não encontrada.</td></tr>`;
+                    continue;
+                }
+
+                const n = dados.historico[dados.idxAtivo];
+                const maxHist = dados.historico.length;
+                const btnSwitch = maxHist > 1 
+                    ? `<button onclick="switchHistoricoNF('${nf}')" style="background: var(--accent); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">${dados.idxAtivo + 1}/${maxHist} 🔄</button>`
+                    : `<span style="font-size: 10px; color: #94a3b8;">Única</span>`;
+
+                html += `
+                    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
+                        <td style="font-weight: 800;">${cleanNF(n.nf || nf)}</td>
+                        <td>${n.transporte || '-'}</td>
+                        <td>${n.data || '-'}</td>
+                        <td>${n.peso || '-'}</td>
+                        <td>${n.qtde || '-'}</td>
+                        <td style="text-align: left;">${n.cliente || '-'}</td>
+                        <td>${n.cidade || '-'}</td>
+                        <td>${n.bairro || '-'}</td>
+                        <td style="text-align: left;">${n.endereco || '-'}</td>
+                        <td style="font-weight: 700;">${n.placa || '-'}</td>
+                        <td>${n.motorista || '-'}</td>
+                        <td>${n.telefone || '-'}</td>
+                        <td>${getStRotaPill(n.status || 'EM ROTA')}</td>
+                        <td>${n.obs || '-'}</td>
+                        <td>${n.parcial || '-'}</td>
+                        <td style="font-weight: 700;">${n.app || '-'}</td>
+                        <td>${btnSwitch}</td>
+                    </tr>`;
+            }
+            tbody.innerHTML = html;
+        };
+
+        // Função que roda ao clicar no botão "1/3 🔄"
+        window.switchHistoricoNF = (nf) => {
+            const dados = window.cacheRastreioNFs[nf];
+            if (!dados || dados.historico.length <= 1) return;
+
+            // Vai para o histórico anterior. Se chegar no zero, volta pro final (loop)
+            dados.idxAtivo = dados.idxAtivo - 1;
+            if (dados.idxAtivo < 0) {
+                dados.idxAtivo = dados.historico.length - 1;
+            }
+
+            // Renderiza a tabela inteira novamente pra atualizar a linha
+            renderizarTabelaRastreio(); 
+        };
+
+        // ================= MOTOR DE RASTREIO GLOBAL ABSOLUTO =================
+        window.atualizarMotorBuscaNotasAbsoluto = async (notasSalvas, dataOperacao) => {
+            try {
+                const batch = writeBatch(db); 
+                let contador = 0;
+
+                for (const n of notasSalvas) {
+                    if (!n.nf) continue;
+                    const nfLimpa = String(n.nf).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (nfLimpa === "") continue;
+
+                    const docRef = doc(db, "rastreio_notas", nfLimpa);
+                    
+                    const snapshotNF = {
+                        data: dataOperacao,
+                        nf: nfLimpa,
+                        viagem: n.viagem || n.transporte || "",
+                        data_nf: n.data_nf || n.data || "",
+                        peso: n.peso || "",
+                        qtde: n.qtde || "",
+                        cliente: n.cliente || "",
+                        cidade: n.cidade || "",
+                        bairro: n.bairro || "",
+                        endereco: n.endereco || "",
+                        placa: n.placa || "",
+                        motorista: n.motorista || "",
+                        telefone: n.telefone || "",
+                        status: n.status || "EM ROTA",
+                        obs: n.obs || "",
+                        parcial: n.parcial || "",
+                        app: n.app || ""
+                    };
+
+                    // Busca o documento atual para limpar duplicatas da mesma data
+                    const docSnap = await getDoc(docRef);
+                    let historicoAtual = docSnap.exists() ? (docSnap.data().historico || []) : [];
+
+                    // Remove qualquer registro anterior da mesma data para não duplicar passos
+                    historicoAtual = historicoAtual.filter(h => h.data !== dataOperacao);
+                    
+                    // Adiciona o novo snapshot limpo
+                    historicoAtual.push(snapshotNF);
+
+                    batch.set(docRef, { historico: historicoAtual }, { merge: true });
+                    contador++;
+                }
+
+                if (contador > 0) {
+                    await batch.commit();
+                }
+            } catch (e) {
+                console.error("Erro ao atualizar o motor de busca global de notas:", e);
+            }
+        };
+
+        window.migrarHistoricoCompleto = async () => {
+            console.log("Iniciando varredura...");
+            // Usamos as funções que JÁ ESTÃO disponíveis no seu script principal
+            const colRef = collection(db, "notas_fiscais_diario");
+            const querySnapshot = await getDocs(colRef);
+            
+            let totalDocs = querySnapshot.size;
+            let processados = 0;
+
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.id;
+                const notas = docSnap.data().notas || [];
+                
+                console.log(`Migrando ${data} (${notas.length} notas)...`);
+                
+                try {
+                    for (let i = 0; i < notas.length; i += 100) {
+                        const bloco = notas.slice(i, i + 100);
+                        await window.atualizarMotorBuscaNotasAbsoluto(bloco, data);
+                    }
+                } catch (e) {
+                    console.error(`Falha ao migrar ${data}:`, e);
+                }
+                
+                processados++;
+                console.log(`Progresso: ${processados}/${totalDocs}`);
+            }
+            alert("Pronto! Migração finalizada.");
+        };
+
+        window.limparEReindexarTudo = async () => {
+            console.log("Limpando e reindexando base limpa...");
+            const querySnapshot = await getDocs(collection(db, "notas_fiscais_diario"));
+            
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.id;
+                const notas = docSnap.data().notas || [];
+                console.log(`Reindexando dia ${data}...`);
+                
+                for (let i = 0; i < notas.length; i += 100) {
+                    const bloco = notas.slice(i, i + 100);
+                    await window.atualizarMotorBuscaNotasAbsoluto(bloco, data);
+                }
+            }
+            alert("Reindexação limpa concluída! O histórico duplicado sumiu.");
+        };
+
+        window.exportarRastreioExcel = () => {
+            if (!window.cacheRastreioNFs || Object.keys(window.cacheRastreioNFs).length === 0) {
+                return alert("Não há dados na tabela para exportar.");
+            }
+
+            let dadosParaPlanilha = [];
+
+            // Varre todas as notas buscadas
+            for (const [nf, dados] of Object.entries(window.cacheRastreioNFs)) {
+                if (!dados.historico || dados.historico.length === 0) continue;
+
+                // Adiciona CADA aparição/histórico da nota na planilha
+                dados.historico.forEach((n, index) => {
+                    dadosParaPlanilha.push({
+                        "NF": cleanNF(n.nf || nf),
+                        "Viagem": n.viagem || "",
+                        "Data Operação": n.data || "",
+                        "Peso": n.peso || "",
+                        "Qtde": n.qtde || "",
+                        "Cliente": n.cliente || "",
+                        "Cidade": n.cidade || "",
+                        "Bairro": n.bairro || "",
+                        "Endereço": n.endereco || "",
+                        "Placa": n.placa || "",
+                        "Motorista": n.motorista || "",
+                        "Telefone": n.telefone || "",
+                        "Status": n.status || "EM ROTA",
+                        "Observação": n.obs || "",
+                        "Nº Parcial": n.parcial || "",
+                        "App": n.app || "",
+                        "Histórico (Sequência)": `Passo ${index + 1} de ${dados.historico.length}`
+                    });
+                });
+            }
+
+            if (dadosParaPlanilha.length === 0) {
+                return alert("Nenhum dado válido encontrado para gerar a planilha.");
+            }
+
+            // Cria a planilha usando a biblioteca SheetJS (XLSX) que já está no seu sistema
+            const worksheet = XLSX.utils.json_to_sheet(dadosParaPlanilha);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Rastreio Completo");
+
+            // Gera o arquivo Excel e faz o download automático
+            const dataAtual = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Rastreio_Global_Notas_${dataAtual}.xlsx`);
+        };
+
+        // ================= MOTOR DE AUDITORIA DE EXCEÇÕES TRAVADAS =================
+        window.cacheExcecoesPendentes = [];
+
+        window.abrirModalExcecoesPendentes = async () => {
+            showLoader();
+            window.cacheExcecoesPendentes = [];
+            const tbody = document.querySelector('#tabela-excecoes-pendentes tbody');
+            tbody.innerHTML = `<tr><td colspan="9" style="padding: 20px; color: var(--text-muted);">Varrendo o banco de rastreio em busca de exceções travadas...</td></tr>`;
+            
+            document.getElementById('modal-excecoes-pendentes').classList.add('active');
+
+            try {
+                // Pega todos os documentos do banco de rastreio global de notas
+                const querySnapshot = await getDocs(collection(db, "rastreio_notas"));
+                
+                const statusExcecaoAlvo = ['DEVOLUÇÃO', 'REENTREGA', 'PARADA', 'NÃO EMBARCADA', 'SINISTRADA', 'SINISTRO'];
+                const statusSucessoOuSaida = ['ENTREGUE', 'VEÍCULO VAZIO', 'FINALIZADO', 'EM ROTA', 'TRAFEGANDO', 'DESCARREGANDO'];
+
+                querySnapshot.forEach(docSnap => {
+                    const dados = docSnap.data();
+                    const historico = dados.historico || [];
+                    if (historico.length === 0) return;
+
+                    // Ordena o histórico cronologicamente da mais antiga para a mais recente
+                    historico.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+                    // Procura se em algum momento a nota teve uma exceção
+                    historico.forEach((item, idx) => {
+                        const stUpper = String(item.status || "").toUpperCase();
+                        
+                        // Se encontrou um status de exceção
+                        if (statusExcecaoAlvo.some(exc => stUpper.includes(exc))) {
+                            // Verifica se nos passos SEGUINTES (futuros) essa mesma nota teve alguma saída/sucesso
+                            let teveSaidaPosterior = false;
+                            for (let i = idx + 1; i < historico.length; i++) {
+                                const stFuturo = String(historico[i].status || "").toUpperCase();
+                                // Se apareceu em data posterior com status ativo ou entregue, consideram-se reenviadas
+                                if (statusSucessoOuSaida.some(sucesso => stFuturo.includes(sucesso))) {
+                                    teveSaidaPosterior = true;
+                                    break;
+                                }
+                            }
+
+                            // Se NÃO teve saída posterior, ela é uma exceção travada!
+                            if (!teveSaidaPosterior) {
+                                window.cacheExcecoesPendentes.push({
+                                    nf: item.nf || docSnap.id,
+                                    status: item.status,
+                                    data: item.data,
+                                    placa: item.placa || "-",
+                                    cliente: item.cliente || "-",
+                                    cidade: item.cidade || "-",
+                                    bairro: item.bairro || "-",
+                                    peso: item.peso || "-"
+                                });
+                            }
+                        }
+                    });
+                });
+
+                renderizarTabelaExcecoes();
+            } catch (e) {
+                console.error("Erro ao auditar exceções:", e);
+                alert("Ocorreu um erro ao processar a auditoria.");
+            } finally {
+                hideLoader();
+            }
+        };
+
+        window.renderizarTabelaExcecoes = () => {
+            const tbody = document.querySelector('#tabela-excecoes-pendentes tbody');
+            let html = '';
+
+            if (window.cacheExcecoesPendentes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="padding: 30px; color: var(--success); font-weight: bold;">Nenhuma exceção travada encontrada! Todas as ocorrências já tiveram desdobramento ou saída posterior.</td></tr>`;
+                return;
+            }
+
+            window.cacheExcecoesPendentes.forEach(exc => {
+                html += `
+                    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
+                        <td style="font-weight: 800;">${exc.nf}</td>
+                        <td>${getStRotaPill(exc.status)}</td>
+                        <td style="font-weight: bold; color: var(--accent);">${formatarDataBR(exc.data)}</td>
+                        <td style="font-weight: 700;">${exc.placa}</td>
+                        <td style="text-align: left;">${exc.cliente}</td>
+                        <td>${exc.cidade}</td>
+                        <td>${exc.bairro}</td>
+                        <td>${exc.peso}</td>
+                        <td style="color: var(--danger); font-weight: bold;">❌ Não saiu novamente</td>
+                    </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        };
+
+        window.exportarExcecoesExcel = () => {
+            if (!window.cacheExcecoesPendentes || window.cacheExcecoesPendentes.length === 0) {
+                return alert("Não há dados para exportar.");
+            }
+
+            const dadosPlanilha = window.cacheExcecoesPendentes.map(exc => ({
+                "NF": exc.nf,
+                "Status da Exceção": exc.status,
+                "Data da Ocorrência": exc.data,
+                "Placa Original": exc.placa,
+                "Cliente": exc.cliente,
+                "Cidade": exc.cidade,
+                "Bairro": exc.bairro,
+                "Peso": exc.peso,
+                "Situação": "Não saiu novamente (Travada)"
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dadosPlanilha);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Exceções Travadas");
+
+            const dataAtual = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Excecoes_Travadas_${dataAtual}.xlsx`);
+        };
 
     </script>
 </body>
