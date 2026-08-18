@@ -4837,13 +4837,20 @@
 
                 // Dispara o toast visual para cada novo usuário que entrou (evita spam se entrarem vários juntos)
                 if (novosUsuariosOnline.length > 0 && typeof dispararToastStatus === 'function') {
-                    novosUsuariosOnline.forEach(nomeUser => {
-                        dispararToastStatus(`🟢 <b>${nomeUser}</b> acabou de ficar online.`);
-                    });
+                    
+                    // 🟢 Lê as configurações ANTES de disparar qualquer coisa
+                    const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
+                    
+                    if (visualAtivo) {
+                        novosUsuariosOnline.forEach(nomeUser => {
+                            dispararToastStatus(`🟢 <b>${nomeUser}</b> acabou de ficar online.`);
+                        });
+                    }
 
-                    // Toca o som opcional de notificação
-                    const sound = document.getElementById('chat-notification-sound');
-                    if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                    // 🟢 Passa a usar a função segura que respeita o botão de mudo
+                    if (typeof window.tocarSomNotificacao === 'function') {
+                        window.tocarSomNotificacao();
+                    }
                 }
 
                 if (onlineCount > 4) {
@@ -5097,7 +5104,7 @@
         // ================= NOTIFICAÇÃO EM FORMATO DE GOTA UNIVERSAL =================
         window.mostrarGotaNotificacao = (titulo, mensagem, fotoUrl = "", statusNome = "") => {
             const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
-            if (!visualAtivo) return;
+            if (!visualAtivo) return; // 🟢 Se o botão tá desligado, o código morre aqui.
 
             const toast = document.getElementById('chat-toast-container');
             const imgEl = document.getElementById('chat-toast-img');
