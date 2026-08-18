@@ -2584,6 +2584,39 @@
         tr.gradiente-pernoite td:nth-child(21) { background: linear-gradient(to right, rgba(120, 53, 15, 0.18), rgba(120, 53, 15, 0.08)) !important; }
         tr.gradiente-pernoite td:nth-child(22) { background: linear-gradient(to right, rgba(120, 53, 15, 0.08), transparent) !important; }
         tr.gradiente-pernoite td:nth-child(23) { background: transparent !important; }
+
+        /* =========================================================
+        TEMA EXCLUSIVO: TELA MONTAR NOTAS FISCAIS
+        Escopo restrito ao ID #view-montar-notas
+        ========================================================= */
+
+        #view-montar-notas {
+            /* Sobrescreve as variáveis globais apenas para esta seção */
+            --accent: #6366f1;         /* Indigo/Roxo principal */
+            --bg-panel: #eef2ff;       /* Fundo mais destacado para o container */
+            --bg-secondary: #e0e7ff;   /* Fundo do input de filtro */
+            --border-color: #c7d2fe;   /* Bordas temáticas */
+        }
+
+        /* Modifica o cabeçalho apenas desta tela */
+        #view-montar-notas .header {
+            border-bottom: 3px solid var(--accent);
+            background: linear-gradient(90deg, var(--bg-panel) 0%, transparent 100%);
+        }
+
+        /* Modifica os botões grandes para não parecerem os do Painel Diário */
+        #view-montar-notas .big-btn {
+            border-radius: 12px; /* Deixa um pouco mais arredondado para diferenciar */
+            border: 1px solid var(--accent);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+            transition: all 0.2s ease-in-out;
+        }
+
+        #view-montar-notas .big-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+        }
+
     </style>
 </head>
 
@@ -7992,20 +8025,30 @@
         });
 
         // ================= 1. FORMULÁRIO PADRÃO DE PRESTAÇÃO DE CONTAS =================
-        document.getElementById('btn-gerar-pc-padrao').addEventListener('click', () => {
-            if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
+        document.getElementById('btn-gerar-pc-padrao').addEventListener('click', async () => {
+            const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
             
+            // 🟢 Força leitura em tempo real direto do Firebase (Ignora cache estático)
+            const [snapPainel, snapNotas] = await Promise.all([
+                getDoc(doc(db, "painel_diario", dataTela)),
+                getDoc(doc(db, "notas_fiscais_diario", dataTela))
+            ]);
+            
+            const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
+            const notasFrescas = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+
+            if (!notasFrescas || notasFrescas.length === 0) return alert("Não há dados para gerar o PDF.");
+
             const placaSelecionada = document.getElementById('pc-placa').value;
             const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             const selectViagemElem = document.querySelector('#container-seletor-viagem select');
             const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
 
-            // 1. Encontra EXATAMENTE a rota do painel correspondente a esta placa E a este transporte específico
             let rotaExata = null;
-            if (window.pcRotasCache) {
-                rotaExata = window.pcRotasCache.find(r => {
-                    const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (rotasFrescas) {
+                rotaExata = rotasFrescas.find(r => {
+                    const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const matchPlaca = (pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa);
                     if (!matchPlaca) return false;
 
@@ -8016,9 +8059,8 @@
                 });
             }
 
-            // 2. Filtra estritamente as notas desta placa e desta viagem
-            let notasBrutas = window.pcNotasCache.filter(n => {
-                const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            let notasBrutas = notasFrescas.filter(n => {
+                const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                 return pNota === pSelecionadaLimpa;
             });
 
@@ -8031,9 +8073,6 @@
             }
 
             if (notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
-
-            // 3. Monta o objeto de dados (d) do zero, de forma blindada e correta
-            const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
             
             // Define o motorista correto: Prioriza a rota exata do painel, depois tenta nas notas, senão "NÃO INFORMADO"
             let motoristaCorreto = "NÃO INFORMADO";
@@ -8352,18 +8391,23 @@
                     let rotas = docSnap.data().rotas || [];
                     let modificou = false;
 
+                    // 🟢 Pega o nome do usuário logado para registrar a auditoria
+                    const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName) 
+                        ? auth.currentUser.displayName 
+                        : "Matheus Leite";
+
                     rotas = rotas.map(r => {
                         const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
                         const transpRota = String(r.transporte || "").trim();
 
-                        // Verifica se bate a placa/troca E se bate o transporte específico selecionado (se houver)
                         const batePlaca = (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa);
                         
                         if (batePlaca) {
                             if (!transporteSelecionado || transporteSelecionado === "" || transpRota === transporteSelecionado) {
                                 r.prestacao_impressa = true; 
-                                r.transporte_prestado = transporteSelecionado || transpRota; // Salva o transporte exato
+                                r.transporte_prestado = transporteSelecionado || transpRota; 
+                                r.conferente = nomeConferente; // <-- Salva quem fez a baixa
                                 modificou = true;
                             }
                         }
@@ -8372,14 +8416,17 @@
 
                     if (modificou) {
                         await setDoc(docRef, { rotas }, { merge: true });
-                        console.log(`Prestação da placa ${placaSelecionada} (Transp: ${transporteSelecionado}) marcada como concluída!`);
+                        console.log(`Prestação marcada como concluída por ${nomeConferente}!`);
+                        
+                        // Atualiza a tela automaticamente
                         if (typeof window.carregarPendenciasContas === 'function') {
+                            window._dadosPrestacaoCache = null; 
                             window.carregarPendenciasContas();
                         }
                     }
                 }
             } catch (e) {
-                console.error("Erro crítico ao dar baixa na prestação por viagem:", e);
+                console.error("Erro crítico ao dar baixa na prestação:", e);
             }
         };
 
@@ -10232,16 +10279,19 @@
 
                             const infoCarro = {
                                 data: dataIso,
-                                placa: placaExibicao, // <--- Agora exibe a placa certa (ou a troca)
+                                placa: placaExibicao,
                                 motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
                                 qtd: qtd_nf,
                                 regiao: rota.regiao || "Sem rota def.",
                                 transporte: transporteStr || "-",
                                 percentApp: percentApp,
-                                cemPorcentoAss: cemPorcentoAss
+                                cemPorcentoAss: cemPorcentoAss,
+                                conferente: rota.conferente || "Sistema" // <--- ADICIONE ESTA LINHA AQUI
                             };
 
-                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || rota.transporte_prestado === transporteStr);
+                            // 🟢 Valida tanto a viagem única quanto a string concatenada "Geral"
+                            const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
 
                             if (foiPrestado) {
                                 if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
@@ -10281,14 +10331,30 @@
             datasOrdenadas.forEach(data => {
                 const carros = dataset[data];
                 let linhasCarros = carros.map(c => {
-                    const acaoBotao = window.abaPrestacaoAtual === 'concluidos'
-                    ? `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`
-                    : '';
+                    let acaoBotao = '';
+                    let badgeConferente = '';
+                    let gridConfig = '';
 
-                    // BLINDAGEM DO GRID: Força as 7 ou 8 colunas matando qualquer CSS externo
-                    const gridConfig = window.abaPrestacaoAtual === 'concluidos'
-                        ? 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr 1fr'
-                        : 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr';
+                    if (window.abaPrestacaoAtual === 'concluidos') {
+                        acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
+                        
+                        // Pega apenas o primeiro nome para a tag ficar compacta
+                        const primeiroNome = c.conferente ? c.conferente.split(' ')[0] : 'Sistema';
+                        badgeConferente = `<span style="font-size: 10px; background: #e2e8f0; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; color: #475569; font-weight: bold; white-space: nowrap;" title="Baixado por: ${c.conferente}"><i class="ph-fill ph-user"></i> ${primeiroNome}</span>`;
+                        
+                        // Grid com 9 colunas (inclui a coluna do conferente)
+                        gridConfig = 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr minmax(80px, 1fr) 1fr';
+                    } else {
+                        // 🟢 Botão de Baixa Rápida nos Pendentes se for 100% Assinatura
+                        if (c.cemPorcentoAss === '✅') {
+                            acaoBotao = `<button class="btn btn-sm" onclick="window.marcarPrestacaoComoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Concluir Baixa Manual"><i class="ph-bold ph-check"></i> Baixar</button>`;
+                        } else {
+                            acaoBotao = `<span></span>`; // Mantém o grid alinhado
+                        }
+                        
+                        // Grid com 8 colunas (abre espaço para o botão Baixar)
+                        gridConfig = 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr 1fr';
+                    }
 
                     return `
                         <div class="pendencia-row" style="display: grid !important; grid-template-columns: ${gridConfig} !important; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border-color);">
@@ -10303,6 +10369,7 @@
                                 ${c.percentApp}% APP
                             </span>
                             <span style="text-align:center; font-size: 14px;" title="100% Assinatura">${c.cemPorcentoAss}</span>
+                            ${window.abaPrestacaoAtual === 'concluidos' ? badgeConferente : ''}
                             ${acaoBotao}
                         </div>
                     `;
