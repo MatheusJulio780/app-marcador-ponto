@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V10.6</span>
+                        Matheus Julio V10.8</span>
                 </div>
             </div>
 
@@ -4742,43 +4742,118 @@
             });
         };
 
-        // 2. HEARTBEAT PARA MANTER O RASTREAMENTO VIVO (Execute isso logo após iniciar a viagem)
-        let intervaloRastreioVivo;
-        window.ultimaLocEnviada = null; // Armazena coordenada em memória para comparação
+        // =====================================================================
+        // MOTOR DE RASTREAMENTO CONTÍNUO (Otimizado para Background)
+        // =====================================================================
+        let watchIdRastreio = null;
+        let heartbeatInterval = null;
+        window.ultimaLocEnviada = null;
+        window.ultimoTempoEnviado = null;
 
         window.iniciarRastreioContinuo = function (idViagem) {
-            if (intervaloRastreioVivo) clearInterval(intervaloRastreioVivo);
+            // 1. Limpa qualquer processo órfão antes de iniciar
+            window.pararRastreioContinuo();
 
-            intervaloRastreioVivo = setInterval(async () => {
-                const loc = await obterGpsSeguro();
-                if (loc && idViagem) {
-                    try {
-                        let deveEnviar = true;
+            if (!navigator.geolocation) {
+                console.error("Geolocalização não suportada por este navegador.");
+                return;
+            }
 
-                        // Trava lógica: Só grava no Firebase se houve deslocamento > 50 metros (0.05 km)
-                        if (window.ultimaLocEnviada) {
-                            const [latAtual, lngAtual] = loc.split(',').map(Number);
-                            const [latAnt, lngAnt] = window.ultimaLocEnviada.split(',').map(Number);
-                            const distancia = window.calcularDistanciaKM(latAnt, lngAnt, latAtual, lngAtual);
+            const options = {
+                enableHighAccuracy: true, // Força o uso do GPS de hardware (não torre de celular)
+                maximumAge: 10000,        // Aceita posições com até 10 segundos de atraso
+                timeout: 20000            // Tempo máximo para tentar obter um ponto antes de disparar erro
+            };
 
-                            if (distancia < 0.05) deveEnviar = false;
-                        }
+            // Função central que avalia distâncias e faz o push para o Firebase
+            const processarEEnviar = (lat, lng) => {
+                const loc = `${lat},${lng}`;
+                const agora = Date.now();
+                let deveEnviar = false;
 
-                        if (deveEnviar) {
-                            db.collection('viagens').doc(idViagem).update({
-                                locAtual: loc,
-                                ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp()
-                            }).catch(e => console.log("Erro silencioso ao atualizar rota:", e));
+                if (!window.ultimaLocEnviada) {
+                    deveEnviar = true; // Primeiro envio obrigatório
+                } else {
+                    const [latAnt, lngAnt] = window.ultimaLocEnviada.split(',').map(Number);
+                    const distancia = window.calcularDistanciaKM(latAnt, lngAnt, lat, lng);
+                    const tempoDecorrido = agora - (window.ultimoTempoEnviado || 0);
 
-                            window.ultimaLocEnviada = loc;
-                        }
-                    } catch (e) { }
+                    // Filtro Lógico: Só gasta banda/bateria se o veículo se moveu > 50m (0.05 km) 
+                    // OU se passou de 2 minutos parado (Heartbeat vital para manter o card ativo no admin)
+                    if (distancia >= 0.05 || tempoDecorrido > 120000) {
+                        deveEnviar = true;
+                    }
                 }
-            }, 30000);
+
+                if (deveEnviar && idViagem) {
+                    db.collection('viagens').doc(idViagem).update({
+                        locAtual: loc,
+                        ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(e => console.log("Rastreio: Erro silencioso ao atualizar no Firebase", e));
+
+                    window.ultimaLocEnviada = loc;
+                    window.ultimoTempoEnviado = agora;
+                    localStorage.setItem('icaphi_last_loc', loc); // Cache local para resiliência
+                }
+            };
+
+            // 2. DELEGAÇÃO NATIVA (Hardware): Escuta contínua via chip GPS
+            watchIdRastreio = navigator.geolocation.watchPosition(
+                (position) => {
+                    processarEEnviar(position.coords.latitude, position.coords.longitude);
+                },
+                (error) => {
+                    console.warn("Rastreio nativo perdeu sinal ou permissão. Código:", error.code);
+                },
+                options
+            );
+
+            // 3. HEARTBEAT DE SOBREVIVÊNCIA (Fallback)
+            // Se o SO congelar o watchPosition (bateria baixa), o setInterval tenta injetar vida na thread a cada 1 minuto
+            heartbeatInterval = setInterval(async () => {
+                const agora = Date.now();
+                // Só aciona o GPS forçado se o watchPosition estiver há mais de 2.5 minutos sem dar sinal de vida
+                if (!window.ultimoTempoEnviado || (agora - window.ultimoTempoEnviado > 150000)) {
+                    try {
+                        if (typeof window.obterGpsSeguro === 'function') {
+                            const fallbackLoc = await window.obterGpsSeguro();
+                            if (fallbackLoc) {
+                                const [lat, lng] = fallbackLoc.split(',').map(Number);
+                                processarEEnviar(lat, lng);
+                            }
+                        }
+                    } catch (e) {
+                        // Silencia falhas de GPS em background
+                    }
+                }
+            }, 60000);
+
+            // 4. INTERCEPTADOR DE MINIMIZAÇÃO (Garante envio antes da thread dormir)
+            document.addEventListener("visibilitychange", function handleVisibilityChange() {
+                if (document.visibilityState === 'hidden' && idViagem) {
+                    const lastLoc = window.ultimaLocEnviada || localStorage.getItem('icaphi_last_loc');
+                    if (lastLoc) {
+                        // Envio "fire-and-forget": Não esperamos resposta, apenas jogamos a requisição antes de congelar
+                        db.collection('viagens').doc(idViagem).update({
+                            locAtual: lastLoc,
+                            ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(() => {});
+                    }
+                }
+            });
         };
 
         window.pararRastreioContinuo = function () {
-            if (intervaloRastreioVivo) clearInterval(intervaloRastreioVivo);
+            if (watchIdRastreio !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(watchIdRastreio);
+                watchIdRastreio = null;
+            }
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            window.ultimaLocEnviada = null;
+            window.ultimoTempoEnviado = null;
         };
 
         // ==========================================
