@@ -4594,6 +4594,52 @@
         </div>
     </div>
 
+    <!-- ================= MODAL DE PERFIL DO CONFERENTE ================= -->
+    <style>
+        .modal-perfil-card {
+            background: var(--bg-primary, #ffffff);
+            border-radius: 16px;
+            padding: 30px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #modal-perfil-conferente.active .modal-perfil-card {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .perfil-foto-container {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 15px auto;
+            padding: 4px;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+        }
+        #pc-perfil-foto {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--bg-primary, #fff);
+        }
+    </style>
+
+    <div class="modal-overlay" id="modal-perfil-conferente">
+        <div class="modal-perfil-card">
+            <button class="btn-close" onclick="document.getElementById('modal-perfil-conferente').classList.remove('active')" style="position: absolute; top: 15px; right: 15px;">×</button>
+            
+            <div class="perfil-foto-container">
+                <img id="pc-perfil-foto" src="" alt="Foto">
+            </div>
+            
+            <h3 id="pc-perfil-nome" style="margin-bottom: 5px; font-size: 20px; font-weight: 800; color: var(--text-main);">Nome</h3>
+            <span id="pc-perfil-cargo" style="background: var(--bg-secondary); color: var(--text-muted); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Buscando dados...</span>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         // 🟢 ADICIONE "arrayUnion" LOGO ABAIXO:
@@ -10603,15 +10649,26 @@
                     let gridConfig = '';
 
                     if (window.abaPrestacaoAtual === 'concluidos') {
-                        acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
+                        acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
                         
-                        // Pega apenas o primeiro nome para a tag ficar compacta
-                        const primeiroNome = c.conferente ? c.conferente.split(' ')[0] : 'Sistema';
-                        badgeConferente = `<span style="font-size: 10px; background: #e2e8f0; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; color: #475569; font-weight: bold; white-space: nowrap;" title="Baixado por: ${c.conferente}"><i class="ph-fill ph-user"></i> ${primeiroNome}</span>`;
+                        const nomeQuebrado = c.conferente ? c.conferente.split(' ') : ['Sistema'];
+                        const nomeExibicao = nomeQuebrado.length > 1 ? `${nomeQuebrado[0]} ${nomeQuebrado[1]}` : nomeQuebrado[0];
+
+                        // 🟢 Nova etiqueta: Alinhada, com limite de largura e 3 pontinhos se for muito grande
+                        badgeConferente = `
+                        <span onclick="window.abrirPerfilConferente('${c.conferente}')" 
+                            onmouseover="this.style.background='#cbd5e1'; this.style.color='#1e40af'" 
+                            onmouseout="this.style.background='#e2e8f0'; this.style.color='#475569'" 
+                            style="cursor: pointer; font-size: 11px; background: #e2e8f0; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px; color: #475569; font-weight: 800; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; max-width: 140px;" 
+                            title="Ver perfil de ${c.conferente}">
+                            <i class="ph-bold ph-user-circle" style="font-size: 14px; flex-shrink: 0;"></i> 
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeExibicao}</span>
+                        </span>`;
                         
-                        // Grid com 9 colunas (inclui a coluna do conferente)
-                        gridConfig = 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr minmax(80px, 1fr) 1fr';
-                    } else {
+                        // 🟢 Grid reajustado: Dá o tamanho exato que a etiqueta e o botão precisam no final
+                        gridConfig = 'minmax(70px, 1fr) minmax(90px, 1.5fr) minmax(60px, 1fr) 1fr minmax(90px, 1.5fr) minmax(70px, 1fr) 30px minmax(130px, auto) minmax(85px, auto)';
+                    } 
+                    else {
                         // 🟢 Botão de Baixa Rápida nos Pendentes se for 100% Assinatura
                         if (c.cemPorcentoAss === '✅') {
                             acaoBotao = `<button class="btn btn-sm" onclick="window.marcarPrestacaoComoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Concluir Baixa Manual"><i class="ph-bold ph-check"></i> Baixar</button>`;
@@ -10663,6 +10720,7 @@
 
             container.innerHTML = htmlFinal;
         };
+
         // Função para estornar/desmarcar a prestação e mandar de volta para os pendentes
         window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada, transporteSelecionado) => {
             try {
@@ -11443,6 +11501,44 @@
             const dataAtual = new Date().toISOString().split('T')[0];
             XLSX.writeFile(workbook, `Excecoes_Travadas_${dataAtual}.xlsx`);
         };
+
+        window.abrirPerfilConferente = async (nome) => {
+        // Se for o sistema, não tem perfil para abrir
+        if (!nome || nome === 'Sistema') {
+            alert('Esta prestação de contas foi processada automaticamente pelo sistema.');
+            return;
+        }
+
+        const modal = document.getElementById('modal-perfil-conferente');
+        
+        // Dados temporários enquanto busca no banco
+        document.getElementById('pc-perfil-nome').innerText = nome;
+        document.getElementById('pc-perfil-cargo').innerText = "Buscando dados...";
+        document.getElementById('pc-perfil-foto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=2563eb&color=fff&size=150`;
+        
+        // Exibe o modal
+        modal.classList.add('active');
+
+        try {
+            // Varre os usuários cadastrados para achar a foto e sobrenome
+            const querySnapshot = await getDocs(collection(db, "users")); // Verifique se sua coleção é "users" ou "usuarios"
+            
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const nomeCompletoDB = `${data.nome || ''} ${data.sobrenome || ''}`.trim().toLowerCase();
+                
+                // Verifica se o nome da prestação bate com o do banco
+                if (nomeCompletoDB.includes(nome.toLowerCase()) || nome.toLowerCase().includes(String(data.nome).toLowerCase())) {
+                    if (data.foto) document.getElementById('pc-perfil-foto').src = data.foto;
+                    document.getElementById('pc-perfil-cargo').innerText = data.setor || "Conferente";
+                    document.getElementById('pc-perfil-nome').innerText = `${data.nome} ${data.sobrenome || ''}`;
+                }
+            });
+        } catch (e) {
+            console.error("Erro ao buscar detalhes do perfil:", e);
+            document.getElementById('pc-perfil-cargo').innerText = "Conferente / Responsável";
+        }
+    };
 
     </script>
 </body>
