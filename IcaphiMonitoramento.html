@@ -4516,6 +4516,84 @@
         </div>
     </div>
 
+    <style>
+        #welcome-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 120vw; height: 120vh;
+            /* Fundo escuro translúcido com desfoque (Glassmorphism) */
+            background: rgba(10, 10, 10, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+            z-index: 99999;
+            opacity: 1;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Animação mais fluida: sobe e aumenta levemente */
+            transform: translateY(30px) scale(0.95);
+            opacity: 0;
+            animation: welcomeReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .welcome-text {
+            font-family: 'Inter', sans-serif;
+            color: #ffffff;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            margin-bottom: 12px;
+        }
+
+        .welcome-subtext {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #a1a1aa; /* Cinza moderno */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: pulseText 2s infinite ease-in-out;
+        }
+
+        /* Spinner minimalista animado via CSS */
+        .welcome-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes welcomeReveal {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <div id="welcome-overlay" style="display: none;">
+        <div class="welcome-content" id="welcome-message">
+            <!-- O JS vai injetar o conteúdo aqui -->
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         // 🟢 ADICIONE "arrayUnion" LOGO ABAIXO:
@@ -4576,6 +4654,54 @@
         let activeChatId = null;
         let unsubscribeChat = null;
         let unreadCountsGlobal = {};
+
+        // ================= TELA DE BOAS VINDAS =================
+        window.exibirBoasVindas = (nomeCompleto) => {
+            if (!nomeCompleto) return;
+
+            const overlay = document.getElementById('welcome-overlay');
+            const msgElement = document.getElementById('welcome-message');
+            if (!overlay || !msgElement) return;
+            
+            const hora = new Date().getHours();
+            let saudacao = "";
+            
+            // Regra: Bom dia antes de 12:00, Boa tarde até 17:00 (menor que 18:00), Boa noite o resto.
+            if (hora >= 0 && hora < 12) {
+                saudacao = "Bom dia";
+            } else if (hora >= 12 && hora < 18) {
+                saudacao = "Boa tarde";
+            } else {
+                saudacao = "Boa noite";
+            }
+
+            // ... (código do cálculo da hora e saudação continua igual) ...
+
+            // Extrai o primeiro nome
+            const primeiroNome = String(nomeCompleto).split(" ")[0];
+
+            // Monta a mensagem com a nova estrutura HTML interna
+            msgElement.innerHTML = `
+                <div class="welcome-text">${saudacao}, ${primeiroNome}.</div>
+                <div class="welcome-subtext">
+                    <div class="welcome-spinner"></div>
+                    <span>Sincronizando seus dados...</span>
+                </div>
+            `;
+
+            // ... (resto do código de mostrar e ocultar continua igual) ...
+            
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+
+            // Some suavemente após 2.5 segundos
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 800);
+            }, 2500);
+        };
 
         // ... a partir daqui continua com o restante do código que te passei (compressImageToBase64, etc)
 
@@ -4667,18 +4793,27 @@
                     const userSnap = await getDoc(userDocRef);
 
                     if (userSnap.exists()) {
-                        window.currentUserData = { uid: user.uid, ...userSnap.data() };
+                        const dadosBanco = userSnap.data();
+                        window.currentUserData = { uid: user.uid, ...dadosBanco };
+                        
+                        // 🟢 GUARDA O NOME GLOBALMENTE PARA A PRESTAÇÃO DE CONTAS
+                        window.usuarioLogadoNome = dadosBanco.nome || user.displayName;
+
                         iniciarSessaoColaborativa();
 
-                        // SUCESSO: Esconde a tela de login e o splash, liberando o sistema
+                        // SUCESSO: Esconde a tela de login e o splash
                         if (authOverlay) authOverlay.style.display = 'none';
                         if (onboardingOverlay) onboardingOverlay.style.display = 'none';
                         if (splash) {
                             splash.style.opacity = '0';
                             setTimeout(() => splash.style.display = 'none', 300);
                         }
+
+                        // 🟢 DISPARA A TELA DE BOAS VINDAS
+                        window.exibirBoasVindas(window.usuarioLogadoNome);
+
                     } else {
-                        // PRIMEIRO ACESSO: Esconde login, esconde splash, mostra onboarding
+                        // PRIMEIRO ACESSO (Não tem documento no banco)
                         if (authOverlay) authOverlay.style.display = 'none';
                         if (splash) splash.style.display = 'none';
                         if (onboardingOverlay) {
@@ -8508,10 +8643,21 @@
             }
         });
 
+        // Função para dar baixa/concluir a prestação
         window.marcarPrestacaoComoImpressa = async (dataSel, placaSelecionada, transporteSelecionado) => {
-            try {
-                if (!dataSel || !placaSelecionada) return;
+            // 🟢 TRAVA DE SEGURANÇA: Busca o nome de várias fontes confiáveis
+            let nomeResponsavel = window.usuarioLogadoNome || (window.currentUserData ? window.currentUserData.nome : null);
+            
+            if (!nomeResponsavel && auth.currentUser) {
+                nomeResponsavel = auth.currentUser.displayName;
+            }
 
+            if (!nomeResponsavel || String(nomeResponsavel).trim() === "") {
+                alert("Erro: Não foi possível identificar o seu usuário. Atualize a página e tente novamente.");
+                return; // Impede que grave "Sistema" no banco
+            }
+
+            try {
                 const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
                 const docRef = doc(db, "painel_diario", dataSel);
                 const docSnap = await getDoc(docRef);
@@ -8520,23 +8666,19 @@
                     let rotas = docSnap.data().rotas || [];
                     let modificou = false;
 
-                    // 🟢 Pega o nome do usuário logado para registrar a auditoria
-                    const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName) 
-                        ? auth.currentUser.displayName 
-                        : "Matheus Leite";
-
                     rotas = rotas.map(r => {
                         const placaRotaLimpa = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const trocaRotaLimpa = r.troca ? String(r.troca).toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
                         const transpRota = String(r.transporte || "").trim();
 
                         const batePlaca = (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa);
-                        
+
                         if (batePlaca) {
                             if (!transporteSelecionado || transporteSelecionado === "" || transpRota === transporteSelecionado) {
-                                r.prestacao_impressa = true; 
-                                r.transporte_prestado = transporteSelecionado || transpRota; 
-                                r.conferente = nomeConferente; // <-- Salva quem fez a baixa
+                                r.prestacao_impressa = true;
+                                r.transporte_prestado = transpRota;
+                                // 🟢 GRAVA O NOME CORRETO DE QUEM DEU A BAIXA
+                                r.conferente = nomeResponsavel; 
                                 modificou = true;
                             }
                         }
@@ -8545,17 +8687,13 @@
 
                     if (modificou) {
                         await setDoc(docRef, { rotas }, { merge: true });
-                        console.log(`Prestação marcada como concluída por ${nomeConferente}!`);
-                        
-                        // Atualiza a tela automaticamente
-                        if (typeof window.carregarPendenciasContas === 'function') {
-                            window._dadosPrestacaoCache = null; 
-                            window.carregarPendenciasContas();
-                        }
+                        window._dadosPrestacaoCache = null; 
+                        window.carregarPendenciasContas();
                     }
                 }
             } catch (e) {
-                console.error("Erro crítico ao dar baixa na prestação:", e);
+                console.error("Erro ao marcar prestação:", e);
+                alert("Erro ao baixar prestação.");
             }
         };
 
