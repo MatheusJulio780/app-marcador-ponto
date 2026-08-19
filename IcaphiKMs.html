@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V10.5</span>
+                        Matheus Julio V10.6</span>
                 </div>
             </div>
 
@@ -1250,6 +1250,10 @@
                     </div>
                 </div>
 
+                <button onclick="window.sincronizarEscalaDoFirebase()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Buscar Escala Firebase
+                </button>
+
                 <div class="w-full lg:w-[280px] relative group cursor-pointer p-2" id="progresso-diario-container">
                     <div class="flex justify-between items-end mb-2 px-1">
                         <span
@@ -1641,44 +1645,84 @@
 
     <div id="modal-editar-admin" class="viewer-overlay" style="z-index: 10005;">
         <div class="modal-box">
-            <button class="modal-close-btn" onclick="el('modal-editar-admin').classList.remove('active')"><i
-                    data-lucide="x" class="w-4 h-4"></i></button>
-            <h3 class="font-bold mb-4 dark:text-zinc-100 text-lg flex gap-2 items-center"><i data-lucide="settings"
-                    class="text-orange-500"></i> Editar Viagem</h3>
-            <input type="hidden" id="edit-id"><input type="hidden" id="edit-foto-ini-b64"><input type="hidden"
-                id="edit-foto-fim-b64">
+            <button class="modal-close-btn" onclick="el('modal-editar-admin').classList.remove('active')">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <h3 class="font-bold mb-4 dark:text-zinc-100 text-lg flex gap-2 items-center">
+                <i data-lucide="settings" class="text-orange-500"></i> Editar Viagem
+            </h3>
+            
+            <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-foto-ini-b64">
+            <input type="hidden" id="edit-foto-fim-b64">
+
             <div class="space-y-3">
-                <div><label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Placa</label><input
-                        id="edit-placa" class="coss-input m-0 uppercase font-bold text-sm"></div>
-                <div><label
-                        class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Motorista</label><input
-                        id="edit-motorista" class="coss-input m-0 text-sm"></div>
-                <div><label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Perfil
-                        Veículo</label><select id="edit-perfil" class="coss-input m-0 text-sm"></select></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Meta
-                            KM</label><input id="edit-meta" type="number" class="coss-input m-0 text-sm"></div>
-                    <div><label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">KM
-                            Início</label><input id="edit-km-ini" type="number" class="coss-input m-0 text-sm"></div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Placa</label>
+                        <input id="edit-placa" class="coss-input m-0 uppercase font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Motorista</label>
+                        <input id="edit-motorista" class="coss-input m-0 text-sm">
+                    </div>
                 </div>
-                <div><label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">KM
-                        Final</label><input id="edit-km-fim" type="number" class="coss-input m-0 text-sm"></div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Rota / Região</label>
+                    <input id="edit-rota" class="coss-input m-0 text-sm" placeholder="Ex: PETROPOLIS-PARAIBA DO SUL">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Perfil Veículo</label>
+                        <select id="edit-perfil" class="coss-input m-0 text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Status da Viagem</label>
+                        <select id="edit-status" class="coss-input m-0 text-sm font-bold">
+                            <option value="em_curso">EM CURSO</option>
+                            <option value="finalizada">FINALIZADA</option>
+                            <option value="cancelada">CANCELADA</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Meta KM</label>
+                        <input id="edit-meta" type="number" class="coss-input m-0 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">KM Início</label>
+                        <input id="edit-km-ini" type="number" class="coss-input m-0 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">KM Final</label>
+                        <input id="edit-km-fim" type="number" class="coss-input m-0 text-sm">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2 mt-2">
-                    <div class="file-upload p-2 h-16 flex items-center justify-center"
-                        onclick="el('input-edit-foto-ini').click()"><input type="file" id="input-edit-foto-ini"
-                            class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-ini-b64')"><span
-                            class="text-[10px] font-bold uppercase text-gray-500 dark:text-zinc-400">Alterar Foto
-                            Ini</span></div>
-                    <div class="file-upload p-2 h-16 flex items-center justify-center"
-                        onclick="el('input-edit-foto-fim').click()"><input type="file" id="input-edit-foto-fim"
-                            class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-fim-b64')"><span
-                            class="text-[10px] font-bold uppercase text-gray-500 dark:text-zinc-400">Alterar Foto
-                            Fim</span></div>
+                    <div class="file-upload p-2 h-16 flex items-center justify-center cursor-pointer" onclick="el('input-edit-foto-ini').click()">
+                        <input type="file" id="input-edit-foto-ini" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-ini-b64')">
+                        <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-zinc-400">Alterar Foto Ini</span>
+                    </div>
+                    <div class="file-upload p-2 h-16 flex items-center justify-center cursor-pointer" onclick="el('input-edit-foto-fim').click()">
+                        <input type="file" id="input-edit-foto-fim" class="hidden" accept="image/*" onchange="handleModalFile(this,'edit-foto-fim-b64')">
+                        <span class="text-[10px] font-bold uppercase text-gray-500 dark:text-zinc-400">Alterar Foto Fim</span>
+                    </div>
                 </div>
-                <button onclick="window.salvarEdicaoCompleta()"
-                    class="coss-btn bg-teal-600 hover:bg-teal-700 text-white mt-4">SALVAR ALTERAÇÕES</button>
-                <div id="area-finalizar-admin" class="hidden"><button onclick="window.finalizarPeloAdmin()"
-                        class="coss-btn bg-emerald-600 mt-2 text-white">FINALIZAR MANUALMENTE</button></div>
+
+                <button onclick="window.salvarEdicaoCompleta()" class="coss-btn bg-teal-600 hover:bg-teal-700 text-white mt-4 w-full font-black">
+                    SALVAR ALTERAÇÕES
+                </button>
+                
+                <div id="area-finalizar-admin" class="hidden">
+                    <button onclick="window.finalizarPeloAdmin()" class="coss-btn bg-emerald-600 mt-2 text-white w-full font-black">
+                        FINALIZAR MANUALMENTE
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2098,20 +2142,38 @@
         let primeiraCargaAdmin = true;
 
         function carregarViagensDb() {
-            db.collection('viagens').onSnapshot(snapshot => {
+            // Define uma janela de corte: busca apenas viagens iniciadas nos últimos 30 dias
+            const limiteDias = new Date();
+            limiteDias.setDate(limiteDias.getDate() - 30);
+            const timestampCorte = limiteDias.toISOString(); // Formato padrão string ISO
+
+            // Aplica a query limitadora direto no servidor do Firebase
+            db.collection('viagens')
+              .where('dataInicioCelular', '>=', timestampCorte)
+              .onSnapshot(snapshot => {
                 if (ignorarSnapshot) return;
+                
                 todasViagens = [];
-                snapshot.forEach(doc => { const data = doc.data(); data.id = doc.id; todasViagens.push(data); });
+                snapshot.forEach(doc => { 
+                    const data = doc.data(); 
+                    data.id = doc.id; 
+                    todasViagens.push(data); 
+                });
 
                 renderizarAdmin();
 
+                // Mantém os seus gatilhos ativos de modais intactos
                 if (el('modal-dash').classList.contains('active')) carregarDash();
                 if (el('modal-mapa').classList.contains('active')) carregarMapa();
                 if (el('modal-view-extrato').classList.contains('active')) renderizarExtrato();
                 if (el('modal-suporte').classList.contains('active')) renderizarSuporte(null);
 
-                if (el('modal-rastreio').classList.contains('active') && currentRastreioId) abrirRastreioAdmin(currentRastreioId, true);
-            }, err => { console.error("Erro ao ler viagens:", err); });
+                if (el('modal-rastreio').classList.contains('active') && currentRastreioId) {
+                    abrirRastreioAdmin(currentRastreioId, true);
+                }
+            }, err => { 
+                console.error("Erro ao ler viagens com filtro:", err); 
+            });
         }
 
         function monitorarViagemUnicaDb(id) {
@@ -3542,19 +3604,45 @@
             reader.readAsDataURL(f);
         }
 
+        // 1. Função que popula o modal quando você clica em EDITAR
         window.abrirEdicao = function (id) {
-            const v = todasViagens.find(x => x.id === id); if (!v) return;
-            el('edit-id').value = id; el('edit-placa').value = v.placa; el('edit-motorista').value = v.nome;
-            el('edit-meta').value = v.metaKm || 0; el('edit-km-ini').value = v.kmInicio; el('edit-km-fim').value = v.kmFim || '';
-            el('edit-foto-ini-b64').value = v.fotoInicio || ''; el('edit-foto-fim-b64').value = v.fotoFim || '';
+            const v = todasViagens.find(x => x.id === id);
+            if (!v) {
+                alert("Viagem não encontrada para edição.");
+                return;
+            }
 
-            const selPerf = el('edit-perfil'); selPerf.innerHTML = '';
-            for (const k of Object.keys(tabelaPrecos)) { const opt = document.createElement('option'); opt.value = k; opt.innerText = k; selPerf.appendChild(opt); }
-            selPerf.value = v.perfilVeiculo || "PADRÃO";
+            // ID e Fotos
+            el('edit-id').value = v.id;
+            el('edit-foto-ini-b64').value = v.fotoInicio || '';
+            el('edit-foto-fim-b64').value = v.fotoFim || '';
 
-            v.status === 'em_curso' ? el('area-finalizar-admin').classList.remove('hidden') : el('area-finalizar-admin').classList.add('hidden');
+            // Dados textuais e seletores
+            el('edit-placa').value = v.placa || '';
+            el('edit-motorista').value = v.nome || '';
+            el('edit-rota').value = v.rotaCidades || '';
+            
+            // Perfil do veículo (Popula as opções caso haja objeto tabelaPrecos)
+            const selectPerfil = el('edit-perfil');
+            if (selectPerfil && typeof tabelaPrecos !== 'undefined') {
+                selectPerfil.innerHTML = Object.keys(tabelaPrecos).map(p => 
+                    `<option value="${p}" ${p === (v.perfilVeiculo || 'PADRÃO') ? 'selected' : ''}>${p}</option>`
+                ).join('');
+            } else if (selectPerfil) {
+                selectPerfil.innerHTML = `<option value="${v.perfilVeiculo || 'PADRÃO'}">${v.perfilVeiculo || 'PADRÃO'}</option>`;
+            }
+
+            // Status atual
+            el('edit-status').value = v.status || 'em_curso';
+
+            // Métricas numéricas
+            el('edit-meta').value = v.metaKm || 0;
+            el('edit-km-ini').value = v.kmInicio || 0;
+            el('edit-km-fim').value = (v.kmFim !== null && v.kmFim !== undefined) ? v.kmFim : '';
+
+            // Exibe o modal
             el('modal-editar-admin').classList.add('active');
-        }
+        };
 
         setInterval(() => {
             const driverTimer = el('cronometro-motorista');
@@ -3786,44 +3874,61 @@
                 } catch (e) { }
 
                 // ==========================================
-                // RESGATE DA ESCALA EM STANDBY (COM DATA ALVO)
+                // RESGATE AUTOMÁTICO DA ESCALA DIÁRIA
                 // ==========================================
-                if (textoLoader) textoLoader.innerText = "Verificando escala ativa...";
+                if (textoLoader) textoLoader.innerText = "Sincronizando escala de hoje...";
 
                 let metaExtraida = 0;
                 let perfilExtraido = "PADRÃO";
                 let servicoExtraido = servico;
                 let rotaExtraida = "N/D";
 
-                // Constrói a string YYYY-MM-DD do dia atual do motorista
-                const hoje = new Date();
-                const ano = hoje.getFullYear();
-                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-                const dia = String(hoje.getDate()).padStart(2, '0');
-                const dataHojeStr = `${ano}-${mes}-${dia}`;
-
-                // Monta o ID Composto (Ex: SHE1H15_2026-05-18)
-                const standbyId = `${placaFormatada}_${dataHojeStr}`;
-
+                // TENTATIVA 1: Busca diretamente no painel_diario (Novo fluxo)
                 try {
-                    if (navigator.onLine) {
-                        const escalaDoc = await Promise.race([
-                            db.collection('escala_standby').doc(standbyId).get({ source: 'server' }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Standby")), 5000))
-                        ]);
-
-                        if (escalaDoc && escalaDoc.exists) {
-                            const dadosEscala = escalaDoc.data();
-                            metaExtraida = dadosEscala.metaKm || 0;
-                            perfilExtraido = dadosEscala.perfilVeiculo || "PADRÃO";
-                            rotaExtraida = dadosEscala.rotaCidades || "N/D";
-                            if (dadosEscala.tipoServico && dadosEscala.tipoServico !== 'N/D') {
-                                servicoExtraido = dadosEscala.tipoServico;
+                    if (typeof window.obterDadosEscalaAutomática === 'function') {
+                        const dadosAuto = await window.obterDadosEscalaAutomática(placaFormatada);
+                        if (dadosAuto) {
+                            metaExtraida = dadosAuto.metaKm;
+                            perfilExtraido = dadosAuto.perfilVeiculo;
+                            rotaExtraida = dadosAuto.rotaCidades;
+                            if (dadosAuto.tipoServico && dadosAuto.tipoServico !== 'N/D') {
+                                servicoExtraido = dadosAuto.tipoServico;
                             }
                         }
                     }
                 } catch (e) {
-                    console.warn("Fila de standby indisponível ou em timeout. Avançando com dados locais.");
+                    console.warn("Falha na busca automática do painel_diario. Acionando fallback...");
+                }
+
+                // TENTATIVA 2 (Fallback): Se a TENTATIVA 1 não achou nada, busca no standby antigo
+                if (rotaExtraida === "N/D") {
+                    const hoje = new Date();
+                    const ano = hoje.getFullYear();
+                    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                    const dia = String(hoje.getDate()).padStart(2, '0');
+                    const dataHojeStr = `${ano}-${mes}-${dia}`;
+                    const standbyId = `${placaFormatada}_${dataHojeStr}`;
+
+                    try {
+                        if (navigator.onLine) {
+                            const escalaDoc = await Promise.race([
+                                db.collection('escala_standby').doc(standbyId).get({ source: 'server' }),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Standby")), 5000))
+                            ]);
+
+                            if (escalaDoc && escalaDoc.exists) {
+                                const dadosEscala = escalaDoc.data();
+                                metaExtraida = dadosEscala.metaKm || metaExtraida;
+                                perfilExtraido = dadosEscala.perfilVeiculo || perfilExtraido;
+                                rotaExtraida = dadosEscala.rotaCidades || rotaExtraida;
+                                if (dadosEscala.tipoServico && dadosEscala.tipoServico !== 'N/D') {
+                                    servicoExtraido = dadosEscala.tipoServico;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Fila de standby indisponível. Avançando com dados locais.");
+                    }
                 }
 
                 if (textoLoader) textoLoader.innerText = "Salvando no sistema central...";
@@ -3874,7 +3979,7 @@
                 localStorage.setItem('hora_inicio_viagem', Date.now());
 
                 if (window.iniciarRastreioContinuo) window.iniciarRastreioContinuo(idViagemGerado);
-                window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
+                if (window.reconstruirTelaEmCurso) window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
 
                 localStorage.removeItem('auto_tipo_servico');
                 localStorage.removeItem('auto_motorista');
@@ -3901,9 +4006,12 @@
         window.reconstruirTelaEmCurso = function (dados, idViagem) {
             if (!dados) return;
 
-            // ==========================================
-            // IDENTIFICAÇÃO PARA O CARD VISUAL
-            // ==========================================
+            // Mata absolutamente TODOS os intervalos ativos para eliminar o bug do cronômetro acelerado/pulando
+            const maxIntervalId = setInterval(() => {}, Number.MAX_SAFE_INTEGER);
+            for (let i = 1; i < maxIntervalId; i++) {
+                clearInterval(i);
+            }
+
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
 
@@ -3912,6 +4020,12 @@
             const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V?";
 
             const origemDisplay = dados.origem || (isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`);
+
+            // Garante que o KM início apareça mesmo se vier como objeto, string ou número puro
+            let kmInicioTratado = 'N/D';
+            if (dados.kmInicio !== undefined && dados.kmInicio !== null && dados.kmInicio !== '') {
+                kmInicioTratado = dados.kmInicio;
+            }
 
             // ==========================================
             // INJEÇÃO DO HTML
@@ -3926,12 +4040,27 @@
                     </div>
                     <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
                         <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">KM Início</span>
-                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.kmInicio || 'N/D'}</b>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${kmInicioTratado}</b>
                     </div>
                     <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
                         <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Motorista</span>
                         <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.nome || 'N/D'}</b>
                     </div>
+                    
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Rota</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.rotaCidades || 'N/D'}</b>
+                    </div>
+
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Perfil</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.perfilVeiculo || 'PADRÃO'}</b>
+                    </div>
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Meta KM</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.metaKm || 0}</b>
+                    </div>
+
                     <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
                         <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Dispositivo / Versão</span>
                         <b class="text-cyan-600 dark:text-cyan-400 text-[11px] font-black uppercase truncate block">
@@ -3943,12 +4072,11 @@
             }
 
             // ==========================================
-            // RESTAURAÇÃO DE CRONÔMETRO
+            // INICIALIZAÇÃO DO CRONÔMETRO ÚNICO
             // ==========================================
             const horaSalva = localStorage.getItem('hora_inicio_viagem');
             window.dataInicioViagemAtual = horaSalva ? parseInt(horaSalva) : Date.now();
 
-            if (window.cronometroInterval) clearInterval(window.cronometroInterval);
             const cronoEl = document.getElementById('cronometro-motorista');
 
             window.cronometroInterval = setInterval(() => {
@@ -4349,35 +4477,38 @@
             }
         };
 
+        // 2. Função de persistência no Firestore
         window.salvarEdicaoCompleta = function () {
             const id = el('edit-id').value;
-            const statusElement = el('edit-status'); // Busca o select no HTML
+            if (!id) return;
 
-            let updates = {
-                placa: formatarPlaca(el('edit-placa').value),
+            const payload = {
+                placa: typeof formatarPlaca === 'function' ? formatarPlaca(el('edit-placa').value) : el('edit-placa').value.toUpperCase(),
                 nome: el('edit-motorista').value,
+                rotaCidades: el('edit-rota').value,
                 perfilVeiculo: el('edit-perfil').value,
-                metaKm: Number(el('edit-meta').value),
-                kmInicio: Number(el('edit-km-ini').value),
+                status: el('edit-status').value,
+                metaKm: Number(el('edit-meta').value) || 0,
+                kmInicio: Number(el('edit-km-ini').value) || 0,
                 kmFim: el('edit-km-fim').value ? Number(el('edit-km-fim').value) : null,
                 fotoInicio: el('edit-foto-ini-b64').value,
                 fotoFim: el('edit-foto-fim-b64').value
             };
 
-            // Se existir o select de status no modal, inclui no payload de atualização
-            if (statusElement && statusElement.value) {
-                updates.status = statusElement.value;
-            }
+            document.body.style.cursor = 'wait';
 
-            db.collection('viagens').doc(id).update(updates)
+            db.collection('viagens').doc(id).update(payload)
                 .then(() => {
                     el('modal-editar-admin').classList.remove('active');
                     alert("Viagem atualizada com sucesso!");
-                    if (typeof renderizarAdmin === 'function') renderizarAdmin(); // Atualiza a UI imediatamente
+                    if (typeof renderizarAdmin === 'function') renderizarAdmin();
                 })
                 .catch(e => {
-                    console.error(e);
-                    alert("Erro ao salvar edição.");
+                    console.error("Erro ao salvar edição no Firestore:", e);
+                    alert("Erro ao salvar alterações no banco de dados.");
+                })
+                .finally(() => {
+                    document.body.style.cursor = 'default';
                 });
         };
 
@@ -5952,6 +6083,194 @@
                 alert("Falha ao tentar mudar o status no banco.");
             } finally {
                 document.body.style.cursor = 'default';
+            }
+        };
+
+        // =======================================================
+        // INSTÂNCIA SECUNDÁRIA: MONITORAMENTO (ESCALA DIÁRIA)
+        // =======================================================
+        (function inicializarFirebaseMonitoramento() {
+            if (!window.firebase) return;
+
+            // Garante que não duplique a aplicação caso já exista
+            const appExistente = firebase.apps.find(app => app.name === "AppMonitoramentoEscala");
+            const appMonitoramento = appExistente || firebase.initializeApp({
+                apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y",
+                authDomain: "monitoramento-bc533.firebaseapp.com",
+                projectId: "monitoramento-bc533",
+                storageBucket: "monitoramento-bc533.firebasestorage.app",
+                messagingSenderId: "70745510419",
+                appId: "1:70745510419:web:7c21a45dcff85c1f8de5e6"
+            }, "AppMonitoramentoEscala");
+
+            window.dbMonitoramento = appMonitoramento.firestore();
+        })();
+
+        // =======================================================
+        // FUNÇÃO: SINCRONIZAR ESCALA DO FIREBASE PAINEL_DIARIO
+        // =======================================================
+        window.sincronizarEscalaDoFirebase = async function () {
+            if (!window.dbMonitoramento && window.firebase) {
+                try {
+                    const appExistente = firebase.apps.find(app => app.name === "AppMonitoramentoEscala");
+                    const appMonitoramento = appExistente || firebase.initializeApp({
+                        apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y",
+                        authDomain: "monitoramento-bc533.firebaseapp.com",
+                        projectId: "monitoramento-bc533",
+                        storageBucket: "monitoramento-bc533.firebasestorage.app",
+                        messagingSenderId: "70745510419",
+                        appId: "1:70745510419:web:7c21a45dcff85c1f8de5e6"
+                    }, "AppMonitoramentoEscala");
+                    window.dbMonitoramento = appMonitoramento.firestore();
+                } catch (e) {
+                    console.error("Erro ao conectar ao projeto secundário:", e);
+                }
+            }
+
+            if (!window.dbMonitoramento) {
+                alert("Erro crítico: Banco de Monitoramento offline.");
+                return;
+            }
+
+            const inputFiltro = document.getElementById('filtro-data-ini');
+            const dataAlvo = inputFiltro ? inputFiltro.value : '';
+
+            if (!dataAlvo) {
+                alert("Erro: O filtro de 'Data Inicial' no painel Admin está vazio. Selecione uma data para buscar a escala.");
+                return;
+            }
+
+            try {
+                document.body.style.cursor = 'wait';
+
+                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataAlvo).get();
+
+                if (!docSnap.exists) {
+                    alert(`Nenhuma escala encontrada no Firebase para a data selecionada no filtro: ${dataAlvo}.`);
+                    return;
+                }
+
+                const dadosDoc = docSnap.data();
+                const listaRotas = dadosDoc.rotas || [];
+
+                if (!Array.isArray(listaRotas) || listaRotas.length === 0) {
+                    alert(`Documento do dia ${dataAlvo} localizado, mas a lista de rotas está vazia.`);
+                    return;
+                }
+
+                const batch = db.batch();
+                let totalImportados = 0;
+
+                listaRotas.forEach(item => {
+                    // Prioriza o campo 'troca' se estiver preenchido; caso contrário, usa 'placa'
+                    const trocaStr = (item.troca || '').trim();
+                    const placaEfetiva = trocaStr !== '' ? trocaStr : item.placa;
+
+                    if (!placaEfetiva) return;
+
+                    const placaClean = typeof formatarPlaca === 'function' ? formatarPlaca(placaEfetiva) : placaEfetiva.trim().toUpperCase();
+                    const idStandby = `${placaClean}_${dataAlvo}`;
+
+                    const objetoEscala = {
+                        placa: placaClean,
+                        perfilVeiculo: (item.perfil || 'PADRÃO').toUpperCase(),
+                        rotaCidades: item.regiao || '',
+                        metaKm: Number(item.km) || 0,
+                        nome: item.motorista || '',
+                        tipoServico: item.tipo || 'FIXO',
+                        oc: item.oc || '',
+                        transporte: item.transporte || '',
+                        atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    const refStandby = db.collection('escala_standby').doc(idStandby);
+                    batch.set(refStandby, objetoEscala, { merge: true });
+
+                    if (typeof todasViagens !== 'undefined') {
+                        const viagemAtiva = todasViagens.find(v => {
+                            if (v.placa !== placaClean) return false;
+                            const dataObj = typeof safeDate === 'function' ? safeDate(v.dataInicio) : null;
+                            if (!dataObj) return false;
+                            const dataStr = typeof getLocalYMD === 'function' ? getLocalYMD(dataObj) : '';
+                            return dataStr === dataAlvo;
+                        });
+
+                        if (viagemAtiva) {
+                            const refViagem = db.collection('viagens').doc(viagemAtiva.id);
+                            batch.update(refViagem, {
+                                perfilVeiculo: objetoEscala.perfilVeiculo,
+                                rotaCidades: objetoEscala.rotaCidades,
+                                metaKm: objetoEscala.metaKm
+                            });
+                        }
+                    }
+
+                    totalImportados++;
+                });
+
+                await batch.commit();
+                alert(`Sucesso! ${totalImportados} veículos sincronizados respeitando as trocas de placa de ${dataAlvo}.`);
+
+                if (typeof renderizarAdmin === 'function') {
+                    renderizarAdmin();
+                }
+
+            } catch (erro) {
+                console.error("Erro detalhado do Firebase:", erro);
+                alert(`Erro ao buscar escala: ${erro.message}`);
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        };
+
+        // Busca a escala de uma única placa na coleção 'painel_diario' na data de hoje
+        window.obterDadosEscalaAutomática = async function (placaInformada) {
+            if (!window.dbMonitoramento || !placaInformada) return null;
+
+            try {
+                const placaClean = typeof formatarPlaca === 'function' ? formatarPlaca(placaInformada) : placaInformada.trim().toUpperCase();
+                
+                const hoje = new Date();
+                const ano = hoje.getFullYear();
+                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                const dia = String(hoje.getDate()).padStart(2, '0');
+                const dataHoje = `${ano}-${mes}-${dia}`;
+
+                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataHoje).get();
+
+                if (!docSnap.exists) return null;
+
+                const rotas = docSnap.data().rotas || [];
+
+                // LÓGICA DE TROCA DE PLACA:
+                // 1º Tenta encontrar um item onde a placa digitada foi inserida como TROCA (Substituta)
+                let itemEncontrado = rotas.find(r => {
+                    const trocaClean = typeof formatarPlaca === 'function' ? formatarPlaca(r.troca || '') : (r.troca || '').trim().toUpperCase();
+                    return trocaClean === placaClean && trocaClean !== '';
+                });
+
+                // 2º Se não encontrou nenhuma troca, busca pela placa principal (desde que ela não tenha sofrido troca)
+                if (!itemEncontrado) {
+                    itemEncontrado = rotas.find(r => {
+                        const pClean = typeof formatarPlaca === 'function' ? formatarPlaca(r.placa || '') : (r.placa || '').trim().toUpperCase();
+                        const trocaClean = (r.troca || '').trim();
+                        return pClean === placaClean && trocaClean === '';
+                    });
+                }
+
+                if (!itemEncontrado) return null;
+
+                return {
+                    perfilVeiculo: (itemEncontrado.perfil || 'PADRÃO').toUpperCase(),
+                    rotaCidades: itemEncontrado.regiao || '',
+                    metaKm: Number(itemEncontrado.km) || 0,
+                    tipoServico: itemEncontrado.tipo || 'FIXO',
+                    oc: itemEncontrado.oc || '',
+                    transporte: itemEncontrado.transporte || ''
+                };
+            } catch (e) {
+                console.warn("Não foi possível carregar a escala automática:", e);
+                return null;
             }
         };
 
