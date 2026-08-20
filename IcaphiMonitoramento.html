@@ -2909,7 +2909,6 @@
                     <span style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 10px;">Auditoria de Anexos e Comprovação</span>
                 </h2>
 
-                <!-- CONTAINER DIREITO PADRONIZADO -->
                 <div style="display: flex; align-items: center; gap: 15px; margin-left: auto;">
                     <div id="online-users-stack" class="avatar-stack" title="Usuários Online"></div>
                     <div id="current-user-profile" class="user-profile-btn">
@@ -2933,24 +2932,23 @@
             </header>
 
             <div class="content-container" style="padding: 20px;">
-                <!-- CARDS DE RESUMO SUPERIOR (KPIs) -->
-                <div id="canhotos-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <!-- Os cards serão injetados dinamicamente ou exibidos por padrão -->
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+                <!-- CARDS DE RESUMO SUPERIOR (COM FUNDO SÓLIDO) -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
                         <div style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-calendar"></i></div>
                         <div>
                             <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Período Selecionado</div>
                             <div id="kpi-periodo" style="font-size: 16px; font-weight: 700; color: var(--text-main);">Selecione o mês</div>
                         </div>
                     </div>
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
                         <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-package"></i></div>
                         <div>
                             <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total de Entregas</div>
                             <div id="kpi-entregas" style="font-size: 16px; font-weight: 700; color: var(--text-main);">0</div>
                         </div>
                     </div>
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
                         <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-warning-circle"></i></div>
                         <div>
                             <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pendentes de Anexo</div>
@@ -2959,8 +2957,18 @@
                     </div>
                 </div>
 
-                <!-- TABELA ESTILIZADA -->
-                <div class="table-wrapper" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: var(--shadow-sm);">
+                <!-- BARRA DE CONTROLE / FILTRO DE EXIBIÇÃO -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: var(--bg-card, #ffffff); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">
+                        <i class="ph ph-list-checks" style="color: var(--accent);"></i> Listagem de Auditoria Diária
+                    </div>
+                    <button class="btn btn-sm btn-secondary" id="btn-toggle-ok" onclick="window.toggleExibirOk()" style="font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="ph ph-eye-slash"></i> Mostrar dias OK (recolhidos)
+                    </button>
+                </div>
+
+                <!-- TABELA ESTILIZADA COM FUNDO SÓLIDO -->
+                <div class="table-wrapper" style="background: var(--bg-card, #ffffff); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: var(--shadow-sm);">
                     <table id="tabela-canhotos" style="width: 100%; border-collapse: collapse; text-align: left;">
                         <colgroup>
                             <col style="width:14%;">
@@ -6747,7 +6755,64 @@
 
         async function carregarDadosGlobais() { try { const snapPlacas = await getDocs(collection(db, "placas")); window.placasCache = {}; snapPlacas.forEach(d => { window.placasCache[d.id] = d.data(); }); renderizarTabelaPlacas(); const snapMot = await getDocs(collection(db, "motoristas_historico")); window.motoristasHistoricoCache = {}; snapMot.forEach(d => { window.motoristasHistoricoCache[d.id] = d.data(); }); } catch (e) { console.error("Erro banco", e); } }
 
-        // ================= CANHOTOS (AUDITORIA APP) =================
+        window.exibirApenasPendentes = true; // Estado inicial: oculta os dias OK para ficar limpo
+
+        window.toggleExibirOk = () => {
+            window.exibirApenasPendentes = !window.exibirApenasPendentes;
+            const btn = document.getElementById('btn-toggle-ok');
+            if (window.exibirApenasPendentes) {
+                btn.innerHTML = `<i class="ph ph-eye-slash"></i> Mostrar dias OK (recolhidos)`;
+            } else {
+                btn.innerHTML = `<i class="ph ph-eye"></i> Ocultar dias OK`;
+            }
+            // Re-renderiza a tabela se já houver dados no cache
+            if (window._diasCanhotosCache) {
+                renderizarTabelaCanhotos(window._diasCanhotosCache);
+            }
+        };
+
+        function renderizarTabelaCanhotos(diasNoMes) {
+            const tbody = document.querySelector('#tabela-canhotos tbody'); 
+            let html = "";
+
+            // Filtra conforme o botão de alternância
+            let diasFiltrados = diasNoMes;
+            if (window.exibirApenasPendentes) {
+                diasFiltrados = diasNoMes.filter(d => d.semAnexo > 0);
+            }
+
+            if (diasFiltrados.length === 0) {
+                html = `<tr><td colspan="8" align="center" style="padding: 40px; color: var(--text-muted);"><i class="ph ph-check-circle" style="font-size: 28px; display: block; margin-bottom: 6px; color: var(--success); opacity: 0.8;"></i>Nenhuma pendência de anexo encontrada no período!</td></tr>`; 
+            } else {
+                diasFiltrados.forEach(d => {
+                    let badgeAtraso = `<span style="color: var(--text-muted); font-weight: 500;">${d.atraso} Dias</span>`;
+                    if (d.semAnexo > 0) {
+                        if (d.atraso >= 7) {
+                            badgeAtraso = `<span style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="ph-bold ph-warning"></i> ${d.atraso} Dias (Crítico)</span>`;
+                        } else if (d.atraso >= 5) {
+                            badgeAtraso = `<span style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="ph-bold ph-clock"></i> ${d.atraso} Dias (Alerta)</span>`;
+                        }
+                    }
+
+                    let btnHtml = d.semAnexo > 0 
+                        ? `<button class="btn btn-sm btn-primary" onclick="window.abrirDetalhesCanhotos('${d.data}')" style="padding: 5px 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;"><i class="ph ph-magnifying-glass"></i> Ver Notas</button>` 
+                        : `<span style="color:var(--success); font-weight:700; display: inline-flex; align-items: center; gap: 4px;"><i class="ph-bold ph-check-circle"></i> OK</span>`; 
+
+                    html += `<tr style="border-bottom: 1px solid var(--border-color); background: var(--bg-card, #ffffff); transition: background 0.15s ease;">
+                        <td style="padding: 12px 15px; font-weight:700; color: var(--text-main);">${formatarDataBR(d.data)}</td>
+                        <td style="padding: 12px 15px; font-weight:700; color:var(--accent);">${d.totalEntregues}</td>
+                        <td style="padding: 12px 15px; color: var(--text-main);">${d.assinatura}</td>
+                        <td style="padding: 12px 15px; color: var(--text-main);">${d.foto}</td>
+                        <td style="padding: 12px 15px; color: var(--text-main);">${d.anexado}</td>
+                        <td style="padding: 12px 15px; font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:12px;">${d.semAnexo}</td>
+                        <td style="padding: 12px 15px;">${badgeAtraso}</td>
+                        <td style="padding: 12px 15px; text-align:center;">${btnHtml}</td>
+                    </tr>`; 
+                }); 
+            }
+            tbody.innerHTML = html;
+        }
+
         document.getElementById('btn-carregar-canhotos').addEventListener('click', async () => {
             const monthSel = document.getElementById('canhotos-month-select').value; 
             if (!monthSel) return alert("Selecione um mês válido."); 
@@ -6802,42 +6867,10 @@
                 });
 
                 diasNoMes.sort((a, b) => a.data.localeCompare(b.data)); 
-                const tbody = document.querySelector('#tabela-canhotos tbody'); 
-                let html = "";
+                window._diasCanhotosCache = diasNoMes; // Guarda em cache para o botão de toggle
 
-                if (diasNoMes.length === 0) {
-                    html = `<tr><td colspan="8" align="center" style="padding: 40px; color: var(--text-muted);"><i class="ph ph-folder-open" style="font-size: 28px; display: block; margin-bottom: 6px; opacity: 0.5;"></i>Nenhum registro encontrado para este mês.</td></tr>`; 
-                } else {
-                    diasNoMes.forEach(d => {
-                        let badgeAtraso = `<span style="color: var(--text-muted); font-weight: 500;">${d.atraso} Dias</span>`;
-                        if (d.semAnexo > 0) {
-                            if (d.atraso >= 7) {
-                                badgeAtraso = `<span style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="ph-bold ph-warning"></i> ${d.atraso} Dias (Crítico)</span>`;
-                            } else if (d.atraso >= 5) {
-                                badgeAtraso = `<span style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="ph-bold ph-clock"></i> ${d.atraso} Dias (Alerta)</span>`;
-                            }
-                        }
+                renderizarTabelaCanhotos(diasNoMes);
 
-                        let btnHtml = d.semAnexo > 0 
-                            ? `<button class="btn btn-sm btn-primary" onclick="window.abrirDetalhesCanhotos('${d.data}')" style="padding: 5px 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;"><i class="ph ph-magnifying-glass"></i> Ver Notas</button>` 
-                            : `<span style="color:var(--success); font-weight:700; display: inline-flex; align-items: center; gap: 4px;"><i class="ph-bold ph-check-circle"></i> OK</span>`; 
-
-                        html += `<tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s ease;">
-                            <td style="padding: 12px 15px; font-weight:700; color: var(--text-main);">${formatarDataBR(d.data)}</td>
-                            <td style="padding: 12px 15px; font-weight:700; color:var(--accent);">${d.totalEntregues}</td>
-                            <td style="padding: 12px 15px; color: var(--text-main);">${d.assinatura}</td>
-                            <td style="padding: 12px 15px; color: var(--text-main);">${d.foto}</td>
-                            <td style="padding: 12px 15px; color: var(--text-main);">${d.anexado}</td>
-                            <td style="padding: 12px 15px; font-weight:800; color:${d.semAnexo > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:12px;">${d.semAnexo}</td>
-                            <td style="padding: 12px 15px;">${badgeAtraso}</td>
-                            <td style="padding: 12px 15px; text-align:center;">${btnHtml}</td>
-                        </tr>`; 
-                    }); 
-                }
-
-                tbody.innerHTML = html; 
-
-                // Atualiza os Cards de KPI no Topo
                 document.getElementById('kpi-periodo').innerText = monthSel;
                 document.getElementById('kpi-entregas').innerText = tEntregasMes;
                 document.getElementById('kpi-pendentes').innerText = tSemAnexoMes;
