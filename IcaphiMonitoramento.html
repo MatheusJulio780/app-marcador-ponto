@@ -6263,54 +6263,143 @@
         });
 
 
-        document.getElementById('btn-pc-excel').addEventListener('click', () => {
+        document.getElementById('btn-pc-excel').addEventListener('click', async () => {
             const placa = document.getElementById('pc-placa').value;
             if (!placa) return alert("Selecione a placa.");
 
-            let rotaAlvo;
-            const containerSeletor = document.getElementById('container-seletor-viagem');
+            const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
+            const dObj = new Date(dataTela);
+            dObj.setUTCDate(dObj.getUTCDate() - 1);
+            const dataOntem = dObj.toISOString().split('T')[0];
 
-            // Verifica qual viagem foi selecionada (ou pega a única existente)
-            if (containerSeletor.style.display === 'block') {
-                const indexSelecionado = document.getElementById('select-viagem-exportacao').value;
-                rotaAlvo = window.rotasDisponiveisParaExportacao[indexSelecionado];
-            } else {
-                // Se só tem uma rota ou não carregou painel, simula a estrutura padrão
-                rotaAlvo = window.rotasDisponiveisParaExportacao[0] || { placa: placa };
+            dObj.setUTCDate(dObj.getUTCDate() + 2);
+            const dataAmanhaLocal = dObj.toISOString().split('T')[0];
+
+            showLoader();
+            try {
+                // 1. Busca os dados em tempo real igualzinho ao PDF
+                const [snapPainel, snapNotas, snapOntemNotas, snapOntemPainel, snapNotasAmanha] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", dataTela)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataTela)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
+                    getDoc(doc(db, "painel_diario", dataOntem)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataAmanhaLocal))
+                ]);
+
+                const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+                const notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
+
+                // 2. Mapeia a troca do dia anterior (pernoite)
+                let deParaTroca = {};
+                if (snapOntemPainel.exists() && snapOntemPainel.data().rotas) {
+                    snapOntemPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
+
+                if (snapOntemNotas.exists() && snapOntemNotas.data().notas) {
+                    snapOntemNotas.data().notas.forEach(no => {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            notasDoDia.push({ 
+                                ...no, 
+                                status: "", 
+                                placa: placaFinal 
+                            });
+                        }
+                    });
+                }
+
+                let notasFrescas = notasDoDia;
+
+                // 3. Aplica o filtro de remoção caso tenha mudado de placa no dia seguinte
+                let mapaAmanha = {};
+                notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
+
+                notasFrescas = notasFrescas.map(n => {
+                    const nfClean = cleanNF(n.nf);
+                    const notaSeguinte = mapaAmanha[nfClean];
+                    if (notaSeguinte) {
+                        const placaOriginalNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                        const placaNoDiaSeguinte = trimUpper(notaSeguinte.placa || "").replace(/[^A-Z0-9]/g, '');
+                        if (placaNoDiaSeguinte !== "" && placaNoDiaSeguinte !== placaOriginalNota) {
+                            return null; 
+                        }
+                        if (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO') {
+                            return {
+                                ...n,
+                                status: notaSeguinte.status || n.status,
+                                app: notaSeguinte.app || n.app,
+                                obs: notaSeguinte.obs || n.obs,
+                                parcial: notaSeguinte.parcial || n.parcial,
+                                chegada: notaSeguinte.chegada || n.chegada,
+                                saida: notaSeguinte.saida || n.saida
+                            };
+                        }
+                    }
+                    return n;
+                }).filter(n => n !== null);
+
+                const placaSelLimpa = placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+                const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+                // 4. Filtro estrito por placa da tela
+                let notasBrutas = notasFrescas.filter(n => {
+                    const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (pNota !== placaSelLimpa) return false;
+
+                    const viagemNota = String(n.viagem || "").trim();
+                    if (viagemSelecionada && viagemSelecionada !== "" && viagemSelecionada !== "Geral") {
+                        const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                        if (transpArray.length > 0 && viagemNota !== "") {
+                            return transpArray.some(t => viagemNota.includes(t));
+                        }
+                    }
+                    return true;
+                });
+
+                hideLoader();
+
+                if (notasBrutas.length === 0) return alert("Nenhuma nota encontrada para esta viagem.");
+
+                // 5. Exportação limpa para Excel
+                const exportData = notasBrutas.map(n => ({
+                    "NF": cleanNF(n.nf),
+                    "VIAGEM": n.viagem,
+                    "ORDEM": n.ordem,
+                    "DATA": n.data_nf,
+                    "PESO": formatNumber(n.peso),
+                    "QTDE": n.qtde,
+                    "CLIENTE": n.cliente,
+                    "CIDADE": n.cidade,
+                    "BAIRRO": n.bairro,
+                    "ENDEREÇO": n.endereco,
+                    "PLACA": n.placa,
+                    "MOTORISTA": n.motorista,
+                    "TELEFONE": n.telefone,
+                    "STATUS": n.status,
+                    "CHEGADA": n.chegada,
+                    "SAÍDA": n.saida,
+                    "OBS": n.obs,
+                    "Nº PARCIAL": n.parcial,
+                    "APP": n.app
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Prestacao_Contas");
+                XLSX.writeFile(wb, `Prestacao_${placa}_${dataTela}.xlsx`);
+
+            } catch (e) {
+                hideLoader();
+                console.error("Erro ao exportar excel:", e);
+                alert("Erro ao gerar arquivo Excel.");
             }
-
-            // Isola as notas da rota correta
-            const notas = filtrarNotasDaRotaEspecifica(rotaAlvo, window.pcNotasCache);
-
-            if (notas.length === 0) return alert("Nenhuma nota encontrada para esta viagem.");
-
-            // Exportação mantida 100% como a sua original
-            const exportData = notas.map(n => ({
-                "NF": cleanNF(n.nf),
-                "VIAGEM": n.viagem,
-                "ORDEM": n.ordem,
-                "DATA": n.data_nf,
-                "PESO": formatNumber(n.peso),
-                "QTDE": n.qtde,
-                "CLIENTE": n.cliente,
-                "CIDADE": n.cidade,
-                "BAIRRO": n.bairro,
-                "ENDEREÇO": n.endereco,
-                "PLACA": n.placa,
-                "MOTORISTA": n.motorista,
-                "TELEFONE": n.telefone,
-                "STATUS": n.status,
-                "CHEGADA": n.chegada,
-                "SAÍDA": n.saida,
-                "OBS": n.obs,
-                "Nº PARCIAL": n.parcial,
-                "APP": n.app
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Prestacao_Contas");
-            XLSX.writeFile(wb, `Prestacao_${placa}_${document.getElementById('pc-data').value}.xlsx`);
         });
 
         // ====== LÓGICA EXPORTAR CANHOTOS PENDENTES ======
@@ -8908,203 +8997,260 @@
             }
         };
 
-        // ================= 2. PROTOCOLO DEVOLUÇÃO / REENTREGAS =================
-        document.getElementById('btn-gerar-pc-devolucao').addEventListener('click', () => {
-            if (!window.pcNotasCache || window.pcNotasCache.length === 0) return alert("Não há dados para gerar o PDF.");
+        // ================= 2. PROTOCOLO DE DEVOLUÇÃO / REENTREGAS =================
+        document.getElementById('btn-gerar-pc-devolucao').addEventListener('click', async () => {
+            const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
             
-            const d = obterDadosFiltradosPC(); 
+            const dObj = new Date(dataTela);
+            dObj.setUTCDate(dObj.getUTCDate() - 1);
+            const dataOntem = dObj.toISOString().split('T')[0];
 
-            // 🟢 FILTRO ABSOLUTO POR VIAGEM/ROTA DO PAINEL
-            const placaSelecionada = document.getElementById('pc-placa').value;
-            const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-            
-            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
-            const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+            dObj.setUTCDate(dObj.getUTCDate() + 2);
+            const dataAmanhaLocal = dObj.toISOString().split('T')[0];
 
-            let rotaSelecionadaPainel = null;
-            if (window.pcRotasCache) {
-                rotaSelecionadaPainel = window.pcRotasCache.find(r => {
-                    const pRota = (r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    const pTroca = (r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    const matchPlaca = (pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa);
-                    if (!matchPlaca) return false;
+            showLoader();
+            try {
+                // 1. Busca os dados ao vivo do Firebase exatamente igual ao PDF Padrão e Excel
+                const [snapPainel, snapNotas, snapOntemNotas, snapOntemPainel, snapNotasAmanha] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", dataTela)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataTela)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
+                    getDoc(doc(db, "painel_diario", dataOntem)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataAmanhaLocal))
+                ]);
 
-                    if (viagemSelecionada && viagemSelecionada !== "") {
-                        return String(r.transporte || "").trim() === viagemSelecionada;
+                const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+                const notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
+
+                // 2. Mapeia pernoite e troca de placa
+                let deParaTroca = {};
+                if (snapOntemPainel.exists() && snapOntemPainel.data().rotas) {
+                    snapOntemPainel.data().rotas.forEach(r => {
+                        if (r.placa && r.troca && r.troca.trim() !== "") {
+                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                        }
+                    });
+                }
+
+                if (snapOntemNotas.exists() && snapOntemNotas.data().notas) {
+                    snapOntemNotas.data().notas.forEach(no => {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            notasDoDia.push({ 
+                                ...no, 
+                                status: "", 
+                                placa: placaFinal 
+                            });
+                        }
+                    });
+                }
+
+                let notasFrescas = notasDoDia;
+
+                // 3. Validação do dia seguinte (remoção se transferido)
+                let mapaAmanha = {};
+                notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
+
+                notasFrescas = notasFrescas.map(n => {
+                    const nfClean = cleanNF(n.nf);
+                    const notaSeguinte = mapaAmanha[nfClean];
+                    if (notaSeguinte) {
+                        const placaOriginalNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                        const placaNoDiaSeguinte = trimUpper(notaSeguinte.placa || "").replace(/[^A-Z0-9]/g, '');
+                        if (placaNoDiaSeguinte !== "" && placaNoDiaSeguinte !== placaOriginalNota) {
+                            return null; 
+                        }
+                        if (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO') {
+                            return {
+                                ...n,
+                                status: notaSeguinte.status || n.status,
+                                app: notaSeguinte.app || n.app,
+                                obs: notaSeguinte.obs || n.obs,
+                                parcial: notaSeguinte.parcial || n.parcial,
+                                chegada: notaSeguinte.chegada || n.chegada,
+                                saida: notaSeguinte.saida || n.saida
+                            };
+                        }
+                    }
+                    return n;
+                }).filter(n => n !== null);
+
+                const placaSelecionada = document.getElementById('pc-placa').value;
+                if (!placaSelecionada) {
+                    hideLoader();
+                    return alert("Selecione a placa.");
+                }
+                const placaSelLimpa = placaSelecionada.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+                const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
+
+                // 4. Acha a rota exata no painel fresco
+                let rotaExata = null;
+                if (rotasFrescas) {
+                    rotaExata = rotasFrescas.find(r => {
+                        const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const matchPlaca = (pRota === placaSelLimpa || pTroca === placaSelLimpa);
+                        if (!matchPlaca) return false;
+
+                        if (viagemSelecionada && viagemSelecionada !== "") {
+                            return String(r.transporte || "").trim() === viagemSelecionada;
+                        }
+                        return true;
+                    });
+                }
+
+                // 5. Filtro blindado de notas da placa
+                let notasBrutas = notasFrescas.filter(n => {
+                    const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (pNota !== placaSelLimpa) return false;
+
+                    const viagemNota = String(n.viagem || "").trim();
+                    if (viagemSelecionada && viagemSelecionada !== "" && viagemSelecionada !== "Geral") {
+                        const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                        if (transpArray.length > 0 && viagemNota !== "") {
+                            return transpArray.some(t => viagemNota.includes(t));
+                        }
                     }
                     return true;
                 });
-            }
 
-            let notasBrutas = window.pcNotasCache.filter(n => {
-                const pNota = (n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                return pNota === pSelecionadaLimpa;
-            });
+                hideLoader();
 
-            if (viagemSelecionada && viagemSelecionada !== "") {
-                const transpArray = viagemSelecionada.match(/\d+/g) || [];
-                notasBrutas = notasBrutas.filter(n => {
-                    const vNota = String(n.viagem || "").trim();
-                    return transpArray.some(t => vNota.includes(t) || t.includes(vNota));
-                });
-                
-                d.transporte = viagemSelecionada; 
-                if (rotaSelecionadaPainel) {
-                    d.statusViagem = rotaSelecionadaPainel.status || d.statusViagem;
-                }
-            } else {
-                const viagensUnicas = [...new Set(notasBrutas.map(n => String(n.viagem || '').trim()))].filter(v => v !== '');
-                if (viagensUnicas.length > 0) d.transporte = viagensUnicas.join(' / ');
-            }
+                if (!notasBrutas || notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
 
-            // 🟢 CORREÇÃO CRIRÚRGICA 1: MOTORISTA EXATO DA VIAGEM
-            let motoristaFinal = "NÃO INFORMADO";
-            if (rotaSelecionadaPainel && rotaSelecionadaPainel.motorista) {
-                motoristaFinal = rotaSelecionadaPainel.motorista;
-            } else {
-                const notaComMotorista = notasBrutas.find(n => n.motorista && n.motorista.trim() !== "");
-                if (notaComMotorista) motoristaFinal = notaComMotorista.motorista;
-            }
-            d.motorista = motoristaFinal;
+                // 6. Define placa de exibição e motorista correto
+                let motoristaCorreto = "NÃO INFORMADO";
+                let placaExibicaoPDF = placaSelecionada;
 
-            // 🟢 CORREÇÃO CIRÚRGICA 2: CÁLCULO CORRETO DE FOTO VS ASSINATURA
-            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
-            let qtdNotas = notasBrutas.length;
-
-            let notasComFoto = notasBrutas.filter(n => {
-                const appStr = String(n.app || "").trim().toUpperCase();
-                const statusStr = String(n.status || "").trim().toUpperCase();
-                return appStr === "FOTO" || appStr.includes("FOTO") || excecoesApp.includes(statusStr);
-            }).length;
-
-            let notasComAssinatura = notasBrutas.filter(n => {
-                const appStr = String(n.app || "").trim().toUpperCase();
-                return appStr === "ASSINATURA";
-            }).length;
-
-            if (qtdNotas > 0 && notasComFoto === qtdNotas) {
-                d.textoApp = "100% FOTO";
-                d.anexo = "100% FOTO"; // <--- Adicione esta linha
-            } else if (qtdNotas > 0 && notasComAssinatura === qtdNotas) {
-                d.textoApp = "100% ASSINATURA";
-                d.anexo = "100% ASSINATURA"; // <--- Adicione esta linha
-            } else {
-                d.textoApp = `${Math.round((notasComFoto / qtdNotas) * 100)}% FOTO / ${Math.round((notasComAssinatura / qtdNotas) * 100)}% ASSINATURA`;
-                d.anexo = d.textoApp; // <--- Adicione esta linha
-            }
-
-            const getSt = (s) => String(s || "").trim().toUpperCase();
-            d.notas = notasBrutas;
-            d.entregues = notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE');
-            d.reentregas = notasBrutas.filter(n => getSt(n.status) === 'REENTREGA');
-            d.devolucoes = notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO');
-            d.parciais = notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "");
-
-            if (d.notas.length === 0) return alert("Não há notas para o transporte selecionado.");
-
-            const maxRows = Math.max(d.reentregas.length, d.devolucoes.length, 6);
-            let gridExcecoes = [];
-
-            // ... (restante do código segue igual)
-
-            for (let i = 0; i < maxRows; i += 4) {
-                let row = [];
-                for (let j = 0; j < 4; j++) row.push({ text: d.reentregas[i + j] ? cleanNF(d.reentregas[i + j].nf) : '', alignment: 'center', bold: true });
-                for (let j = 0; j < 4; j++) row.push({ text: d.devolucoes[i + j] ? cleanNF(d.devolucoes[i + j].nf) : '', alignment: 'center', bold: true, color: '#b91c1c' });
-                gridExcecoes.push(row);
-            }
-
-            // Lógica inteligente: Se a logo foi carregada, usa a imagem. Se não, usa texto (fallback)
-            const headerElemento = window.logoIcaphiBase64
-                ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
-                : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
-
-            const docDefinition = {
-                pageSize: 'A4',
-                pageMargins: [30, 30, 30, 30],
-                defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
-                content: [
-                    // CABEÇALHO
-                    {
-                        columns: [
-                            { stack: [headerElemento], width: '30%' },
-                            { text: 'PROTOCOLO DE DEVOLUÇÕES E REENTREGAS', fontSize: 12, bold: true, alignment: 'center', width: '40%', margin: [0, 5, 0, 0] },
-                            { text: `EMISSÃO\n${getDataAtualFormatada()}`, fontSize: 8, alignment: 'right', bold: true, color: '#64748b', width: '30%', margin: [0, 5, 0, 0] }
-                        ],
-                        margin: [0, 0, 0, 15]
-                    },
-
-                    // DADOS DA OPERAÇÃO
-                    {
-                        table: {
-                            widths: ['40%', '20%', '20%', '20%'],
-                            body: [
-                                [
-                                    { text: 'MOTORISTA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
-                                    { text: 'PLACA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
-                                    { text: 'TRANSPORTE', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
-                                    { text: 'DATA LARGADA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' }
-                                ],
-                                [
-                                    { text: d.motorista.toUpperCase(), bold: true, fontSize: 10 },
-                                    { text: d.placa.toUpperCase(), bold: true, fontSize: 10 },
-                                    { text: d.transporte, bold: true, fontSize: 10 },
-                                    { text: d.dataSaida.split('-').reverse().join('/'), bold: true, fontSize: 10 }
-                                ]
-                            ]
-                        },
-                        layout: layoutPremium,
-                        margin: [0, 0, 0, 15]
-                    },
-
-                    // TABELA DE EXCEÇÕES (8 COLUNAS)
-                    {
-                        table: {
-                            widths: ['12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%'],
-                            body: [
-                                [
-                                    { text: 'NOTAS DE REENTREGA', colSpan: 4, alignment: 'center', bold: true, fillColor: '#e2e8f0' }, {}, {}, {},
-                                    { text: 'NOTAS DE DEVOLUÇÃO', colSpan: 4, alignment: 'center', bold: true, fillColor: '#fecaca', color: '#b91c1c' }, {}, {}, {}
-                                ],
-                                ...gridExcecoes,
-                                [{ text: `VOLUME TOTAL NESTE PROTOCOLO: ${d.reentregas.length + d.devolucoes.length}`, colSpan: 8, alignment: 'center', bold: true, fillColor: '#f8fafc', margin: [0, 4, 0, 4] }, {}, {}, {}, {}, {}, {}, {}]
-                            ]
-                        },
-                        layout: layoutPremium,
-                        margin: [0, 0, 0, 15]
-                    },
-
-                    // NOTAS PARCIAIS
-                    {
-                        table: {
-                            widths: ['*'],
-                            body: [
-                                [{ text: 'DETALHAMENTO DE NOTAS PARCIAIS', alignment: 'center', bold: true, fillColor: '#e2e8f0' }],
-                                [{ text: d.parciais.map(n => `${cleanNF(n.nf)} - ${n.parcial}`).join('\n') || '\nNenhuma ocorrência parcial registrada.', margin: [0, 5, 0, 5] }]
-                            ]
-                        },
-                        layout: layoutPremium,
-                        margin: [0, 0, 0, 40]
-                    },
-
-                    // ASSINATURAS
-                    {
-                        // Lógica para capturar o nome de quem está logado no Firebase (com fallback de segurança)
-                        columns: (() => {
-                            const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
-                                ? auth.currentUser.displayName
-                                : "Matheus Leite"; // Fallback caso o displayName não esteja setado
-
-                            return [
-                                { text: `____________________________________\n${nomeConferente}\nResponsavel`, alignment: 'center', bold: true, fontSize: 9 },
-                                { text: '____________________________________\nRecebido por', alignment: 'center', bold: true, fontSize: 9 }
-                            ];
-                        })()
+                if (rotaExata) {
+                    if (rotaExata.motorista && rotaExata.motorista.trim() !== "") {
+                        motoristaCorreto = rotaExata.motorista;
                     }
-                ]
-            };
-            const nomeArquivoDev = `PROTOCOLO_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
-            abrirPreviewPDF(docDefinition, nomeArquivoDev);
+                    if (rotaExata.troca && rotaExata.troca.trim() !== "") {
+                        placaExibicaoPDF = rotaExata.troca;
+                    }
+                }
+
+                if (motoristaCorreto === "NÃO INFORMADO") {
+                    const nMot = notasBrutas.find(n => n.motorista && n.motorista.trim() !== "");
+                    if (nMot) motoristaCorreto = nMot.motorista;
+                }
+
+                const getSt = (s) => String(s || "").trim().toUpperCase();
+
+                let d = {
+                    placa: placaExibicaoPDF,
+                    motorista: motoristaCorreto,
+                    transporte: viagemSelecionada || (rotaExata ? rotaExata.transporte : "GERAL"),
+                    dataSaida: dataTela,
+                    statusViagem: rotaExata ? (rotaExata.status || "EM ROTA") : "EM ROTA",
+                    notas: notasBrutas,
+                    entregues: notasBrutas.filter(n => getSt(n.status) === 'ENTREGUE'),
+                    reentregas: notasBrutas.filter(n => getSt(n.status) === 'REENTREGA'),
+                    devolucoes: notasBrutas.filter(n => getSt(n.status) === 'DEVOLUÇÃO' || getSt(n.status) === 'DEVOLUCAO'),
+                    parciais: notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "")
+                };
+
+                const maxRows = Math.max(d.reentregas.length, d.devolucoes.length, 6);
+                let gridExcecoes = [];
+
+                for (let i = 0; i < maxRows; i += 4) {
+                    let row = [];
+                    for (let j = 0; j < 4; j++) row.push({ text: d.reentregas[i + j] ? cleanNF(d.reentregas[i + j].nf) : '', alignment: 'center', bold: true });
+                    for (let j = 0; j < 4; j++) row.push({ text: d.devolucoes[i + j] ? cleanNF(d.devolucoes[i + j].nf) : '', alignment: 'center', bold: true, color: '#b91c1c' });
+                    gridExcecoes.push(row);
+                }
+
+                const headerElemento = window.logoIcaphiBase64
+                    ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
+                    : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
+
+                const docDefinition = {
+                    pageSize: 'A4',
+                    pageMargins: [30, 30, 30, 30],
+                    defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
+                    content: [
+                        {
+                            columns: [
+                                { stack: [headerElemento], width: '30%' },
+                                { text: 'PROTOCOLO DE DEVOLUÇÕES E REENTREGAS', fontSize: 12, bold: true, alignment: 'center', width: '40%', margin: [0, 5, 0, 0] },
+                                { text: `EMISSÃO\n${getDataAtualFormatada()}`, fontSize: 8, alignment: 'right', bold: true, color: '#64748b', width: '30%', margin: [0, 5, 0, 0] }
+                            ],
+                            margin: [0, 0, 0, 15]
+                        },
+                        {
+                            table: {
+                                widths: ['40%', '20%', '20%', '20%'],
+                                body: [
+                                    [
+                                        { text: 'MOTORISTA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                        { text: 'PLACA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                        { text: 'TRANSPORTE', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' },
+                                        { text: 'DATA LARGADA', fontSize: 7, bold: true, color: '#64748b', fillColor: '#f8fafc' }
+                                    ],
+                                    [
+                                        { text: d.motorista.toUpperCase(), bold: true, fontSize: 10 },
+                                        { text: d.placa.toUpperCase(), bold: true, fontSize: 10 },
+                                        { text: d.transporte, bold: true, fontSize: 10 },
+                                        { text: d.dataSaida.split('-').reverse().join('/'), bold: true, fontSize: 10 }
+                                    ]
+                                ]
+                            },
+                            layout: layoutPremium,
+                            margin: [0, 0, 0, 15]
+                        },
+                        {
+                            table: {
+                                widths: ['12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%', '12.5%'],
+                                body: [
+                                    [
+                                        { text: 'NOTAS DE REENTREGA', colSpan: 4, alignment: 'center', bold: true, fillColor: '#e2e8f0' }, {}, {}, {},
+                                        { text: 'NOTAS DE DEVOLUÇÃO', colSpan: 4, alignment: 'center', bold: true, fillColor: '#fecaca', color: '#b91c1c' }, {}, {}, {}
+                                    ],
+                                    ...gridExcecoes,
+                                    [{ text: `VOLUME TOTAL NESTE PROTOCOLO: ${d.reentregas.length + d.devolucoes.length}`, colSpan: 8, alignment: 'center', bold: true, fillColor: '#f8fafc', margin: [0, 4, 0, 4] }, {}, {}, {}, {}, {}, {}, {}]
+                                ]
+                            },
+                            layout: layoutPremium,
+                            margin: [0, 0, 0, 15]
+                        },
+                        {
+                            table: {
+                                widths: ['*'],
+                                body: [
+                                    [{ text: 'DETALHAMENTO DE NOTAS PARCIAIS', alignment: 'center', bold: true, fillColor: '#e2e8f0' }],
+                                    [{ text: d.parciais.map(n => `${cleanNF(n.nf)} - ${n.parcial}`).join('\n') || '\nNenhuma ocorrência parcial registrada.', margin: [0, 5, 0, 5] }]
+                                ]
+                            },
+                            layout: layoutPremium,
+                            margin: [0, 0, 0, 40]
+                        },
+                        {
+                            columns: (() => {
+                                const nomeConferente = (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName)
+                                    ? auth.currentUser.displayName
+                                    : "Matheus Leite";
+
+                                return [
+                                    { text: `____________________________________\n${nomeConferente}\nResponsavel`, alignment: 'center', bold: true, fontSize: 9 },
+                                    { text: '____________________________________\nRecebido por', alignment: 'center', bold: true, fontSize: 9 }
+                                ];
+                            })()
+                        }
+                    ]
+                };
+
+                const nomeArquivoDev = `PROTOCOLO_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
+                abrirPreviewPDF(docDefinition, nomeArquivoDev);
+
+            } catch (e) {
+                hideLoader();
+                console.error("Erro ao gerar protocolo:", e);
+                alert("Erro ao gerar protocolo de devoluções.");
+            }
         });
 
         // ================= MOTOR DE TRANSBORDO APRIMORADO =================
