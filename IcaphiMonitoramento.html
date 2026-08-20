@@ -6131,47 +6131,24 @@
             if (!dataStr) return alert("Selecione a data da operação.");
             showLoader();
 
+            // Pega o dia de AMANHÃ para buscar a atualização dos pernoites
             const dObj = new Date(dataStr);
             dObj.setUTCDate(dObj.getUTCDate() + 1);
             const dataAmanha = dObj.toISOString().split('T')[0];
 
-            // CORREÇÃO: Calcular data de ontem para buscar Pernoites invisíveis
-            const dOntemObj = new Date(dataStr);
-            dOntemObj.setUTCDate(dOntemObj.getUTCDate() - 1);
-            const dataOntem = dOntemObj.toISOString().split('T')[0];
-
             try {
-                // CORREÇÃO: Buscar notasOntem simultaneamente
-                const [sNotas, sAmanha, sPainel, sOntemNotas] = await Promise.all([
+                // 🟢 NÃO BUSCAMOS ONTEM. A viagem pertence ao dia da largada!
+                const [sNotas, sAmanha, sPainel] = await Promise.all([
                     getDoc(doc(db, "notas_fiscais_diario", dataStr)),
                     getDoc(doc(db, "notas_fiscais_diario", dataAmanha)),
-                    getDoc(doc(db, "painel_diario", dataStr)),
-                    getDoc(doc(db, "notas_fiscais_diario", dataOntem))
+                    getDoc(doc(db, "painel_diario", dataStr))
                 ]);
 
                 let notasDia = sNotas.exists() ? sNotas.data().notas.filter(n => trimUpper(n.status) !== 'NÃO EMBARCADA') : [];
                 let notasAmanha = sAmanha.exists() ? sAmanha.data().notas : [];
                 window.pcRotasCache = sPainel.exists() ? sPainel.data().rotas : [];
 
-                // CORREÇÃO: Herdar as notas de Pernoite de ontem pro cache do PDF
-                let deParaTroca = {};
-                if (sPainel.exists()) {
-                    sPainel.data().rotas.forEach(r => {
-                        if (r.placa && r.troca && r.troca.trim() !== "") {
-                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
-                        }
-                    });
-                }
-                if (sOntemNotas && sOntemNotas.exists()) {
-                    sOntemNotas.data().notas.forEach(no => {
-                        if (trimUpper(no.status).includes('PERNOITE') && !notasDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                            notasDia.push({ ...no, status: "", placa: placaFinal });
-                        }
-                    });
-                }
-
+                // 🟢 MÁGICA 1: Puxar o resultado de hoje para as notas de pernoite de ontem
                 let mapaAmanha = {};
                 notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
 
@@ -6179,6 +6156,7 @@
                     const nfClean = cleanNF(n.nf);
                     const notaSeguinte = mapaAmanha[nfClean];
 
+                    // Se a nota ontem era Pernoite (ou vazia) e amanhã tem status, atualiza ela pro PDF!
                     if (notaSeguinte && (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO')) {
                         return {
                             ...n,
@@ -6203,6 +6181,41 @@
                 console.error("Erro buscar Placas PC", e);
             }
             hideLoader();
+        });
+
+        // Monitora quando escolhe a placa no dropdown
+        document.getElementById('pc-placa').addEventListener('change', (e) => {
+            const placaSelecionada = e.target.value;
+            const containerSeletor = document.getElementById('container-seletor-viagem');
+            const selectViagem = document.getElementById('select-viagem-exportacao');
+
+            if (!placaSelecionada) {
+                containerSeletor.style.display = 'none';
+                return;
+            }
+
+            const placaLimpa = trimUpper(placaSelecionada).replace(/[^A-Z0-9]/g, '');
+
+            window.rotasDisponiveisParaExportacao = (window.pcRotasCache || []).filter(r => {
+                let pOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                let pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
+                return (pOrig === placaLimpa || pTroca === placaLimpa);
+            });
+
+            if (window.rotasDisponiveisParaExportacao.length > 1) {
+                let optionsHTML = '';
+                window.rotasDisponiveisParaExportacao.forEach((rota, index) => {
+                    let exibicaoPlaca = rota.troca ? `${rota.placa} | ${rota.troca}` : rota.placa;
+                    let transporteExibicao = rota.transporte ? rota.transporte : 'S/ Transp';
+                    let nfsDestaRota = filtrarNotasDaRotaEspecifica(rota, window.pcNotasCache);
+                    optionsHTML += `<option value="${index}">${exibicaoPlaca} - ${rota.status} - ${transporteExibicao} - ${nfsDestaRota.length} NFs</option>`;
+                });
+                selectViagem.innerHTML = optionsHTML;
+                containerSeletor.style.display = 'block';
+            } else {
+                containerSeletor.style.display = 'none';
+                selectViagem.innerHTML = '';
+            }
         });
 
         // NOVO EVENTO: Monitora quando você escolhe a placa no dropdown
@@ -8390,16 +8403,38 @@
         document.getElementById('btn-gerar-pc-padrao').addEventListener('click', async () => {
             const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
             
-            // 🟢 Força leitura em tempo real direto do Firebase (Ignora cache estático)
-            const [snapPainel, snapNotas] = await Promise.all([
+            // 🟢 MÁGICA TEMPORAL PARA O PDF: Descobre o dia seguinte
+            const dObj = new Date(dataTela);
+            dObj.setUTCDate(dObj.getUTCDate() + 1);
+            const dataAmanha = dObj.toISOString().split('T')[0];
+
+            // 🟢 Força leitura em tempo real da data selecionada E do dia seguinte
+            const [snapPainel, snapNotas, snapNotasAmanha] = await Promise.all([
                 getDoc(doc(db, "painel_diario", dataTela)),
-                getDoc(doc(db, "notas_fiscais_diario", dataTela))
+                getDoc(doc(db, "notas_fiscais_diario", dataTela)),
+                getDoc(doc(db, "notas_fiscais_diario", dataAmanha)) // Busca o futuro
             ]);
             
             const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
-            const notasFrescas = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+            let notasFrescas = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+            const notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
 
             if (!notasFrescas || notasFrescas.length === 0) return alert("Não há dados para gerar o PDF.");
+
+            // 🟢 ATUALIZA AS NOTAS DA DATA DA TELA COM O STATUS DE AMANHÃ (Para quem ficou de Pernoite)
+            let mapaAmanha = {};
+            notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
+
+            notasFrescas = notasFrescas.map(n => {
+                // Se a nota no dia da largada estava como Pernoite, Vazia ou Aguardando, puxa a baixa real do dia seguinte!
+                if (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO') {
+                    const notaSeguinte = mapaAmanha[cleanNF(n.nf)];
+                    if (notaSeguinte) {
+                        return { ...n, status: notaSeguinte.status || n.status, app: notaSeguinte.app || n.app };
+                    }
+                }
+                return n;
+            });
 
             const placaSelecionada = document.getElementById('pc-placa').value;
             const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -8408,21 +8443,14 @@
 
             let rotaExata = null;
             if (rotasFrescas) {
-                // 🟢 FILTRO CELESTIAL: Encontra a rota exata baseada no veículo FÍSICO que está na rua
+                // 🟢 FILTRO CELESTIAL MANTIDO
                 let rotasDaPlacaFisica = rotasFrescas.filter(r => {
                     const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    
-                    // A regra de ouro: Se tem troca, a placa física que vale é a troca!
-                    if (pTroca !== "") {
-                        return pTroca === pSelecionadaLimpa;
-                    }
-                    
-                    // Se não tem troca, vale a placa principal
+                    if (pTroca !== "") return pTroca === pSelecionadaLimpa;
                     return pRota === pSelecionadaLimpa;
                 });
 
-                // Se selecionou uma viagem específica, pega ela. Se for Geral, pega a primeira compatível.
                 if (viagemSelecionada && viagemSelecionada !== "") {
                     rotaExata = rotasDaPlacaFisica.find(r => String(r.transporte || "").trim() === viagemSelecionada);
                 } else {
@@ -8433,15 +8461,11 @@
             // 🟢 Puxa as notas cruzando a Placa Original OU a Troca
             let notasBrutas = notasFrescas.filter(n => {
                 const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                
-                // Se achamos a rotaExata, validamos usando os dados dela
                 if (rotaExata) {
                     const rPlaca = String(rotaExata.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const rTroca = String(rotaExata.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     return (pNota === rPlaca || (rTroca !== "" && pNota === rTroca));
                 }
-                
-                // Fallback caso não tenha achado a rota
                 return pNota === pSelecionadaLimpa;
             });
 
@@ -8454,6 +8478,8 @@
             }
 
             if (notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
+            
+            // ... DAQUI PRA BAIXO O SEU CÓDIGO CONTINUA EXATAMENTE IGUAL (Define o motoristaCorreto, monta o const d = {}, etc) ...
             
             // Define o motorista correto: Prioriza a rota exata do painel, depois tenta nas notas, senão "NÃO INFORMADO"
             let motoristaCorreto = "NÃO INFORMADO";
@@ -10624,6 +10650,10 @@
                     const notas = snapNotas.data().notas || [];
 
                     rotas.forEach(rota => {
+                        // 🟢 BLINDAGEM DE PERNOITE: Se a rota no painel do dia for explicitamente um Pernoite puro herdado, ignora para não duplicar na tela de hoje
+                        const statusRota = trimUpper(rota.status || "");
+                        if (statusRota.includes('PERNOITE') && i > 0) return;
+
                         const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
                         
                         const transporteStr = String(rota.transporte || "").trim();
@@ -10661,7 +10691,6 @@
                             let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
                             let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
 
-                            // 🟢 Identifica a placa correta (respeitando a troca se ela existir)
                             const placaExibicao = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
 
                             const infoCarro = {
@@ -10673,10 +10702,9 @@
                                 transporte: transporteStr || "-",
                                 percentApp: percentApp,
                                 cemPorcentoAss: cemPorcentoAss,
-                                conferente: rota.conferente || "Sistema" // <--- ADICIONE ESTA LINHA AQUI
+                                conferente: rota.conferente || "Sistema"
                             };
 
-                            // 🟢 Valida tanto a viagem única quanto a string concatenada "Geral"
                             const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
                             const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
 
