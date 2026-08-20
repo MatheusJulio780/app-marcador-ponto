@@ -2703,7 +2703,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.0</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.1</h2>
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
@@ -7293,7 +7293,13 @@
                                 let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                                 let placaFinal = deParaTroca[placaOriginal] || no.placa;
 
-                                notasRollover.push({ ...no, status: "", placa: placaFinal });
+                                // 🟢 CORREÇÃO: Limpa o status operacional, mas carimba a observação
+                                notasRollover.push({ 
+                                    ...no, 
+                                    status: "", 
+                                    placa: placaFinal,
+                                    obs: (no.obs ? no.obs + " | " : "") + "Pernoite do dia anterior" 
+                                });
                             }
                         });
                     }
@@ -7576,7 +7582,13 @@
                             let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
 
-                            notasParaApresentar.push({ ...no, status: "", placa: placaFinal });
+                            // 🟢 CORREÇÃO: Limpa o status operacional, mas carimba a observação
+                            notasParaApresentar.push({ 
+                                ...no, 
+                                status: "", 
+                                placa: placaFinal,
+                                obs: (no.obs ? no.obs + " | " : "") + "Pernoite do dia anterior" 
+                            });
                         }
                     });
                 }
@@ -7610,7 +7622,7 @@
             document.getElementById('modal-motoristas').classList.add('active');
         });
 
-        // ================= IMPORTAÇÃO NOTAS COM BLINDAGEM CIRÚRGICA =================
+        // ================= IMPORTAÇÃO NOTAS COM BLINDAGEM CIRÚRGICA (POR VIAGEM) =================
         document.getElementById('file-import-notas').addEventListener('change', async function (e) {
             const file = e.target.files[0]; if (!file) return;
             const dSel = document.getElementById('editor-notas-data').value;
@@ -7618,27 +7630,25 @@
             showLoader();
 
             let mapFiltroTransporte = {};
-
-            // LISTA DE STATUS INTOCÁVEIS: Se o transporte no painel tiver um desses, a planilha NÃO pode alterar as notas dele.
+            // LISTA DE STATUS INTOCÁVEIS: Pernoites, Apoios, etc.
             const statusIgnorados = ['PERNOITE', 'PERNOITE/VIAGEM', 'APOIO', 'SEG. VIAGEM', 'SEGUNDA VIAGEM'];
 
             try {
-                // Busca o painel de HOJE para mapear a operação
                 const sp = await getDoc(doc(db, "painel_diario", dSel));
                 if (sp.exists()) {
                     sp.data().rotas.forEach(r => {
-                        const placaNormal = r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        const placaFinal = r.troca ? r.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
+                        const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
-
                         const isBloqueado = statusIgnorados.includes(statusRota);
 
+                        // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
                             mapFiltroTransporte[t] = {
                                 placaFinal: placaFinal,
                                 statusRota: statusRota,
-                                bloqueado: isBloqueado // Trava a alteração para Pernoites e Apoios
+                                bloqueado: isBloqueado // Trava a alteração SOMENTE para as viagens de Pernoites e Apoios
                             };
                         });
                     });
@@ -7664,13 +7674,21 @@
                 let qtd = 0;
                 for (let i = hIdx + 1; i < raw.length; i++) {
                     const row = raw[i]; if (!row || !row[cols.nf]) continue;
-                    const viagemPlanilha = String(row[cols.viagem] || "").trim();
+                    
+                    // Pega todas as viagens contidas na linha do Excel (caso venham múltiplas juntas)
+                    const viagensExcel = String(row[cols.viagem] || "").match(/\d+/g) || [];
+                    let filtroViagem = null;
 
-                    const filtroViagem = mapFiltroTransporte[viagemPlanilha];
+                    for (let v of viagensExcel) {
+                        if (mapFiltroTransporte[v]) {
+                            filtroViagem = mapFiltroTransporte[v];
+                            break;
+                        }
+                    }
 
                     if (filtroViagem) {
-                        // REGRA DE OURO: Se o painel diz que é Pernoite/Apoio, pula essa linha do Excel.
-                        if (filtroViagem.bloqueado) continue;
+                        // 🟢 REGRA CORRIGIDA: Bloqueia a importação SOMENTE se o Transporte (Viagem) for de um Pernoite/Apoio.
+                        if (filtroViagem.bloqueado) continue; 
 
                         const nfTratada = cleanNF(row[cols.nf]);
                         let existsInTable = false;
@@ -7684,7 +7702,7 @@
 
                         qtd++;
                         window.adicionarLinhaNotas({
-                            nf: nfTratada, viagem: viagemPlanilha, ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
+                            nf: nfTratada, viagem: row[cols.viagem] || "", ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
                             data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
                             cliente: cols.cliente !== -1 ? row[cols.cliente] : "", cidade: cols.cidade !== -1 ? row[cols.cidade] : "",
                             bairro: cols.bairro !== -1 ? row[cols.bairro] : "", endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
@@ -8356,21 +8374,40 @@
 
             let rotaExata = null;
             if (rotasFrescas) {
-                rotaExata = rotasFrescas.find(r => {
+                // 🟢 FILTRO CELESTIAL: Encontra a rota exata baseada no veículo FÍSICO que está na rua
+                let rotasDaPlacaFisica = rotasFrescas.filter(r => {
                     const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    const matchPlaca = (pRota === pSelecionadaLimpa || pTroca === pSelecionadaLimpa);
-                    if (!matchPlaca) return false;
-
-                    if (viagemSelecionada && viagemSelecionada !== "") {
-                        return String(r.transporte || "").trim() === viagemSelecionada;
+                    
+                    // A regra de ouro: Se tem troca, a placa física que vale é a troca!
+                    if (pTroca !== "") {
+                        return pTroca === pSelecionadaLimpa;
                     }
-                    return true;
+                    
+                    // Se não tem troca, vale a placa principal
+                    return pRota === pSelecionadaLimpa;
                 });
+
+                // Se selecionou uma viagem específica, pega ela. Se for Geral, pega a primeira compatível.
+                if (viagemSelecionada && viagemSelecionada !== "") {
+                    rotaExata = rotasDaPlacaFisica.find(r => String(r.transporte || "").trim() === viagemSelecionada);
+                } else {
+                    rotaExata = rotasDaPlacaFisica[0];
+                }
             }
 
+            // 🟢 Puxa as notas cruzando a Placa Original OU a Troca
             let notasBrutas = notasFrescas.filter(n => {
                 const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                
+                // Se achamos a rotaExata, validamos usando os dados dela
+                if (rotaExata) {
+                    const rPlaca = String(rotaExata.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const rTroca = String(rotaExata.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    return (pNota === rPlaca || (rTroca !== "" && pNota === rTroca));
+                }
+                
+                // Fallback caso não tenha achado a rota
                 return pNota === pSelecionadaLimpa;
             });
 
@@ -8593,16 +8630,19 @@
             const nomeArquivoPC = `PC_${d.placa}_${d.dataSaida}_${d.statusViagem}.pdf`.replace(/\//g, '-');
             abrirPreviewPDF(docDefinition, nomeArquivoPC);
 
-            // 🟢 Validação limpa: Se a viagem já estiver prestada, não exibe o modal por cima
+            // 🟢 Validação limpa: Se a viagem EXATA identificada já estiver prestada, não exibe o modal
             let viagemJaPrestada = false;
             if (rotaExata && rotaExata.prestacao_impressa === true) {
                 const transpRota = String(rotaExata.transporte || "").trim();
-                if (!rotaExata.transporte_prestado || rotaExata.transporte_prestado === transpRota || rotaExata.transporte_prestado === d.transporte) {
+                const transpPrestado = String(rotaExata.transporte_prestado || "").trim();
+                
+                // Verifica se a prestação salva bate com o transporte atual
+                if (!transpPrestado || transpPrestado === transpRota || transpPrestado === d.transporte) {
                     viagemJaPrestada = true;
                 }
             }
 
-            if (viagemJaPrestada) return; // Sai e exibe apenas o PDF limpo na tela
+            if (viagemJaPrestada) return; // Sai e exibe apenas o PDF limpo na tela sem pop-up
 
             // 🟢 Adiciona o atraso de 500ms para o preview carregar antes do pop-up
             document.getElementById('lbl-placa-baixa').innerText = d.placa;
