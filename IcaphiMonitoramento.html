@@ -8403,52 +8403,99 @@
         document.getElementById('btn-gerar-pc-padrao').addEventListener('click', async () => {
             const dataTela = document.getElementById('pc-data').value || new Date().toISOString().split('T')[0];
             
-            // 🟢 MÁGICA TEMPORAL PARA O PDF: Descobre o dia seguinte
             const dObj = new Date(dataTela);
-            dObj.setUTCDate(dObj.getUTCDate() + 1);
-            const dataAmanha = dObj.toISOString().split('T')[0];
+            dObj.setUTCDate(dObj.getUTCDate() - 1);
+            const dataOntem = dObj.toISOString().split('T')[0];
 
-            // 🟢 Força leitura em tempo real da data selecionada E do dia seguinte
-            const [snapPainel, snapNotas, snapNotasAmanha] = await Promise.all([
+            dObj.setUTCDate(dObj.getUTCDate() + 2);
+            const dataAmanhaLocal = dObj.toISOString().split('T')[0];
+
+            const [snapPainel, snapNotas, snapOntemNotas, snapOntemPainel, snapNotasAmanha] = await Promise.all([
                 getDoc(doc(db, "painel_diario", dataTela)),
                 getDoc(doc(db, "notas_fiscais_diario", dataTela)),
-                getDoc(doc(db, "notas_fiscais_diario", dataAmanha)) // Busca o futuro
+                getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
+                getDoc(doc(db, "painel_diario", dataOntem)),
+                getDoc(doc(db, "notas_fiscais_diario", dataAmanhaLocal))
             ]);
             
             const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
-            let notasFrescas = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
+            let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : window.pcNotasCache || [];
             const notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
+
+            let deParaTroca = {};
+            if (snapOntemPainel.exists() && snapOntemPainel.data().rotas) {
+                snapOntemPainel.data().rotas.forEach(r => {
+                    if (r.placa && r.troca && r.troca.trim() !== "") {
+                        deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                    }
+                });
+            }
+
+            if (snapOntemNotas.exists() && snapOntemNotas.data().notas) {
+                snapOntemNotas.data().notas.forEach(no => {
+                    if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                        let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
+                        let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                        notasDoDia.push({ 
+                            ...no, 
+                            status: "", 
+                            placa: placaFinal 
+                        });
+                    }
+                });
+            }
+
+            let notasFrescas = notasDoDia;
 
             if (!notasFrescas || notasFrescas.length === 0) return alert("Não há dados para gerar o PDF.");
 
-            // 🟢 ATUALIZA AS NOTAS DA DATA DA TELA COM O STATUS DE AMANHÃ (Para quem ficou de Pernoite)
+            // 🟢 FILTRO INTELIGENTE DE PERNOITE E TROCA DE PLACA
             let mapaAmanha = {};
             notasAmanha.forEach(n => { mapaAmanha[cleanNF(n.nf)] = n; });
 
             notasFrescas = notasFrescas.map(n => {
-                // Se a nota no dia da largada estava como Pernoite, Vazia ou Aguardando, puxa a baixa real do dia seguinte!
-                if (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO') {
-                    const notaSeguinte = mapaAmanha[cleanNF(n.nf)];
-                    if (notaSeguinte) {
-                        return { ...n, status: notaSeguinte.status || n.status, app: notaSeguinte.app || n.app };
+                const nfClean = cleanNF(n.nf);
+                const notaSeguinte = mapaAmanha[nfClean];
+
+                if (notaSeguinte) {
+                    const placaOriginalNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                    const placaNoDiaSeguinte = trimUpper(notaSeguinte.placa || "").replace(/[^A-Z0-9]/g, '');
+
+                    // Se a nota mudou de placa no dia seguinte (foi assumida por outro carro, ex: LRU)
+                    if (placaNoDiaSeguinte !== "" && placaNoDiaSeguinte !== placaOriginalNota) {
+                        // Ela é considerada "removida" desta prestação do carro original, pois foi transferida
+                        return null; 
+                    }
+
+                    // Se continuou no mesmo carro e estava em pernoite/vazia, atualiza com o status novo de amanhã
+                    if (trimUpper(n.status).includes('PERNOITE') || trimUpper(n.status) === '' || trimUpper(n.status) === 'AGUARDANDO') {
+                        return {
+                            ...n,
+                            status: notaSeguinte.status || n.status,
+                            app: notaSeguinte.app || n.app,
+                            obs: notaSeguinte.obs || n.obs,
+                            parcial: notaSeguinte.parcial || n.parcial,
+                            chegada: notaSeguinte.chegada || n.chegada,
+                            saida: notaSeguinte.saida || n.saida
+                        };
                     }
                 }
                 return n;
-            });
+            }).filter(n => n !== null); // Remove as notas que foram transferidas para outro veículo
 
             const placaSelecionada = document.getElementById('pc-placa').value;
-            const pSelecionadaLimpa = (placaSelecionada || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const placaSelLimpa = placaSelecionada.toUpperCase().replace(/[^A-Z0-9]/g, '');
             const selectViagemElem = document.querySelector('#container-seletor-viagem select');
             const viagemSelecionada = selectViagemElem ? selectViagemElem.value : "";
 
             let rotaExata = null;
             if (rotasFrescas) {
-                // 🟢 FILTRO CELESTIAL MANTIDO
                 let rotasDaPlacaFisica = rotasFrescas.filter(r => {
                     const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    if (pTroca !== "") return pTroca === pSelecionadaLimpa;
-                    return pRota === pSelecionadaLimpa;
+                    // Se houver troca, o usuário seleciona a placa de troca na tela
+                    if (pTroca !== "") return pTroca === placaSelLimpa;
+                    return pRota === placaSelLimpa;
                 });
 
                 if (viagemSelecionada && viagemSelecionada !== "") {
@@ -8458,34 +8505,52 @@
                 }
             }
 
-            // 🟢 Puxa as notas cruzando a Placa Original OU a Troca
+            // Descobre todas as placas válidas para essa rota (física e troca)
+            let placasValidasBusca = [placaSelLimpa];
+            if (rotaExata) {
+                const rPlaca = String(rotaExata.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const rTroca = String(rotaExata.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (rPlaca) placasValidasBusca.push(rPlaca);
+                if (rTroca) placasValidasBusca.push(rTroca);
+            }
+
+            // Filtro blindado: Garante que só puxa as notas estritamente da placa selecionada na tela
             let notasBrutas = notasFrescas.filter(n => {
                 const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                if (rotaExata) {
-                    const rPlaca = String(rotaExata.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    const rTroca = String(rotaExata.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    return (pNota === rPlaca || (rTroca !== "" && pNota === rTroca));
-                }
-                return pNota === pSelecionadaLimpa;
-            });
+                
+                // A nota precisa pertencer exatamente à placa que o usuário escolheu no select (ex: KXM ou a troca)
+                if (pNota !== placaSelLimpa) return false;
 
-            if (viagemSelecionada && viagemSelecionada !== "") {
-                const transpArray = viagemSelecionada.match(/\d+/g) || [];
-                notasBrutas = notasBrutas.filter(n => {
-                    const vNota = String(n.viagem || "").trim();
-                    return transpArray.some(t => vNota.includes(t) || t.includes(vNota));
-                });
-            }
+                // Validação opcional da viagem se ela foi explicitamente selecionada
+                const viagemNota = String(n.viagem || "").trim();
+                if (viagemSelecionada && viagemSelecionada !== "" && viagemSelecionada !== "Geral") {
+                    const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                    if (transpArray.length > 0 && viagemNota !== "") {
+                        return transpArray.some(t => viagemNota.includes(t));
+                    }
+                }
+                return true;
+            });
 
             if (notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
             
             // ... DAQUI PRA BAIXO O SEU CÓDIGO CONTINUA EXATAMENTE IGUAL (Define o motoristaCorreto, monta o const d = {}, etc) ...
             
-            // Define o motorista correto: Prioriza a rota exata do painel, depois tenta nas notas, senão "NÃO INFORMADO"
+            // Define o motorista e a placa real considerando o regime de troca
             let motoristaCorreto = "NÃO INFORMADO";
-            if (rotaExata && rotaExata.motorista && rotaExata.motorista.trim() !== "") {
-                motoristaCorreto = rotaExata.motorista;
-            } else {
+            let placaExibicaoPDF = placaSelecionada;
+
+            if (rotaExata) {
+                if (rotaExata.motorista && rotaExata.motorista.trim() !== "") {
+                    motoristaCorreto = rotaExata.motorista;
+                }
+                // Se a rota possui troca, o PDF deve exibir a placa de troca (ex: KYK8928)
+                if (rotaExata.troca && rotaExata.troca.trim() !== "") {
+                    placaExibicaoPDF = rotaExata.troca;
+                }
+            }
+
+            if (motoristaCorreto === "NÃO INFORMADO") {
                 const nMot = notasBrutas.find(n => n.motorista && n.motorista.trim() !== "");
                 if (nMot) motoristaCorreto = nMot.motorista;
             }
@@ -8493,8 +8558,8 @@
             const getSt = (s) => String(s || "").trim().toUpperCase();
             
             const d = {
-                placa: placaSelecionada,
-                motorista: motoristaCorreto,
+                placa: placaExibicaoPDF, // Placa final correta (respeitando a troca)
+                motorista: motoristaCorreto, // Motorista correto da rota
                 transporte: viagemSelecionada || (rotaExata ? rotaExata.transporte : "GERAL"),
                 dataSaida: dataTela,
                 statusViagem: rotaExata ? (rotaExata.status || "EM ROTA") : "EM ROTA",
@@ -10023,19 +10088,29 @@
             });
         }
 
-        // ================= MOTOR DE ISOLAMENTO (USO GLOBAL) =================
+        // ================= MOTOR DE ISOLAMENTO (USO GLOBAL CORRIGIDO) =================
         function filtrarNotasDaRotaEspecifica(rota, arrayDeNotas) {
+            // Pega a placa física (se tiver troca, vale a troca, senão vale a placa principal)
             const placaRef = (rota.troca && rota.troca.trim() !== "")
                 ? rota.troca.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
                 : rota.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+            // Pega também a placa original da rota (caso seja um pernoite/transbordo onde as notas ainda estão na placa antiga)
+            const placaOriginalRef = (rota.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
             const transpRotaStr = String(rota.transporte || "").trim();
             const transpNumArray = transpRotaStr.match(/\d+/g) || [];
+
+            const stRota = trimUpper(rota.status || "");
+            const ehPernoiteOuTroca = stRota.includes('PERNOITE') || stRota.includes('APOIO') || (rota.troca && rota.troca.trim() !== "");
 
             return arrayDeNotas.filter(n => {
                 if (n.status && n.status.trim().toUpperCase() === 'NÃO EMBARCADA') return false;
 
-                const matchPlaca = n.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') === placaRef;
+                const pNota = n.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                // 🟢 BLINDAGEM DE PLACA: Valida se a nota pertence à placa física atual OU à placa original (caso de pernoite/troca)
+                const matchPlaca = (pNota === placaRef) || (ehPernoiteOuTroca && pNota === placaOriginalRef);
                 if (!matchPlaca) return false;
 
                 const viagemNota = String(n.viagem || "").trim();
@@ -10043,10 +10118,8 @@
                 if (transpNumArray.length > 0 && viagemNota !== "") {
                     let matchesTransp = transpNumArray.some(t => viagemNota.includes(t));
 
-                    // CORREÇÃO: Transbordo/Pernoite causa conflito de nº de transporte (ontem vs hoje).
-                    // Se não bater o nº, mas o veículo for Pernoite/Apoio, bypassa a checagem.
-                    const stRota = trimUpper(rota.status || "");
-                    if (!matchesTransp && (stRota.includes('PERNOITE') || stRota.includes('APOIO'))) {
+                    // Se não bater o número exato do transporte, mas for pernoite/apoio/troca, o sistema permite puxar
+                    if (!matchesTransp && ehPernoiteOuTroca) {
                         return true;
                     }
                     return matchesTransp;
