@@ -15,7 +15,8 @@
     <meta name="apple-mobile-web-app-title" content="Icaphi">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- REMOVA O SCRIPT ANTIGO DO SHEETJS (xlsx.full.min.js) E USE ESTE AQUI -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -2703,7 +2704,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.1</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.2</h2>
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
@@ -3404,8 +3405,28 @@
                             Excel</button>
                     </div>
                 </div>
+
+                <!-- NOVO BOTÃO QUE CHAMA O MODAL -->
+                <button class="btn btn-warning" onclick="document.getElementById('modal-exportar-pernoite').classList.add('active'); document.getElementById('data-export-pernoite').value = new Date().toISOString().split('T')[0];" style="background: var(--warning); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="ph-bold ph-moon-stars"></i> Gerar Pernoites (Excel)
+                </button>
             </div>
         </section>
+
+        <!-- O MODAL DEVE FICAR FORA DA SECTION, NO FINAL DO BODY -->
+        <div id="modal-exportar-pernoite" class="modal-overlay">
+            <div class="modal-content" style="background: var(--bg-panel); padding: 20px; border-radius: 8px; max-width: 350px; text-align: center; border-top: 5px solid var(--warning);">
+                <span class="close-modal" onclick="document.getElementById('modal-exportar-pernoite').classList.remove('active')" style="float: right; cursor: pointer; font-size: 20px;">&times;</span>
+                <h3 style="margin-bottom: 10px;"><i class="ph-bold ph-moon-stars" style="color: var(--warning);"></i> Exportar Pernoites</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Selecione o dia do Pernoite para gerar o relatório consolidado.</p>
+                
+                <input type="date" id="data-export-pernoite" class="filter-input" style="width: 100%; margin-bottom: 20px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                
+                <button class="btn btn-warning" onclick="window.gerarPlanilhaPernoitesExcel()" style="width: 100%; background: var(--warning); color: #fff; padding: 10px; border: none; border-radius: 6px;">
+                    <i class="ph-bold ph-file-xls"></i> Baixar Planilha
+                </button>
+            </div>
+        </div>
 
         <div class="modal-overlay" id="modal-exportar-transportes">
             <div class="modal-content" style="width: 500px; max-height: 85vh;">
@@ -11579,6 +11600,355 @@
             document.getElementById('pc-perfil-cargo').innerText = "Conferente / Responsável";
         }
     };
+
+        // ================= GERADOR DE PLANILHA DE PERNOITES (EXATAMENTE IGUAL AO PAINEL) =================
+        window.gerarPlanilhaPernoitesExcel = async () => {
+            const dataSel = document.getElementById('data-export-pernoite').value;
+            if (!dataSel) return alert("Selecione uma data no pop-up.");
+
+            try {
+                if (typeof showLoader === 'function') showLoader();
+
+                // Busca o dia selecionado e o dia de ontem (para rollover de pernoite)
+                const dObj = new Date(dataSel); 
+                dObj.setUTCDate(dObj.getUTCDate() - 1); 
+                const dataOntem = dObj.toISOString().split('T')[0];
+
+                const [snapPainel, snapNotas, snapOntemPainel, snapOntemNotas] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", dataSel)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataSel)),
+                    getDoc(doc(db, "painel_diario", dataOntem)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOntem))
+                ]);
+
+                if (!snapPainel.exists()) {
+                    alert("Não há dados no painel para esta data.");
+                    if (typeof hideLoader === 'function') hideLoader();
+                    return;
+                }
+
+                let rotasParaProcessar = snapPainel.data().rotas || [];
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : [];
+
+                // Mapeia trocas de placa
+                let deParaTroca = {};
+                rotasParaProcessar.forEach(r => {
+                    if (r.placa && r.troca && r.troca.trim() !== "") {
+                        deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                    }
+                });
+
+                // Inclui pernoites de ontem se houver
+                if (snapOntemNotas.exists()) {
+                    snapOntemNotas.data().notas.forEach(no => {
+                        if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
+                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
+                            notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                        }
+                    });
+                }
+
+                // --- ABA 1: PROCESSAMENTO EXATO IGUAL AO PAINEL ---
+                const dadosAba1 = rotasParaProcessar.map(rota => {
+                    const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
+                    const transpRotaStr = String(rota.transporte || "").trim();
+                    const transpNumArray = transpRotaStr.match(/\d+/g) || [];
+
+                    const notasPlaca = notasDoDia.filter(n => {
+                        if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                        const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
+                        if (!matchPlaca) return false;
+                        
+                        const tipoViagemRota = trimUpper(rota.status || "");
+                        const tipoViagemNota = trimUpper(n.tipo_viagem || n.status_viagem || "");
+                        if (tipoViagemRota !== "" && tipoViagemRota !== "SAIDA DIA" && tipoViagemRota !== "PERNOITE") {
+                            if (tipoViagemNota !== "" && tipoViagemNota !== tipoViagemRota) return false;
+                        }
+                        
+                        const viagemNota = String(n.viagem || "").trim();
+                        if (transpNumArray.length > 0 && viagemNota !== "") {
+                            return transpNumArray.some(t => viagemNota.includes(t));
+                        }
+                        return true;
+                    });
+
+                    let motoristaFinal = rota.motorista || ""; 
+                    let contatoFinal = rota.contato || "";
+                    if (notasPlaca.length > 0) { 
+                        const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; 
+                        motoristaFinal = ref.motorista || motoristaFinal; 
+                        contatoFinal = ref.telefone || contatoFinal; 
+                    }
+
+                    let qtd_nf = notasPlaca.length;
+                    let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                    let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                    let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                    let notasPernoite = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
+                    let teveParcialBool = notasPlaca.some(n => n.parcial && String(n.parcial).trim() !== "");
+                    let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+                    
+                    const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
+                    let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))).length;
+
+                    const isParada = trimUpper(rota.status) === 'PARADA';
+                    const isSinistrado = trimUpper(rota.status) === 'SINISTRADO' || trimUpper(rota.status) === 'SINISTRADA';
+                    const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
+                    const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
+                    const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
+                    const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
+
+                    let stRotaCalc = "";
+                    if (qtd_nf === 0) { 
+                        stRotaCalc = "VEÍCULO VAZIO"; 
+                    } else if (isParada) { 
+                        stRotaCalc = "PARADA"; 
+                    } else if (isSinistrado) { 
+                        stRotaCalc = "SINISTRADA"; 
+                    } else if (hasPernoite) { 
+                        stRotaCalc = "PERNOITE"; 
+                    } else if (hasDescarregando) { 
+                        stRotaCalc = "DESCARREGANDO"; 
+                    } else if (hasAguardando) { 
+                        stRotaCalc = "AGUARDANDO NO CLIENTE"; 
+                    } else if (hasTrafegando) { 
+                        stRotaCalc = "TRAFEGANDO"; 
+                    } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { 
+                        stRotaCalc = "VEÍCULO VAZIO"; 
+                    } else if ((realizada + devolucao + reentrega) === qtd_nf) { 
+                        stRotaCalc = "FINALIZADO"; 
+                    } else if (pendente < 11) { 
+                        stRotaCalc = "PRÓXIMO DE TERMINAR"; 
+                    } else { 
+                        stRotaCalc = "EM ROTA"; 
+                    }
+
+                    const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
+                    let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                    let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+
+                    let p_q_nfs_val = notasPernoite.length > 0 ? `${notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}` : "";
+
+                    return {
+                        "PLACA": rota.placa || "", 
+                        "TROCA": rota.troca || "", 
+                        "PERFIL": rota.perfil || "", 
+                        "TIPO": rota.tipo || "",
+                        "O.C.": rota.oc || "", 
+                        "TRANSPORTE": rota.transporte || "", 
+                        "MOTORISTA": motoristaFinal, 
+                        "CONTATO": contatoFinal,
+                        "STATUS": rota.status || "", 
+                        "QTD NF": qtd_nf, 
+                        "PESO": pesoTotal > 0 ? pesoTotal.toFixed(2).replace('.', ',') : "", 
+                        "KM": rota.km || "",
+                        "REGIÃO": rota.regiao || "", 
+                        "AJUDANTE": rota.ajudante || "", 
+                        "DEVOLUÇÃO": devolucao > 0 ? devolucao : "", 
+                        "REENTREGA": reentrega > 0 ? reentrega : "",
+                        "PESO + QTD NFs": p_q_nfs_val, 
+                        "PARCIAL": teveParcialBool ? "SIM" : "", 
+                        "STATUS DA ROTA": stRotaCalc, 
+                        "PENDENTE": pendente, 
+                        "REALIZADA": realizada > 0 ? realizada : "", 
+                        "% APP": percentApp > 0 ? percentApp + '%' : '0%'
+                    };
+                });
+
+                // Formatação de datas para Abas 2 e 3
+                const parts = dataSel.split('-');
+                const dataFormatadaPonto = `${parts[2]}.${parts[1]}.${parts[0]}`;
+                const dataFormatadaBarra = `${parts[2]}/${parts[1]}/${parts[0]}`;
+
+                // --- ABA 2: NOTAS DO PERNOITE ---
+                const notasDoPernoite = [];
+                const pernoitesIdentificados = new Set();
+
+                notasDoDia.forEach(n => {
+                    const statusNota = String(n.status || "").trim().toUpperCase();
+                    if (statusNota.includes('PERNOITE')) {
+                        const p = String(n.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        if (p) pernoitesIdentificados.add(p);
+
+                        notasDoPernoite.push({
+                            "NF": cleanNF(n.nf || ""),
+                            "VIAGEM": n.viagem || "",
+                            "DATA": n.data_nf || dataFormatadaBarra,
+                            "PLACA": n.placa || "",
+                            "STATUS": "PERNOITE"
+                        });
+                    }
+                });
+
+                // --- ABA 3: MOTIVO DO PERNOITE ---
+                const rotasPernoite = rotasParaProcessar.filter(r => {
+                    const p = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const t = r.troca ? String(r.troca).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+                    return pernoitesIdentificados.has(p) || pernoitesIdentificados.has(t);
+                });
+
+                const dadosAba3 = rotasPernoite.map(r => {
+                    return {
+                        "PLACA": r.placa || "", 
+                        "TROCA": r.troca || "", 
+                        "PERFIL": r.perfil || "", 
+                        "DATA": dataFormatadaBarra,
+                        "ROTA": r.regiao || "", 
+                        "TRANSP": r.transporte || "", 
+                        "QTD. NF-e": r.qtde || "", 
+                        "Peso": r.peso || "", 
+                        "Status": "PERNOITE", 
+                        "MOTIVO": "", 
+                        "AUTORIZADO": ""
+                    };
+                });
+
+                // Montagem final do arquivo Excel
+                const wb = XLSX.utils.book_new();
+                const ws1 = XLSX.utils.json_to_sheet(dadosAba1);
+                const ws2 = XLSX.utils.json_to_sheet(notasDoPernoite);
+                const ws3 = XLSX.utils.json_to_sheet(dadosAba3);
+
+                aplicarEstilosAba1(ws1);
+                aplicarEstilosAbaGenerica(ws2, false);
+                aplicarEstilosAbaGenerica(ws3, true);
+
+                XLSX.utils.book_append_sheet(wb, ws1, "PAINEL COMPLETO");
+                XLSX.utils.book_append_sheet(wb, ws2, "NOTAS DO PERNOITE");
+                XLSX.utils.book_append_sheet(wb, ws3, "MOTIVO DO PERNOITE");
+
+                XLSX.writeFile(wb, `PERNOITE ${dataFormatadaPonto}.xlsx`);
+
+                document.getElementById('modal-exportar-pernoite').classList.remove('active');
+                if (typeof hideLoader === 'function') hideLoader();
+
+            } catch (e) {
+                console.error("Erro ao gerar Excel:", e);
+                alert("Erro ao exportar planilha estilizada.");
+                if (typeof hideLoader === 'function') hideLoader();
+            }
+        };
+
+        // ====== FUNÇÃO DE LARGURA INTELIGENTE COM TETO MÁXIMO ======
+        function calcularLarguraColunas(ws) {
+            const larguraColunas = [];
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            for(let C = range.s.c; C <= range.e.c; ++C) {
+                let maxLen = 10; // Tamanho base
+                for(let R = range.s.r; R <= range.e.r; ++R) {
+                    const cell_ref = XLSX.utils.encode_cell({c:C, r:R});
+                    const cell = ws[cell_ref];
+                    if(cell && cell.v !== null && cell.v !== undefined) {
+                        const len = String(cell.v).length;
+                        if(len > maxLen) maxLen = len;
+                    }
+                }
+                // Trava um limite máximo (ex: 30) para a coluna não esticar absurdamente por causa de textos longos
+                const larguraFinal = Math.min(Math.max(maxLen + 3, 10), 30);
+                larguraColunas.push({ wch: larguraFinal });
+            }
+            return larguraColunas;
+        }
+
+        function aplicarEstilosAba1(ws) {
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for(let R = range.s.r; R <= range.e.r; ++R) {
+                // Pega o status da linha na coluna 'STATUS DA ROTA' (Índice 18)
+                const cellStatusRef = XLSX.utils.encode_cell({c: 18, r: R});
+                const statusStr = String(ws[cellStatusRef]?.v || "").trim().toUpperCase();
+
+                // Define a cor de destaque apenas para as colunas específicas
+                let corDestaque = null; 
+                let isBold = false; 
+                let isItalic = false;
+
+                if (R > 0) {
+                    if (statusStr.includes("VEÍCULOS VAZIO") || statusStr.includes("VEÍCULO VAZIO")) {
+                        corDestaque = "94DCF8"; // Azul claro
+                        isBold = true;
+                    } else if (statusStr.includes("FINALIZADO")) {
+                        corDestaque = "FFD1F5"; // Rosa claro
+                        isBold = true;
+                        isItalic = true;
+                    } else if (statusStr.includes("PERNOITE")) {
+                        corDestaque = "F1AB85"; // Laranja / Pernoite
+                        isBold = true;
+                    }
+                }
+
+                for(let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_ref = XLSX.utils.encode_cell({c: C, r: R});
+                    if(!ws[cell_ref]) ws[cell_ref] = { t: "s", v: "" };
+
+                    let fillBg = "FFFFFF";
+                    let cellBold = (R === 0 || C === 0 || C === 1);
+                    let cellItalic = false;
+
+                    if (R === 0) {
+                        fillBg = "B5DCE1"; // Cabeçalho
+                        cellBold = true;
+                    } else {
+                        // Fundo padrão alternado para as outras colunas
+                        fillBg = (R % 2 !== 0) ? "ECECEC" : "FFFFFF";
+
+                        // 🟢 APLICA A COR EXCLUSIVAMENTE NAS COLUNAS: 18 (STATUS), 19 (PENDENTE), 20 (REALIZADA)
+                        if ((C === 18 || C === 19 || C === 20) && corDestaque) {
+                            fillBg = corDestaque;
+                            cellBold = isBold;
+                            cellItalic = isItalic;
+                        }
+                    }
+
+                    ws[cell_ref].s = {
+                        fill: { fgColor: { rgb: fillBg } },
+                        font: { bold: cellBold, italic: cellItalic, color: { rgb: "000000" }, name: "Calibri", sz: 11 },
+                        border: { 
+                            top: {style: "thin", color: {rgb: "000000"}}, 
+                            bottom: {style: "thin", color: {rgb: "000000"}}, 
+                            left: {style: "thin", color: {rgb: "000000"}}, 
+                            right: {style: "thin", color: {rgb: "000000"}} 
+                        },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: false }
+                    };
+                }
+            }
+
+            // Larguras fixas equilibradas
+            ws['!cols'] = [
+                {wch: 12}, {wch: 12}, {wch: 10}, {wch: 8}, {wch: 12}, {wch: 14}, 
+                {wch: 15}, {wch: 16}, {wch: 12}, {wch: 8}, {wch: 12}, {wch: 10}, 
+                {wch: 35}, {wch: 18}, {wch: 12}, {wch: 12}, {wch: 14}, {wch: 10}, 
+                {wch: 15}, {wch: 10}, {wch: 10}, {wch: 8}
+            ];
+        }
+
+        // ====== FUNÇÃO ABAS GENÉRICAS (2 E 3) COM A MESMA CORREÇÃO ======
+        function aplicarEstilosAbaGenerica(ws, isAba3) {
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for(let R = range.s.r; R <= range.e.r; ++R) {
+                for(let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_ref = XLSX.utils.encode_cell({c:C, r:R});
+                    if(!ws[cell_ref]) ws[cell_ref] = { t: "s", v: "" };
+                    
+                    let fillBg = "FFFFFF"; let fontColor = "000000"; let isBold = false;
+                    if (R === 0) { 
+                        fillBg = "B9CAE9"; isBold = true; 
+                    } else if (isAba3 && C === 8 && String(ws[cell_ref].v).toUpperCase() === "PERNOITE") {
+                        fontColor = "FF0000"; isBold = true;
+                    }
+
+                    ws[cell_ref].s = {
+                        fill: { fgColor: { rgb: fillBg } },
+                        font: { bold: isBold, color: { rgb: fontColor }, name: "Calibri", sz: 11 },
+                        border: { top: {style: "thin", color: {rgb: "000000"}}, bottom: {style: "thin", color: {rgb: "000000"}}, left: {style: "thin", color: {rgb: "000000"}}, right: {style: "thin", color: {rgb: "000000"}} },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true } // 🟢 QUEBRA DE TEXTO ATIVADA
+                    };
+                }
+            }
+            ws['!cols'] = calcularLarguraColunas(ws);
+        }
 
     </script>
 </body>
