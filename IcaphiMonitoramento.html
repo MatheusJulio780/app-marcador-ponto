@@ -2755,6 +2755,26 @@
         :root { --bg-card: #ffffff; }
         body.dark-mode { --bg-card: #1e1e2d; /* Ajuste para o tom escuro do seu painel */ }
 
+        /* 🟢 Força total e isolada apenas na tela de Complementos */
+        #view-complementos #complementos-kpis {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+            gap: 8px !important;
+            max-width: 100% !important;
+            margin-bottom: 15px !important;
+        }
+
+        #view-complementos #complementos-kpis > div {
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            min-width: 0 !important;
+        }
+
+        #view-complementos .content-container {
+            max-width: 100% !important;
+            padding: 15px !important;
+        }
+
     </style>
 </head>
 
@@ -13027,7 +13047,7 @@
                 <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; border-left: 4px solid var(--danger); box-shadow: var(--shadow-sm);">
                     <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">GASTO TOTAL (COMPLEMENTOS)</div>
                     <div style="font-size: 18px; font-weight: 800; color: var(--danger); margin-top: 4px;">R$ ${totaisGerais.valor.toFixed(2)}</div>
-                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${totaisGerais.qtd} solicitações</div>
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${totaisGerais.qtd} Saidas</div>
                 </div>
             `;
 
@@ -13036,7 +13056,7 @@
                     <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm);">
                         <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${tipo}</div>
                         <div style="font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px;">R$ ${dados.valor.toFixed(2)}</div>
-                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${dados.qtd} registros</div>
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${dados.qtd} Complementos</div>
                     </div>
                 `;
             }
@@ -13493,23 +13513,53 @@
 
                 if (tipo === 'complemento') {
                     const item = docSnap.data().itens[index];
-                    document.getElementById('comp-input-data').value = dataStr;
-                    document.getElementById('comp-input-data').disabled = true; // Trava data na edição
-                    document.getElementById('box-selecao-viagem').style.display = 'none'; // Esconde busca
                     
+                    const inputData = document.getElementById('comp-input-data');
+                    if (inputData) {
+                        inputData.value = dataStr;
+                        inputData.disabled = true;
+                    }
+
+                    // 1. Carrega as placas do dia para preencher o select do modal
+                    if (typeof window.buscarPlacasDoDia === 'function') {
+                        await window.buscarPlacasDoDia();
+                    }
+
+                    // 2. Preenche os campos do formulário com os dados salvos
                     document.getElementById('comp-input-tipo').value = item.tipo;
                     document.getElementById('comp-input-valor').value = item.valor;
                     document.getElementById('comp-input-obs').value = item.obs || '';
+
+                    // 3. Tenta selecionar a placa correta no select
+                    const selectPlaca = document.getElementById('comp-input-placa');
+                    if (selectPlaca && item.placa) {
+                        const placaAlvo = String(item.placa).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        for (let i = 0; i < selectPlaca.options.length; i++) {
+                            const optText = selectPlaca.options[i].text.toUpperCase();
+                            if (optText.includes(placaAlvo)) {
+                                selectPlaca.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
                     document.getElementById('btn-salvar-comp').disabled = false;
                     document.getElementById('modal-novo-complemento').style.display = 'flex';
                 } else {
                     const item = docSnap.data().depositos[index];
-                    document.getElementById('dep-input-data').value = dataStr;
-                    document.getElementById('dep-input-data').disabled = true;
+                    
+                    const depData = document.getElementById('dep-input-data');
+                    if (depData) {
+                        depData.value = dataStr;
+                        depData.disabled = true;
+                    }
+
                     document.getElementById('dep-input-valor').value = item.valor;
                     document.getElementById('modal-deposito').style.display = 'flex';
                 }
-            } catch(e) { console.error("Erro preparar edição", e); }
+            } catch(e) { 
+                console.error("Erro preparar edição", e); 
+            }
             hideLoader();
         };
 
@@ -13662,7 +13712,7 @@
                 }
 
                 // ================= LÓGICA DA PRESTAÇÃO DE CONTAS =================
-                let statusPrestacao = "<span style='color: var(--warning);'><i class='ph-bold ph-warning'></i> Pendente de Baixa</span>";
+                let statusPrestacao = "<span style='color: var(--warning);'><i class='ph-bold ph-warning'></i> Não prestou contas ainda</span>";
 
                 if (painelDoc.exists() && painelDoc.data().rotas) {
                     const rotaAlvo = painelDoc.data().rotas.find(r => {
@@ -13681,7 +13731,7 @@
 
                         if (foiPrestado) {
                             const conf = rotaAlvo.conferente || "Sistema";
-                            statusPrestacao = `<span style='color: var(--success);'><i class='ph-bold ph-check-circle'></i> Concluído (Baixado por: ${conf})</span>`;
+                            statusPrestacao = `<span style='color: var(--success);'><i class='ph-bold ph-check-circle'></i> Concluído (Conferido por: ${conf})</span>`;
                         }
                     }
                 }
