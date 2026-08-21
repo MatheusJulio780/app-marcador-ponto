@@ -9080,12 +9080,13 @@
             dObj.setUTCDate(dObj.getUTCDate() + 2);
             const dataAmanhaLocal = dObj.toISOString().split('T')[0];
 
-            const [snapPainel, snapNotas, snapOntemNotas, snapOntemPainel, snapNotasAmanha] = await Promise.all([
+            const [snapPainel, snapNotas, snapOntemNotas, snapOntemPainel, snapNotasAmanha, snapComplementos] = await Promise.all([
                 getDoc(doc(db, "painel_diario", dataTela)),
                 getDoc(doc(db, "notas_fiscais_diario", dataTela)),
                 getDoc(doc(db, "notas_fiscais_diario", dataOntem)),
                 getDoc(doc(db, "painel_diario", dataOntem)),
-                getDoc(doc(db, "notas_fiscais_diario", dataAmanhaLocal))
+                getDoc(doc(db, "notas_fiscais_diario", dataAmanhaLocal)),
+                getDoc(doc(db, "complementos_diario", dataTela)) // 🟢 Adicionado para buscar os complementos do dia
             ]);
             
             const rotasFrescas = snapPainel.exists() ? snapPainel.data().rotas || [] : window.pcRotasCache || [];
@@ -9291,6 +9292,43 @@
                 }
             });
 
+            // 🟢 LÓGICA DE SOMA DOS COMPLEMENTOS (BANCO + DIGITADO MANUAL)
+            let valPedagioBanco = 0;
+            let valDescargaBanco = 0;
+            let valAjudanteBanco = 0;
+
+            if (snapComplementos.exists() && snapComplementos.data().itens) {
+                const itensDoDia = snapComplementos.data().itens;
+                const placaAlvoLimpa = placaExibicaoPDF.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                itensDoDia.forEach(item => {
+                    const itemPlaca = String(item.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (itemPlaca === placaAlvoLimpa) {
+                        const tipoComp = String(item.tipo || "").toUpperCase();
+                        const valorNum = parseFloat(item.valor) || 0;
+
+                        if (tipoComp.includes('PEDÁGIO') || tipoComp.includes('PEDAGIO')) {
+                            valPedagioBanco += valorNum;
+                        } else if (tipoComp.includes('DESCARGA')) {
+                            valDescargaBanco += valorNum;
+                        } else if (tipoComp.includes('AJUDANTE') || tipoComp.includes('SEGUNDO AJUDANTE')) {
+                            valAjudanteBanco += valorNum;
+                        }
+                    }
+                });
+            }
+
+            // Pega os inputs manuais da tela (caso existam IDs específicos para eles, ex: input-pedagio, input-descarga, input-ajudante)
+            // Se o seu input manual tiver outro ID, basta ajustar abaixo:
+            const inputPedagioTela = parseFloat(document.getElementById('input-pedagio')?.value) || 0;
+            const inputDescargaTela = parseFloat(document.getElementById('input-descarga')?.value) || 0;
+            const inputAjudanteTela = parseFloat(document.getElementById('input-ajudante')?.value) || 0;
+
+            // Soma o banco com o manual da tela
+            const totalPedagio = valPedagioBanco + inputPedagioTela;
+            const totalDescarga = valDescargaBanco + inputDescargaTela;
+            const totalAjudante = valAjudanteBanco + inputAjudanteTela;
+
             const headerElemento = window.logoIcaphiBase64
                 ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
                 : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
@@ -9395,9 +9433,9 @@
                                     { text: 'AJUDANTE', bold: true, fontSize: 8, color: '#64748b', fillColor: '#f8fafc' }
                                 ],
                                 [
-                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] },
-                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] },
-                                    { text: 'R$ \n\n', margin: [0, 2, 0, 2] }
+                                    { text: `R$ ${totalPedagio.toFixed(2)}\n\n`, margin: [0, 2, 0, 2], bold: true },
+                                    { text: `R$ ${totalDescarga.toFixed(2)}\n\n`, margin: [0, 2, 0, 2], bold: true },
+                                    { text: `R$ ${totalAjudante.toFixed(2)}\n\n`, margin: [0, 2, 0, 2], bold: true }
                                 ]
                             ]
                         },
