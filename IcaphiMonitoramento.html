@@ -2752,6 +2752,9 @@
             }
         }
 
+        :root { --bg-card: #ffffff; }
+        body.dark-mode { --bg-card: #1e1e2d; /* Ajuste para o tom escuro do seu painel */ }
+
     </style>
 </head>
 
@@ -2794,13 +2797,18 @@
                     <i class="ph ph-currency-circle-dollar menu-icon"></i><span class="menu-text">Prest. Contas</span>
                 </a>
 
+                <!-- 🟢 ADICIONADO AQUI: Aba de Complementos -->
+                <a class="menu-item" data-target="view-complementos">
+                    <i class="ph ph-receipt menu-icon"></i><span class="menu-text">Complementos</span>
+                </a>
+
                 <a class="menu-item" data-target="view-dashboard">
                     <i class="ph ph-chart-line-up menu-icon"></i><span class="menu-text">Dashboard</span>
                 </a>
 
                 <a class="menu-item" id="btn-menu-transbordo">
                     <i class="ph ph-swap menu-icon"></i><span class="menu-text">Transbordo</span>
-                </a> <!-- Fechamento correto da tag de transbordo aqui! -->
+                </a>
 
                 <a class="menu-item" data-target="view-exportar">
                     <i class="ph ph-export menu-icon"></i><span class="menu-text">Exportar</span>
@@ -3597,6 +3605,181 @@
 
             </div>
         </section>
+
+        <section id="view-complementos" class="view-section">
+            <!-- TELA DE BLOQUEIO POR SENHA -->
+            <div id="comp-auth-screen" style="position: absolute; top:0; left:0; width: 100%; height: 100%; background: var(--bg-body); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="background: var(--bg-card, #ffffff); padding: 40px; border-radius: 12px; box-shadow: var(--shadow-md); text-align: center; width: 90%; max-width: 400px; border: 1px solid var(--border-color);">
+                    <i class="ph-fill ph-lock-key" style="font-size: 48px; color: var(--accent); margin-bottom: 15px;"></i>
+                    <h2 style="margin-bottom: 10px; color: var(--text-main);">Acesso Restrito</h2>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">Insira a senha de segurança para acessar o controle financeiro de complementos.</p>
+                    <input type="password" id="comp-senha-input" class="form-control" placeholder="Digite a senha" style="text-align: center; font-size: 20px; letter-spacing: 5px; margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="window.desbloquearComplementos()" style="width: 100%; padding: 12px; font-weight: 800;">Desbloquear</button>
+                </div>
+            </div>
+
+            <!-- CONTEÚDO DA ABA (Oculto até colocar a senha) -->
+            <div id="comp-main-content" style="display: none; height: 100%; overflow-y: auto;">
+                <header class="header">
+                    <h2>
+                        <i class="ph ph-receipt" style="color:var(--accent);"></i> Gestão de Complementos 
+                        <span style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 10px;">Controle de Descargas, Ajudantes e Moto Táxi</span>
+                    </h2>
+
+                    <div style="display: flex; align-items: center; gap: 15px; margin-left: auto;">
+                        <div class="header-controls" style="display: flex; align-items: center; gap: 10px;">
+                            <!-- INDICADOR DE SALDO -->
+                            <div style="background: var(--bg-panel); padding: 6px 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: flex-end;">
+                                <span style="font-size: 10px; font-weight: 700; color: var(--text-muted);">SALDO DO MÊS</span>
+                                <span id="comp-saldo-display" style="font-size: 14px; font-weight: 800; color: var(--text-main);">R$ 0.00</span>
+                            </div>
+
+                            <input type="month" id="comp-month-select" class="form-control" style="padding: 6px 10px; font-size: 12px;">
+                            <button class="btn btn-primary" id="btn-carregar-complementos" style="display: flex; align-items: center; gap: 6px;">
+                                <i class="ph ph-funnel"></i> Filtrar Mês
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.abrirModalLixeira()" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                                <i class="ph ph-trash"></i> Lixeira
+                            </button>
+                            <button class="btn btn-warning" onclick="document.getElementById('modal-deposito').style.display='flex'" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                                <i class="ph ph-bank"></i> + Depósito
+                            </button>
+                            <button class="btn btn-success" onclick="window.abrirModalNovoComplemento()" style="display: flex; align-items: center; gap: 6px;">
+                                <i class="ph ph-plus"></i> Novo Lançamento
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="content-container" style="padding: 20px;">
+                    <div id="complementos-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <!-- KPIs gerados via JS -->
+                    </div>
+
+                    <div id="complementos-accordion-container" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="background: var(--bg-card, #ffffff); padding: 40px; text-align: center; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-muted);">
+                            <i class="ph ph-calendar-blank" style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                            Selecione o mês acima para carregar os complementos e depósitos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL PARA ADICIONAR DEPÓSITO -->
+        <div id="modal-deposito" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background: var(--bg-card, #fff); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 16px; color: var(--warning); font-weight: 700;">
+                        <i class="ph ph-bank" style="color: var(--warning);"></i> Lançar Depósito
+                    </h3>
+                    <button onclick="document.getElementById('modal-deposito').style.display='none'" style="background:none; border:none; font-size: 20px; cursor:pointer; color:var(--text-muted);">&times;</button>
+                </div>
+                <form onsubmit="window.salvarDeposito(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">DATA DO DEPÓSITO</label>
+                        <input type="date" id="dep-input-data" class="form-control" required style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">VALOR (R$)</label>
+                        <input type="number" step="0.01" id="dep-input-valor" class="form-control" placeholder="0.00" required style="width:100%;">
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-deposito').style.display='none'">Cancelar</button>
+                        <button type="submit" class="btn btn-warning" style="font-weight: 800;">Adicionar Saldo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL DA LIXEIRA (COMPLEMENTOS E DEPÓSITOS) -->
+        <div id="modal-lixeira-complementos" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background: var(--bg-card); padding: 25px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 80vh; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 16px; color: var(--text-main); font-weight: 700;">
+                        <i class="ph ph-trash" style="color: var(--danger);"></i> Lixeira (Últimos 30 dias)
+                    </h3>
+                    <button onclick="document.getElementById('modal-lixeira-complementos').style.display='none'" style="background:none; border:none; font-size: 20px; cursor:pointer; color:var(--text-muted);">&times;</button>
+                </div>
+                <div id="lista-lixeira-complementos" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;">
+                    <!-- Itens da lixeira injetados via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PARA NOVO COMPLEMENTO (INTELIGENTE) -->
+        <div id="modal-novo-complemento" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background: var(--bg-card, #fff); padding: 25px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 16px; color: var(--text-main); font-weight: 700;">
+                        <i class="ph ph-plus-circle" style="color: var(--accent);"></i> Novo Complemento
+                    </h3>
+                    <button onclick="document.getElementById('modal-novo-complemento').style.display='none'" style="background:none; border:none; font-size: 20px; cursor:pointer; color:var(--text-muted);">&times;</button>
+                </div>
+                
+                <form id="form-novo-complemento" onsubmit="window.salvarNovoComplemento(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                    
+                    <!-- LINHA 1: Data e Seleção Direta de Placa -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">DATA DA OCORRÊNCIA</label>
+                            <input type="date" id="comp-input-data" class="form-control" required style="width:100%;" onchange="window.buscarPlacasDoDia()">
+                        </div>
+                        <div style="flex: 2;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">PLACA / VIAGEM</label>
+                            <select id="comp-input-placa" class="form-control" required style="width:100%;" onchange="window.preencherDadosDaViagemSelecionada()" disabled>
+                                <option value="" disabled selected>Selecione a data primeiro...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- PREVIEW DOS DADOS DA VIAGEM SELECIONADA -->
+                    <div id="preview-dados-viagem" style="display: none; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: var(--text-muted); background: var(--bg-panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+                        <div><strong>Motorista:</strong> <span id="prev-mot">-</span></div>
+                        <div><strong>Transportadora:</strong> <span id="prev-trans">-</span></div>
+                        <div><strong>Perfil:</strong> <span id="prev-perfil">-</span></div>
+                        <div><strong>Tipo:</strong> <span id="prev-tipo">-</span></div>
+                        <div><strong>Região:</strong> <span id="prev-regiao">-</span></div>
+                        <div><strong>Status Painel:</strong> <span id="prev-status">-</span></div>
+                    </div>
+
+                    <!-- LINHA 2: Usuário, Tipo e Valor -->
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">USUÁRIO (SESSÃO)</label>
+                            <input type="text" id="comp-input-usuario" class="form-control" readonly style="width:100%; background: var(--bg-panel); color: var(--text-muted); cursor: not-allowed;" />
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">TIPO</label>
+                            <select id="comp-input-tipo" class="form-control" required style="width:100%;">
+                                <option value="" disabled selected>Selecione...</option>
+                                <option value="BALSA">Balsa</option>
+                                <option value="DESCARGA">Descarga</option>
+                                <option value="MOTO TAXI">Moto Táxi</option>
+                                <option value="PEDÁGIO">Pedágio</option>
+                                <option value="PERNOITE">Pernoite</option>
+                                <option value="SEGUNDO AJUDANTE">Segundo Ajudante</option>
+                                <option value="OUTROS">Outros</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">VALOR (R$)</label>
+                            <input type="number" step="0.01" id="comp-input-valor" class="form-control" placeholder="0.00" required style="width:100%;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">OBSERVAÇÃO / NOTAS</label>
+                        <textarea id="comp-input-obs" class="form-control" placeholder="Detalhes, NFs, Clientes..." rows="2" style="width:100%;"></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-novo-complemento').style.display='none'">Cancelar</button>
+                        <button type="submit" id="btn-salvar-comp" class="btn btn-primary" disabled>Salvar Lançamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- O MODAL DEVE FICAR FORA DA SECTION, NO FINAL DO BODY -->
         <div id="modal-exportar-pernoite" class="modal-overlay">
@@ -6904,8 +7087,19 @@
                 else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
                 else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
                 else if (targetId === 'view-dashboard' && document.getElementById('dashboard-data').value) { document.getElementById('btn-carregar-dashboard').click(); }
+                
+                // 🟢 ADICIONADO AQUI: Aciona o carregamento dos complementos se o mês estiver selecionado
+                else if (targetId === 'view-complementos') {
+                    const compMes = document.getElementById('comp-month-select');
+                    if (compMes && !compMes.value) {
+                        // Define o mês atual por padrão se estiver vazio (ex: "2026-08")
+                        compMes.value = new Date().toISOString().slice(0, 7);
+                    }
+                    if (compMes && compMes.value) {
+                        document.getElementById('btn-carregar-complementos').click();
+                    }
+                }
 
-                // ADICIONE ESTA LINHA AQUI: Dispara a busca das pendências ao entrar na tela de prestação
                 else if (targetId === 'view-prestacao') {
                     if (typeof window.carregarPendenciasContas === 'function') {
                         window.carregarPendenciasContas();
@@ -12664,6 +12858,708 @@
             `;
 
             document.getElementById('modal-painel-mobile').style.display = 'flex';
+        };
+
+        // ================= GESTÃO DE COMPLEMENTOS (V2) =================
+        let viagensEncontradasParaComplemento = []; // Cache das viagens ao buscar a placa
+
+        window.desbloquearComplementos = () => {
+            const senha = document.getElementById('comp-senha-input').value;
+            if (senha === "2160") {
+                document.getElementById('comp-auth-screen').style.display = 'none';
+                document.getElementById('comp-main-content').style.display = 'block';
+                document.getElementById('comp-senha-input').value = ""; // Limpa para segurança
+                
+                // Define o mês atual e carrega automaticamente
+                const compMes = document.getElementById('comp-month-select');
+                if (!compMes.value) compMes.value = new Date().toISOString().slice(0, 7);
+                document.getElementById('btn-carregar-complementos').click();
+            } else {
+                alert("Senha incorreta. Acesso negado.");
+            }
+        };
+
+        // Adiciona suporte à tecla Enter no campo de senha
+        document.getElementById('comp-senha-input')?.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') window.desbloquearComplementos();
+        });
+
+        document.getElementById('btn-carregar-complementos').addEventListener('click', async () => {
+            const monthSel = document.getElementById('comp-month-select').value;
+            if (!monthSel) return;
+            showLoader();
+
+            try {
+                const dataInicio = `${monthSel}-01`;
+                const dataFim = `${monthSel}-31`;
+                
+                // Busca Complementos e Depósitos no Firebase
+                const q = query(collection(db, "complementos_diario"), where(documentId(), ">=", dataInicio), where(documentId(), "<=", dataFim));
+                const snap = await getDocs(q);
+
+                let diasMap = {};
+                let totaisGerais = { qtd: 0, valor: 0, deposito: 0 };
+                let totaisPorTipo = {};
+
+                snap.forEach(docSnap => {
+                    const dataStr = docSnap.id;
+                    const dados = docSnap.data();
+                    
+                    if (!diasMap[dataStr]) diasMap[dataStr] = { complementos: [], depositos: [] };
+                    
+                    // Processa Complementos
+                    if (dados.itens && dados.itens.length > 0) {
+                        dados.itens.forEach(item => {
+                            diasMap[dataStr].complementos.push(item);
+                            totaisGerais.qtd++;
+                            totaisGerais.valor += (parseFloat(item.valor) || 0);
+
+                            const tipo = (item.tipo || "OUTROS").toUpperCase();
+                            if (!totaisPorTipo[tipo]) totaisPorTipo[tipo] = { qtd: 0, valor: 0 };
+                            totaisPorTipo[tipo].qtd++;
+                            totaisPorTipo[tipo].valor += (parseFloat(item.valor) || 0);
+                        });
+                    }
+
+                    // Processa Depósitos
+                    if (dados.depositos && dados.depositos.length > 0) {
+                        dados.depositos.forEach(dep => {
+                            diasMap[dataStr].depositos.push(dep);
+                            totaisGerais.deposito += (parseFloat(dep.valor) || 0);
+                        });
+                    }
+                });
+
+                // Atualiza o Saldo no Header (Depósito - Gastos)
+                const saldoMes = totaisGerais.deposito - totaisGerais.valor;
+                const saldoEl = document.getElementById('comp-saldo-display');
+                saldoEl.textContent = `R$ ${saldoMes.toFixed(2)}`;
+                saldoEl.style.color = saldoMes < 0 ? 'var(--danger)' : (saldoMes > 0 ? 'var(--success)' : 'var(--text-main)');
+
+                renderizarKpisComplementos(totaisPorTipo, totaisGerais);
+                renderizarAcordeonComplementos(diasMap);
+
+            } catch (e) {
+                console.error("Erro ao carregar complementos:", e);
+                alert("Erro ao buscar dados.");
+            }
+            hideLoader();
+        });
+
+        function renderizarKpisComplementos(totaisPorTipo, totaisGerais) {
+            const container = document.getElementById('complementos-kpis');
+            let html = `
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; border-left: 4px solid var(--warning); box-shadow: var(--shadow-sm);">
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">TOTAL DE DEPÓSITOS (MÊS)</div>
+                    <div style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 4px;">R$ ${totaisGerais.deposito.toFixed(2)}</div>
+                </div>
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; border-left: 4px solid var(--danger); box-shadow: var(--shadow-sm);">
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">GASTO TOTAL (COMPLEMENTOS)</div>
+                    <div style="font-size: 18px; font-weight: 800; color: var(--danger); margin-top: 4px;">R$ ${totaisGerais.valor.toFixed(2)}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${totaisGerais.qtd} solicitações</div>
+                </div>
+            `;
+
+            for (const [tipo, dados] of Object.entries(totaisPorTipo)) {
+                html += `
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm);">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${tipo}</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px;">R$ ${dados.valor.toFixed(2)}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">${dados.qtd} registros</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // Função auxiliar para as cores dos badges
+        function getCorBadgeComplemento(tipo) {
+            const t = (tipo || '').toUpperCase();
+            if(t.includes('DESCARGA')) return 'background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.2);'; // Roxo
+            if(t.includes('PERNOITE')) return 'background: rgba(139, 69, 19, 0.1); color: #8b4513; border: 1px solid rgba(139, 69, 19, 0.2);'; // Marrom
+            if(t.includes('PEDÁGIO') || t.includes('PEDAGIO')) return 'background: rgba(234, 179, 8, 0.1); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.2);'; // Amarelo
+            if(t.includes('AJUDANTE')) return 'background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2);'; // Verde
+            if(t.includes('BALSA')) return 'background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2);'; // Azul
+            return 'background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);'; // Outros - Vermelho
+        }
+
+        function renderizarAcordeonComplementos(diasMap) {
+            const container = document.getElementById('complementos-accordion-container');
+            const datasOrdenadas = Object.keys(diasMap).sort().reverse();
+
+            if (datasOrdenadas.length === 0) {
+                container.innerHTML = `<div style="background: var(--bg-card); padding: 30px; text-align: center; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-muted);">Nenhum registro no mês selecionado.</div>`;
+                return;
+            }
+
+            let html = "";
+            datasOrdenadas.forEach((dataStr, index) => {
+                const diaDados = diasMap[dataStr];
+                if(diaDados.complementos.length === 0 && diaDados.depositos.length === 0) return;
+
+                const totalGasto = diaDados.complementos.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
+                const totalDep = diaDados.depositos.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
+                const dataFormatada = formatarDataBR(dataStr);
+                const isOpen = index === 0;
+
+                html += `
+                    <div class="accordion-item" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 12px;">
+                        <div onclick="window.toggleAccordionComp('${dataStr}')" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--bg-card); border-bottom: ${isOpen ? '1px solid var(--border-color)' : 'none'};">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="ph ph-calendar" style="color: var(--accent); font-size: 18px;"></i>
+                                <span style="font-weight: 700; color: var(--text-main); font-size: 14px;">${dataFormatada}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                ${totalDep > 0 ? `<span style="background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12px;">+ R$ ${totalDep.toFixed(2)}</span>` : ''}
+                                ${totalGasto > 0 ? `<span style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12px;">- R$ ${totalGasto.toFixed(2)}</span>` : ''}
+                                <i id="icon-comp-${dataStr}" class="ph ${isOpen ? 'ph-caret-up' : 'ph-caret-down'}" style="color: var(--text-muted);"></i>
+                            </div>
+                        </div>
+                        <div id="body-comp-${dataStr}" style="display: ${isOpen ? 'block' : 'none'}; padding: 15px 20px; background: var(--bg-card);">
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                `;
+
+                // Depósitos
+                diaDados.depositos.forEach((dep, depIndex) => {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(34, 197, 94, 0.05); border-radius: 8px; border: 1px dashed var(--success);">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="ph-fill ph-bank" style="color: var(--success);"></i>
+                                    <span style="font-weight: 800; color: var(--text-main);">DEPÓSITO REALIZADO</span>
+                                </div>
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;"><i class="ph ph-user"></i> Lançado por: ${dep.usuario || 'Sistema'}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="font-weight: 800; color: var(--success); font-size: 14px;">+ R$ ${parseFloat(dep.valor || 0).toFixed(2)}</div>
+                                <div style="display: flex; gap: 8px; border-left: 1px solid var(--border-color); padding-left: 10px;">
+                                    <button onclick="window.prepararEdicao('${dataStr}', ${depIndex}, 'deposito')" style="background:none; border:none; cursor:pointer; color: var(--text-muted);" title="Editar"><i class="ph ph-pencil"></i></button>
+                                    <button onclick="window.excluirItemFinanceiro('${dataStr}', ${depIndex}, 'deposito')" style="background:none; border:none; cursor:pointer; color: var(--danger);" title="Excluir"><i class="ph ph-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Complementos
+                diaDados.complementos.forEach((item, compIndex) => {
+                    const corBadge = getCorBadgeComplemento(item.tipo);
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--bg-panel); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-weight: 800; color: var(--text-main); font-size: 14px;">${item.placa}</span>
+                                    <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; ${corBadge}">${item.tipo}</span>
+                                </div>
+                                <div style="display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap;">
+                                    ${item.motorista ? `<span><i class="ph ph-steering-wheel"></i> ${item.motorista}</span>` : ''}
+                                    ${item.regiao ? `<span><i class="ph ph-map-pin"></i> ${item.regiao}</span>` : ''}
+                                </div>
+                                <span style="font-size: 11px; color: var(--text-main); margin-top: 2px;">${item.obs || 'Sem observação'}</span>
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"><i class="ph ph-user"></i> Lançado por: ${item.usuario || 'Sistema'}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="font-weight: 800; color: var(--danger); font-size: 14px;">R$ ${parseFloat(item.valor || 0).toFixed(2)}</div>
+                                <div style="display: flex; gap: 8px; border-left: 1px solid var(--border-color); padding-left: 10px;">
+                                    <button onclick="window.prepararEdicao('${dataStr}', ${compIndex}, 'complemento')" style="background:none; border:none; cursor:pointer; color: var(--text-muted);" title="Editar"><i class="ph ph-pencil"></i></button>
+                                    <button onclick="window.excluirItemFinanceiro('${dataStr}', ${compIndex}, 'complemento')" style="background:none; border:none; cursor:pointer; color: var(--danger);" title="Excluir"><i class="ph ph-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // Corrige a mecânica de abrir/fechar o acordeão
+        window.toggleAccordionComp = (dataStr) => {
+            const body = document.getElementById(`body-comp-${dataStr}`);
+            const icon = document.getElementById(`icon-comp-${dataStr}`);
+            const header = body.previousElementSibling;
+
+            if (body.style.display === 'none' || body.style.display === '') {
+                body.style.display = 'block';
+                icon.className = 'ph ph-caret-up';
+                header.style.borderBottom = '1px solid var(--border-color)';
+            } else {
+                body.style.display = 'none';
+                icon.className = 'ph ph-caret-down';
+                header.style.borderBottom = 'none';
+            }
+        };
+
+        window.buscarViagensDoVeiculo = async () => {
+            const data = document.getElementById('comp-input-data').value;
+            const placa = trimUpper(document.getElementById('comp-input-placa').value).replace(/[^A-Z0-9]/g, '');
+            if (!data || !placa) return alert("Preencha a Data e a Placa antes de buscar.");
+
+            document.getElementById('box-selecao-viagem').style.display = 'none';
+            document.getElementById('btn-salvar-comp').disabled = true;
+            viagensEncontradasParaComplemento = [];
+            showLoader();
+
+            try {
+                // Busca a placa no painel_diario daquele dia
+                const docSnap = await getDoc(doc(db, "painel_diario", data));
+                if (docSnap.exists() && docSnap.data().rotas) {
+                    const rotasDoDia = docSnap.data().rotas;
+                    
+                    // Filtra as rotas onde a placa principal ou placa de troca bate
+                    viagensEncontradasParaComplemento = rotasDoDia.filter(r => {
+                        const pMain = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                        const pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
+                        return pMain === placa || pTroca === placa;
+                    });
+                }
+
+                if (viagensEncontradasParaComplemento.length === 0) {
+                    hideLoader();
+                    return alert("Nenhuma viagem encontrada para essa Placa no dia selecionado. Você pode lançar mesmo assim, mas os dados não serão auto-preenchidos.");
+                }
+
+                // Renderiza o select de viagens
+                const selectViagem = document.getElementById('comp-input-viagem');
+                selectViagem.innerHTML = '<option value="" disabled selected>Selecione a viagem correta...</option>';
+                
+                viagensEncontradasParaComplemento.forEach((v, index) => {
+                    const desc = `Viagem ${index + 1} - Mot: ${v.motorista || 'N/A'} - Região: ${v.regiao || 'N/A'}`;
+                    selectViagem.innerHTML += `<option value="${index}">${desc}</option>`;
+                });
+
+                document.getElementById('box-selecao-viagem').style.display = 'block';
+
+            } catch (error) {
+                console.error("Erro ao buscar viagens:", error);
+                alert("Erro ao consultar o painel diário.");
+            }
+            hideLoader();
+        };
+
+        window.limparSelecaoViagem = () => {
+            document.getElementById('box-selecao-viagem').style.display = 'none';
+            document.getElementById('btn-salvar-comp').disabled = true;
+            viagensEncontradasParaComplemento = [];
+        };
+
+        window.buscarViagensDoDia = async () => {
+            const data = document.getElementById('comp-input-data').value;
+            if (!data) return alert("Selecione a data da ocorrência primeiro.");
+
+            showLoader();
+            window.limparSelecaoViagem();
+
+            try {
+                const docSnap = await getDoc(doc(db, "painel_diario", data));
+                if (docSnap.exists() && docSnap.data().rotas && docSnap.data().rotas.length > 0) {
+                    
+                    // Ordena as viagens alfabeticamente pela placa final (troca > principal)
+                    viagensEncontradasParaComplemento = docSnap.data().rotas.sort((a, b) => {
+                        let placaA = trimUpper(a.troca || a.placa);
+                        let placaB = trimUpper(b.troca || b.placa);
+                        return placaA.localeCompare(placaB);
+                    });
+
+                    const selectViagem = document.getElementById('comp-input-viagem');
+                    selectViagem.innerHTML = '<option value="" disabled selected>Selecione a Placa / Viagem...</option>';
+                    
+                    viagensEncontradasParaComplemento.forEach((v, index) => {
+                        let placaFinal = trimUpper(v.troca || v.placa);
+                        const desc = `[${placaFinal}] - Mot: ${v.motorista || 'N/A'} - Região: ${v.regiao || 'N/A'}`;
+                        selectViagem.innerHTML += `<option value="${index}">${desc}</option>`;
+                    });
+
+                    document.getElementById('box-selecao-viagem').style.display = 'block';
+                } else {
+                    alert("Nenhuma rota encontrada no painel para este dia.");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar viagens do dia:", error);
+                alert("Erro ao consultar o painel diário.");
+            }
+            hideLoader();
+        };
+
+        window.buscarPlacasDoDia = async () => {
+            const data = document.getElementById('comp-input-data').value;
+            const selectPlaca = document.getElementById('comp-input-placa');
+            const preview = document.getElementById('preview-dados-viagem');
+            
+            if (!data) return;
+
+            showLoader();
+            selectPlaca.disabled = true;
+            preview.style.display = 'none';
+            document.getElementById('btn-salvar-comp').disabled = true;
+            viagensEncontradasParaComplemento = [];
+
+            // Trava o nome do usuário logado no input readonly
+            const campoUsuarioComp = document.getElementById('comp-input-usuario');
+            if (campoUsuarioComp) campoUsuarioComp.value = window.usuarioLogadoNome || "Sistema";
+
+            const campoUsuarioDep = document.getElementById('dep-input-usuario');
+            if (campoUsuarioDep) campoUsuarioDep.value = window.usuarioLogadoNome || "Sistema";
+
+            try {
+                // Busca simultânea das rotas do painel E das notas fiscais do dia (onde realmente fica o motorista)
+                const [snapPainel, snapNotas] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", data)),
+                    getDoc(doc(db, "notas_fiscais_diario", data))
+                ]);
+
+                let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : [];
+                let optionsHTML = '<option value="" disabled selected>Selecione a Placa...</option>';
+                optionsHTML += '<option value="SEM_PLACA">Sem Placa</option>';
+
+                if (snapPainel.exists() && snapPainel.data().rotas && snapPainel.data().rotas.length > 0) {
+                    viagensEncontradasParaComplemento = snapPainel.data().rotas.sort((a, b) => {
+                        let placaA = trimUpper(a.troca || a.placa);
+                        let placaB = trimUpper(b.troca || b.placa);
+                        return placaA.localeCompare(placaB);
+                    });
+
+                    viagensEncontradasParaComplemento.forEach((v, index) => {
+                        let placaOriginal = trimUpper(v.placa).replace(/[^A-Z0-9]/g, '');
+                        let placaTroca = v.troca ? trimUpper(v.troca).replace(/[^A-Z0-9]/g, '') : '';
+                        let placaFinal = placaTroca || placaOriginal;
+
+                        // Cruza com as notas do dia para achar o motorista igualzinho ao painel
+                        let notasPlaca = notasDoDia.filter(n => {
+                            let nPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '');
+                            return nPlaca === placaOriginal || nPlaca === placaFinal;
+                        });
+
+                        let motoristaFinal = v.motorista || "";
+                        if (notasPlaca.length > 0) {
+                            const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0];
+                            motoristaFinal = ref.motorista || motoristaFinal;
+                        }
+
+                        // Se ainda estiver vazio, busca em propriedades alternativas
+                        if (!motoristaFinal || motoristaFinal.trim() === "" || motoristaFinal === "-") {
+                            motoristaFinal = v.motoristaNome || v.nomeMotorista || v.condutor || 'S/ Motorista';
+                        }
+
+                        // Anexa o motorista descoberto direto no objeto da viagem para uso posterior
+                        v._motoristaResolvido = motoristaFinal;
+
+                        let regiaoRota = v.regiao || v.cidade || v.destino || 'S/ Região';
+                        let statusPainel = v.status || 'S/ Status'; // 🟢 Pega o St. Painel da rota
+
+                        // 🟢 Ordem ajustada: Placa - Motorista - St. Painel - Região
+                        const desc = `${placaFinal} - ${motoristaFinal} - [${statusPainel}] - ${regiaoRota}`;
+                        optionsHTML += `<option value="${index}">${desc}</option>`;
+                    });
+                }
+                
+                selectPlaca.innerHTML = optionsHTML;
+                selectPlaca.disabled = false;
+            } catch (error) {
+                console.error("Erro ao buscar placas:", error);
+                alert("Erro ao consultar as placas e notas do dia.");
+            }
+            hideLoader();
+        };
+
+        window.preencherDadosDaViagemSelecionada = () => {
+            const index = document.getElementById('comp-input-placa').value;
+            const preview = document.getElementById('preview-dados-viagem');
+            
+            if (index === "" || index === "SEM_PLACA") {
+                preview.style.display = 'none';
+                document.getElementById('btn-salvar-comp').disabled = false;
+                return;
+            }
+
+            if (!viagensEncontradasParaComplemento[index]) return;
+
+            const v = viagensEncontradasParaComplemento[index];
+            let nomeMot = v._motoristaResolvido || v.motorista || 'S/ Motorista';
+            let regiaoRota = v.regiao || v.cidade || v.destino || '-';
+            let transpRota = v.transporte || v.transportadora || '-';
+
+            document.getElementById('prev-mot').textContent = nomeMot;
+            document.getElementById('prev-trans').textContent = transpRota;
+            document.getElementById('prev-perfil').textContent = v.perfil || '-';
+            document.getElementById('prev-tipo').textContent = v.tipo || '-';
+            document.getElementById('prev-regiao').textContent = regiaoRota;
+            document.getElementById('prev-status').textContent = v.status || '-';
+
+            preview.style.display = 'grid';
+            document.getElementById('btn-salvar-comp').disabled = false;
+        };
+
+        // Controle global de edições
+        window.itemEmEdicao = { dataStr: null, index: null, tipo: null };
+
+        // Substitua a função salvarNovoComplemento existente
+        window.salvarNovoComplemento = async (e) => {
+            e.preventDefault();
+            const dataStr = document.getElementById('comp-input-data').value;
+            const usuarioCorreto = window.usuarioLogadoNome || "Sistema"; 
+            const tipo = document.getElementById('comp-input-tipo').value;
+            const valor = parseFloat(document.getElementById('comp-input-valor').value) || 0;
+            const obs = document.getElementById('comp-input-obs').value;
+            const selectValor = document.getElementById('comp-input-placa').value;
+
+            // Bloqueio de validação
+            if (window.itemEmEdicao.index === null && (!dataStr || !tipo || valor <= 0 || selectValor === "")) {
+                return alert("Preencha todos os campos obrigatórios e selecione a placa.");
+            }
+
+            showLoader();
+            try {
+                const docRef = doc(db, "complementos_diario", dataStr);
+                const docSnap = await getDoc(docRef);
+                let itensAtuais = docSnap.exists() && docSnap.data().itens ? docSnap.data().itens : [];
+                
+                if (window.itemEmEdicao.index !== null) {
+                    itensAtuais[window.itemEmEdicao.index] = {
+                        ...itensAtuais[window.itemEmEdicao.index],
+                        tipo, valor, obs, 
+                        usuario: usuarioCorreto // Atualiza nome da edição
+                    };
+                } else {
+                    let placaFinal = "SEM PLACA";
+                    let metadados = { motorista: '', transportadora: '', perfil: '', tipoVeiculo: '', regiao: '', statusPainel: '' };
+
+                    if (selectValor !== "SEM_PLACA" && viagensEncontradasParaComplemento[selectValor]) {
+                        const v = viagensEncontradasParaComplemento[selectValor];
+                        placaFinal = trimUpper(v.troca || v.placa);
+                        metadados = {
+                            motorista: v.motorista || '', transportadora: v.transportadora || '',
+                            perfil: v.perfil || '', tipoVeiculo: v.tipo || '', regiao: v.regiao || '', statusPainel: v.status || ''
+                        };
+                    }
+
+                    itensAtuais.push({ 
+                        placa: placaFinal, tipo, valor, obs, usuario: usuarioCorreto,
+                        criadoEm: new Date().toISOString(),
+                        ...metadados
+                    });
+                }
+
+                await setDoc(docRef, { itens: itensAtuais }, { merge: true });
+                document.getElementById('modal-novo-complemento').style.display = 'none';
+                document.getElementById('btn-carregar-complementos').click();
+                window.itemEmEdicao = { dataStr: null, index: null, tipo: null }; 
+            } catch (err) {
+                console.error("Erro ao salvar:", err);
+                alert("Erro ao gravar dados no Firebase.");
+            }
+            hideLoader();
+        };
+
+        // Substitua a função salvarDeposito existente
+        window.salvarDeposito = async (e) => {
+            e.preventDefault();
+            const dataStr = document.getElementById('dep-input-data').value;
+            const valor = parseFloat(document.getElementById('dep-input-valor').value) || 0;
+            const usuarioCorreto = window.usuarioLogadoNome || "Sistema"; // 🟢 MÁGICA DO NOME
+
+            if (!dataStr || valor <= 0) return alert("Preencha a data e um valor válido.");
+
+            showLoader();
+            try {
+                const docRef = doc(db, "complementos_diario", dataStr);
+                const docSnap = await getDoc(docRef);
+                let depositosAtuais = docSnap.exists() && docSnap.data().depositos ? docSnap.data().depositos : [];
+
+                if (window.itemEmEdicao.index !== null) {
+                    depositosAtuais[window.itemEmEdicao.index].valor = valor;
+                    depositosAtuais[window.itemEmEdicao.index].usuario = usuarioCorreto;
+                } else {
+                    depositosAtuais.push({ valor, usuario: usuarioCorreto, criadoEm: new Date().toISOString() });
+                }
+
+                await setDoc(docRef, { depositos: depositosAtuais }, { merge: true });
+                document.getElementById('modal-deposito').style.display = 'none';
+                document.getElementById('btn-carregar-complementos').click();
+                window.itemEmEdicao = { dataStr: null, index: null, tipo: null }; // Limpa a edição
+            } catch (err) {
+                console.error("Erro ao salvar depósito:", err);
+                alert("Erro ao gravar depósito no Firebase.");
+            }
+            hideLoader();
+        };
+
+        // ================= FUNÇÕES DE CRUD (EDITAR / EXCLUIR / LIXEIRA) =================
+        window.abrirModalNovoComplemento = () => {
+            window.itemEmEdicao = { dataStr: null, index: null, tipo: null };
+            document.getElementById('comp-input-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('comp-input-data').disabled = false;
+            
+            // Reseta UI
+            const selectPlaca = document.getElementById('comp-input-placa');
+            selectPlaca.innerHTML = '<option value="" disabled selected>Carregando placas...</option>';
+            selectPlaca.disabled = true;
+            document.getElementById('preview-dados-viagem').style.display = 'none';
+            document.getElementById('form-novo-complemento').reset();
+            document.getElementById('comp-input-usuario').value = window.usuarioLogadoNome || "";
+            document.getElementById('btn-salvar-comp').disabled = true;
+            document.getElementById('modal-novo-complemento').style.display = 'flex';
+            
+            // Dispara busca automática pro dia atual
+            window.buscarPlacasDoDia(); 
+        };
+
+        window.abrirModalDeposito = () => {
+            window.itemEmEdicao = { dataStr: null, index: null, tipo: null };
+            document.getElementById('dep-input-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('dep-input-data').disabled = false;
+            document.getElementById('dep-input-valor').value = '';
+            document.getElementById('modal-deposito').style.display = 'flex';
+        };
+
+        window.prepararEdicao = async (dataStr, index, tipo) => {
+            showLoader();
+            try {
+                const docSnap = await getDoc(doc(db, "complementos_diario", dataStr));
+                if (!docSnap.exists()) return;
+                
+                window.itemEmEdicao = { dataStr, index, tipo };
+
+                if (tipo === 'complemento') {
+                    const item = docSnap.data().itens[index];
+                    document.getElementById('comp-input-data').value = dataStr;
+                    document.getElementById('comp-input-data').disabled = true; // Trava data na edição
+                    document.getElementById('box-selecao-viagem').style.display = 'none'; // Esconde busca
+                    
+                    document.getElementById('comp-input-tipo').value = item.tipo;
+                    document.getElementById('comp-input-valor').value = item.valor;
+                    document.getElementById('comp-input-obs').value = item.obs || '';
+                    document.getElementById('btn-salvar-comp').disabled = false;
+                    document.getElementById('modal-novo-complemento').style.display = 'flex';
+                } else {
+                    const item = docSnap.data().depositos[index];
+                    document.getElementById('dep-input-data').value = dataStr;
+                    document.getElementById('dep-input-data').disabled = true;
+                    document.getElementById('dep-input-valor').value = item.valor;
+                    document.getElementById('modal-deposito').style.display = 'flex';
+                }
+            } catch(e) { console.error("Erro preparar edição", e); }
+            hideLoader();
+        };
+
+        window.excluirItemFinanceiro = async (dataStr, index, tipo) => {
+            if (!confirm("Tem certeza que deseja enviar este item para a lixeira?")) return;
+            showLoader();
+            try {
+                const docRef = doc(db, "complementos_diario", dataStr);
+                const docSnap = await getDoc(docRef);
+                const dados = docSnap.data();
+                
+                let itemRemovido = null;
+                if (tipo === 'complemento') {
+                    itemRemovido = dados.itens.splice(index, 1)[0];
+                    await setDoc(docRef, { itens: dados.itens }, { merge: true });
+                } else {
+                    itemRemovido = dados.depositos.splice(index, 1)[0];
+                    await setDoc(docRef, { depositos: dados.depositos }, { merge: true });
+                }
+
+                // Salva na Lixeira
+                const idLixeira = Date.now().toString() + Math.random().toString(36).substring(2, 6);
+                await setDoc(doc(db, "lixeira_complementos", idLixeira), {
+                    ...itemRemovido,
+                    lixeiraTipo: tipo,
+                    dataOriginal: dataStr,
+                    excluidoPor: window.usuarioLogadoNome || "Sistema", // 🟢 MÁGICA: Quem excluiu!
+                    excluidoEm: new Date().toISOString()
+                });
+
+                document.getElementById('btn-carregar-complementos').click();
+            } catch(e) { console.error("Erro excluir", e); alert("Erro ao excluir."); }
+            hideLoader();
+        };
+
+        window.abrirModalLixeira = async () => {
+            document.getElementById('modal-lixeira-complementos').style.display = 'flex';
+            const container = document.getElementById('lista-lixeira-complementos');
+            container.innerHTML = `<div style="text-align:center; padding:20px;">Buscando lixeira...</div>`;
+            
+            try {
+                const snap = await getDocs(collection(db, "lixeira_complementos"));
+                const itens = [];
+                // Calcula limite de 30 dias locais
+                const trintaDiasAtras = new Date();
+                trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+                snap.forEach(d => {
+                    const i = d.data();
+                    i.idLixeira = d.id;
+                    // Se for mais velho que 30 dias, ignora (auto-delete lógico)
+                    if(new Date(i.excluidoEm) >= trintaDiasAtras) itens.push(i);
+                });
+
+                // Ordena do mais recente excluido
+                itens.sort((a,b) => new Date(b.excluidoEm) - new Date(a.excluidoEm));
+
+                if (itens.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">A lixeira está vazia.</div>`;
+                    return;
+                }
+
+                let html = '';
+                itens.forEach(item => {
+                    const icone = item.lixeiraTipo === 'deposito' ? '<i class="ph-fill ph-bank" style="color:var(--success);"></i>' : '<i class="ph-fill ph-receipt" style="color:var(--danger);"></i>';
+                    const dataOrig = formatarDataBR(item.dataOriginal);
+                    html += `
+                        <div style="background:var(--bg-panel); padding:10px 15px; border-radius:8px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    ${icone} <strong style="color:var(--text-main); font-size:13px;">${item.lixeiraTipo.toUpperCase()} (Data Original: ${dataOrig})</strong>
+                                </div>
+                                <span style="font-size:11px; color:var(--text-muted);">Valor: R$ ${parseFloat(item.valor).toFixed(2)} | Detalhe: ${item.placa || 'Saldo Adicionado'}</span>
+                                <span style="font-size:10px; color:var(--danger); font-weight:700;">Excluído por: ${item.excluidoPor} em ${formatarDataBR(item.excluidoEm.split('T')[0])}</span>
+                            </div>
+                            <button onclick="window.restaurarItemLixeira('${item.idLixeira}', '${item.dataOriginal}', '${item.lixeiraTipo}')" class="btn btn-primary" style="padding:6px 12px; font-size:12px;">Restaurar</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) { console.error(e); container.innerHTML = 'Erro ao carregar a lixeira.'; }
+        };
+
+        window.restaurarItemLixeira = async (idLixeira, dataStr, tipo) => {
+            showLoader();
+            try {
+                // Pega da Lixeira
+                const lixeiraRef = doc(db, "lixeira_complementos", idLixeira);
+                const lixeiraSnap = await getDoc(lixeiraRef);
+                const itemRestaurar = lixeiraSnap.data();
+                
+                // Limpa rastros da lixeira para devolver ao painel
+                delete itemRestaurar.lixeiraTipo;
+                delete itemRestaurar.dataOriginal;
+                delete itemRestaurar.excluidoPor;
+                delete itemRestaurar.excluidoEm;
+
+                // Salva de volta no dia original
+                const diaRef = doc(db, "complementos_diario", dataStr);
+                const diaSnap = await getDoc(diaRef);
+                let updateData = {};
+                
+                if (tipo === 'complemento') {
+                    let itensAt = diaSnap.exists() && diaSnap.data().itens ? diaSnap.data().itens : [];
+                    itensAt.push(itemRestaurar);
+                    updateData = { itens: itensAt };
+                } else {
+                    let depsAt = diaSnap.exists() && diaSnap.data().depositos ? diaSnap.data().depositos : [];
+                    depsAt.push(itemRestaurar);
+                    updateData = { depositos: depsAt };
+                }
+
+                await setDoc(diaRef, updateData, { merge: true });
+                
+                // Exclui fisicamente da lixeira
+                await deleteDoc(lixeiraRef);
+
+                window.abrirModalLixeira(); // Recarrega lixeira
+                document.getElementById('btn-carregar-complementos').click(); // Atualiza fundo
+            } catch(e) { console.error("Erro restaurar", e); alert("Erro ao restaurar."); }
+            hideLoader();
         };
 
     </script>
