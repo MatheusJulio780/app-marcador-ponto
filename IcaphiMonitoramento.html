@@ -7379,11 +7379,23 @@
                     }
 
                     if (snapOntemNotas.exists()) {
+                        // Mapeia quais placas/trocas estão ativas nas rotas de HOJE
+                        const placasAtivasHoje = new Set();
+                        rotasParaProcessar.forEach(r => {
+                            if (r.placa) placasAtivasHoje.add(trimUpper(r.placa).replace(/[^A-Z0-9]/g, ''));
+                            if (r.troca) placasAtivasHoje.add(trimUpper(r.troca).replace(/[^A-Z0-9]/g, ''));
+                        });
+
                         snapOntemNotas.data().notas.forEach(no => {
                             if (trimUpper(no.status).includes('PERNOITE') && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
                                 let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
                                 let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                                notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                                let placaFinalLimpa = trimUpper(placaFinal).replace(/[^A-Z0-9]/g, '');
+
+                                // TRAVA DE SEGURANÇA: Só puxa a nota de pernoite se o veículo estiver escalado para rodar hoje
+                                if (placasAtivasHoje.has(placaFinalLimpa)) {
+                                    notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                                }
                             }
                         });
                     }
