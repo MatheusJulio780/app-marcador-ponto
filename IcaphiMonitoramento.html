@@ -11779,11 +11779,15 @@
                     const notas = snapNotas.data().notas || [];
 
                     rotas.forEach(rota => {
-                        const statusRota = trimUpper(rota.status || "");
+                        const tipoStatus = trimUpper(rota.status || ""); // Ex: "Saida Dia", "Seg. Viagem"
                         
-                        if (statusRota.includes('PERNOITE') && !statusRota.includes('SAIDA DIA') && !statusRota.includes('SAÍDA DIA')) {
-                            return;
-                        }
+                        // 1. Valida se é um tipo válido de operação que deve ir para prestação
+                        const tipoValido = tipoStatus.includes('SAIDA') || 
+                                           tipoStatus.includes('SAÍDA') || 
+                                           tipoStatus.includes('APOIO') || 
+                                           tipoStatus.includes('SEG');
+
+                        if (!tipoValido) return;
 
                         const placaOriginal = trimUpper(rota.placa || "");
                         const placaTroca = trimUpper(rota.troca || "");
@@ -11794,6 +11798,7 @@
                         const transporteStr = String(rota.transporte || "").trim();
                         const transpNumArray = transporteStr.match(/\d+/g) || [];
 
+                        // Filtra as notas fiscais pertencentes a esta rota/transporte específico
                         const notasPlaca = notas.filter(n => {
                             if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
                             
@@ -11815,46 +11820,48 @@
                         let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
                         let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
 
+                        // 2. Determina se o veículo realmente finalizou pelas notas (Veículo Vazio / Finalizado / Pernoite)
                         let finalizou = false;
                         if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
                         else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
 
-                        if (finalizou || statusRota.includes('SAIDA') || statusRota.includes('ROTA') || statusRota.includes('FINALIZAR') || statusRota.includes('TERMINAR')) {
-                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+                        // Se ainda não finalizou todas as notas da viagem, não exibe na prestação de contas
+                        if (!finalizou) return;
 
-                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
 
-                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                            let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
+                        let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                        let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
 
-                            const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
+                        let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                        let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
 
-                            const infoCarro = {
-                                data: dataIso,
-                                placa: placaExibicao,
-                                motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
-                                qtd: qtd_nf,
-                                regiao: rota.regiao || "Sem rota def.",
-                                transporte: transporteStr || "-",
-                                percentApp: percentApp,
-                                cemPorcentoAss: cemPorcentoAss,
-                                conferente: rota.conferente || "Sistema"
-                            };
+                        const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
 
-                            const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
-                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
+                        const infoCarro = {
+                            data: dataIso,
+                            placa: placaExibicao,
+                            motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                            qtd: qtd_nf,
+                            regiao: rota.regiao || "Sem rota def.",
+                            transporte: transporteStr || "-",
+                            percentApp: percentApp,
+                            cemPorcentoAss: cemPorcentoAss,
+                            conferente: rota.conferente || "Sistema"
+                        };
 
-                            if (foiPrestado) {
-                                if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
-                                if (!concluidosPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
-                                    concluidosPorData[dataIso].push(infoCarro);
-                                }
-                            } else {
-                                if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
-                                if (!pendenciasPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
-                                    pendenciasPorData[dataIso].push(infoCarro);
-                                }
+                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+                        const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
+
+                        if (foiPrestado) {
+                            if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
+                            if (!concluidosPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
+                                concluidosPorData[dataIso].push(infoCarro);
+                            }
+                        } else {
+                            if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
+                            if (!pendenciasPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
+                                pendenciasPorData[dataIso].push(infoCarro);
                             }
                         }
                     });
