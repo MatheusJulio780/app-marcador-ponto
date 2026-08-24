@@ -11635,9 +11635,9 @@
             });
         }
 
-        // Variável global para controlar qual aba está aberta ('pendentes' ou 'concluidos')
+        // ================= CONTROLE DE ABAS E RENDERIZAÇÃO DA PRESTAÇÃO DE CONTAS =================
         window.abaPrestacaoAtual = 'pendentes';
-        window._dadosPrestacaoCache = null; // Guarda os dados para alternar rápido sem recarregar o banco
+        window._dadosPrestacaoCache = null;
 
         window.mudarAbaPrestacao = (tipo) => {
             window.abaPrestacaoAtual = tipo;
@@ -11645,15 +11645,11 @@
             const btnC = document.getElementById('tab-btn-concluidos');
 
             if (tipo === 'pendentes') {
-                btnP.style.background = "var(--accent)";
-                btnP.style.color = "white";
-                btnC.style.background = "var(--bg-panel)";
-                btnC.style.color = "var(--text-muted)";
+                if (btnP) { btnP.style.background = "var(--accent)"; btnP.style.color = "white"; }
+                if (btnC) { btnC.style.background = "var(--bg-panel)"; btnC.style.color = "var(--text-muted)"; }
             } else {
-                btnC.style.background = "var(--success)";
-                btnC.style.color = "white";
-                btnP.style.background = "var(--bg-panel)";
-                btnP.style.color = "var(--text-muted)";
+                if (btnC) { btnC.style.background = "var(--success)"; btnC.style.color = "white"; }
+                if (btnP) { btnP.style.background = "var(--bg-panel)"; btnP.style.color = "var(--text-muted)"; }
             }
 
             if (window._dadosPrestacaoCache) {
@@ -11663,113 +11659,10 @@
             }
         };
 
-        window.carregarPendenciasContas = async () => {
+        window.renderizarAccordionPrestacao = (dados) => {
             const container = document.getElementById('lista-pendencias-accordion');
             if (!container) return;
 
-            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando dados de prestação...</div>`;
-
-            const hoje = new Date();
-            const pendenciasPorData = {};
-            const concluidosPorData = {};
-
-            try {
-                for (let i = 0; i < 7; i++) {
-                    const dataIteracao = new Date(hoje);
-                    dataIteracao.setDate(hoje.getDate() - i);
-                    const dataIso = dataIteracao.toISOString().split('T')[0];
-
-                    const [snapPainel, snapNotas] = await Promise.all([
-                        getDoc(doc(db, "painel_diario", dataIso)),
-                        getDoc(doc(db, "notas_fiscais_diario", dataIso))
-                    ]);
-
-                    if (!snapPainel.exists() || !snapNotas.exists()) continue;
-
-                    const rotas = snapPainel.data().rotas || [];
-                    const notas = snapNotas.data().notas || [];
-
-                    rotas.forEach(rota => {
-                        // 🟢 BLINDAGEM DE PERNOITE: Se a rota no painel do dia for explicitamente um Pernoite puro herdado, ignora para não duplicar na tela de hoje
-                        const statusRota = trimUpper(rota.status || "");
-                        if (statusRota.includes('PERNOITE') && i > 0) return;
-
-                        const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
-                        
-                        const transporteStr = String(rota.transporte || "").trim();
-                        const transpNumArray = transporteStr.match(/\d+/g) || [];
-
-                        const notasPlaca = notas.filter(n => {
-                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
-                            const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
-                            if (!matchPlaca) return false;
-
-                            const viagemNota = String(n.viagem || "").trim();
-                            if (transpNumArray.length > 0 && viagemNota !== "") {
-                                return transpNumArray.some(t => viagemNota.includes(t));
-                            }
-                            return true;
-                        });
-
-                        if (notasPlaca.length === 0) return;
-
-                        let qtd_nf = notasPlaca.length;
-                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
-                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-
-                        let finalizou = false;
-                        if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
-                        else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
-
-                        if (finalizou) {
-                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
-
-                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-
-                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                            let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
-
-                            const placaExibicao = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
-
-                            const infoCarro = {
-                                data: dataIso,
-                                placa: placaExibicao,
-                                motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
-                                qtd: qtd_nf,
-                                regiao: rota.regiao || "Sem rota def.",
-                                transporte: transporteStr || "-",
-                                percentApp: percentApp,
-                                cemPorcentoAss: cemPorcentoAss,
-                                conferente: rota.conferente || "Sistema"
-                            };
-
-                            const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
-                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
-
-                            if (foiPrestado) {
-                                if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
-                                concluidosPorData[dataIso].push(infoCarro);
-                            } else {
-                                if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
-                                pendenciasPorData[dataIso].push(infoCarro);
-                            }
-                        }
-                    });
-                }
-
-                window._dadosPrestacaoCache = { pendentes: pendenciasPorData, concluidos: concluidosPorData };
-                window.renderizarAccordionPrestacao(window._dadosPrestacaoCache);
-
-            } catch (e) {
-                console.error("Erro ao buscar dados de prestação:", e);
-                container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar registros.</div>`;
-            }
-        };
-
-        window.renderizarAccordionPrestacao = (dados) => {
-            const container = document.getElementById('lista-pendencias-accordion');
             const dataset = window.abaPrestacaoAtual === 'pendentes' ? dados.pendentes : dados.concluidos;
 
             let htmlFinal = "";
@@ -11796,7 +11689,6 @@
                         const nomeQuebrado = c.conferente ? c.conferente.split(' ') : ['Sistema'];
                         const nomeExibicao = nomeQuebrado.length > 1 ? `${nomeQuebrado[0]} ${nomeQuebrado[1]}` : nomeQuebrado[0];
 
-                        // 🟢 Nova etiqueta: Alinhada, com limite de largura e 3 pontinhos se for muito grande
                         badgeConferente = `
                         <span onclick="window.abrirPerfilConferente('${c.conferente}')" 
                             onmouseover="this.style.background='#cbd5e1'; this.style.color='#1e40af'" 
@@ -11807,18 +11699,15 @@
                             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeExibicao}</span>
                         </span>`;
                         
-                        // 🟢 Grid reajustado: Dá o tamanho exato que a etiqueta e o botão precisam no final
                         gridConfig = 'minmax(70px, 1fr) minmax(90px, 1.5fr) minmax(60px, 1fr) 1fr minmax(90px, 1.5fr) minmax(70px, 1fr) 30px minmax(130px, auto) minmax(85px, auto)';
                     } 
                     else {
-                        // 🟢 Botão de Baixa Rápida nos Pendentes se for 100% Assinatura
                         if (c.cemPorcentoAss === '✅') {
                             acaoBotao = `<button class="btn btn-sm" onclick="window.marcarPrestacaoComoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Concluir Baixa Manual"><i class="ph-bold ph-check"></i> Baixar</button>`;
                         } else {
-                            acaoBotao = `<span></span>`; // Mantém o grid alinhado
+                            acaoBotao = `<span></span>`;
                         }
                         
-                        // Grid com 8 colunas (abre espaço para o botão Baixar)
                         gridConfig = 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr 1fr';
                     }
 
@@ -11861,6 +11750,123 @@
             });
 
             container.innerHTML = htmlFinal;
+        };
+
+        window.carregarPendenciasContas = async () => {
+            const container = document.getElementById('lista-pendencias-accordion');
+            if (!container) return;
+
+            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando dados de prestação...</div>`;
+
+            const hoje = new Date();
+            const pendenciasPorData = {};
+            const concluidosPorData = {};
+
+            try {
+                for (let i = 0; i < 7; i++) {
+                    const dataIteracao = new Date(hoje);
+                    dataIteracao.setDate(hoje.getDate() - i);
+                    const dataIso = dataIteracao.toISOString().split('T')[0];
+
+                    const [snapPainel, snapNotas] = await Promise.all([
+                        getDoc(doc(db, "painel_diario", dataIso)),
+                        getDoc(doc(db, "notas_fiscais_diario", dataIso))
+                    ]);
+
+                    if (!snapPainel.exists() || !snapNotas.exists()) continue;
+
+                    const rotas = snapPainel.data().rotas || [];
+                    const notas = snapNotas.data().notas || [];
+
+                    rotas.forEach(rota => {
+                        const statusRota = trimUpper(rota.status || "");
+                        
+                        if (statusRota.includes('PERNOITE') && !statusRota.includes('SAIDA DIA') && !statusRota.includes('SAÍDA DIA')) {
+                            return;
+                        }
+
+                        const placaOriginal = trimUpper(rota.placa || "");
+                        const placaTroca = trimUpper(rota.troca || "");
+                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
+                        
+                        if (!placaRef) return;
+
+                        const transporteStr = String(rota.transporte || "").trim();
+                        const transpNumArray = transporteStr.match(/\d+/g) || [];
+
+                        const notasPlaca = notas.filter(n => {
+                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                            
+                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
+                            if (!matchPlaca) return false;
+
+                            const viagemNota = String(n.viagem || "").trim();
+                            if (transpNumArray.length > 0 && viagemNota !== "") {
+                                return transpNumArray.some(t => viagemNota.includes(t));
+                            }
+                            return true;
+                        });
+
+                        if (notasPlaca.length === 0) return;
+
+                        let qtd_nf = notasPlaca.length;
+                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
+                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+
+                        let finalizou = false;
+                        if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
+                        else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
+
+                        if (finalizou || statusRota.includes('SAIDA') || statusRota.includes('ROTA') || statusRota.includes('FINALIZAR') || statusRota.includes('TERMINAR')) {
+                            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+
+                            let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                            let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+
+                            let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                            let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
+
+                            const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
+
+                            const infoCarro = {
+                                data: dataIso,
+                                placa: placaExibicao,
+                                motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                                qtd: qtd_nf,
+                                regiao: rota.regiao || "Sem rota def.",
+                                transporte: transporteStr || "-",
+                                percentApp: percentApp,
+                                cemPorcentoAss: cemPorcentoAss,
+                                conferente: rota.conferente || "Sistema"
+                            };
+
+                            const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+                            const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
+
+                            if (foiPrestado) {
+                                if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
+                                if (!concluidosPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
+                                    concluidosPorData[dataIso].push(infoCarro);
+                                }
+                            } else {
+                                if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
+                                if (!pendenciasPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
+                                    pendenciasPorData[dataIso].push(infoCarro);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                window._dadosPrestacaoCache = { pendentes: pendenciasPorData, concluidos: concluidosPorData };
+                window.renderizarAccordionPrestacao(window._dadosPrestacaoCache);
+
+            } catch (e) {
+                console.error("Erro ao buscar dados de prestação:", e);
+                container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar registros.</div>`;
+            }
         };
 
         // Função para estornar/desmarcar a prestação e mandar de volta para os pendentes
