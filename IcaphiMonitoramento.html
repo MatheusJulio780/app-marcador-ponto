@@ -7720,14 +7720,16 @@
                     if (!cacheSnapPainel || !cacheSnapNotas) return; 
 
                     const tbody = document.querySelector('#tabela-monitoramento tbody');
-                    // AGORA SÃO APENAS OS DADOS REAIS DO DIA, SEM FANTASMAS
                     let rotasParaProcessar = cacheSnapPainel.exists() ? cacheSnapPainel.data().rotas : [];
                     let notasDoDia = cacheSnapNotas.exists() ? cacheSnapNotas.data().notas : [];
 
                     window.notasOperacaoAtiva = notasDoDia; window.dataOperacaoAtiva = dataSel;
                     let linhasRenderizadas = []; let statusCounts = {}; let carrosFinalizados = 0;
                     
-                    // 🟢 DECLARAÇÃO AQUI: Para garantir que o botão suma se não houver dados
+                    // Variáveis para o cálculo baseado em Notas Fiscais
+                    let totalNotasGeral = 0;
+                    let totalNotasConcluidasGeral = 0;
+                    
                     let diaTemPernoite = false; 
 
                     if (rotasParaProcessar.length > 0) {
@@ -7781,10 +7783,18 @@
                             const finalizadosArray = ['VEÍCULO VAZIO', 'FINALIZADO', 'PARADA', 'SINISTRADA', 'PERNOITE'];
                             if (stRotaCalc && finalizadosArray.includes(stRotaCalc)) { carrosFinalizados++; }
                             
-                            // 🟢 VERIFICAÇÃO ATIVA DO PERNOITE
                             if (stRotaCalc === "PERNOITE" || hasPernoite) {
                                 diaTemPernoite = true;
                             }
+
+                            // Acumula para a lógica de progresso baseada em notas
+                            totalNotasGeral += qtd_nf;
+                            // Consideramos como concluídas as notas entregues, devoluções, reentregas ou notas de veículos já finalizados
+                            let notasConcluidasNestaPlaca = realizada + devolucao + reentrega;
+                            if (finalizadosArray.includes(stRotaCalc)) {
+                                notasConcluidasNestaPlaca = qtd_nf; // Se o veículo fechou, todas as notas dele contam como concluídas na operação
+                            }
+                            totalNotasConcluidasGeral += Math.min(notasConcluidasNestaPlaca, qtd_nf);
 
                             let vDevolucao = devolucao > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'DEVOLUÇÃO')">${devolucao}</span>` : "";
                             let vReentrega = reentrega > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'REENTREGA')">${reentrega}</span>` : "";
@@ -7856,11 +7866,14 @@
                         tbody.innerHTML = `<tr><td colspan="25" align="center" style="padding: 30px; color: var(--text-muted); font-weight: 500;">Sem dados para esta data.</td></tr>`; 
                     }
 
+                    // Cálculo final da porcentagem baseado nas Notas Fiscais da operação
                     const totalCarros = rotasParaProcessar.length;
-                    const porcentagem = totalCarros > 0 ? Math.round((carrosFinalizados / totalCarros) * 100) : 0;
-                    document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos Finalizados (${porcentagem}%)`;
-                    document.getElementById('progress-bar-fill').style.width = `${porcentagem}%`;
-                    document.getElementById('progress-truck').style.left = `${porcentagem}%`;
+                    const porcentagemNotas = totalNotasGeral > 0 ? Math.round((totalNotasConcluidasGeral / totalNotasGeral) * 100) : 0;
+                    
+                    // Mantém a exibição formatada focada nos veículos (mostrando quantos carros finalizaram e o percentual calculado pelas notas)
+                    document.getElementById('lbl-progresso-txt').innerText = `${carrosFinalizados} / ${totalCarros} Veículos (${porcentagemNotas}%)`;
+                    document.getElementById('progress-bar-fill').style.width = `${porcentagemNotas}%`;
+                    document.getElementById('progress-truck').style.left = `${porcentagemNotas}%`;
 
                     let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
                     for (const [status, count] of Object.entries(statusCounts)) {
@@ -7880,7 +7893,6 @@
                         window.filtrarPainelPorStatus(filtroSalvo);
                     }
                     
-                    // 🟢 EXIBIÇÃO DO BOTÃO
                     const btnPernoite = document.getElementById('btn-transferir-pernoites');
                     if (btnPernoite) {
                         btnPernoite.style.display = diaTemPernoite ? 'flex' : 'none';
