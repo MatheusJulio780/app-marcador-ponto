@@ -4642,11 +4642,16 @@
 
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="btn-cancelar-transbordo">Cancelar</button>
-                <button class="btn btn-warning" id="btn-executar-transbordo"><i class="ph ph-swap"></i> Executar Troca</button>
-                <button type="button" class="btn btn-secondary" onclick="window.gerarPdfTransbordo()" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
-                    <i class="ph ph-file-pdf"></i> Imprimir Transbordo </button>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" id="btn-cancelar-transbordo" style="flex: 1; min-width: 90px;">Cancelar</button>
+                <div style="display: flex; gap: 8px; flex: 2; justify-content: flex-end; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="window.gerarPdfTransbordo()" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 11px;">
+                        <i class="ph ph-file-pdf"></i> Imprimir
+                    </button>
+                    <button class="btn btn-warning" id="btn-executar-transbordo" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 11px;">
+                        <i class="ph ph-swap"></i> Executar Troca
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -14344,7 +14349,7 @@
             limparSelecaoExcel();
         });
 
-        // ================= GERADOR DE PDF - TRANSBORDO NO GALPÃO (LAYOUT MODERNO E PROFISSIONAL) =================
+        // ================= GERADOR DE PDF - TRANSBORDO NO GALPÃO (ROTA POR CIDADES ÚNICAS) =================
         window.gerarPdfTransbordo = async () => {
             const selectOrigem = document.getElementById('transbordo-origem');
             const optionSel = selectOrigem ? selectOrigem.options[selectOrigem.selectedIndex] : null;
@@ -14386,10 +14391,20 @@
                     return alert("Nenhuma nota fiscal encontrada para os critérios selecionados no transbordo.");
                 }
 
-                // Descobre o motorista de origem da rota ou das notas
+                // Descobre o motorista de origem
                 let motoristaOrigem = "NÃO INFORMADO";
                 const nMot = notasOrigem.find(n => n.motorista && n.motorista.trim() !== "");
                 if (nMot) motoristaOrigem = nMot.motorista;
+
+                // Extrai as cidades únicas das notas para formar a rota (sem duplicidade)
+                let cidadesUnicas = [];
+                notasOrigem.forEach(n => {
+                    let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
+                    if (cid && !cidadesUnicas.includes(cid)) {
+                        cidadesUnicas.push(cid);
+                    }
+                });
+                const transporteViagem = cidadesUnicas.length > 0 ? cidadesUnicas.join(" - ") : "GERAL";
 
                 const conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
 
@@ -14399,64 +14414,92 @@
                 let pesoTotalGeral = 0;
                 let qtdTotalGeral = 0;
 
-                // Monta o corpo da tabela de notas limpo e separado por colunas
-                let corpoTabelaNotas = [
+                // Monta o corpo da tabela em 2 colunas paralelas para caber perfeitamente em 1 página
+                let corpoTabelaDupla = [
                     [
-                        { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
-                        { text: 'NOTA FISCAL (NF)', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
-                        { text: 'VOLUMES / QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
-                        { text: 'PESO (KG)', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 }
+                        { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'Peso', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'Peso', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 }
                     ]
                 ];
 
-                notasOrigem.forEach((n, index) => {
-                    const nfNum = cleanNF(n.nf);
-                    
-                    let qStr = String(n.qtde || n.volumes || "1").trim();
-                    const qtdNum = parseInt(qStr.replace(/\D/g, '')) || 1;
+                const metade = Math.ceil(notasOrigem.length / 2);
+                for (let i = 0; i < metade; i++) {
+                    const n1 = notasOrigem[i];
+                    const n2 = notasOrigem[i + metade];
 
-                    let pStr = String(n.peso || "0").trim();
-                    const pesoNum = pStr.includes(',') 
-                        ? parseFloat(pStr.replace(/\./g, '').replace(',', '.')) || 0 
-                        : parseFloat(pStr) || 0;
+                    // Coluna Esquerda
+                    const nf1 = cleanNF(n1.nf);
+                    const qtd1 = parseInt(String(n1.qtde || n1.volumes || "1").replace(/\D/g, '')) || 1;
+                    const p1Str = String(n1.peso || "0").trim();
+                    const peso1 = p1Str.includes(',') ? parseFloat(p1Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p1Str) || 0;
+                    pesoTotalGeral += peso1;
+                    qtdTotalGeral += qtd1;
 
-                    pesoTotalGeral += pesoNum;
-                    qtdTotalGeral += qtdNum;
+                    let row = [
+                        { text: i + 1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: nf1, alignment: 'left', bold: true, fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: qtd1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: peso1.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                    ];
 
-                    corpoTabelaNotas.push([
-                        { text: index + 1, alignment: 'center', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: nfNum, alignment: 'left', bold: true, fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: qtdNum, alignment: 'center', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: pesoNum.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' }
-                    ]);
-                });
+                    // Coluna Direita
+                    if (n2) {
+                        const nf2 = cleanNF(n2.nf);
+                        const qtd2 = parseInt(String(n2.qtde || n2.volumes || "1").replace(/\D/g, '')) || 1;
+                        const p2Str = String(n2.peso || "0").trim();
+                        const peso2 = p2Str.includes(',') ? parseFloat(p2Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p2Str) || 0;
+                        pesoTotalGeral += peso2;
+                        qtdTotalGeral += qtd2;
+
+                        row.push(
+                            { text: i + metade + 1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: nf2, alignment: 'left', bold: true, fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: qtd2, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: peso2.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                        );
+                    } else {
+                        row.push(
+                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                        );
+                    }
+
+                    corpoTabelaDupla.push(row);
+                }
 
                 const dataFormatada = dataTransbordo.split('-').reverse().join('/');
                 const logoHeader = window.logoIcaphiBase64
-                    ? { image: window.logoIcaphiBase64, width: 100, alignment: 'right' }
-                    : { text: 'ICAPHI TRANSPORTES', fontSize: 12, bold: true, color: '#b91c1c', alignment: 'right' };
+                    ? { image: window.logoIcaphiBase64, width: 90, alignment: 'right' }
+                    : { text: 'ICAPHI TRANSPORTES', fontSize: 11, bold: true, color: '#b91c1c', alignment: 'right' };
 
                 const docDefinition = {
                     pageSize: 'A4',
-                    pageMargins: [30, 30, 30, 30],
-                    defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
+                    pageMargins: [25, 25, 25, 25],
+                    defaultStyle: { font: 'Roboto', fontSize: 8.5, color: '#0f172a' },
                     content: [
                         // Header / Título Principal
                         {
                             columns: [
                                 {
                                     stack: [
-                                        { text: 'TERMO DE TRANSBORDO DE CARGA', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
-                                        { text: 'Controle Transbordo', fontSize: 9, color: '#64748b' }
+                                        { text: 'TERMO DE TRANSBORDO DE CARGA', fontSize: 15, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
+                                        { text: 'Controle Transbordo', fontSize: 8.5, color: '#64748b' }
                                     ],
                                     width: '70%'
                                 },
                                 { stack: [logoHeader], width: '30%' }
                             ],
-                            margin: [0, 0, 0, 15]
+                            margin: [0, 0, 0, 10]
                         },
-                        // Linha divisória sutil
-                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 535, y2: 0, lineWidth: 1.5, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 15] },
+                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 545, y2: 0, lineWidth: 1.2, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 10] },
                         
                         // Cards de Origem e Destino
                         {
@@ -14466,22 +14509,22 @@
                                     [
                                         {
                                             stack: [
-                                                { text: 'DADOS DO VEÍCULO DE ORIGEM', fontSize: 8, bold: true, color: '#64748b', margin: [0, 0, 0, 4] },
-                                                { text: `Placa: ${placaOrigemOriginal.toUpperCase()}`, fontSize: 11, bold: true, color: '#1e293b', margin: [0, 0, 0, 2] },
-                                                { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 9, color: '#334155' }
+                                                { text: 'DADOS DO VEÍCULO DE ORIGEM', fontSize: 7.5, bold: true, color: '#64748b', margin: [0, 0, 0, 3] },
+                                                { text: `Placa: ${placaOrigemOriginal.toUpperCase()}`, fontSize: 10, bold: true, color: '#1e293b', margin: [0, 0, 0, 2] },
+                                                { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 8.5, color: '#334155' }
                                             ],
                                             fillColor: '#f8fafc',
-                                            margin: [10, 10, 10, 10],
+                                            margin: [8, 8, 8, 8],
                                             border: [true, true, true, true]
                                         },
                                         {
                                             stack: [
-                                                { text: 'DADOS DO VEÍCULO DE DESTINO (NOVO)', fontSize: 8, bold: true, color: '#64748b', margin: [0, 0, 0, 4] },
-                                                { text: `Placa Destino: ${placaDestino}`, fontSize: 11, bold: true, color: '#2563eb', margin: [0, 0, 0, 2] },
-                                                { text: `Data da Operação: ${dataFormatada}`, fontSize: 9, color: '#334155' }
+                                                { text: 'DADOS DO VEÍCULO DE DESTINO (NOVO)', fontSize: 7.5, bold: true, color: '#64748b', margin: [0, 0, 0, 3] },
+                                                { text: `Placa Destino: ${placaDestino}`, fontSize: 10, bold: true, color: '#2563eb', margin: [0, 0, 0, 2] },
+                                                { text: `Data da Operação: ${dataFormatada}`, fontSize: 8.5, color: '#334155' }
                                             ],
                                             fillColor: '#eff6ff',
-                                            margin: [10, 10, 10, 10],
+                                            margin: [8, 8, 8, 8],
                                             border: [true, true, true, true]
                                         }
                                     ]
@@ -14497,47 +14540,48 @@
                                 paddingTop: () => 0,
                                 paddingBottom: () => 0
                             },
-                            margin: [0, 0, 0, 15]
+                            margin: [0, 0, 0, 8]
                         },
 
-                        // Linha de Conferência e Volume
+                        // Barra de Rota / Transporte e Conferente
                         {
                             table: {
-                                widths: ['50%', '50%'],
+                                widths: ['55%', '45%'],
                                 body: [
                                     [
-                                        { text: `Conferente Responsável: ${conferenteNome.toUpperCase()}`, bold: true, fontSize: 9, color: '#475569', fillColor: '#f1f5f9', margin: [8, 6, 8, 6] },
-                                        { text: `Total de NFs: ${notasOrigem.length} Nota(s)`, bold: true, alignment: 'right', fontSize: 9, color: '#475569', fillColor: '#f1f5f9', margin: [8, 6, 8, 6] }
+                                        { text: `Rota: ${transporteViagem}`, bold: true, fontSize: 8.5, color: '#1e3a8a', fillColor: '#dbeafe', margin: [8, 5, 8, 5] },
+                                        { text: `Conferente: ${conferenteNome.toUpperCase()} | Total NFs: ${notasOrigem.length}`, bold: true, alignment: 'right', fontSize: 8.5, color: '#475569', fillColor: '#f1f5f9', margin: [8, 5, 8, 5] }
                                     ]
                                 ]
                             },
                             layout: 'noBorders',
-                            margin: [0, 0, 0, 15]
+                            margin: [0, 0, 0, 10]
                         },
 
-                        // Título da Tabela
-                        { text: 'RELAÇÃO DETALHADA DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 11, bold: true, color: '#0f172a', margin: [0, 0, 0, 8] },
+                        // Título da Tabela Dupla
+                        { text: 'RELAÇÃO DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 10, bold: true, color: '#0f172a', margin: [0, 0, 0, 6] },
 
-                        // Tabela de Notas Fiscais Organizada
+                        // Tabela em 2 Colunas Lado a Lado
                         {
                             table: {
                                 headerRows: 1,
-                                widths: ['10%', '50%', '20%', '20%'],
-                                body: corpoTabelaNotas
+                                widths: ['5%', '22%', '8%', '15%', '5%', '22%', '8%', '15%'],
+                                body: corpoTabelaDupla
                             },
                             layout: {
                                 hLineWidth: (i, node) => {
-                                    const totalRows = (node && node.body) ? node.body.length : (corpoTabelaNotas.length || 0);
+                                    const totalRows = (node && node.body) ? node.body.length : (corpoTabelaDupla.length || 0);
                                     return (i === 0 || i === 1 || i === totalRows) ? 1 : 0.5;
                                 },
-                                vLineWidth: () => 0,
-                                hLineColor: (i) => i === 1 ? '#0f172a' : '#e2e8f0',
-                                paddingTop: () => 6,
-                                paddingBottom: () => 6,
-                                paddingLeft: () => 8,
-                                paddingRight: () => 8
+                                vLineWidth: (i) => (i === 4 ? 2 : 0),
+                                hLineColor: (i) => i === 1 ? '#0f172a' : '#cbd5e1',
+                                vLineColor: () => '#94a3b8',
+                                paddingTop: () => 4,
+                                paddingBottom: () => 4,
+                                paddingLeft: () => 4,
+                                paddingRight: () => 4
                             },
-                            margin: [0, 0, 0, 10]
+                            margin: [0, 0, 0, 8]
                         },
 
                         // Caixa de Totais Gerais
@@ -14546,9 +14590,9 @@
                                 widths: ['60%', '20%', '20%'],
                                 body: [
                                     [
-                                        { text: 'TOTAIS GERAIS DA CARGA TRANSBORDADA:', bold: true, fontSize: 10, alignment: 'right', fillColor: '#f1f5f9', margin: [8, 8, 8, 8] },
-                                        { text: `${qtdTotalGeral} vol.`, bold: true, fontSize: 10, alignment: 'center', fillColor: '#f1f5f9', margin: [8, 8, 8, 8] },
-                                        { text: `${pesoTotalGeral.toFixed(3).replace('.', ',')} kg`, bold: true, fontSize: 10, alignment: 'right', fillColor: '#f1f5f9', color: '#1e3a8a', margin: [8, 8, 8, 8] }
+                                        { text: 'TOTAIS DA CARGA TRANSBORDADA:', bold: true, fontSize: 9, alignment: 'right', fillColor: '#f1f5f9', margin: [6, 6, 6, 6] },
+                                        { text: `${qtdTotalGeral} QTD.`, bold: true, fontSize: 9, alignment: 'center', fillColor: '#f1f5f9', margin: [6, 6, 6, 6] },
+                                        { text: `${pesoTotalGeral.toFixed(3).replace('.', ',')} kg`, bold: true, fontSize: 9, alignment: 'right', fillColor: '#f1f5f9', color: '#1e3a8a', margin: [6, 6, 6, 6] }
                                     ]
                                 ]
                             },
@@ -14557,19 +14601,19 @@
                                 vLineWidth: () => 0,
                                 hLineColor: () => '#cbd5e1'
                             },
-                            margin: [0, 0, 0, 30]
+                            margin: [0, 0, 0, 15]
                         },
 
                         // Termo de Responsabilidade
-                        { text: 'TERMO DE RESPONSABILIDADE', bold: true, fontSize: 9, color: '#334155', margin: [0, 0, 0, 4] },
-                        { text: 'Declaro para os devidos fins que a carga descrita neste termo foi integralmente transbordada do veículo de origem para o veículo de destino em perfeitas condições de segurança e conferência.', fontSize: 8, color: '#64748b', margin: [0, 0, 0, 40] },
+                        { text: 'TERMO DE RESPONSABILIDADE', bold: true, fontSize: 8.5, color: '#334155', margin: [0, 0, 0, 2] },
+                        { text: 'Declaro para os devidos fins que a carga descrita neste termo foi integralmente transbordada do veículo de origem para o veículo de destino em perfeitas condições de segurança e conferência.', fontSize: 7.5, color: '#64748b', margin: [0, 0, 0, 25] },
 
-                        // Assinaturas (Sem o motorista de destino, apenas Conferente e Motorista Responsável)
+                        // Assinaturas
                         {
                             unbreakable: true,
                             columns: [
-                                { text: `____________________________________\n${conferenteNome}\nConferente / Responsável`, alignment: 'center', bold: true, fontSize: 9 },
-                                { text: '____________________________________\nMotorista / Transportador\nRecebedor da Carga', alignment: 'center', bold: true, fontSize: 9 }
+                                { text: `____________________________________\n${conferenteNome}\nConferente / Responsável`, alignment: 'center', bold: true, fontSize: 8.5 },
+                                { text: '____________________________________\nMotorista / Transportador\nRecebedor da Carga', alignment: 'center', bold: true, fontSize: 8.5 }
                             ]
                         }
                     ]
