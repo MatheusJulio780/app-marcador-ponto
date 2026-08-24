@@ -4443,7 +4443,12 @@
                                 class="btn btn-success btn-sm"
                                 onclick="document.getElementById('file-import-notas').click()"
                                 style="padding: 6px 15px;">Selecionar Planilha</button><input type="file"
-                                id="file-import-notas" accept=".xlsx, .xls, .csv" style="display: none;"></div>
+                                id="file-import-notas" accept=".xlsx, .xls, .csv" style="display: none;">
+                            </div>
+                            <label for="file-import-edis" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 10px; background: #6b21a8; color: white; border: none;">
+                                <i class="ph-bold ph-files"></i> Importar EDIs
+                            </label>
+                            <input type="file" id="file-import-edis" accept=".xls,.xlsx,.csv" style="display: none;">
                     </div><button class="btn btn-secondary btn-sm" onclick="adicionarLinhaNotas()"
                         style="padding: 6px 15px;">+ Nova Linha</button>
                 </div>
@@ -4468,6 +4473,7 @@
                         <thead>
                             <tr>
                                 <th></th> <!-- Coluna de Arrastar -->
+                                <th>Origem</th> <!-- ADICIONE ESTA LINHA AQUI -->
                                 <th>NF <i class="ph-fill ph-caret-down filter-icon" data-col="1"></i></th>
                                 <th>VIAG <i class="ph-fill ph-caret-down filter-icon" data-col="2"></i></th>
                                 <th>ORD <i class="ph-fill ph-caret-down filter-icon" data-col="3"></i></th>
@@ -8260,11 +8266,47 @@
         }
 
         window.adicionarLinhaNotas = (dados = {}) => {
-            const tr = document.createElement('tr'); tr.draggable = true; const placa = dados.placa || ""; let motorista = dados.motorista || ""; let telefone = dados.telefone || "";
-            if (placa && !motorista && window.motoristasHistoricoCache[placa]) { motorista = window.motoristasHistoricoCache[placa].motorista; telefone = window.motoristasHistoricoCache[placa].telefone; }
-            tr.dataset.codcli = dados.codcli || ""; tr.dataset.repres = dados.repres || ""; tr.dataset.sup = dados.sup || "";
-            tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="nf" contenteditable="true" style="font-weight:700;">${cleanNF(dados.nf)}</td><td data-col="viagem" contenteditable="true">${dados.viagem || ""}</td><td data-col="ordem" contenteditable="true">${dados.ordem || ""}</td><td data-col="data" contenteditable="true">${dados.data || ""}</td><td data-col="peso" contenteditable="true">${formatNumber(dados.peso || "")}</td><td data-col="qtde" contenteditable="true">${dados.qtde || ""}</td><td data-col="cliente" contenteditable="true">${dados.cliente || ""}</td><td data-col="cidade" contenteditable="true">${dados.cidade || ""}</td><td data-col="bairro" contenteditable="true">${dados.bairro || ""}</td><td data-col="endereco" contenteditable="true">${dados.endereco || ""}</td><td data-col="placa" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${placa}</td><td data-col="motorista" contenteditable="true">${motorista}</td><td data-col="telefone" contenteditable="true">${telefone}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
-            configurarDragAndDrop(tr, tbodyEditorNotas); tbodyEditorNotas.appendChild(tr);
+            const tr = document.createElement('tr'); 
+            tr.draggable = true; 
+            const placa = dados.placa || ""; 
+            let motorista = dados.motorista || ""; 
+            let telefone = dados.telefone || "";
+            
+            if (placa && !motorista && window.motoristasHistoricoCache[placa]) { 
+                motorista = window.motoristasHistoricoCache[placa].motorista; 
+                telefone = window.motoristasHistoricoCache[placa].telefone; 
+            }
+            tr.dataset.codcli = dados.codcli || ""; 
+            tr.dataset.repres = dados.repres || ""; 
+            tr.dataset.sup = dados.sup || "";
+
+            // 🟢 MOTOR DE ETIQUETAS DE ORIGEM
+            const textoOrigem = dados.origem || 'MANUAL';
+            let badgeOrigem = '';
+            if (textoOrigem === 'EDI') badgeOrigem = '<span style="background:#6b21a8; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">EDI</span>';
+            else if (textoOrigem === 'PLANILHA') badgeOrigem = '<span style="background:#2563eb; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">PLANILHA</span>';
+            else if (textoOrigem === 'PLANILHA + EDI') badgeOrigem = '<span style="background:#059669; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">PLANILHA + EDI</span>';
+            else badgeOrigem = '<span style="background:#64748b; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">MANUAL</span>';
+
+            tr.innerHTML = `<td class="drag-handle">☰</td>
+                <td data-col="origem" style="text-align:center; user-select:none;">${badgeOrigem}</td>
+                <td data-col="nf" contenteditable="true" style="font-weight:700;">${cleanNF(dados.nf)}</td>
+                <td data-col="viagem" contenteditable="true">${dados.viagem || ""}</td>
+                <td data-col="ordem" contenteditable="true">${dados.ordem || ""}</td>
+                <td data-col="data" contenteditable="true">${dados.data || ""}</td>
+                <td data-col="peso" contenteditable="true">${formatNumber(dados.peso || "")}</td>
+                <td data-col="qtde" contenteditable="true">${dados.qtde || ""}</td>
+                <td data-col="cliente" contenteditable="true">${dados.cliente || ""}</td>
+                <td data-col="cidade" contenteditable="true">${dados.cidade || ""}</td>
+                <td data-col="bairro" contenteditable="true">${dados.bairro || ""}</td>
+                <td data-col="endereco" contenteditable="true">${dados.endereco || ""}</td>
+                <td data-col="placa" contenteditable="true" style="font-weight:700; text-transform:uppercase;">${placa}</td>
+                <td data-col="motorista" contenteditable="true">${motorista}</td>
+                <td data-col="telefone" contenteditable="true">${telefone}</td>
+                <td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
+            
+            configurarDragAndDrop(tr, tbodyEditorNotas); 
+            tbodyEditorNotas.appendChild(tr);
         };
 
         document.getElementById('btn-buscar-editor-notas').addEventListener('click', async () => { const d = document.getElementById('editor-notas-data').value; if (!d) return; await carregarNotasParaEdicao(d); });
@@ -8360,6 +8402,7 @@
                         if (!isNaN(dSaida) && dSaida.toString().trim() !== "") dSaida = excelToDateStr(parseFloat(dSaida));
 
                         qtd++;
+                        // Dentro do loop do file-import-notas
                         window.adicionarLinhaNotas({
                             nf: nfTratada, viagem: row[cols.viagem] || "", ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
                             data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
@@ -8368,12 +8411,189 @@
                             placa: filtroViagem.placaFinal, codcli: cols.codcli !== -1 ? row[cols.codcli] : "",
                             repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : "",
                             parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : "",
-                            tipo_viagem: filtroViagem.statusRota || ""
+                            tipo_viagem: filtroViagem.statusRota || "",
+                            origem: 'PLANILHA' // 🟢 INJETAMOS A ORIGEM AQUI
                         });
                     }
                 }
                 alert(`Importação concluída: ${qtd} notas vinculadas (Pernoites e Apoios preservados).`); hideLoader();
             }; reader.readAsArrayBuffer(file); e.target.value = '';
+        });
+
+        // ================= IMPORTAÇÃO DE EDIS (COM FILTRO DO PAINEL E BLINDAGEM) =================
+        document.getElementById('file-import-edis').addEventListener('change', async function (e) {
+            const file = e.target.files[0]; if (!file) return;
+            const dSel = document.getElementById('editor-notas-data').value;
+            if (!dSel) { alert("Selecione a data no painel superior primeiro!"); e.target.value = ''; return; }
+            showLoader();
+
+            let mapFiltroTransporte = {};
+            const statusIgnorados = ['PERNOITE', 'PERNOITE/VIAGEM', 'APOIO', 'SEG. VIAGEM', 'SEGUNDA VIAGEM'];
+
+            try {
+                const sp = await getDoc(doc(db, "painel_diario", dSel));
+                if (sp.exists()) {
+                    sp.data().rotas.forEach(r => {
+                        const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
+                        const statusRota = r.status ? r.status.trim().toUpperCase() : "";
+                        const isBloqueado = statusIgnorados.includes(statusRota);
+
+                        const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
+                        transpsValidos.forEach(t => {
+                            mapFiltroTransporte[t] = {
+                                placaFinal: placaFinal,
+                                statusRota: statusRota,
+                                bloqueado: isBloqueado
+                            };
+                        });
+                    });
+                }
+            } catch (err) { console.error("Erro ao mapear painel para importação de EDI:", err); }
+
+            const reader = new FileReader(); 
+            reader.onload = async function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result); 
+                    const wb = XLSX.read(data, { type: 'array', raw: false });
+                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+
+                    let hIdx = -1; 
+                    for (let i = 0; i < raw.length; i++) { 
+                        if (raw[i] && (raw[i].includes("NNF") || raw[i].includes("Nº Transporte"))) { hIdx = i; break; } 
+                    }
+                    if (hIdx === -1) { alert("Cabeçalho padrão do EDI não encontrado."); hideLoader(); return; }
+
+                    const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
+                    const getCol = (nomes, fallback) => {
+                        for(let n of nomes) { let idx = h.findIndex(c => c === n || c.includes(n)); if(idx !== -1) return idx; }
+                        return fallback;
+                    };
+
+                    const cols = {
+                        nf: getCol(["NNF"], 22), 
+                        viagem: getCol(["Nº TRANSPORTE"], 4), 
+                        peso: getCol(["PESOB"], 25), 
+                        qtd: getCol(["QVOL"], 28), 
+                        cliente: getCol(["XNOME"], 35), 
+                        cidade: getCol(["CMUN2", "CMUN"], 31), 
+                        cidadeFallback: 5, 
+                        bairro: getCol(["XBAIRRO"], 39), 
+                        endereco: getCol(["XLGR"], 36) 
+                    };
+
+                    let notasImportadas = 0;
+                    let notasAtualizadas = 0;
+
+                    // 1. Coleta códigos IBGE para tradução via API
+                    const ibgeCodes = new Set();
+                    for (let i = hIdx + 1; i < raw.length; i++) {
+                        const r = raw[i];
+                        let cod = r[cols.cidade] ? String(r[cols.cidade]).trim() : String(r[cols.cidadeFallback] || "").trim();
+                        if (cod && !isNaN(cod)) ibgeCodes.add(cod.substring(0, 7));
+                    }
+
+                    const cityCache = {};
+                    await Promise.all(Array.from(ibgeCodes).map(async (code) => {
+                        try {
+                            const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${code}`);
+                            if (res.ok) { 
+                                const data = await res.json(); 
+                                if (data.nome) cityCache[code] = data.nome.toUpperCase(); 
+                            }
+                        } catch(e) {}
+                    }));
+
+                    // 2. Varredura com validação idêntica à planilha principal
+                    for (let i = hIdx + 1; i < raw.length; i++) {
+                        const row = raw[i]; if (!row || !row[cols.nf]) continue;
+                        
+                        // Valida se o transporte da linha do EDI existe no Painel do dia
+                        const viagensExcel = String(row[cols.viagem] || "").match(/\d+/g) || [];
+                        let filtroViagem = null;
+
+                        for (let v of viagensExcel) {
+                            if (mapFiltroTransporte[v]) {
+                                filtroViagem = mapFiltroTransporte[v];
+                                break;
+                            }
+                        }
+
+                        // Se a viagem não está no painel ou se for pernoite/apoio travado, o EDI descarta a nota
+                        if (!filtroViagem || filtroViagem.bloqueado) continue;
+
+                        const nfTratada = cleanNF(row[cols.nf]);
+                        if (!nfTratada) continue;
+
+                        // Tratamento de peso e cidade
+                        let pesoNum = parseFloat(String(row[cols.peso] || "0").replace(',', '.'));
+                        let pesoCalc = isNaN(pesoNum) ? "" : (pesoNum / 1000).toFixed(2);
+
+                        let cidCode = row[cols.cidade] ? String(row[cols.cidade]).trim() : String(row[cols.cidadeFallback] || "").trim();
+                        let nomeCidade = cityCache[cidCode.substring(0,7)] || cidCode; 
+
+                        let objEdi = {
+                            nf: nfTratada,
+                            viagem: row[cols.viagem] || "",
+                            peso: pesoCalc,
+                            qtde: row[cols.qtd] || "",
+                            cliente: row[cols.cliente] || "",
+                            cidade: nomeCidade,
+                            bairro: row[cols.bairro] || "",
+                            endereco: row[cols.endereco] || "",
+                            placa: filtroViagem.placaFinal // Pega a placa correta do painel (respeitando trocas)
+                        };
+
+                        // Verifica se a nota já existe na tela para fazer o merge inteligente
+                        let trExistente = null;
+                        document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
+                            if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) {
+                                trExistente = tr;
+                            }
+                        });
+
+                        if (trExistente) {
+                            let alterou = false;
+                            const updateIfEmpty = (colName, val) => {
+                                const cell = trExistente.querySelector(`[data-col="${colName}"]`);
+                                if (cell && cell.textContent.trim() === "" && val && val !== "") {
+                                    cell.textContent = val;
+                                    alterou = true;
+                                }
+                            };
+                            
+                            updateIfEmpty('viagem', objEdi.viagem);
+                            updateIfEmpty('placa', objEdi.placa);
+                            updateIfEmpty('peso', objEdi.peso);
+                            updateIfEmpty('qtde', objEdi.qtde);
+                            updateIfEmpty('cliente', objEdi.cliente);
+                            updateIfEmpty('cidade', objEdi.cidade);
+                            updateIfEmpty('bairro', objEdi.bairro);
+                            updateIfEmpty('endereco', objEdi.endereco);
+
+                            if (alterou) {
+                                notasAtualizadas++;
+                                const celOrigem = trExistente.querySelector('[data-col="origem"]');
+                                if (celOrigem) {
+                                    celOrigem.innerHTML = '<span style="background:#059669; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">PLANILHA + EDI</span>';
+                                }
+                            }
+                        } else {
+                            objEdi.origem = 'EDI'; 
+                            window.adicionarLinhaNotas(objEdi);
+                            notasImportadas++;
+                        }
+                    }
+
+                    alert(`✅ Importação de EDIs concluída!\n\n- ${notasImportadas} Novas notas criadas.\n- ${notasAtualizadas} Notas existentes complementadas.\n*(Notas sem transporte correspondente no painel foram ignoradas).*`);
+                } catch (err) {
+                    console.error("Erro importando EDI:", err);
+                    alert("Falha estrutural ao ler o arquivo EDI.");
+                }
+                hideLoader();
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
         });
 
         // ================= EDITOR PAINEL =================
