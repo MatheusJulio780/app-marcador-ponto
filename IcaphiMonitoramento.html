@@ -4644,8 +4644,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="btn-cancelar-transbordo">Cancelar</button>
-                <button class="btn btn-warning" id="btn-executar-transbordo"><i class="ph ph-swap"></i> Executar
-                    Troca</button>
+                <button class="btn btn-warning" id="btn-executar-transbordo"><i class="ph ph-swap"></i> Executar Troca</button>
+                <button type="button" class="btn btn-secondary" onclick="window.gerarPdfTransbordo()" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                    <i class="ph ph-file-pdf"></i> Imprimir Transbordo </button>
             </div>
         </div>
     </div>
@@ -14342,6 +14343,247 @@
             // Feedback visual geral
             limparSelecaoExcel();
         });
+
+        // ================= GERADOR DE PDF - TRANSBORDO NO GALPÃO (LAYOUT MODERNO E PROFISSIONAL) =================
+        window.gerarPdfTransbordo = async () => {
+            const selectOrigem = document.getElementById('transbordo-origem');
+            const optionSel = selectOrigem ? selectOrigem.options[selectOrigem.selectedIndex] : null;
+
+            const placaOrigemAtiva = optionSel ? optionSel.value : "";
+            const placaOrigemOriginal = optionSel ? (optionSel.getAttribute('data-orig') || placaOrigemAtiva) : "";
+            const placaDestino = document.getElementById('transbordo-destino')?.value.trim().toUpperCase() || "";
+            const dataTransbordo = document.getElementById('transbordo-data')?.value || new Date().toISOString().split('T')[0];
+            const tipoTransbordo = document.getElementById('transbordo-tipo')?.value || "todas";
+
+            if (!placaOrigemAtiva || !placaDestino) {
+                return alert("Selecione a placa de origem e informe a placa de destino para gerar o PDF.");
+            }
+
+            showLoader();
+            try {
+                // Busca as notas fiscais do dia no Firebase
+                const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataTransbordo));
+                let notasDoDia = docSnap.exists() ? docSnap.data().notas || [] : [];
+
+                const placaAtivaLimpa = placaOrigemAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                // Filtra as notas da placa de origem selecionada
+                let notasOrigem = notasDoDia.filter(n => {
+                    const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    return pNota === placaAtivaLimpa;
+                });
+
+                // Se o usuário marcou "selecionar" notas específicas no modal, filtra apenas as checadas
+                if (tipoTransbordo === 'selecionar') {
+                    const nfsSelecionadas = Array.from(document.querySelectorAll('.check-nf-transbordo:checked')).map(cb => String(cb.value));
+                    if (nfsSelecionadas.length > 0) {
+                        notasOrigem = notasOrigem.filter(n => nfsSelecionadas.includes(String(n.nf)));
+                    }
+                }
+
+                if (notasOrigem.length === 0) {
+                    hideLoader();
+                    return alert("Nenhuma nota fiscal encontrada para os critérios selecionados no transbordo.");
+                }
+
+                // Descobre o motorista de origem da rota ou das notas
+                let motoristaOrigem = "NÃO INFORMADO";
+                const nMot = notasOrigem.find(n => n.motorista && n.motorista.trim() !== "");
+                if (nMot) motoristaOrigem = nMot.motorista;
+
+                const conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
+
+                // Ordena as notas em ordem crescente por número de NF
+                notasOrigem.sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
+
+                let pesoTotalGeral = 0;
+                let qtdTotalGeral = 0;
+
+                // Monta o corpo da tabela de notas limpo e separado por colunas
+                let corpoTabelaNotas = [
+                    [
+                        { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
+                        { text: 'NOTA FISCAL (NF)', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
+                        { text: 'VOLUMES / QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 },
+                        { text: 'PESO (KG)', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 9 }
+                    ]
+                ];
+
+                notasOrigem.forEach((n, index) => {
+                    const nfNum = cleanNF(n.nf);
+                    
+                    let qStr = String(n.qtde || n.volumes || "1").trim();
+                    const qtdNum = parseInt(qStr.replace(/\D/g, '')) || 1;
+
+                    let pStr = String(n.peso || "0").trim();
+                    const pesoNum = pStr.includes(',') 
+                        ? parseFloat(pStr.replace(/\./g, '').replace(',', '.')) || 0 
+                        : parseFloat(pStr) || 0;
+
+                    pesoTotalGeral += pesoNum;
+                    qtdTotalGeral += qtdNum;
+
+                    corpoTabelaNotas.push([
+                        { text: index + 1, alignment: 'center', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: nfNum, alignment: 'left', bold: true, fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: qtdNum, alignment: 'center', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' },
+                        { text: pesoNum.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 9, fillColor: index % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                    ]);
+                });
+
+                const dataFormatada = dataTransbordo.split('-').reverse().join('/');
+                const logoHeader = window.logoIcaphiBase64
+                    ? { image: window.logoIcaphiBase64, width: 100, alignment: 'right' }
+                    : { text: 'ICAPHI TRANSPORTES', fontSize: 12, bold: true, color: '#b91c1c', alignment: 'right' };
+
+                const docDefinition = {
+                    pageSize: 'A4',
+                    pageMargins: [30, 30, 30, 30],
+                    defaultStyle: { font: 'Roboto', fontSize: 9, color: '#0f172a' },
+                    content: [
+                        // Header / Título Principal
+                        {
+                            columns: [
+                                {
+                                    stack: [
+                                        { text: 'TERMO DE TRANSBORDO DE CARGA', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
+                                        { text: 'Controle Transbordo', fontSize: 9, color: '#64748b' }
+                                    ],
+                                    width: '70%'
+                                },
+                                { stack: [logoHeader], width: '30%' }
+                            ],
+                            margin: [0, 0, 0, 15]
+                        },
+                        // Linha divisória sutil
+                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 535, y2: 0, lineWidth: 1.5, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 15] },
+                        
+                        // Cards de Origem e Destino
+                        {
+                            table: {
+                                widths: ['50%', '50%'],
+                                body: [
+                                    [
+                                        {
+                                            stack: [
+                                                { text: 'DADOS DO VEÍCULO DE ORIGEM', fontSize: 8, bold: true, color: '#64748b', margin: [0, 0, 0, 4] },
+                                                { text: `Placa: ${placaOrigemOriginal.toUpperCase()}`, fontSize: 11, bold: true, color: '#1e293b', margin: [0, 0, 0, 2] },
+                                                { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 9, color: '#334155' }
+                                            ],
+                                            fillColor: '#f8fafc',
+                                            margin: [10, 10, 10, 10],
+                                            border: [true, true, true, true]
+                                        },
+                                        {
+                                            stack: [
+                                                { text: 'DADOS DO VEÍCULO DE DESTINO (NOVO)', fontSize: 8, bold: true, color: '#64748b', margin: [0, 0, 0, 4] },
+                                                { text: `Placa Destino: ${placaDestino}`, fontSize: 11, bold: true, color: '#2563eb', margin: [0, 0, 0, 2] },
+                                                { text: `Data da Operação: ${dataFormatada}`, fontSize: 9, color: '#334155' }
+                                            ],
+                                            fillColor: '#eff6ff',
+                                            margin: [10, 10, 10, 10],
+                                            border: [true, true, true, true]
+                                        }
+                                    ]
+                                ]
+                            },
+                            layout: {
+                                hLineWidth: () => 1,
+                                vLineWidth: () => 1,
+                                hLineColor: () => '#cbd5e1',
+                                vLineColor: () => '#cbd5e1',
+                                paddingLeft: () => 0,
+                                paddingRight: () => 0,
+                                paddingTop: () => 0,
+                                paddingBottom: () => 0
+                            },
+                            margin: [0, 0, 0, 15]
+                        },
+
+                        // Linha de Conferência e Volume
+                        {
+                            table: {
+                                widths: ['50%', '50%'],
+                                body: [
+                                    [
+                                        { text: `Conferente Responsável: ${conferenteNome.toUpperCase()}`, bold: true, fontSize: 9, color: '#475569', fillColor: '#f1f5f9', margin: [8, 6, 8, 6] },
+                                        { text: `Total de NFs: ${notasOrigem.length} Nota(s)`, bold: true, alignment: 'right', fontSize: 9, color: '#475569', fillColor: '#f1f5f9', margin: [8, 6, 8, 6] }
+                                    ]
+                                ]
+                            },
+                            layout: 'noBorders',
+                            margin: [0, 0, 0, 15]
+                        },
+
+                        // Título da Tabela
+                        { text: 'RELAÇÃO DETALHADA DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 11, bold: true, color: '#0f172a', margin: [0, 0, 0, 8] },
+
+                        // Tabela de Notas Fiscais Organizada
+                        {
+                            table: {
+                                headerRows: 1,
+                                widths: ['10%', '50%', '20%', '20%'],
+                                body: corpoTabelaNotas
+                            },
+                            layout: {
+                                hLineWidth: (i, node) => {
+                                    const totalRows = (node && node.body) ? node.body.length : (corpoTabelaNotas.length || 0);
+                                    return (i === 0 || i === 1 || i === totalRows) ? 1 : 0.5;
+                                },
+                                vLineWidth: () => 0,
+                                hLineColor: (i) => i === 1 ? '#0f172a' : '#e2e8f0',
+                                paddingTop: () => 6,
+                                paddingBottom: () => 6,
+                                paddingLeft: () => 8,
+                                paddingRight: () => 8
+                            },
+                            margin: [0, 0, 0, 10]
+                        },
+
+                        // Caixa de Totais Gerais
+                        {
+                            table: {
+                                widths: ['60%', '20%', '20%'],
+                                body: [
+                                    [
+                                        { text: 'TOTAIS GERAIS DA CARGA TRANSBORDADA:', bold: true, fontSize: 10, alignment: 'right', fillColor: '#f1f5f9', margin: [8, 8, 8, 8] },
+                                        { text: `${qtdTotalGeral} vol.`, bold: true, fontSize: 10, alignment: 'center', fillColor: '#f1f5f9', margin: [8, 8, 8, 8] },
+                                        { text: `${pesoTotalGeral.toFixed(3).replace('.', ',')} kg`, bold: true, fontSize: 10, alignment: 'right', fillColor: '#f1f5f9', color: '#1e3a8a', margin: [8, 8, 8, 8] }
+                                    ]
+                                ]
+                            },
+                            layout: {
+                                hLineWidth: () => 1,
+                                vLineWidth: () => 0,
+                                hLineColor: () => '#cbd5e1'
+                            },
+                            margin: [0, 0, 0, 30]
+                        },
+
+                        // Termo de Responsabilidade
+                        { text: 'TERMO DE RESPONSABILIDADE', bold: true, fontSize: 9, color: '#334155', margin: [0, 0, 0, 4] },
+                        { text: 'Declaro para os devidos fins que a carga descrita neste termo foi integralmente transbordada do veículo de origem para o veículo de destino em perfeitas condições de segurança e conferência.', fontSize: 8, color: '#64748b', margin: [0, 0, 0, 40] },
+
+                        // Assinaturas (Sem o motorista de destino, apenas Conferente e Motorista Responsável)
+                        {
+                            unbreakable: true,
+                            columns: [
+                                { text: `____________________________________\n${conferenteNome}\nConferente / Responsável`, alignment: 'center', bold: true, fontSize: 9 },
+                                { text: '____________________________________\nMotorista / Transportador\nRecebedor da Carga', alignment: 'center', bold: true, fontSize: 9 }
+                            ]
+                        }
+                    ]
+                };
+
+                const nomeArquivo = `Transbordo_${placaOrigemOriginal}_para_${placaDestino}_${dataTransbordo}.pdf`;
+                abrirPreviewPDF(docDefinition, nomeArquivo);
+
+            } catch (e) {
+                console.error("Erro ao gerar PDF de transbordo:", e);
+                alert("Erro ao gerar o documento PDF.");
+            }
+            hideLoader();
+        };
 
     </script>
 </body>
