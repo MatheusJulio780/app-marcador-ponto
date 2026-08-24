@@ -2775,6 +2775,76 @@
             padding: 15px !important;
         }
 
+        /* 🟢 MODO EXCEL: Seleção de Células e Títulos */
+        .table-selectable {
+            user-select: none;
+        }
+
+        .table-selectable td, .table-selectable th {
+            cursor: cell;
+        }
+
+        .selected-cell {
+            background-color: rgba(33, 115, 70, 0.15) !important; 
+            outline: 1px solid #217346;
+            position: relative;
+            /* Removemos a sobrescrita de cor da fonte para não estragar a cor original na cópia! */
+        }
+
+        /* 🟢 BOLINHAS FLUTUANTES (STATS) */
+        #selection-stats-container {
+            position: fixed;
+            bottom: 90px; 
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .stat-bubble {
+            background: var(--bg-card, #ffffff);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #217346;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stat-bubble:hover {
+            transform: scale(1.05) translateY(-2px);
+            background: #f8fafc;
+        }
+
+        .stat-bubble.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .stat-icon-wrapper {
+            background: rgba(33, 115, 70, 0.1);
+            color: #217346;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
     </style>
 </head>
 
@@ -4845,6 +4915,18 @@
                     <input type="text" id="chat-input-msg" placeholder="Digite uma mensagem...">
                     <button id="chat-btn-send"><i class="ph-fill ph-paper-plane-right"></i></button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 🟢 INDICADORES DE SELEÇÃO EXCEL -->
+        <div id="selection-stats-container">
+            <div id="bubble-soma" class="stat-bubble" onclick="window.copiarValorBolinha('soma', this)">
+                <div class="stat-icon-wrapper"><i class="ph-bold ph-sigma"></i></div>
+                <div>Soma: <span id="stat-sum-val" style="color: #217346;">R$ 0,00</span></div>
+            </div>
+            <div id="bubble-contagem" class="stat-bubble" onclick="window.copiarValorBolinha('contagem', this)">
+                <div class="stat-icon-wrapper"><i class="ph-bold ph-hash"></i></div>
+                <div>Contagem: <span id="stat-count-val" style="color: var(--accent);">0</span></div>
             </div>
         </div>
 
@@ -13691,6 +13773,210 @@
             }
             hideLoader();
         };
+
+        // ================= MOTOR DE SELEÇÃO TIPO EXCEL =================
+        document.addEventListener("DOMContentLoaded", () => {
+            const tbMonitoramento = document.getElementById('tabela-monitoramento');
+            const tbNotas = document.getElementById('tabela-operacao-notas');
+            if(tbMonitoramento) tbMonitoramento.classList.add('table-selectable');
+            if(tbNotas) tbNotas.classList.add('table-selectable');
+
+            let isSelecting = false;
+            let startCell = null;
+            let currentTable = null;
+
+            document.addEventListener('mousedown', (e) => {
+                if (['INPUT', 'SELECT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+
+                // Agora aceita tanto TD quanto TH (Células normais e Cabeçalhos)
+                const cell = e.target.closest('td, th');
+                if (!cell || !cell.closest('table.table-selectable')) {
+                    if (!e.target.closest('#selection-stats-container')) {
+                        limparSelecaoExcel();
+                    }
+                    return;
+                }
+
+                if (e.button !== 0) return; 
+                
+                isSelecting = true;
+                startCell = cell;
+                currentTable = cell.closest('table');
+                
+                limparSelecaoExcel();
+                cell.classList.add('selected-cell');
+                atualizarBolinhasExcel();
+            });
+
+            document.addEventListener('mouseover', (e) => {
+                if (!isSelecting || !startCell || !currentTable) return;
+                const targetCell = e.target.closest('td, th');
+                if (!targetCell || targetCell.closest('table') !== currentTable) return;
+
+                const startRowIdx = startCell.parentElement.rowIndex;
+                const startColIdx = startCell.cellIndex;
+                const endRowIdx = targetCell.parentElement.rowIndex;
+                const endColIdx = targetCell.cellIndex;
+
+                const minRow = Math.min(startRowIdx, endRowIdx);
+                const maxRow = Math.max(startRowIdx, endRowIdx);
+                const minCol = Math.min(startColIdx, endColIdx);
+                const maxCol = Math.max(startColIdx, endColIdx);
+
+                limparSelecaoExcel(false); 
+
+                const rows = currentTable.rows;
+                for (let r = minRow; r <= maxRow; r++) {
+                    if (!rows[r]) continue;
+                    for (let c = minCol; c <= maxCol; c++) {
+                        const cell = rows[r].cells[c];
+                        if (cell && window.getComputedStyle(cell).display !== 'none') {
+                            cell.classList.add('selected-cell');
+                        }
+                    }
+                }
+                atualizarBolinhasExcel();
+            });
+
+            document.addEventListener('mouseup', () => { isSelecting = false; });
+        });
+
+        function limparSelecaoExcel(resetBolinhas = true) {
+            document.querySelectorAll('.selected-cell').forEach(c => c.classList.remove('selected-cell'));
+            if (resetBolinhas) {
+                document.getElementById('bubble-contagem')?.classList.remove('show');
+                document.getElementById('bubble-soma')?.classList.remove('show');
+            }
+        }
+
+        function atualizarBolinhasExcel() {
+            const selecionados = document.querySelectorAll('.selected-cell');
+            const bubbleContagem = document.getElementById('bubble-contagem');
+            const bubbleSoma = document.getElementById('bubble-soma');
+            const countVal = document.getElementById('stat-count-val');
+            const sumVal = document.getElementById('stat-sum-val');
+
+            if (selecionados.length < 2) {
+                bubbleContagem.classList.remove('show');
+                bubbleSoma.classList.remove('show');
+                return;
+            }
+
+            let sum = 0;
+            let hasNumbers = false;
+
+            selecionados.forEach(cell => {
+                let txt = cell.innerText || cell.textContent;
+                txt = txt.replace(/R\$\s?/gi, '').trim(); 
+                
+                let val = NaN;
+                
+                // PARSER INTELIGENTE: Diferencia o 1716.70 do 1.716,70
+                if (txt.includes(',') && txt.includes('.')) {
+                    if (txt.lastIndexOf(',') > txt.lastIndexOf('.')) {
+                        // Formato BR: 1.716,70
+                        val = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+                    } else {
+                        // Formato US: 1,716.70
+                        val = parseFloat(txt.replace(/,/g, ''));
+                    }
+                } else if (txt.includes(',')) {
+                    // Formato 1716,70
+                    val = parseFloat(txt.replace(',', '.'));
+                } else if (!isNaN(txt) && txt !== "") {
+                    // Formato 1716.70 ou inteiro
+                    val = parseFloat(txt);
+                }
+
+                // Soma apenas se for um número válido e ignora textos como placas
+                if (!isNaN(val)) {
+                    sum += val;
+                    hasNumbers = true;
+                }
+            });
+
+            countVal.innerText = selecionados.length;
+            bubbleContagem.classList.add('show');
+
+            if (hasNumbers) {
+                sumVal.innerText = sum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                bubbleSoma.classList.add('show');
+            } else {
+                bubbleSoma.classList.remove('show');
+            }
+        }
+
+        // 🟢 CÓPIA DE VALOR ÚNICO (Ao clicar nas Bolinhas)
+        window.copiarValorBolinha = (tipo, el) => {
+            const textToCopy = tipo === 'soma' 
+                ? document.getElementById('stat-sum-val').innerText 
+                : document.getElementById('stat-count-val').innerText;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const icon = el.querySelector('i');
+                const oldClass = icon.className;
+                icon.className = 'ph-bold ph-check';
+                setTimeout(() => { icon.className = oldClass; }, 1500);
+            });
+        };
+
+        // 🟢 CÓPIA AVANÇADA (Ao apertar CTRL+C) - Copia células com CORES e FORMATOS para o Excel
+        document.addEventListener('copy', (e) => {
+            const selecionados = document.querySelectorAll('.selected-cell');
+            if (selecionados.length === 0) return;
+
+            // Bloqueia a cópia podre padrão do navegador
+            e.preventDefault();
+
+            let rowsMap = new Map();
+            selecionados.forEach(cell => {
+                const rIdx = cell.parentElement.rowIndex;
+                const cIdx = cell.cellIndex;
+                if (!rowsMap.has(rIdx)) rowsMap.set(rIdx, []);
+                rowsMap.get(rIdx).push({ col: cIdx, elem: cell });
+            });
+
+            const sortedRows = Array.from(rowsMap.keys()).sort((a, b) => a - b);
+            
+            let tsvContent = "";
+            let htmlContent = "<table style='border-collapse: collapse; font-family: sans-serif;'>";
+
+            sortedRows.forEach(rIdx => {
+                const cols = rowsMap.get(rIdx).sort((a, b) => a.col - b.col);
+                htmlContent += "<tr>";
+                let rowTsv = [];
+
+                cols.forEach(c => {
+                    const cell = c.elem;
+                    const isTh = cell.tagName === 'TH';
+                    const input = cell.querySelector('input, select');
+                    let textToCopy = input ? input.value : cell.innerText.trim();
+                    rowTsv.push(textToCopy);
+
+                    // Captura as cores exatas da linha/célula
+                    const compStyle = window.getComputedStyle(cell);
+                    // Ignora o verde da seleção para não copiar verde para o Excel
+                    const bgColor = cell.parentElement.style.backgroundColor || compStyle.backgroundColor;
+                    const color = compStyle.color;
+                    const fw = compStyle.fontWeight;
+                    const align = compStyle.textAlign;
+
+                    htmlContent += `<${isTh ? 'th' : 'td'} style='border: 1px solid #d1d5db; padding: 4px 8px; background-color: ${bgColor}; color: ${color}; font-weight: ${fw}; text-align: ${align};'>${textToCopy}</${isTh ? 'th' : 'td'}>`;
+                });
+                
+                htmlContent += "</tr>";
+                tsvContent += rowTsv.join('\t') + '\n';
+            });
+
+            htmlContent += "</table>";
+
+            // Envia a tabela renderizada para o clipboard. O Excel dá prioridade ao HTML rico!
+            e.clipboardData.setData('text/html', htmlContent);
+            e.clipboardData.setData('text/plain', tsvContent);
+
+            // Feedback visual geral
+            limparSelecaoExcel();
+        });
 
     </script>
 </body>
