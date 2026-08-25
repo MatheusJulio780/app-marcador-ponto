@@ -2867,6 +2867,43 @@
             transition: none !important;
         }
 
+        .app-password-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-panel, #1e293b);
+        border: 1px solid var(--border-color, #334155);
+        padding: 6px 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-family: inherit;
+        vertical-align: middle;
+    }
+
+    .app-password-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted, #94a3b8);
+        letter-spacing: 0.5px;
+    }
+
+    /* Aumenta e destaca apenas os números ao passar o mouse no card inteiro */
+    .app-password-card:hover .app-password-numbers {
+        transform: scale(1.15);
+        color: var(--accent, #3b82f6);
+    }
+
+    .app-password-numbers {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-main, #f8fafc);
+        letter-spacing: 1px;
+        display: inline-block;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+        transform-origin: left center;
+        cursor: pointer;
+    }
+
     </style>
 </head>
 
@@ -2957,6 +2994,10 @@
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
+                    <div class="app-password-card">
+                        <span class="app-password-label">SENHA DO APP:</span>
+                        <span id="app-password-value" class="app-password-numbers">--*--*----</span>
+                    </div>
 
                     <!-- Avatares Empilhados (Online) -->
                     <div id="online-users-stack" class="avatar-stack" title="Usuários Online">
@@ -5365,6 +5406,27 @@
                 }, 800);
             }, 2500);
         };
+
+        window.atualizarSenhaAppDiaria = () => {
+            const el = document.getElementById('app-password-value');
+            if (!el) return;
+
+            const hoje = new Date();
+            const dia = hoje.getDate();
+            const mes = hoje.getMonth() + 1;
+            const ano = hoje.getFullYear();
+
+            // Cálculo: dia * mês * ano (ex: 25 * 8 * 2026 = 405200)
+            const senhaCalculada = dia * mes * ano;
+
+            // Exibe o resultado formatado
+            el.textContent = senhaCalculada;
+        };
+
+        // Executa ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            window.atualizarSenhaAppDiaria();
+        });
 
         // ... a partir daqui continua com o restante do código que te passei (compressImageToBase64, etc)
 
