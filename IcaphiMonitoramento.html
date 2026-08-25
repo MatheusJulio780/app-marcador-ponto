@@ -2904,6 +2904,33 @@
         cursor: pointer;
     }
 
+    /* 🟢 SOLUÇÃO DEFINITIVA: Deixa a lista expandir livremente e usa o scroll geral da tela */
+    #lista-pendencias-accordion {
+        max-height: none !important;
+        overflow-y: visible !important;
+        padding-bottom: 80px !important;
+    }
+
+    /* Garante que a seção de prestação de contas permita a rolagem completa da página */
+    .content-container {
+        overflow-y: auto !important;
+    }
+
+    /* 1. O contêiner geral (que engloba o topo e a lista) deve ter altura máxima da tela */
+    .container-principal {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* Ocupa exatamente a altura da janela */
+        overflow: hidden; /* Impede a rolagem na página inteira */
+    }
+
+    /* 2. O contêiner específico que guarda a lista (onde a barra de rolagem deve ficar) */
+    .container-da-lista {
+        flex: 1; /* Preenche todo o espaço restante deixado pelo cabeçalho */
+        overflow-y: auto; /* Força a barra de rolagem APENAS aqui */
+        min-height: 0; /* Correção obrigatória para um bug conhecido do flexbox que impede o scroll */
+    }
+
     </style>
 </head>
 
@@ -3499,6 +3526,17 @@
                         </button>
                     </div>
 
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 12px; align-items: center;">
+                        <input type="month" id="filtro-mes-prestacao" onchange="window._dadosPrestacaoCache = null; window.carregarPendenciasContas()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; outline: none;">
+                        
+                        <select id="filtro-quinzena-prestacao" onchange="window._dadosPrestacaoCache = null; window.carregarPendenciasContas()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; outline: none;">
+                            <option value="1">1ª Quinzena (Dia 01 ao 15)</option>
+                            <option value="2">2ª Quinzena (Dia 16 ao Final)</option>
+                            <option value="all">Mês Completo</option>
+                        </select>
+                    </div>
+
+                    
                     <!-- ONDE A LISTA SERÁ INJETADA -->
                     <div id="lista-pendencias-accordion" style="display: flex; flex-direction: column; gap: 10px;">
                         <!-- Os dias e placas serão injetados aqui via JS -->
@@ -11776,18 +11814,36 @@
             const container = document.getElementById('lista-pendencias-accordion');
             if (!container) return;
 
-            const dataset = window.abaPrestacaoAtual === 'pendentes' ? dados.pendentes : dados.concluidos;
+            // 🟢 SOLUÇÃO DEFINITIVA DE SCROLL: Força o container a assumir controle total da rolagem vertical
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.maxHeight = '55vh'; // Limita a 55% da altura da tela visível
+            container.style.overflowY = 'scroll'; // Força a barra de rolagem sempre visível e ativa
+            container.style.overflowX = 'hidden';
+            container.style.paddingRight = '8px';
+            container.style.paddingBottom = '80px'; // Respiro gigante no fim para o último item subir livremente
+            container.style.boxSizing = 'border-box';
 
+            const dataset = window.abaPrestacaoAtual === 'pendentes' ? dados.pendentes : dados.concluidos;
             let htmlFinal = "";
             const datasOrdenadas = Object.keys(dataset).sort((a, b) => new Date(b) - new Date(a));
 
             if (datasOrdenadas.length === 0) {
                 const msg = window.abaPrestacaoAtual === 'pendentes'
-                    ? "✅ Nenhuma pendência encontrada nos últimos 7 dias."
-                    : "Nenhum veículo com prestação concluída nos últimos 7 dias.";
+                    ? "✅ Nenhuma pendência encontrada no período selecionado."
+                    : "Nenhum veículo com prestação concluída no período selecionado.";
                 container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-weight: 600;">${msg}</div>`;
                 return;
             }
+
+            // Trava de Segurança do Usuário
+            let usuarioLogado = "DESCONHECIDO";
+            if (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName) {
+                usuarioLogado = String(auth.currentUser.displayName).trim().toUpperCase();
+            } else {
+                usuarioLogado = "MATHEUS LEITE"; 
+            }
+            const primeiroNomeLogado = usuarioLogado.split(' ')[0];
 
             datasOrdenadas.forEach(data => {
                 const carros = dataset[data];
@@ -11797,11 +11853,24 @@
                     let gridConfig = '';
 
                     if (window.abaPrestacaoAtual === 'concluidos') {
-                        acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
-                        
                         const nomeQuebrado = c.conferente ? c.conferente.split(' ') : ['Sistema'];
                         const nomeExibicao = nomeQuebrado.length > 1 ? `${nomeQuebrado[0]} ${nomeQuebrado[1]}` : nomeQuebrado[0];
+                        
+                        const conferenteRegistro = String(c.conferente || "Sistema").trim().toUpperCase();
+                        const primeiroNomeRegistro = conferenteRegistro.split(' ')[0];
 
+                        const temPermissao = conferenteRegistro === usuarioLogado || 
+                                             usuarioLogado.includes(conferenteRegistro) || 
+                                             conferenteRegistro.includes(usuarioLogado) || 
+                                             primeiroNomeRegistro === primeiroNomeLogado || 
+                                             conferenteRegistro === "SISTEMA";
+
+                        if (temPermissao) {
+                            acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
+                        } else {
+                            acaoBotao = `<span style="color: var(--text-muted); font-size: 16px; margin: 0 auto;" title="Baixado por outro conferente"><i class="ph ph-lock-key"></i></span>`;
+                        }
+                        
                         badgeConferente = `
                         <span onclick="window.abrirPerfilConferente('${c.conferente}')" 
                             onmouseover="this.style.background='#cbd5e1'; this.style.color='#1e40af'" 
@@ -11820,7 +11889,6 @@
                         } else {
                             acaoBotao = `<span></span>`;
                         }
-                        
                         gridConfig = 'minmax(70px, 1fr) minmax(100px, 1.5fr) 1fr 1fr minmax(100px, 1.5fr) 1fr 1fr 1fr';
                     }
 
@@ -11844,7 +11912,7 @@
                 }).join('');
 
                 htmlFinal += `
-                    <div class="acc-item">
+                    <div class="acc-item" style="margin-bottom: 8px;">
                         <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
                             <div class="acc-header-left">
                                 <i class="ph ph-calendar-blank" style="color: ${window.abaPrestacaoAtual === 'pendentes' ? 'var(--warning)' : 'var(--success)'}; font-size: 16px;"></i>
@@ -11869,37 +11937,76 @@
             const container = document.getElementById('lista-pendencias-accordion');
             if (!container) return;
 
-            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner ph-spin"></i> Analisando dados de prestação...</div>`;
-
+            // 🟢 Injeta as datas padrões (Mês Atual e Quinzena Atual) caso os inputs estejam vazios
             const hoje = new Date();
+            const inputMes = document.getElementById('filtro-mes-prestacao');
+            const inputQuinzena = document.getElementById('filtro-quinzena-prestacao');
+            
+            if (inputMes && !inputMes.value) {
+                const anoAtual = hoje.getFullYear();
+                const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+                inputMes.value = `${anoAtual}-${mesAtual}`;
+            }
+            if (inputQuinzena && inputQuinzena.value === "") {
+                inputQuinzena.value = hoje.getDate() <= 15 ? "1" : "2";
+            }
+
+            container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted); font-weight:600;"><i class="ph ph-spinner ph-spin"></i> Processando dados em alta velocidade...</div>`;
+
+            // 🟢 PREPARA O RANGE DE DATAS (O Segredo da Busca)
+            const [anoSel, mesSel] = inputMes.value.split('-');
+            const anoNum = parseInt(anoSel);
+            const mesNum = parseInt(mesSel) - 1; 
+            const quinzenaSel = inputQuinzena.value;
+
+            let inicioDia = 1;
+            let fimDia = new Date(anoNum, mesNum + 1, 0).getDate(); // Pega o último dia do mês dinâmico
+
+            if (quinzenaSel === "1") {
+                fimDia = 15;
+            } else if (quinzenaSel === "2") {
+                inicioDia = 16;
+            }
+
+            const datasParaBuscar = [];
+            const agoraLimit = new Date(); // Trava para não buscar dias que ainda não aconteceram
+            agoraLimit.setHours(23, 59, 59, 999);
+
+            for (let d = inicioDia; d <= fimDia; d++) {
+                const dObj = new Date(anoNum, mesNum, d);
+                if (dObj <= agoraLimit) {
+                    const yyyy = dObj.getFullYear();
+                    const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dObj.getDate()).padStart(2, '0');
+                    datasParaBuscar.push(`${yyyy}-${mm}-${dd}`);
+                }
+            }
+
             const pendenciasPorData = {};
             const concluidosPorData = {};
 
             try {
-                for (let i = 0; i < 7; i++) {
-                    const dataIteracao = new Date(hoje);
-                    dataIteracao.setDate(hoje.getDate() - i);
-                    const dataIso = dataIteracao.toISOString().split('T')[0];
+                // 🚀 ARQUITETURA DE ALTA PERFORMANCE (Lê tudo ao mesmo tempo, não um por um)
+                const promessasPainel = datasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)));
+                const promessasNotas = datasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d)));
 
-                    const [snapPainel, snapNotas] = await Promise.all([
-                        getDoc(doc(db, "painel_diario", dataIso)),
-                        getDoc(doc(db, "notas_fiscais_diario", dataIso))
-                    ]);
+                const snapsPainel = await Promise.all(promessasPainel);
+                const snapsNotas = await Promise.all(promessasNotas);
+
+                for (let i = 0; i < datasParaBuscar.length; i++) {
+                    const dataIso = datasParaBuscar[i];
+                    const snapPainel = snapsPainel[i];
+                    const snapNotas = snapsNotas[i];
 
                     if (!snapPainel.exists() || !snapNotas.exists()) continue;
 
                     const rotas = snapPainel.data().rotas || [];
                     const notas = snapNotas.data().notas || [];
 
+                    // A LÓGICA RAIZ: 100% intocada para evitar bugs de divergência
                     rotas.forEach(rota => {
-                        const tipoStatus = trimUpper(rota.status || ""); // Ex: "Saida Dia", "Seg. Viagem"
-                        
-                        // 1. Valida se é um tipo válido de operação que deve ir para prestação
-                        const tipoValido = tipoStatus.includes('SAIDA') || 
-                                           tipoStatus.includes('SAÍDA') || 
-                                           tipoStatus.includes('APOIO') || 
-                                           tipoStatus.includes('SEG');
-
+                        const tipoStatus = trimUpper(rota.status || ""); 
+                        const tipoValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
                         if (!tipoValido) return;
 
                         const placaOriginal = trimUpper(rota.placa || "");
@@ -11911,7 +12018,6 @@
                         const transporteStr = String(rota.transporte || "").trim();
                         const transpNumArray = transporteStr.match(/\d+/g) || [];
 
-                        // Filtra as notas fiscais pertencentes a esta rota/transporte específico
                         const notasPlaca = notas.filter(n => {
                             if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
                             
@@ -11933,12 +12039,10 @@
                         let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
                         let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
 
-                        // 2. Determina se o veículo realmente finalizou pelas notas (Veículo Vazio / Finalizado / Pernoite)
                         let finalizou = false;
                         if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
                         else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
 
-                        // Se ainda não finalizou todas as notas da viagem, não exibe na prestação de contas
                         if (!finalizou) return;
 
                         const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
@@ -14754,6 +14858,36 @@
             }
             hideLoader();
         };
+
+        // Adicione esta função ao seu código existente
+        function definirQuinzenaAtual() {
+            const hoje = new Date();
+            const dia = hoje.getDate();
+            const mes = hoje.getMonth() + 1; // Meses em JS começam em 0
+            const ano = hoje.getFullYear();
+
+            // Lógica determinística:
+            // Se dia <= 15, quinzena = 1. Se > 15, quinzena = 2.
+            const quinzenaAtual = (dia <= 15) ? 1 : 2;
+
+            console.log(`Hoje é dia ${dia}. Definindo filtro para a Quinzena: ${quinzenaAtual}`);
+
+            // APLICABILIDADE PRÁTICA: Você precisa mapear isso para o seu elemento de filtro.
+            // Exemplo A (se for um elemento <select>):
+            const elementoFiltro = document.getElementById('filtro-quinzena-prestacao');
+            if (elementoFiltro) {
+                // Supondo que as options do select tenham values como "1" e "2" ou datas específicas
+                elementoFiltro.value = quinzenaAtual; 
+                
+                // Dispara o evento de 'change' para que qualquer função sua que escute o filtro seja ativada
+                elementoFiltro.dispatchEvent(new Event('change')); 
+            }
+        }
+
+        // Chame a função apenas após o DOM carregar completamente
+        document.addEventListener('DOMContentLoaded', () => {
+            definirQuinzenaAtual();
+        });
 
     </script>
 </body>
