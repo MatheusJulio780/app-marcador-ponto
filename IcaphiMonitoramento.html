@@ -9459,8 +9459,6 @@
 
             if (notasBrutas.length === 0) return alert("Não há notas para o transporte selecionado.");
             
-            // ... DAQUI PRA BAIXO O SEU CÓDIGO CONTINUA EXATAMENTE IGUAL (Define o motoristaCorreto, monta o const d = {}, etc) ...
-            
             // Define o motorista e a placa real considerando o regime de troca
             let motoristaCorreto = "NÃO INFORMADO";
             let placaExibicaoPDF = placaSelecionada;
@@ -9495,14 +9493,14 @@
                 parciais: notasBrutas.filter(n => n.parcial && String(n.parcial).trim() !== "")
             };
 
-            // 4. Cálculo rigoroso do selo de anexo (Foto vs Assinatura) com base nas notas reais da viagem
+            // 4. Cálculo rigoroso do selo de anexo (Agora com FOTO e ANEXADO agrupados)
             const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
             let qtdNotas = d.notas.length;
 
             let notasComFoto = d.notas.filter(n => {
                 const appStr = String(n.app || "").trim().toUpperCase();
                 const statusStr = String(n.status || "").trim().toUpperCase();
-                return appStr === "FOTO" || appStr.includes("FOTO") || excecoesApp.includes(statusStr);
+                return appStr.includes("FOTO") || appStr.includes("ANEXADO") || excecoesApp.includes(statusStr);
             }).length;
 
             let notasComAssinatura = d.notas.filter(n => {
@@ -9511,11 +9509,11 @@
             }).length;
 
             if (qtdNotas > 0 && notasComFoto === qtdNotas) {
-                d.textoApp = "100% FOTO";
+                d.textoApp = "100% FOTO / ANEXADO";
             } else if (qtdNotas > 0 && notasComAssinatura === qtdNotas) {
                 d.textoApp = "100% ASSINATURA";
             } else {
-                d.textoApp = `${Math.round((notasComFoto / qtdNotas) * 100)}% FOTO / ${Math.round((notasComAssinatura / qtdNotas) * 100)}% ASSINATURA`;
+                d.textoApp = `${Math.round((notasComFoto / qtdNotas) * 100)}% FOTO/ANEX. / ${Math.round((notasComAssinatura / qtdNotas) * 100)}% ASSIN.`;
             }
 
             // MAPEAMENTO E ORDENAÇÃO DE CANHOTOS (COLUMN-MAJOR)
@@ -9525,6 +9523,7 @@
                 let statusApp = trimUpper(n.app || '');
                 let cor = '#94a3b8'; // CINZA (Sem anexo por padrão)
 
+                // Garante que ANEXADO também fique Verde
                 if (statusApp === 'FOTO' || statusApp === 'ANEXADO') cor = '#16a34a'; // VERDE
                 else if (statusApp === 'ASSINATURA') cor = '#000000'; // PRETO
 
