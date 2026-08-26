@@ -2904,31 +2904,46 @@
         cursor: pointer;
     }
 
-    /* 🟢 SOLUÇÃO DEFINITIVA: Deixa a lista expandir livremente e usa o scroll geral da tela */
-    #lista-pendencias-accordion {
-        max-height: none !important;
-        overflow-y: visible !important;
-        padding-bottom: 80px !important;
+    /* 1. Trava a rolagem da página inteira. O formulário branco e o header ficam imóveis. */
+    #view-prestacao .content-container {
+        overflow: hidden !important;
+        height: calc(100vh - 75px); /* Garante que o painel respeite o limite do monitor */
     }
 
-    /* Garante que a seção de prestação de contas permita a rolagem completa da página */
-    .content-container {
-        overflow-y: auto !important;
-    }
-
-    /* 1. O contêiner geral (que engloba o topo e a lista) deve ter altura máxima da tela */
-    .container-principal {
+    /* 2. O bloco das abas e da lista ocupa o espaço restante, mas sem rolar. */
+    #view-prestacao .prestacao-pendencias-container {
         display: flex;
         flex-direction: column;
-        height: 100vh; /* Ocupa exatamente a altura da janela */
-        overflow: hidden; /* Impede a rolagem na página inteira */
+        flex: 1;
+        overflow: hidden !important;
+        min-height: 0;
     }
 
-    /* 2. O contêiner específico que guarda a lista (onde a barra de rolagem deve ficar) */
-    .container-da-lista {
-        flex: 1; /* Preenche todo o espaço restante deixado pelo cabeçalho */
-        overflow-y: auto; /* Força a barra de rolagem APENAS aqui */
-        min-height: 0; /* Correção obrigatória para um bug conhecido do flexbox que impede o scroll */
+    /* 3. A mágica acontece aqui: Rolagem ativada APENAS dentro da lista de NFs. */
+    #lista-pendencias-accordion {
+        flex: 1;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-height: 0; 
+        padding-right: 8px;
+        padding-bottom: 80px !important; /* Respiro para você ver a última placa confortavelmente */
+    }
+
+    /* 4. A CORREÇÃO DO SEU BUG: Impede o Flexbox de esmagar as sanfonas (linhas de 1px) */
+    #lista-pendencias-accordion > div {
+        flex-shrink: 0 !important; 
+    }
+
+    /* Estética da barra de rolagem */
+    #lista-pendencias-accordion::-webkit-scrollbar {
+        width: 8px;
+    }
+    #lista-pendencias-accordion::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    #lista-pendencias-accordion::-webkit-scrollbar-track {
+        background: transparent;
     }
 
     </style>
