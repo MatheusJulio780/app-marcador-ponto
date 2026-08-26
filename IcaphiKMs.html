@@ -2958,24 +2958,98 @@
             }
         }
 
-        function confirmarExportacao() {
-            const ini = el('data-export-ini').value; const fim = el('data-export-fim').value;
-            const filtrados = todasViagens.filter(v => { const d = safeDate(v.dataInicio); if (!d) return false; const dStr = getLocalYMD(d); return (!ini || dStr >= ini) && (!fim || dStr <= fim); });
-            if (filtrados.length === 0) return alert("Nada para exportar");
-            const header = ["Placa", "Motorista", "Cidade", "Status", "Servico", "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem", "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA", "", "KM REAL PIFPAF", "DISPERSÃO REAL"];
-            const dataRows = filtrados.map(v => {
-                const dIni = safeDate(v.dataInicio); const dFim = safeDate(v.dataFim); let totalHoras = "";
-                if (dIni && dFim) { const diffMs = dFim - dIni; const h = Math.floor(diffMs / 3600000); const m = Math.floor((diffMs % 3600000) / 60000); totalHoras = `${h}:${m.toString().padStart(2, '0')}`; }
-                const kmIni = Math.round(v.kmInicio || 0); const kmFim = Math.round(v.kmFim || 0); const totalKm = kmFim - kmIni; const meta = Math.round(v.metaKm || 0); const dispEscala = totalKm - meta; const kmRealCalc = meta * 1.1111; const dispReal = totalKm - kmRealCalc;
-                return [v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2))];
-            });
-            const ws_data = [header, ...dataRows]; const ws = XLSX.utils.aoa_to_sheet(ws_data);
-            ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 15 }];
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let R = range.s.r; R <= range.e.r; ++R) { for (let C = range.s.c; C <= range.e.c; ++C) { const cell_ref = XLSX.utils.encode_cell({ c: C, r: R }); if (!ws[cell_ref]) continue; if (R === 0) { ws[cell_ref].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } }, alignment: { horizontal: "center", vertical: "center" } }; } else { if (!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } }; if (C === 17) { const val = ws[cell_ref].v; if (typeof val === 'number' && val > 50) { ws[cell_ref].s = { fill: { fgColor: { rgb: "FFFF00" } }, font: { bold: true, color: { rgb: "000000" } }, alignment: { horizontal: "center" } }; } } } } }
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
-            const nomeArquivo = `Relatorio_Geral_${ini || 'inicio'}_a_${fim || 'fim'}.xlsx`; XLSX.writeFile(wb, nomeArquivo); el('modal-exportar').classList.remove('active');
-        }
+        window.confirmarExportacao = async function() {
+            const ini = el('data-export-ini').value; 
+            const fim = el('data-export-fim').value;
+
+            if (!ini || !fim) {
+                return alert("Selecione a data de início e fim para exportar.");
+            }
+
+            try {
+                el('modal-exportar').classList.remove('active');
+                document.body.style.cursor = 'wait';
+                alert("Buscando dados no servidor... O download começará em breve.");
+
+                // Formata as datas para buscar direto no servidor
+                const dataInicioBusca = `${ini}T00:00:00`;
+                const dataFimBusca = `${fim}T23:59:59`;
+
+                // Busca DIRETO DO FIREBASE (ignora o limite de 30 dias da tela)
+                const snapshot = await db.collection('viagens')
+                    .where('dataInicioCelular', '>=', dataInicioBusca)
+                    .where('dataInicioCelular', '<=', dataFimBusca)
+                    .get();
+
+                let filtrados = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    filtrados.push(data);
+                });
+
+                if (filtrados.length === 0) {
+                    document.body.style.cursor = 'default';
+                    return alert("Nada para exportar neste período.");
+                }
+
+                const header = ["Placa", "Motorista", "Cidade", "Status", "Servico", "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem", "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA", "", "KM REAL PIFPAF", "DISPERSÃO REAL"];
+                
+                const dataRows = filtrados.map(v => {
+                    const dIni = safeDate(v.dataInicio); 
+                    const dFim = safeDate(v.dataFim); 
+                    let totalHoras = "";
+                    if (dIni && dFim) { 
+                        const diffMs = dFim - dIni; 
+                        const h = Math.floor(diffMs / 3600000); 
+                        const m = Math.floor((diffMs % 3600000) / 60000); 
+                        totalHoras = `${h}:${m.toString().padStart(2, '0')}`; 
+                    }
+                    const kmIni = Math.round(v.kmInicio || 0); 
+                    const kmFim = Math.round(v.kmFim || 0); 
+                    const totalKm = kmFim - kmIni; 
+                    const meta = Math.round(v.metaKm || 0); 
+                    const dispEscala = totalKm - meta; 
+                    const kmRealCalc = meta * 1.1111; 
+                    const dispReal = totalKm - kmRealCalc;
+                    return [v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2))];
+                });
+
+                const ws_data = [header, ...dataRows]; 
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 15 }];
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                
+                for (let R = range.s.r; R <= range.e.r; ++R) { 
+                    for (let C = range.s.c; C <= range.e.c; ++C) { 
+                        const cell_ref = XLSX.utils.encode_cell({ c: C, r: R }); 
+                        if (!ws[cell_ref]) continue; 
+                        if (R === 0) { 
+                            ws[cell_ref].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } }, alignment: { horizontal: "center", vertical: "center" } }; 
+                        } else { 
+                            if (!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } }; 
+                            if (C === 17) { 
+                                const val = ws[cell_ref].v; 
+                                if (typeof val === 'number' && val > 50) { 
+                                    ws[cell_ref].s = { fill: { fgColor: { rgb: "FFFF00" } }, font: { bold: true, color: { rgb: "000000" } }, alignment: { horizontal: "center" } }; 
+                                } 
+                            } 
+                        } 
+                    } 
+                }
+                
+                const wb = XLSX.utils.book_new(); 
+                XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+                const nomeArquivo = `Relatorio_Geral_${ini}_a_${fim}.xlsx`; 
+                XLSX.writeFile(wb, nomeArquivo); 
+                
+            } catch(e) {
+                console.error("Erro ao exportar:", e);
+                alert("Erro ao puxar dados do servidor.");
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        };
 
         window.aplicarFiltroData = function (tipo) {
             const hj = new Date(); let ini = '', fim = getLocalYMD(hj);
@@ -2992,86 +3066,116 @@
             window.gerarRelatorioFinanceiro();
         }
 
-        window.gerarRelatorioFinanceiro = function () {
-            const tipo = el('fin-tipo').value; const placa = el('fin-placa').value; const mesAno = el('fin-mes').value; const quinzena = el('fin-quinzena').value;
+        window.gerarRelatorioFinanceiro = async function () {
+            const tipo = el('fin-tipo').value; 
+            const placa = el('fin-placa').value; 
+            const mesAno = el('fin-mes').value; 
+            const quinzena = el('fin-quinzena').value;
+            
             if (!mesAno) return;
-            const [ano, mes] = mesAno.split('-'); const diaIni = quinzena === '1' ? 1 : 16; const diaFim = quinzena === '1' ? 15 : 31;
 
-            const dados = todasViagens.filter(v => {
-                if (v.status !== 'finalizada') return false;
-                const d = safeDate(v.dataInicio);
-                if (!d) return false;
-                if (d.getFullYear() != ano || (d.getMonth() + 1) != mes) return false;
-                const dia = d.getDate();
-                if (dia < diaIni || dia > diaFim) return false;
-                if (placa && v.placa !== placa) return false;
-                return true;
-            });
+            el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-teal-600"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2"></i><p class="font-bold text-sm">Buscando dados no servidor...</p></div>`;
+            if (window.lucide) lucide.createIcons();
 
-            dados.sort((a, b) => {
-                const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
-                const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
-                return timeA - timeB;
-            });
+            const [ano, mes] = mesAno.split('-'); 
+            
+            // Calcula o primeiro e último dia da quinzena exata no formato YYYY-MM-DD
+            const diaIniStr = quinzena === '1' ? '01' : '16';
+            const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
+            const diaFimStr = quinzena === '1' ? '15' : String(ultimoDiaDoMes).padStart(2, '0');
 
-            let htmlTabela = `<div class="fin-table-wrapper"><table class="fin-table"><thead><tr>`;
-            if (tipo === 'escalado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ESCALADO</th><th class="text-right">R$ KM</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
-            else if (tipo === 'rodado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ROD.</th><th class="text-right">R$ KM ROD.</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
-            else if (tipo === 'comparativo') { htmlTabela += `<th>DATA</th><th>PLACA</th><th class="text-right text-teal-600">KM ESC.</th><th class="text-right font-bold">KM REAL</th><th class="text-right">DIF KM</th><th class="text-right text-teal-600">R$ ESC.</th><th class="text-right font-bold">R$ REAL</th><th class="text-right">DIF R$</th>`; }
-            htmlTabela += `</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-zinc-800">`;
+            const dataInicioBusca = `${ano}-${mes}-${diaIniStr}T00:00:00`;
+            const dataFimBusca = `${ano}-${mes}-${diaFimStr}T23:59:59`;
 
-            let sumQtd = 0; let sumValReal = 0; let sumValEsc = 0; let sumKmEsc = 0; let sumKmRod = 0;
+            try {
+                // Busca DIRETO DO FIREBASE os dados daquela quinzena/mês
+                let query = db.collection('viagens')
+                    .where('dataInicioCelular', '>=', dataInicioBusca)
+                    .where('dataInicioCelular', '<=', dataFimBusca);
+                    
+                const snapshot = await query.get();
+                let dados = [];
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    // O financeiro só olha pra viagens finalizadas
+                    if (data.status === 'finalizada') {
+                        if (!placa || data.placa === placa) {
+                            dados.push(data);
+                        }
+                    }
+                });
 
-            dados.forEach(v => {
-                const d = safeDate(v.dataInicio);
-                const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase();
-                const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || { km: 1.00, frete: 0 };
-                const meta = Math.round(v.metaKm || 0);
-                const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
-                const diffKm = real - meta;
-                const custoKmEsc = meta * precos.km;
-                const totalEsc = custoKmEsc + precos.frete;
-                const custoKmRod = real * precos.km;
-                const totalReal = custoKmRod + precos.frete;
-                const diffRs = totalReal - totalEsc;
+                dados.sort((a, b) => {
+                    const timeA = safeDate(a.dataInicio) ? safeDate(a.dataInicio).getTime() : 0;
+                    const timeB = safeDate(b.dataInicio) ? safeDate(b.dataInicio).getTime() : 0;
+                    return timeA - timeB;
+                });
 
-                sumKmEsc += meta; sumKmRod += real; sumValEsc += totalEsc; sumValReal += totalReal; sumQtd++;
+                let htmlTabela = `<div class="fin-table-wrapper"><table class="fin-table"><thead><tr>`;
+                if (tipo === 'escalado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ESCALADO</th><th class="text-right">R$ KM</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
+                else if (tipo === 'rodado') { htmlTabela += `<th>DATA</th><th>PLACA</th><th>NOME</th><th class="text-right">KM ROD.</th><th class="text-right">R$ KM ROD.</th><th class="text-right">R$ FRETE</th><th class="text-right text-green-600 dark:text-green-500">R$ TOTAL</th>`; }
+                else if (tipo === 'comparativo') { htmlTabela += `<th>DATA</th><th>PLACA</th><th class="text-right text-teal-600">KM ESC.</th><th class="text-right font-bold">KM REAL</th><th class="text-right">DIF KM</th><th class="text-right text-teal-600">R$ ESC.</th><th class="text-right font-bold">R$ REAL</th><th class="text-right">DIF R$</th>`; }
+                htmlTabela += `</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-zinc-800">`;
 
-                if (tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${meta}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; }
-                else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${real}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; }
-                else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-teal-600">${meta}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${real}</td><td class="text-right font-bold ${diffKm > 0 ? 'text-red-500' : 'text-green-500'}">${diffKm > 0 ? '+' + diffKm : diffKm}</td><td class="text-right text-teal-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs > 0 ? 'text-red-500' : 'text-green-500'} rounded">${diffRs > 0 ? '+' + fmtBRL(diffRs) : fmtBRL(diffRs)}</td></tr>`; }
-            });
+                let sumQtd = 0; let sumValReal = 0; let sumValEsc = 0; let sumKmEsc = 0; let sumKmRod = 0;
 
-            htmlTabela += `</tbody><tfoot><tr>`;
-            if (tipo === 'escalado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmEsc)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValEsc)}</td>`; }
-            else if (tipo === 'rodado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValReal)}</td>`; }
-            else if (tipo === 'comparativo') { const globalDiffKm = sumKmRod - sumKmEsc; const globalDiffRs = sumValReal - sumValEsc; htmlTabela += `<td colspan="2" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right text-teal-600">${Math.round(sumKmEsc)}</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right ${globalDiffKm > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffKm > 0 ? '+' + Math.round(globalDiffKm) : Math.round(globalDiffKm)}</td><td class="text-right text-teal-600">${fmtBRL(sumValEsc)}</td><td class="text-right">${fmtBRL(sumValReal)}</td><td class="text-right ${globalDiffRs > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffRs > 0 ? '+' + fmtBRL(globalDiffRs) : fmtBRL(globalDiffRs)}</td>`; }
-            htmlTabela += `</tr></tfoot></table></div>`;
+                dados.forEach(v => {
+                    const d = safeDate(v.dataInicio);
+                    const perfil = (v.perfilVeiculo || "PADRÃO").toUpperCase();
+                    const precos = tabelaPrecos[perfil] || tabelaPrecos["PADRÃO"] || { km: 1.00, frete: 0 };
+                    const meta = Math.round(v.metaKm || 0);
+                    const real = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
+                    const diffKm = real - meta;
+                    const custoKmEsc = meta * precos.km;
+                    const totalEsc = custoKmEsc + precos.frete;
+                    const custoKmRod = real * precos.km;
+                    const totalReal = custoKmRod + precos.frete;
+                    const diffRs = totalReal - totalEsc;
 
-            if (dados.length === 0) {
-                el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-[#1e1e24] rounded-xl border border-dashed border-gray-300 dark:border-zinc-800"><div class="bg-gray-50 dark:bg-[#121214] p-4 rounded-full mb-4"><i data-lucide="inbox" class="w-8 h-8"></i></div><p class="font-bold text-gray-500 dark:text-zinc-400">Nenhum registro encontrado</p><p class="text-xs mt-1">Não há viagens finalizadas para este filtro.</p></div>`;
-            } else {
-                let primaryVal = (tipo === 'escalado' || tipo === 'comparativo') ? sumValEsc : sumValReal;
-                let primaryKm = (tipo === 'escalado' || tipo === 'comparativo') ? sumKmEsc : sumKmRod;
-                let summaryHtml = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Viagens</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${sumQtd}</p></div>
-                        <div class="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg text-teal-600 dark:text-teal-400"><i data-lucide="truck" class="w-6 h-6"></i></div>
-                    </div>
-                    <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">KM ${tipo === 'rodado' ? 'Rodado' : 'Escalado'}</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${Math.round(primaryKm)}</p></div>
-                        <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-orange-500 dark:text-orange-400"><i data-lucide="map" class="w-6 h-6"></i></div>
-                    </div>
-                    <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border-l-4 border-l-green-500 border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">R$ ${tipo === 'rodado' ? 'Realizado' : 'Orçado (Meta)'}</p><p class="text-2xl font-black text-green-600 dark:text-green-500">${fmtBRL(primaryVal)}</p></div>
-                        <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-green-600 dark:text-green-400"><i data-lucide="wallet" class="w-6 h-6"></i></div>
-                    </div>
-                </div>`;
-                el('fin-table-container').innerHTML = summaryHtml + htmlTabela;
+                    sumKmEsc += meta; sumKmRod += real; sumValEsc += totalEsc; sumValReal += totalReal; sumQtd++;
+
+                    if (tipo === 'escalado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${meta}</td><td class="text-right text-gray-500">${fmtBRL(custoKmEsc)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalEsc)}</td></tr>`; }
+                    else if (tipo === 'rodado') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-xs text-gray-500">${v.nome}</td><td class="text-right font-bold text-gray-600">${real}</td><td class="text-right text-gray-500">${fmtBRL(custoKmRod)}</td><td class="text-right text-gray-500">${fmtBRL(precos.frete)}</td><td class="text-right col-destaque">${fmtBRL(totalReal)}</td></tr>`; }
+                    else if (tipo === 'comparativo') { htmlTabela += `<tr><td><span class="font-mono text-gray-500">${fmtData(d)}</span></td><td><span class="font-bold text-gray-800 dark:text-zinc-100">${v.placa}</span></td><td class="text-right text-teal-600">${meta}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${real}</td><td class="text-right font-bold ${diffKm > 0 ? 'text-red-500' : 'text-green-500'}">${diffKm > 0 ? '+' + diffKm : diffKm}</td><td class="text-right text-teal-600">${fmtBRL(totalEsc)}</td><td class="text-right font-bold text-gray-800 dark:text-zinc-100">${fmtBRL(totalReal)}</td><td class="text-right font-bold ${diffRs > 0 ? 'text-red-500' : 'text-green-500'} rounded">${diffRs > 0 ? '+' + fmtBRL(diffRs) : fmtBRL(diffRs)}</td></tr>`; }
+                });
+
+                htmlTabela += `</tbody><tfoot><tr>`;
+                if (tipo === 'escalado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmEsc)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValEsc)}</td>`; }
+                else if (tipo === 'rodado') { htmlTabela += `<td colspan="3" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right text-green-700 dark:text-green-400 text-[14px]">${fmtBRL(sumValReal)}</td>`; }
+                else if (tipo === 'comparativo') { const globalDiffKm = sumKmRod - sumKmEsc; const globalDiffRs = sumValReal - sumValEsc; htmlTabela += `<td colspan="2" class="text-right uppercase tracking-widest text-[10px]">TOTAIS (${sumQtd} VG)</td><td class="text-right text-teal-600">${Math.round(sumKmEsc)}</td><td class="text-right">${Math.round(sumKmRod)}</td><td class="text-right ${globalDiffKm > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffKm > 0 ? '+' + Math.round(globalDiffKm) : Math.round(globalDiffKm)}</td><td class="text-right text-teal-600">${fmtBRL(sumValEsc)}</td><td class="text-right">${fmtBRL(sumValReal)}</td><td class="text-right ${globalDiffRs > 0 ? 'text-red-500' : 'text-green-500'}">${globalDiffRs > 0 ? '+' + fmtBRL(globalDiffRs) : fmtBRL(globalDiffRs)}</td>`; }
+                htmlTabela += `</tr></tfoot></table></div>`;
+
+                if (dados.length === 0) {
+                    el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 bg-white dark:bg-[#1e1e24] rounded-xl border border-dashed border-gray-300 dark:border-zinc-800"><div class="bg-gray-50 dark:bg-[#121214] p-4 rounded-full mb-4"><i data-lucide="inbox" class="w-8 h-8"></i></div><p class="font-bold text-gray-500 dark:text-zinc-400">Nenhum registro encontrado</p><p class="text-xs mt-1">Não há viagens finalizadas para este filtro.</p></div>`;
+                } else {
+                    let primaryVal = (tipo === 'escalado' || tipo === 'comparativo') ? sumValEsc : sumValReal;
+                    let primaryKm = (tipo === 'escalado' || tipo === 'comparativo') ? sumKmEsc : sumKmRod;
+                    let summaryHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Viagens</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${sumQtd}</p></div>
+                            <div class="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg text-teal-600 dark:text-teal-400"><i data-lucide="truck" class="w-6 h-6"></i></div>
+                        </div>
+                        <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">KM ${tipo === 'rodado' ? 'Rodado' : 'Escalado'}</p><p class="text-2xl font-black text-gray-800 dark:text-zinc-100">${Math.round(primaryKm)}</p></div>
+                            <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-orange-500 dark:text-orange-400"><i data-lucide="map" class="w-6 h-6"></i></div>
+                        </div>
+                        <div class="bg-white dark:bg-[#1e1e24] p-5 rounded-xl border-l-4 border-l-green-500 border border-gray-200 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">R$ ${tipo === 'rodado' ? 'Realizado' : 'Orçado (Meta)'}</p><p class="text-2xl font-black text-green-600 dark:text-green-500">${fmtBRL(primaryVal)}</p></div>
+                            <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-green-600 dark:text-green-400"><i data-lucide="wallet" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>`;
+                    el('fin-table-container').innerHTML = summaryHtml + htmlTabela;
+                }
+            } catch (e) {
+                console.error("Erro no relatorio:", e);
+                el('fin-table-container').innerHTML = `<div class="h-full flex flex-col items-center justify-center text-red-500"><i data-lucide="alert-triangle" class="w-8 h-8 mb-2"></i><p class="font-bold">Falha ao buscar dados no servidor.</p></div>`;
             }
-            lucide.createIcons();
-        }
+
+            if (window.lucide) lucide.createIcons();
+        };
 
         function abrirModalSuporte() {
             el('modal-suporte').classList.add('active');
