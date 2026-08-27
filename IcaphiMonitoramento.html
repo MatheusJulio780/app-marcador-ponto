@@ -14469,17 +14469,25 @@
                 let countRotas = 0;
                 let countNotas = 0;
 
-                // Injeta as ROTAS no dia seguinte (Tira KM, bota status PERNOITE)
+                // 🟢 LÓGICA CORRIGIDA: INJEÇÃO COM MESCLAGEM (MERGE) PARA ROTAS
                 rotasPernoite.forEach(r => {
                     let placaLimpa = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
-                    // Evita duplicar se já foi transferido
-                    if (!rotasAmanha.find(ra => trimUpper(ra.placa).replace(/[^A-Z0-9]/g, '') === placaLimpa)) {
+                    let rotaExistente = rotasAmanha.find(ra => trimUpper(ra.placa).replace(/[^A-Z0-9]/g, '') === placaLimpa);
+                    
+                    if (!rotaExistente) {
+                        // Cenário A: Placa não estava no dia seguinte. Cria do zero garantindo os dados vitais.
                         rotasAmanha.push({
                             ...r,
-                            km: "", // Sem KM
-                            status: "PERNOITE" // ST. Painel
+                            km: "", 
+                            transporte: r.transporte || "", // Garante captura da chave de transporte
+                            status: "PERNOITE" 
                         });
                         countRotas++;
+                    } else {
+                        // Cenário B: Placa JÁ EXISTIA amanhã. Força a herança do transporte de ontem para não ficar em branco.
+                        rotaExistente.transporte = r.transporte || rotaExistente.transporte || "";
+                        rotaExistente.status = "PERNOITE";
+                        // Como a rota já existia, não incrementamos countRotas (já estava lá), mas ela foi atualizada.
                     }
                 });
 
@@ -14487,11 +14495,12 @@
                 notasPernoite.forEach(n => {
                     if (!notasAmanha.find(na => cleanNF(na.nf) === cleanNF(n.nf))) {
                         let notaCopia = { ...n };
-                        delete notaCopia.anexos; // Quebra a referência de arquivos
-                        notaCopia.status = ""; // Zerado para nova baixa
+                        delete notaCopia.anexos; 
+                        notaCopia.status = ""; 
                         notaCopia.statusHora = "";
                         notaCopia.chegada = "";
                         notaCopia.saida = "";
+                        notaCopia.viagem = n.viagem || ""; // 🟢 Proteção extra: garante a passagem da viagem na nota fiscal
                         notaCopia.obs = (notaCopia.obs ? notaCopia.obs + " | " : "") + `[Veio de Pernoite do dia ${formatarDataBR(dataAtual)}]`;
                         
                         notasAmanha.push(notaCopia);
@@ -14506,9 +14515,9 @@
                     batch.set(doc(db, "notas_fiscais_diario", proximoDia), { notas: notasAmanha }, { merge: true });
                     await batch.commit();
 
-                    alert(`✅ Transferência concluída!\n\nForam criados ${countRotas} Veículos e ${countNotas} Notas fisicamente no dia ${formatarDataBR(proximoDia)}.`);
+                    alert(`✅ Transferência concluída!\n\nForam criadas/atualizadas ${countRotas > 0 ? countRotas : 'algumas'} rotas e ${countNotas} Notas fisicamente no dia ${formatarDataBR(proximoDia)}.`);
                 } else {
-                    alert("Estes veículos e notas já haviam sido transferidos para o dia seguinte anteriormente.");
+                    alert("Estes veículos e notas já haviam sido transferidos ou atualizados para o dia seguinte anteriormente.");
                 }
 
             } catch (e) {
