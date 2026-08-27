@@ -2946,6 +2946,15 @@
         background: transparent;
     }
 
+    /* Estilo idêntico à seleção nativa do Microsoft Excel */
+    table.table-selectable td.selected-cell,
+    table.table-selectable th.selected-cell {
+        outline: 1px dashed #217346 !important; /* Linha pontilhada fina verde Excel */
+        outline-offset: -1px;
+        background-color: rgba(33, 115, 70, 0.08) !important; /* Fundo verde quase transparente */
+        border-color: #217346 !important;
+    }
+
     </style>
 </head>
 
@@ -3032,7 +3041,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.4</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.5</h2>
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
@@ -4564,7 +4573,7 @@
                         <div id="controles-importacao-notas" style="display:none;"><button
                                 class="btn btn-success btn-sm"
                                 onclick="document.getElementById('file-import-notas').click()"
-                                style="padding: 6px 15px;">Selecionar Planilha</button><input type="file"
+                                style="padding: 6px 15px;">Importar GRID</button><input type="file"
                                 id="file-import-notas" accept=".xlsx, .xls, .csv" style="display: none;">
                             </div>
                             <label for="file-import-edis" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 10px; background: #6b21a8; color: white; border: none;">
@@ -8501,8 +8510,6 @@
             showLoader();
 
             let mapFiltroTransporte = {};
-            // LISTA DE STATUS INTOCÁVEIS: Pernoites, Apoios, etc.
-            const statusIgnorados = ['PERNOITE', 'PERNOITE/VIAGEM', 'APOIO', 'SEG. VIAGEM', 'SEGUNDA VIAGEM'];
 
             try {
                 const sp = await getDoc(doc(db, "painel_diario", dSel));
@@ -8511,7 +8518,9 @@
                         const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
-                        const isBloqueado = statusIgnorados.includes(statusRota);
+                        
+                        // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
+                        const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
                         // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
@@ -8519,7 +8528,7 @@
                             mapFiltroTransporte[t] = {
                                 placaFinal: placaFinal,
                                 statusRota: statusRota,
-                                bloqueado: isBloqueado // Trava a alteração SOMENTE para as viagens de Pernoites e Apoios
+                                permitido: isSaidaDia // Trava a alteração SOMENTE para Saída Dia
                             };
                         });
                     });
@@ -8548,7 +8557,6 @@
                 for (let i = hIdx + 1; i < raw.length; i++) {
                     const row = raw[i]; if (!row || !row[cols.nf]) continue;
                     
-                    // Pega todas as viagens contidas na linha do Excel (caso venham múltiplas juntas)
                     const viagensExcel = String(row[cols.viagem] || "").match(/\d+/g) || [];
                     let filtroViagem = null;
 
@@ -8560,8 +8568,8 @@
                     }
 
                     if (filtroViagem) {
-                        // Bloqueia a importação SOMENTE se o Transporte (Viagem) for de um Pernoite/Apoio.
-                        if (filtroViagem.bloqueado) continue; 
+                        // 🟢 TRAVA DE PROTEÇÃO: Se não for SAIDA DIA, pula a linha ignorando-a (Evita duplicar pernoites)
+                        if (!filtroViagem.permitido) continue; 
 
                         const nfTratada = cleanNF(row[cols.nf]);
                         let trExistente = null;
@@ -8576,7 +8584,6 @@
                         if (!isNaN(dSaida) && dSaida.toString().trim() !== "") dSaida = excelToDateStr(parseFloat(dSaida));
 
                         if (trExistente) {
-                            // 🟢 SE A NOTA JÁ EXISTE (EX: IMPORTADA DO EDI ANTES), PREENCHE OS BURACOS
                             const updateIfEmpty = (colName, newVal) => {
                                 if (!newVal) return;
                                 const td = trExistente.querySelector(`[data-col="${colName}"]`);
@@ -8595,19 +8602,16 @@
                             updateIfEmpty('bairro', cols.bairro !== -1 ? row[cols.bairro] : "");
                             updateIfEmpty('endereco', cols.endereco !== -1 ? row[cols.endereco] : "");
                             
-                            // Atualiza os atributos invisíveis de dados (Dataset)
                             if (cols.codcli !== -1 && row[cols.codcli] && !trExistente.dataset.codcli) trExistente.dataset.codcli = row[cols.codcli];
                             if (cols.repres !== -1 && row[cols.repres] && !trExistente.dataset.repres) trExistente.dataset.repres = row[cols.repres];
                             if (cols.sup !== -1 && row[cols.sup] && !trExistente.dataset.sup) trExistente.dataset.sup = row[cols.sup];
 
-                            // Atualiza a Origem para PLANILHA + EDI se era só EDI
                             const tdOrigem = trExistente.querySelector('[data-col="origem"]');
                             if (tdOrigem && tdOrigem.textContent.includes('EDI') && !tdOrigem.textContent.includes('PLANILHA')) {
                                 tdOrigem.innerHTML = '<span style="background:#059669; color:#fff; padding:3px 6px; border-radius:4px; font-size:10px; font-weight:bold; white-space:nowrap;">PLANILHA + EDI</span>';
                             }
                             qtdAtualizada++;
                         } else {
-                            // 🟢 SE A NOTA NÃO EXISTE, ADICIONA NORMALMENTE
                             window.adicionarLinhaNotas({
                                 nf: nfTratada, viagem: row[cols.viagem] || "", ordem: cols.ordem !== -1 ? row[cols.ordem] : "",
                                 data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
@@ -8617,7 +8621,7 @@
                                 repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : "",
                                 parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : "",
                                 tipo_viagem: filtroViagem.statusRota || "",
-                                origem: 'PLANILHA' // INJETAMOS A ORIGEM AQUI
+                                origem: 'PLANILHA' 
                             });
                             qtdAdicionada++;
                         }
@@ -8636,7 +8640,6 @@
             showLoader();
 
             let mapFiltroTransporte = {};
-            const statusIgnorados = ['PERNOITE', 'PERNOITE/VIAGEM', 'APOIO', 'SEG. VIAGEM', 'SEGUNDA VIAGEM'];
 
             try {
                 const sp = await getDoc(doc(db, "painel_diario", dSel));
@@ -8645,14 +8648,16 @@
                         const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
-                        const isBloqueado = statusIgnorados.includes(statusRota);
+                        
+                        // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
+                        const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
                             mapFiltroTransporte[t] = {
                                 placaFinal: placaFinal,
                                 statusRota: statusRota,
-                                bloqueado: isBloqueado
+                                permitido: isSaidaDia
                             };
                         });
                     });
@@ -8688,7 +8693,7 @@
                         cidadeFallback: 5, 
                         bairro: getCol(["XBAIRRO"], 39), 
                         endereco: getCol(["XLGR"], 36),
-                        valor: getCol(["VNF", "VALOR", "VLR"], 24) // 🟢 Força o índice 24 (Coluna Y)
+                        valor: getCol(["VNF", "VALOR", "VLR"], 24) 
                     };
 
                     let notasImportadas = 0;
@@ -8725,7 +8730,8 @@
                             }
                         }
 
-                        if (!filtroViagem || filtroViagem.bloqueado) continue;
+                        // 🟢 TRAVA DE PROTEÇÃO EDI: Cancela a linha inteira se o ST. PAINEL não for SAIDA DIA
+                        if (!filtroViagem || !filtroViagem.permitido) continue;
 
                         const nfTratada = cleanNF(row[cols.nf]);
                         if (!nfTratada) continue;
@@ -8733,7 +8739,6 @@
                         let pesoNum = parseFloat(String(row[cols.peso] || "0").replace(',', '.'));
                         let pesoCalc = isNaN(pesoNum) ? "" : (pesoNum / 1000).toFixed(2);
 
-                        // 🟢 TRATAMENTO DO VALOR (Coluna Y / div por 100)
                         let valorCru = String(row[cols.valor] || "0").replace(/[^0-9.-]+/g, ""); 
                         let valorNum = parseFloat(valorCru);
                         let valorCalc = isNaN(valorNum) ? "" : (valorNum / 100).toFixed(2);
@@ -8751,7 +8756,7 @@
                             bairro: row[cols.bairro] || "",
                             endereco: row[cols.endereco] || "",
                             placa: filtroViagem.placaFinal,
-                            valor: valorCalc // 🟢 Valor embutido no objeto
+                            valor: valorCalc 
                         };
 
                         let trExistente = null;
@@ -8780,7 +8785,6 @@
                             updateIfEmpty('bairro', objEdi.bairro);
                             updateIfEmpty('endereco', objEdi.endereco);
 
-                            // 🟢 Injeta o valor da nota como dado oculto caso a linha da planilha exista mas não tenha valor
                             if (objEdi.valor && !trExistente.dataset.valor) {
                                 trExistente.dataset.valor = objEdi.valor;
                             }
@@ -8799,7 +8803,7 @@
                         }
                     }
 
-                    alert(`✅ Importação de EDIs concluída!\n\n- ${notasImportadas} Novas notas criadas.\n- ${notasAtualizadas} Notas existentes complementadas.\n*(Notas sem transporte correspondente no painel foram ignoradas).*`);
+                    alert(`✅ Importação de EDIs concluída!\n\n- ${notasImportadas} Novas notas criadas.\n- ${notasAtualizadas} Notas existentes complementadas.\n*(Notas sem transporte correspondente no painel, ou de rotas que não sejam SAIDA DIA foram ignoradas).*`);
                 } catch (err) {
                     console.error("Erro importando EDI:", err);
                     alert("Falha estrutural ao ler o arquivo EDI.");
@@ -14580,9 +14584,18 @@
 
                 const rows = currentTable.rows;
                 for (let r = minRow; r <= maxRow; r++) {
-                    if (!rows[r]) continue;
+                    const row = rows[r];
+                    if (!row) continue;
+
+                    // 🟢 TRAVA DE SEGURANÇA: Se a linha estiver oculta pelo filtro, pula ela instantaneamente
+                    const rowStyle = window.getComputedStyle(row);
+                    if (rowStyle.display === 'none' || row.classList.contains('hide-by-block')) {
+                        continue;
+                    }
+
                     for (let c = minCol; c <= maxCol; c++) {
-                        const cell = rows[r].cells[c];
+                        const cell = row.cells[c];
+                        // Checa também a célula (caso alguma coluna específica esteja oculta)
                         if (cell && window.getComputedStyle(cell).display !== 'none') {
                             cell.classList.add('selected-cell');
                         }
@@ -14673,7 +14686,7 @@
             });
         };
 
-        // 🟢 CÓPIA AVANÇADA (Ao apertar CTRL+C) - Copia células com CORES e FORMATOS para o Excel
+        // 🟢 CÓPIA AVANÇADA (Ao apertar CTRL+C) - Copia células com CORES, FORMATOS e PILLS reais para o Excel
         document.addEventListener('copy', (e) => {
             const selecionados = document.querySelectorAll('.selected-cell');
             if (selecionados.length === 0) return;
@@ -14692,7 +14705,7 @@
             const sortedRows = Array.from(rowsMap.keys()).sort((a, b) => a - b);
             
             let tsvContent = "";
-            let htmlContent = "<table style='border-collapse: collapse; font-family: sans-serif;'>";
+            let htmlContent = "<table style='border-collapse: collapse; font-family: sans-serif; white-space: nowrap;'>";
 
             sortedRows.forEach(rIdx => {
                 const cols = rowsMap.get(rIdx).sort((a, b) => a.col - b.col);
@@ -14703,18 +14716,82 @@
                     const cell = c.elem;
                     const isTh = cell.tagName === 'TH';
                     const input = cell.querySelector('input, select');
-                    let textToCopy = input ? input.value : cell.innerText.trim();
+                    
+                    // 1. CLONE E LIMPEZA: Remove o Tooltip indesejado (Atualizado às...)
+                    const cloneCell = cell.cloneNode(true);
+                    cloneCell.querySelectorAll('.tooltip-box').forEach(t => t.remove());
+
+                    // Texto puro para o TSV (Caso cole no Bloco de Notas)
+                    const textToCopy = input ? input.value : cloneCell.innerText.trim();
                     rowTsv.push(textToCopy);
 
-                    // Captura as cores exatas da linha/célula
-                    const compStyle = window.getComputedStyle(cell);
-                    // Ignora o verde da seleção para não copiar verde para o Excel
-                    const bgColor = cell.parentElement.style.backgroundColor || compStyle.backgroundColor;
-                    const color = compStyle.color;
-                    const fw = compStyle.fontWeight;
-                    const align = compStyle.textAlign;
+                    // ==========================================
+                    // INJEÇÃO HTML E CSS PARA O EXCEL
+                    // ==========================================
+                    let htmlParaExcel = "";
+                    
+                    if (input) {
+                        htmlParaExcel = input.value;
+                    } else if (cell.querySelector('.status-pill, [style*="border-radius"]')) {
+                        // Sincroniza os estilos computados APENAS das pílulas visuais (ST. ROTA)
+                        // A filtragem garante que a remoção do tooltip não quebre o loop
+                        const originais = Array.from(cell.querySelectorAll('*')).filter(el => !el.classList.contains('tooltip-box'));
+                        const clones = Array.from(cloneCell.querySelectorAll('*'));
+                        
+                        originais.forEach((orig, idx) => {
+                            if(clones[idx]) {
+                                const style = window.getComputedStyle(orig);
+                                clones[idx].style.backgroundColor = style.backgroundColor !== 'rgba(0, 0, 0, 0)' ? style.backgroundColor : '';
+                                clones[idx].style.color = style.color;
+                                clones[idx].style.padding = style.padding;
+                                clones[idx].style.borderRadius = style.borderRadius;
+                                clones[idx].style.fontWeight = style.fontWeight;
+                                clones[idx].style.display = style.display.includes('flex') ? 'inline-block' : style.display; 
+                                clones[idx].style.textAlign = 'center';
+                            }
+                        });
+                        htmlParaExcel = cloneCell.innerHTML;
+                    } else {
+                        // Texto normal para as demais células (Mata o bug de ficar tudo em negrito nas Notas)
+                        htmlParaExcel = textToCopy;
+                    }
 
-                    htmlContent += `<${isTh ? 'th' : 'td'} style='border: 1px solid #d1d5db; padding: 4px 8px; background-color: ${bgColor}; color: ${color}; font-weight: ${fw}; text-align: ${align};'>${textToCopy}</${isTh ? 'th' : 'td'}>`;
+                    // 2. CAPTURA DE CORES (Célula e Linha)
+                    cell.classList.remove('selected-cell'); // Esconde o verde da seleção
+                    
+                    const cellStyle = window.getComputedStyle(cell);
+                    const rowStyle = window.getComputedStyle(cell.parentElement); // Puxa o Computed da Linha
+                    
+                    // Garante que pega a cor real. Se o TD for transparente, ele chupa a cor do TR (Resolve a tabela Notas)
+                    let bgColor = cellStyle.backgroundColor;
+                    if (bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+                        bgColor = rowStyle.backgroundColor;
+                        if (bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+                            bgColor = '#ffffff';
+                        }
+                    }
+
+                    let color = cellStyle.color;
+                    let fw = cellStyle.fontWeight;
+
+                    // 3. TRATAMENTO BLINDADO DE CABEÇALHOS E DADOS
+                    if (isTh) {
+                        bgColor = '#1e293b'; // Fundo fixo grafite/escuro para excel
+                        color = '#ffffff';   // Texto branco puro
+                        fw = 'bold';         // Apenas Títulos em negrito
+                    } else {
+                        // Fallback de segurança para cores
+                        if ((color === 'rgb(255, 255, 255)' || color === '#ffffff') && bgColor === '#ffffff') {
+                            color = '#000000';
+                        }
+                        // 🟢 GARANTE QUE DADOS NUNCA FICAM EM NEGRITO (exceto se houver uma regra manual explícita)
+                        fw = 'normal'; 
+                    }
+
+                    cell.classList.add('selected-cell'); // Devolve o verde da seleção na UI
+
+                    // Constrói a célula forçando o white-space e o alinhamento
+                    htmlContent += `<${isTh ? 'th' : 'td'} style='border: 1px solid #d1d5db; padding: 4px 8px; background-color: ${bgColor}; color: ${color}; font-weight: ${fw}; text-align: ${cellStyle.textAlign}; white-space: nowrap; vertical-align: middle;'>${htmlParaExcel}</${isTh ? 'th' : 'td'}>`;
                 });
                 
                 htmlContent += "</tr>";
@@ -14723,11 +14800,9 @@
 
             htmlContent += "</table>";
 
-            // Envia a tabela renderizada para o clipboard. O Excel dá prioridade ao HTML rico!
             e.clipboardData.setData('text/html', htmlContent);
             e.clipboardData.setData('text/plain', tsvContent);
 
-            // Feedback visual geral
             limparSelecaoExcel();
         });
 
