@@ -5357,6 +5357,14 @@
                     Total: R$ 0.00
                 </div>
             </div>
+
+            <!-- 🟢 CONTROLE DE PAGAMENTO ADICIONADO -->
+            <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">STATUS DE PAGAMENTO (REEMBOLSO)</div>
+                <button id="btn-toggle-pgto" style="width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    Aguardando...
+                </button>
+            </div>
         </div>
     </div>
 
@@ -11170,6 +11178,7 @@
                             // EXPORTAÇÃO EXATA NA ORDEM DO CABEÇALHO DO PAINEL
                             registrosExcel.push({
                                 "DATA OP.": converterDataExcel(dataSel),
+                                "PGTO.": rota.bloqueio_pagamento ? "NÃO PAGAR" : "LIBERADO", // 🟢 INJEÇÃO DA COLUNA DE PAGAMENTO
                                 "PLACA": rota.placa || "",
                                 "TROCA": rota.troca || "",
                                 "PERFIL": infoViva.perfil,
@@ -11229,11 +11238,108 @@
 
                 if (registrosExcel.length === 0) return alert("Não há registros neste intervalo de datas.");
 
-                // Usando a tag cellDates: true, o SheetJS converte os objetos nativos Data para Células Formato Data no Excel.
-                const ws = XLSX.utils.json_to_sheet(registrosExcel, { cellDates: true });
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Dados");
-                XLSX.writeFile(wb, `Exportacao_${tipoExportacao}_${dataInicio}_a_${dataFim}.xlsx`);
+                // ================= MOTOR DE ESTILIZAÇÃO DO EXCEL (BYPASS DO SHEETJS) =================
+                let htmlStr = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head><meta charset="utf-8"></head><body>
+                <table style="border-collapse: collapse; font-family: sans-serif;">`;
+
+                const colunas = Object.keys(registrosExcel[0]);
+                htmlStr += `<tr>`;
+                colunas.forEach(col => {
+                    htmlStr += `<th style="background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #d1d5db; padding: 4px 8px; text-align: center;">${col}</th>`;
+                });
+                htmlStr += `</tr>`;
+
+                // 1. TRADUTOR DE CORES PARA EXCEL
+                const getHexRowColor = (status) => {
+                    // 🟢 REGRA DO PAINEL: Fundo sempre branco (não pinta a linha inteira)
+                    if (tipoExportacao === 'PAINEL') return '#ffffff';
+                    
+                    // 🟢 REGRA DAS NOTAS: Pinta o fundo da linha
+                    const s = String(status).trim().toUpperCase();
+                    if (s === 'FINALIZADO' || s === 'VEÍCULO VAZIO' || s === 'ENTREGUE') return '#dcfce7';
+                    if (s === 'EM ROTA' || s === 'PRÓXIMO DE TERMINAR' || s === 'TRAFEGANDO') return '#e0f2fe';
+                    if (s === 'PERNOITE' || s === 'PARADA' || s === 'AGUARDANDO NO CLIENTE' || s === 'DESCARREGANDO' || s === 'AGUARDANDO') return '#fef08a';
+                    if (s === 'SINISTRADA' || s === 'DEVOLUÇÃO' || s === 'REENTREGA') return '#fee2e2';
+                    return '#ffffff';
+                };
+
+                const getHexPillStyle = (val) => {
+                    const s = String(val).trim().toUpperCase();
+                    if (s === 'FINALIZADO' || s === 'VEÍCULO VAZIO' || s === 'ENTREGUE') return 'background-color:#16a34a; color:#ffffff;';
+                    if (s === 'EM ROTA' || s === 'TRAFEGANDO') return 'background-color:#2563eb; color:#ffffff;';
+                    if (s === 'PRÓXIMO DE TERMINAR') return 'background-color:#0284c7; color:#ffffff;';
+                    if (s === 'PERNOITE') return 'background-color:#a16207; color:#ffffff;';
+                    if (s === 'PARADA' || s === 'AGUARDANDO NO CLIENTE' || s === 'DESCARREGANDO' || s === 'AGUARDANDO') return 'background-color:#ca8a04; color:#ffffff;';
+                    if (s === 'SINISTRADA' || s === 'DEVOLUÇÃO' || s === 'REENTREGA') return 'background-color:#dc2626; color:#ffffff;';
+                    if (s === 'NÃO PAGAR') return 'background-color:#991b1b; color:#ffffff;';
+                    if (s === 'LIBERADO') return 'background-color:#166534; color:#ffffff;';
+                    return 'background-color:#e5e7eb; color:#374151;';
+                };
+
+                // 2. MONTAGEM DAS LINHAS BLINDADA
+                registrosExcel.forEach(reg => {
+                    let statusRef = reg["ST. ROTA"] || reg["ST. PAINEL"] || reg["STATUS"] || "";
+                    let corFundo = getHexRowColor(statusRef);
+
+                    // A tag TR fica sem cor. A cor é aplicada direto na TD para não vazar ao infinito no Excel
+                    htmlStr += `<tr>`;
+                    
+                    colunas.forEach(col => {
+                        let val = reg[col];
+                        if (val === undefined || val === null) val = "";
+                        
+                        let align = 'left';
+                        if (['Q.NF', 'PESO', 'KM', 'DEV', 'REEN', 'PEN', 'REAL', 'QTD', 'ORDEM', 'QTDE', '% APP'].includes(col)) align = 'center';
+
+                        if (val instanceof Date) {
+                            let d = String(val.getDate()).padStart(2, '0');
+                            let m = String(val.getMonth() + 1).padStart(2, '0');
+                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; vertical-align: middle; text-align: center;">${d}/${m}/${val.getFullYear()}</td>`;
+                            return;
+                        }
+
+                        // 🟢 LÓGICA DA COLUNA APP
+                        if (col === "APP" && val !== "") {
+                            let corApp = "#000000"; 
+                            let valUpper = String(val).trim().toUpperCase();
+                            if (valUpper === "ANEXADO") corApp = "#2563eb"; // Azul
+                            if (valUpper === "FOTO") corApp = "#16a34a"; // Verde
+                            
+                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: ${corApp}; font-weight: bold; text-align: center; vertical-align: middle;">${val}</td>`;
+                        }
+                        // 🟢 PÍLULAS COLORIDAS (Apenas ST. ROTA e PGTO.)
+                        else if (['ST. ROTA', 'PGTO.'].includes(col) && val !== "") {
+                            let estiloPilula = getHexPillStyle(val);
+                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; text-align: center; vertical-align: middle;">
+                                            <span style="display:inline-block; font-weight:bold; border-radius:6px; padding:2px 8px; ${estiloPilula}">${val}</span>
+                                        </td>`;
+                        } 
+                        // 🟢 COLUNAS EM NEGRITO (O STATUS CAI AQUI: Fundo colorido da linha e Texto PRETO/Negrito)
+                        else if (['PLACA', 'TROCA', 'NF', 'STATUS'].includes(col)) {
+                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; font-weight: bold; text-align: ${align}; vertical-align: middle;">${val}</td>`;
+                        }
+                        // Células Comuns
+                        else {
+                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; text-align: ${align}; vertical-align: middle;">${val}</td>`;
+                        }
+                    });
+                    
+                    htmlStr += `</tr>`;
+                });
+
+                htmlStr += `</table></body></html>`;
+
+                // 3. Força o download nativo como arquivo .xls
+                const blob = new Blob([htmlStr], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Exportacao_${tipoExportacao}_${dataInicio}_a_${dataFim}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
 
             } catch (erro) {
                 console.error("Erro Crítico na Exportação: ", erro);
@@ -14370,7 +14476,6 @@
             showLoader();
             
             try {
-                // Busca Complementos e Painel (para ver a prestação) ao mesmo tempo
                 const [compDoc, painelDoc] = await Promise.all([
                     getDoc(doc(db, "complementos_diario", data)),
                     getDoc(doc(db, "painel_diario", data))
@@ -14395,9 +14500,10 @@
 
                 // ================= LÓGICA DA PRESTAÇÃO DE CONTAS =================
                 let statusPrestacao = "<span style='color: var(--warning);'><i class='ph-bold ph-warning'></i> Não prestou contas ainda</span>";
+                let rotaAlvo = null;
 
                 if (painelDoc.exists() && painelDoc.data().rotas) {
-                    const rotaAlvo = painelDoc.data().rotas.find(r => {
+                    rotaAlvo = painelDoc.data().rotas.find(r => {
                         let pOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
                         let pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
                         let pBusca = trimUpper(placa).replace(/[^A-Z0-9]/g, '');
@@ -14407,8 +14513,6 @@
                     if (rotaAlvo) {
                         const transpPrestadoStr = String(rotaAlvo.transporte_prestado || "").trim();
                         const transpRota = String(transporteStr || "").trim();
-                        
-                        // Aplica a mesma regra oficial de baixa do seu sistema
                         const foiPrestado = rotaAlvo.prestacao_impressa === true && (!rotaAlvo.transporte_prestado || transpPrestadoStr === transpRota || transpPrestadoStr.includes(transpRota));
 
                         if (foiPrestado) {
@@ -14423,6 +14527,57 @@
                 document.getElementById('tooltip-fin-comp-lista').innerHTML = compTexto;
                 document.getElementById('tooltip-fin-comp-total').innerText = `Total: R$ ${compTotal.toFixed(2)}`;
                 document.getElementById('tooltip-fin-prestacao').innerHTML = statusPrestacao;
+
+                // 🟢 LÓGICA DO BOTÃO DE BLOQUEIO DE PAGAMENTO
+                const btnPgto = document.getElementById('btn-toggle-pgto');
+                let isBloqueado = rotaAlvo ? (rotaAlvo.bloqueio_pagamento === true) : false;
+
+                const atualizarVisualBotao = (bloqueado) => {
+                    if (bloqueado) {
+                        btnPgto.style.backgroundColor = 'var(--danger)';
+                        btnPgto.style.color = '#fff';
+                        btnPgto.innerHTML = `PAGAMENTO BLOQUEADO`;
+                    } else {
+                        btnPgto.style.backgroundColor = 'var(--success)';
+                        btnPgto.style.color = '#fff';
+                        btnPgto.innerHTML = `PAGAMENTO LIBERADO`;
+                    }
+                };
+
+                atualizarVisualBotao(isBloqueado);
+
+                // Sobrescreve o onclick para sempre apontar para a placa/data atual
+                btnPgto.onclick = async () => {
+                    if (!rotaAlvo) return alert("Rota não localizada na base de dados para bloqueio.");
+                    
+                    const novoEstado = !isBloqueado;
+                    btnPgto.innerHTML = "Salvando...";
+                    
+                    try {
+                        const snapRecente = await getDoc(doc(db, "painel_diario", data));
+                        if (snapRecente.exists()) {
+                            let rotasUpdate = snapRecente.data().rotas;
+                            // Busca exata da rota no array para atualizar
+                            let rotaIndex = rotasUpdate.findIndex(r => {
+                                let pOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                                let pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
+                                let pBusca = trimUpper(placa).replace(/[^A-Z0-9]/g, '');
+                                return pOrig === pBusca || pTroca === pBusca;
+                            });
+                            
+                            if (rotaIndex !== -1) {
+                                rotasUpdate[rotaIndex].bloqueio_pagamento = novoEstado;
+                                await setDoc(doc(db, "painel_diario", data), { rotas: rotasUpdate }, { merge: true });
+                                isBloqueado = novoEstado;
+                                atualizarVisualBotao(isBloqueado);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Erro ao atualizar bloqueio:", err);
+                        alert("Falha ao sincronizar o status de pagamento com o banco de dados.");
+                        atualizarVisualBotao(isBloqueado); // Reverte o visual em caso de erro
+                    }
+                };
 
                 document.getElementById('modal-tooltip-financeiro').style.display = 'flex';
             } catch (error) {
