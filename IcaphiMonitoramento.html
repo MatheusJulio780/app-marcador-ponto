@@ -11238,24 +11238,57 @@
 
                 if (registrosExcel.length === 0) return alert("Não há registros neste intervalo de datas.");
 
-                // ================= MOTOR DE ESTILIZAÇÃO DO EXCEL (BYPASS DO SHEETJS) =================
+                // ================= MOTOR DE ESTILIZAÇÃO DO EXCEL (CORRIGIDO E PRECISO) =================
                 let htmlStr = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-                <head><meta charset="utf-8"></head><body>
-                <table style="border-collapse: collapse; font-family: sans-serif;">`;
+                <head><meta charset="utf-8">
+                <style>
+                    tr { height: 20px; mso-height-source: userset; }
+                    td { 
+                        border: 1px solid #d1d5db; 
+                        padding: 4px 6px; 
+                        vertical-align: middle; 
+                        font-size: 10pt; 
+                        font-family: sans-serif;
+                        mso-number-format: "\@"; 
+                        white-space: nowrap; /* 🟢 ADICIONE ISSO PARA O TEXTO NUNCA QUEBRAR DE LINHA */
+                    }
+                </style>
+                </head><body>
+                <table style="border-collapse: collapse; table-layout: fixed; width: 100%;">`;
 
                 const colunas = Object.keys(registrosExcel[0]);
+
+                // Largura proporcional das colunas
+                htmlStr += `<colgroup>`;
+                colunas.forEach(col => {
+                    let w = "60px";
+                    const c = col.toUpperCase();
+                    if (c.includes("PLACA") || c.includes("TROCA") || c.includes("DEV") || c.includes("REEN") || c.includes("PARC") || c.includes("PEN") || c.includes("REAL") || c.includes("QTD") || c.includes("100%")) w = "65px";
+                    if (c.includes("DATA") || c.includes("O.C.") || c.includes("KM") || c.includes("Q.NF") || c.includes("PAL.")) w = "75px";
+                    if (c.includes("PERFIL") || c.includes("TIPO") || c.includes("PGTO.")) w = "50px";
+                    if (c.includes("TRANS.") || c.includes("CONT.")) w = "70px";
+                    if (c.includes("REGIÃO") || c.includes("AJUDANTE") || c.includes("MOT.")) w = "100px";
+                    if (c.includes("ST.") || c.includes("STATUS")) w = "130px";
+                    htmlStr += `<col style="width: ${w};">`;
+                });
+                htmlStr += `</colgroup>`;
+
+                // 🟢 CABEÇALHO CORRIGIDO: Aplica cor de fundo e texto em cada TH de forma isolada
                 htmlStr += `<tr>`;
                 colunas.forEach(col => {
-                    htmlStr += `<th style="background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #d1d5db; padding: 4px 8px; text-align: center;">${col}</th>`;
+                    let thBg = "#1e293b";   // Fundo padrão grafite escuro do título
+                    let thColor = "#ffffff"; // Texto branco padrão do título
+
+                    // Exemplo caso queira personalizar alguma coluna específica no futuro:
+                    // if (col === "PLACA") { thBg = "#0284c7"; }
+
+                    htmlStr += `<th style="background-color: ${thBg}; color: ${thColor}; font-weight: bold; border: 1px solid #334155; padding: 6px 8px; text-align: center; font-size: 10pt; font-family: sans-serif;">${col}</th>`;
                 });
                 htmlStr += `</tr>`;
 
-                // 1. TRADUTOR DE CORES PARA EXCEL
+                // Tradutores de cor
                 const getHexRowColor = (status) => {
-                    // 🟢 REGRA DO PAINEL: Fundo sempre branco (não pinta a linha inteira)
                     if (tipoExportacao === 'PAINEL') return '#ffffff';
-                    
-                    // 🟢 REGRA DAS NOTAS: Pinta o fundo da linha
                     const s = String(status).trim().toUpperCase();
                     if (s === 'FINALIZADO' || s === 'VEÍCULO VAZIO' || s === 'ENTREGUE') return '#dcfce7';
                     if (s === 'EM ROTA' || s === 'PRÓXIMO DE TERMINAR' || s === 'TRAFEGANDO') return '#e0f2fe';
@@ -11264,64 +11297,77 @@
                     return '#ffffff';
                 };
 
-                const getHexPillStyle = (val) => {
+                const getHexStRotaBackgroundAndText = (val) => {
                     const s = String(val).trim().toUpperCase();
-                    if (s === 'FINALIZADO' || s === 'VEÍCULO VAZIO' || s === 'ENTREGUE') return 'background-color:#16a34a; color:#ffffff;';
-                    if (s === 'EM ROTA' || s === 'TRAFEGANDO') return 'background-color:#2563eb; color:#ffffff;';
-                    if (s === 'PRÓXIMO DE TERMINAR') return 'background-color:#0284c7; color:#ffffff;';
-                    if (s === 'PERNOITE') return 'background-color:#a16207; color:#ffffff;';
-                    if (s === 'PARADA' || s === 'AGUARDANDO NO CLIENTE' || s === 'DESCARREGANDO' || s === 'AGUARDANDO') return 'background-color:#ca8a04; color:#ffffff;';
-                    if (s === 'SINISTRADA' || s === 'DEVOLUÇÃO' || s === 'REENTREGA') return 'background-color:#dc2626; color:#ffffff;';
-                    if (s === 'NÃO PAGAR') return 'background-color:#991b1b; color:#ffffff;';
-                    if (s === 'LIBERADO') return 'background-color:#166534; color:#ffffff;';
+                    if (s.includes('VAZIO')) return 'background-color:#eff6ff; color:#2563eb;';
+                    if (s.includes('PERNOITE')) return 'background-color:#dfc2b1; color:#78350f;';
+                    if (s.includes('FINALIZADO')) return 'background-color:#fdf2f8; color:#db2777;'; // 🟢 CORrigido o erro do if aqui
+                    if (s.includes('PRÓXIMO') || s.includes('TERMINAR')) return 'background-color:#fefce8; color:#ca8a04;';
+                    if (s.includes('EM ROTA')) return 'background-color:#f8fafc; color:#64748b;';
+                    if (s.includes('AGUARDANDO')) return 'background-color:#a2eaee; color:#0891b2;';
+                    if (s.includes('TRAFEGANDO')) return 'background-color:#fdcb8d; color:#ea580c;';
+                    if (s.includes('DESCARREGANDO')) return 'background-color:#faf5ff; color:#9333ea;';
+                    if (s.includes('PARADA')) return 'background-color:#fef2f2; color:#dc2626;';
+                    if (s.includes('SINISTRADA') || s.includes('DEVOLUÇÃO')) return 'background-color:#ff6d6d; color:#7f1d1d;';
+                    if (s.includes('REENTREGA')) return 'background-color:#fdba74; color:#c2410c;';
                     return 'background-color:#e5e7eb; color:#374151;';
                 };
 
-                // 2. MONTAGEM DAS LINHAS BLINDADA
+                // Montagem das Linhas com Tipagem Correta e Blindada contra Avisos
                 registrosExcel.forEach(reg => {
                     let statusRef = reg["ST. ROTA"] || reg["ST. PAINEL"] || reg["STATUS"] || "";
-                    let corFundo = getHexRowColor(statusRef);
+                    let corFundoLinha = getHexRowColor(statusRef);
 
-                    // A tag TR fica sem cor. A cor é aplicada direto na TD para não vazar ao infinito no Excel
                     htmlStr += `<tr>`;
                     
                     colunas.forEach(col => {
                         let val = reg[col];
                         if (val === undefined || val === null) val = "";
                         
+                        const cUpper = col.toUpperCase();
                         let align = 'left';
-                        if (['Q.NF', 'PESO', 'KM', 'DEV', 'REEN', 'PEN', 'REAL', 'QTD', 'ORDEM', 'QTDE', '% APP'].includes(col)) align = 'center';
+                        
+                        const isNumericCol = ['Q.NF', 'PESO', 'KM', 'DEV', 'REEN', 'PEN', 'REAL', 'QTD', 'ORDEM', 'QTDE'].includes(cUpper);
+                        
+                        if (isNumericCol || cUpper.includes('% APP')) align = 'center';
 
                         if (val instanceof Date) {
                             let d = String(val.getDate()).padStart(2, '0');
                             let m = String(val.getMonth() + 1).padStart(2, '0');
-                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; vertical-align: middle; text-align: center;">${d}/${m}/${val.getFullYear()}</td>`;
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; text-align: center; color: #000000; mso-number-format: 'Short Date';">${d}/${m}/${val.getFullYear()}</td>`;
                             return;
                         }
 
-                        // 🟢 LÓGICA DA COLUNA APP
+                        // 🟢 Tratamento numérico estrito (Apenas para valores que são contagens/pesos reais)
+                        if (isNumericCol && val !== "" && !isNaN(val)) {
+                            let numVal = Number(val);
+                            let formatNum = Number.isInteger(numVal) ? "0" : "0.00";
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; text-align: ${align}; mso-number-format: '${formatNum}';">${numVal}</td>`;
+                            return;
+                        }
+
+                        // 🟢 Tratamentos Especiais por Coluna (Força formato texto \@ para TRANS., PLACA, etc. matando o triângulo verde)
                         if (col === "APP" && val !== "") {
                             let corApp = "#000000"; 
                             let valUpper = String(val).trim().toUpperCase();
-                            if (valUpper === "ANEXADO") corApp = "#2563eb"; // Azul
-                            if (valUpper === "FOTO") corApp = "#16a34a"; // Verde
-                            
-                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: ${corApp}; font-weight: bold; text-align: center; vertical-align: middle;">${val}</td>`;
+                            if (valUpper === "ANEXADO") corApp = "#2563eb"; 
+                            if (valUpper === "FOTO") corApp = "#16a34a"; 
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: ${corApp}; font-weight: bold; text-align: center; mso-number-format: '\@';">${val}</td>`;
                         }
-                        // 🟢 PÍLULAS COLORIDAS (Apenas ST. ROTA e PGTO.)
-                        else if (['ST. ROTA', 'PGTO.'].includes(col) && val !== "") {
-                            let estiloPilula = getHexPillStyle(val);
-                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; text-align: center; vertical-align: middle;">
-                                            <span style="display:inline-block; font-weight:bold; border-radius:6px; padding:2px 8px; ${estiloPilula}">${val}</span>
-                                        </td>`;
+                        else if (col === "ST. ROTA" && val !== "") {
+                            let estiloStRota = getHexStRotaBackgroundAndText(val);
+                            htmlStr += `<td style="${estiloStRota} font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\@';">${val}</td>`;
                         } 
-                        // 🟢 COLUNAS EM NEGRITO (O STATUS CAI AQUI: Fundo colorido da linha e Texto PRETO/Negrito)
-                        else if (['PLACA', 'TROCA', 'NF', 'STATUS'].includes(col)) {
-                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; font-weight: bold; text-align: ${align}; vertical-align: middle;">${val}</td>`;
+                        else if (col === "PGTO." && val !== "") {
+                            let corPgtoBg = val === "NÃO PAGAR" ? "#fee2e2" : "#dcfce7";
+                            let corPgtoTxt = val === "NÃO PAGAR" ? "#991b1b" : "#166534";
+                            htmlStr += `<td style="background-color: ${corPgtoBg}; color: ${corPgtoTxt}; font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\@';">${val}</td>`;
                         }
-                        // Células Comuns
+                        else if (['PLACA', 'TROCA', 'NF', 'STATUS', 'TRANS.', 'O.C.'].includes(col)) {
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; font-weight: bold; text-align: ${align}; mso-number-format: '\@';">${val}</td>`;
+                        }
                         else {
-                            htmlStr += `<td style="background-color: ${corFundo}; padding: 4px 8px; border: 1px solid #d1d5db; color: #000000; text-align: ${align}; vertical-align: middle;">${val}</td>`;
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; text-align: ${align}; mso-number-format: '\@';">${val}</td>`;
                         }
                     });
                     
@@ -11330,7 +11376,6 @@
 
                 htmlStr += `</table></body></html>`;
 
-                // 3. Força o download nativo como arquivo .xls
                 const blob = new Blob([htmlStr], { type: 'application/vnd.ms-excel;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
