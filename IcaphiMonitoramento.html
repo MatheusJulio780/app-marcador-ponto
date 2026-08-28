@@ -22,6 +22,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
@@ -1035,33 +1036,40 @@
             border: 1px solid var(--success);
         }
 
+        /* ================= CORREÇÃO ABSOLUTA DO OVERLAY DO MODAL ================= */
         .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(3px);
-            z-index: 300;
-            justify-content: center;
-            align-items: center;
+            display: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 120vw !important;
+            height: 120vh !important;
+            background: rgba(15, 23, 42, 0.75) !important;
+            backdrop-filter: blur(4px) !important;
+            z-index: 2147483647 !important; /* Topo absoluto */
+            justify-content: center !important;
+            align-items: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .modal-overlay.active {
-            display: flex;
+            display: flex !important;
         }
 
         .modal-content {
-            background: var(--bg-panel);
+            background: var(--bg-panel, #ffffff);
+            color: var(--text-main, #1e293b);
+            padding: 25px;
             border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border-color, #cbd5e1);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            gap: 15px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            border: 1px solid var(--border-color);
         }
 
         @keyframes modalPop {
@@ -2955,6 +2963,88 @@
         border-color: #217346 !important;
     }
 
+    /* ================= CSS UNIFICADO: SMARTPHONES, CHIPS E MODAIS ================= */
+
+    .smartphones-container {
+        padding: 20px; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 20px; 
+        height: 100%; 
+        overflow-y: auto; 
+        background: var(--bg-main);
+    }
+
+    .page-header {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        flex-wrap: wrap; 
+        gap: 15px;
+    }
+
+    .page-header h2 { 
+        font-size: 1.25rem; 
+        font-weight: 800; 
+        color: var(--text-main); 
+    }
+
+    .header-actions { 
+        display: flex; 
+        gap: 10px; 
+    }
+
+    /* KPIs */
+    .kpi-dashboard {
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+        gap: 15px; 
+        width: 100%;
+    }
+
+    .kpi-card {
+        background: var(--bg-panel); 
+        border: 1px solid var(--border-color); 
+        border-radius: 12px; 
+        padding: 18px;
+        box-shadow: var(--shadow-sm); 
+        display: flex; 
+        flex-direction: column; 
+        gap: 6px; 
+        border-left: 4px solid var(--accent);
+    }
+
+    .kpi-card.kpi-success { border-left-color: var(--success); }
+    .kpi-card.kpi-warning { border-left-color: var(--warning); }
+    .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--text-main); }
+
+    /* Tabela Padrão */
+    .table-container {
+        background: var(--bg-panel); 
+        border: 1px solid var(--border-color); 
+        border-radius: 12px; 
+        padding: 15px; 
+        flex: 1; 
+        overflow-x: auto;
+    }
+
+    .custom-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    .custom-table th { background: var(--bg-table-header); color: #fff; padding: 10px 12px; font-size: 11px; }
+    .custom-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+
+    /* ================= MODAIS POP-UP (100% BLINDADO) ================= */
+    .modal-content.modal-lg { max-width: 700px; }
+    .modal-content.modal-sm { max-width: 380px; }
+    .modal-content h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 5px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid input, .modal-content input, .modal-content select, .modal-content textarea {
+        width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px;
+        background: var(--bg-main); color: var(--text-main); font-size: 0.9rem; outline: none;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+
     </style>
 </head>
 
@@ -2997,9 +3087,14 @@
                     <i class="ph ph-currency-circle-dollar menu-icon"></i><span class="menu-text">Prest. Contas</span>
                 </a>
 
-                <!-- 🟢 ADICIONADO AQUI: Aba de Complementos -->
+                <!-- Aba de Complementos -->
                 <a class="menu-item" data-target="view-complementos">
                     <i class="ph ph-receipt menu-icon"></i><span class="menu-text">Complementos</span>
+                </a>
+
+                <!-- 🟢 ADICIONADO AQUI: Aba de Smartphones -->
+                <a class="menu-item" data-target="view-smartphones">
+                    <i class="ph ph-phone menu-icon"></i><span class="menu-text">Smartphones</span>
                 </a>
 
                 <a class="menu-item" data-target="view-dashboard">
@@ -4237,6 +4332,165 @@
                     <span class="title">Importação Escala KMs</span>
                     <span class="sub">Injeção de Dados em Lote</span>
                 </a>
+            </div>
+        </div>
+
+        <!-- ================= SECTION SMARTPHONES ================= -->
+        <section id="view-smartphones" class="view-section" style="display: none;">
+            <div class="smartphones-container">
+                <!-- Cabeçalho e Botões Principais -->
+                <div class="page-header">
+                    <h2>Controle de Celulares e Chips</h2>
+                    <div class="header-actions">
+                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary">📱 Cadastrar Smartphone</button>
+                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary">🔋 Cadastrar Chip</button>
+                    </div>
+                </div>
+                
+                <!-- KPIs -->
+                <div class="kpi-dashboard">
+                    <div class="kpi-card"><span class="kpi-title">QTD CELULARES</span><span class="kpi-value" id="kpi-celulares">0</span></div>
+                    <div class="kpi-card"><span class="kpi-title">QTD CHIPS</span><span class="kpi-value" id="kpi-chips">0</span></div>
+                    <div class="kpi-card kpi-success"><span class="kpi-title">CHIPS EM USO</span><span class="kpi-value" id="kpi-chips-uso">0</span></div>
+                    <div class="kpi-card kpi-warning"><span class="kpi-title">CHIPS SEM USAR</span><span class="kpi-value" id="kpi-chips-livres">0</span></div>
+                </div>
+
+                <!-- Tabela Principal de Smartphones -->
+                <div class="table-container">
+                    <table class="custom-table" id="tabela-smartphones">
+                        <thead>
+                            <tr>
+                                <th>PATRIMÔNIO</th>
+                                <th>NÚMERO</th>
+                                <th>PLACA</th>
+                                <th>MOTORISTA</th>
+                                <th>STATUS</th>
+                                <th>OBS</th>
+                                <th style="text-align: center;">AÇÕES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-smartphones"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MODAIS (POP UPs) ================= -->
+
+        <!-- Pop-up: Cadastrar Smartphone -->
+        <div id="modal-add-smartphone" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Cadastrar Smartphone</h3>
+                <div class="form-grid">
+                    <input type="text" id="add-sp-patrimonio" placeholder="Patrimônio">
+                    <input type="text" id="add-sp-marca" placeholder="Marca">
+                    <input type="text" id="add-sp-modelo" placeholder="Modelo">
+                    <input type="text" id="add-sp-imei1" placeholder="IMEI">
+                    <input type="text" id="add-sp-imei2" placeholder="IMEI 2 (Opcional)">
+                    <input type="text" id="add-sp-serie" placeholder="Número de Série">
+                </div>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-add-smartphone')" class="btn-cancel">Cancelar</button>
+                    <button onclick="window.salvarNovoSmartphone()" class="btn-confirm">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Cadastrar Chip (Importação) -->
+        <div id="modal-cadastrar-chip" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Cadastrar / Importar Chips</h3>
+                
+                <!-- Botões superiores do pop-up -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="file" id="file-import-chips" accept=".xls,.xlsx" style="display: none;" onchange="window.lerPlanilhaChips(event)">
+                    <button onclick="document.getElementById('file-import-chips').click()" class="btn btn-primary" style="flex: 1;">📥 Importar Planilha</button>
+                    <button onclick="window.abrirModal('modal-verificar-chips')" class="btn btn-secondary" style="flex: 1;">📋 Verificar Chips</button>
+                </div>
+
+                <div id="preview-chips" style="max-height: 200px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 6px;">
+                    <p style="font-size: 12px; color: var(--text-muted); text-align: center;">Nenhuma planilha importada no momento.</p>
+                </div>
+
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-cadastrar-chip')" class="btn-cancel">Fechar</button>
+                    <button id="btn-salvar-chips" onclick="window.salvarChipsImportados()" class="btn-confirm" style="display: none;">Salvar Chips Importados</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Verificar Chips (Lista) -->
+        <div id="modal-verificar-chips" class="modal-overlay">
+            <div class="modal-content modal-lg">
+                <h3>Lista de Chips Cadastrados</h3>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="custom-table compact">
+                        <thead>
+                            <tr>
+                                <th>NÚMERO</th>
+                                <th>PATRIMÔNIO ATRELADO</th>
+                                <th style="text-align: center;">AÇÕES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-chips-banco"></tbody>
+                    </table>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-verificar-chips')" class="btn-cancel">Fechar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Editar Chip -->
+        <div id="modal-edit-chip" class="modal-overlay">
+            <div class="modal-content modal-sm">
+                <h3>Editar Chip</h3>
+                <input type="hidden" id="edit-chip-id">
+                <label>Número do Chip</label>
+                <input type="text" id="edit-chip-numero">
+                
+                <label>Atrelar a um Patrimônio</label>
+                <select id="edit-chip-patrimonio">
+                    <option value="">Nenhum (Sem Uso)</option>
+                </select>
+                
+                <div class="modal-actions mt-10">
+                    <button onclick="window.fecharModal('modal-edit-chip')" class="btn-cancel">Cancelar</button>
+                    <button onclick="window.salvarEdicaoChip()" class="btn-confirm">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Editar Smartphone -->
+        <div id="modal-edit-smartphone" class="modal-overlay">
+            <div class="modal-content">
+                <h3>Editar Smartphone <span id="edit-sp-pat-display" style="color: var(--accent);"></span></h3>
+                <input type="hidden" id="edit-sp-id">
+                <div class="form-grid">
+                    <div>
+                        <label>Status do Aparelho</label>
+                        <select id="edit-sp-status">
+                            <option value="ATIVO">Ativo</option>
+                            <option value="INATIVO">Inativo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Placa Vinculada</label>
+                        <input type="text" id="edit-sp-placa" placeholder="Digite a Placa">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label>Motorista</label>
+                        <input type="text" id="edit-sp-motorista" placeholder="Nome do Motorista">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label>Observação</label>
+                        <textarea id="edit-sp-obs" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-edit-smartphone')" class="btn-cancel">Cancelar</button>
+                    <button onclick="window.salvarEdicaoSmartphone()" class="btn-confirm">Salvar Alterações</button>
+                </div>
             </div>
         </div>
 
@@ -7395,28 +7649,55 @@
 
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                const target = e.currentTarget; if (!target.getAttribute('data-target')) return;
-                document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active')); target.classList.add('active');
-                document.querySelectorAll('.view-section').forEach(view => { view.classList.remove('active'); void view.offsetWidth; });
-                const targetId = target.getAttribute('data-target'); document.getElementById(targetId).classList.add('active');
-
-                if (targetId === 'view-monitoramento' && document.getElementById('mon-data-select').value) { document.getElementById('btn-carregar-painel').click(); }
-                else if (targetId === 'view-notas' && document.getElementById('notas-data-select').value) { document.getElementById('btn-carregar-notas').click(); }
-                else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select').value) { document.getElementById('btn-carregar-canhotos').click(); }
-                else if (targetId === 'view-dashboard' && document.getElementById('dashboard-data').value) { document.getElementById('btn-carregar-dashboard').click(); }
+                const target = e.currentTarget; 
+                if (!target.getAttribute('data-target')) return;
                 
-                // 🟢 ADICIONADO AQUI: Aciona o carregamento dos complementos se o mês estiver selecionado
+                // Ativação visual do menu
+                document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active')); 
+                target.classList.add('active');
+                
+                // Alternância limpa das seções
+                document.querySelectorAll('.view-section').forEach(view => { 
+                    view.classList.remove('active'); 
+                    view.style.display = 'none'; // Garante o reset visual
+                });
+                
+                const targetId = target.getAttribute('data-target'); 
+                const activeSection = document.getElementById(targetId);
+                
+                if (activeSection) {
+                    activeSection.classList.add('active');
+                    activeSection.style.display = 'flex'; // Força a exibição correta
+                }
+
+                // --- GATILHOS INDIVIDUAIS POR ABA ---
+                
+                if (targetId === 'view-monitoramento' && document.getElementById('mon-data-select')?.value) { 
+                    document.getElementById('btn-carregar-painel').click(); 
+                }
+                else if (targetId === 'view-notas' && document.getElementById('notas-data-select')?.value) { 
+                    document.getElementById('btn-carregar-notas').click(); 
+                }
+                else if (targetId === 'view-canhotos' && document.getElementById('canhotos-month-select')?.value) { 
+                    document.getElementById('btn-carregar-canhotos').click(); 
+                }
+                else if (targetId === 'view-dashboard' && document.getElementById('dashboard-data')?.value) { 
+                    document.getElementById('btn-carregar-dashboard').click(); 
+                }
+                else if (targetId === 'view-smartphones') {
+                    if (typeof window.carregarDadosSmartphones === 'function') {
+                        window.carregarDadosSmartphones();
+                    }
+                }
                 else if (targetId === 'view-complementos') {
                     const compMes = document.getElementById('comp-month-select');
                     if (compMes && !compMes.value) {
-                        // Define o mês atual por padrão se estiver vazio (ex: "2026-08")
                         compMes.value = new Date().toISOString().slice(0, 7);
                     }
                     if (compMes && compMes.value) {
-                        document.getElementById('btn-carregar-complementos').click();
+                        document.getElementById('btn-carregar-complementos')?.click();
                     }
                 }
-
                 else if (targetId === 'view-prestacao') {
                     if (typeof window.carregarPendenciasContas === 'function') {
                         window.carregarPendenciasContas();
@@ -15327,6 +15608,271 @@
         document.addEventListener('DOMContentLoaded', () => {
             definirQuinzenaAtual();
         });
+
+        // ================= VARIÁVEIS GLOBAIS =================
+        window.baseSmartphones = [];
+        window.baseChips = [];
+        window.chipsPreviewAguardando = [];
+
+        // ================= CONTROLE DE MODAIS CORRIGIDO =================
+        window.abrirModal = function(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.add('active'); 
+        };
+
+        window.fecharModal = function(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.remove('active'); 
+        };
+
+        // ================= INICIALIZAÇÃO =================
+        window.carregarDadosSmartphones = async function() {
+            try {
+                const snapSp = await getDocs(collection(db, "smartphones"));
+                window.baseSmartphones = snapSp.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                const snapChips = await getDocs(collection(db, "chips"));
+                window.baseChips = snapChips.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                window.atualizarKPISmartphones();
+                window.renderizarTabelaSmartphones();
+                window.renderizarTabelaChips();
+                window.preencherSelectPatrimonios();
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+            }
+        };
+
+        window.atualizarKPISmartphones = function() {
+            document.getElementById('kpi-celulares').innerText = window.baseSmartphones.length;
+            document.getElementById('kpi-chips').innerText = window.baseChips.length;
+            const emUso = window.baseChips.filter(c => c.patrimonio_vinculado && c.patrimonio_vinculado !== "").length;
+            document.getElementById('kpi-chips-uso').innerText = emUso;
+            document.getElementById('kpi-chips-livres').innerText = window.baseChips.length - emUso;
+        };
+
+        // ================= SMARTPHONES =================
+        window.salvarNovoSmartphone = async function() {
+            const pat = document.getElementById('add-sp-patrimonio').value.trim().toUpperCase();
+            if (!pat) return alert("O Patrimônio é obrigatório.");
+            if (window.baseSmartphones.find(s => s.patrimonio === pat)) return alert("Este Patrimônio já existe.");
+
+            const novoSp = {
+                patrimonio: pat,
+                marca: document.getElementById('add-sp-marca').value.trim().toUpperCase(),
+                modelo: document.getElementById('add-sp-modelo').value.trim().toUpperCase(),
+                imei1: document.getElementById('add-sp-imei1').value.trim(),
+                imei2: document.getElementById('add-sp-imei2').value.trim(),
+                num_serie: document.getElementById('add-sp-serie').value.trim(),
+                placa: "",
+                motorista: "",
+                status: "ATIVO", // Apenas ATIVO, INATIVO ou CONSERTO
+                obs: "",
+                historico_conserto: [] // Armazenar datas de ida e volta do conserto
+            };
+
+            await setDoc(doc(db, "smartphones", pat), novoSp);
+            window.fecharModal('modal-add-smartphone');
+            window.carregarDadosSmartphones();
+        };
+
+        window.renderizarTabelaSmartphones = function() {
+            const tbody = document.getElementById('lista-smartphones');
+            tbody.innerHTML = "";
+
+            window.baseSmartphones.forEach(sp => {
+                const chipVinc = window.baseChips.find(c => c.patrimonio_vinculado === sp.patrimonio);
+                const numeroChip = chipVinc ? chipVinc.numero : '-';
+
+                const isConserto = sp.status === 'CONSERTO';
+                const btnConsertoText = isConserto ? '🔙 Voltou do Conserto' : '🔧 Enviar p/ Conserto';
+                const btnConsertoColor = isConserto ? '#10b981' : '#f59e0b'; // Verde se volta, Amarelo se vai
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">${sp.patrimonio}</td>
+                        <td style="color:var(--accent); font-weight:bold;">${numeroChip}</td>
+                        <td>${sp.placa || '-'}</td>
+                        <td>${sp.motorista || '-'}</td>
+                        <td>${sp.status}</td>
+                        <td>${sp.obs || '-'}</td>
+                        <td style="display:flex; gap:8px; justify-content:center;">
+                            <button onclick="window.abrirEdicaoSmartphone('${sp.id}')" class="btn btn-sm btn-primary">✏️ Editar</button>
+                            <button onclick="window.toggleConserto('${sp.id}')" class="btn btn-sm" style="background:${btnConsertoColor}; color:white;">${btnConsertoText}</button>
+                            <button onclick="window.excluirSmartphone('${sp.id}')" class="btn btn-sm btn-danger">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.abrirEdicaoSmartphone = function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            document.getElementById('edit-sp-id').value = sp.id;
+            document.getElementById('edit-sp-pat-display').innerText = sp.patrimonio;
+            document.getElementById('edit-sp-status').value = sp.status === 'CONSERTO' ? 'ATIVO' : sp.status; // Não deixa setar conserto via select
+            document.getElementById('edit-sp-placa').value = sp.placa;
+            document.getElementById('edit-sp-motorista').value = sp.motorista;
+            document.getElementById('edit-sp-obs').value = sp.obs;
+            window.abrirModal('modal-edit-smartphone');
+        };
+
+        window.salvarEdicaoSmartphone = async function() {
+            const id = document.getElementById('edit-sp-id').value;
+            await updateDoc(doc(db, "smartphones", id), {
+                status: document.getElementById('edit-sp-status').value,
+                placa: document.getElementById('edit-sp-placa').value.trim().toUpperCase(),
+                motorista: document.getElementById('edit-sp-motorista').value.trim().toUpperCase(),
+                obs: document.getElementById('edit-sp-obs').value.trim()
+            });
+            window.fecharModal('modal-edit-smartphone');
+            window.carregarDadosSmartphones();
+        };
+
+        window.excluirSmartphone = async function(id) {
+            if(!confirm("Deletar smartphone permanentemente?")) return;
+            const chipVinc = window.baseChips.find(c => c.patrimonio_vinculado === id);
+            if(chipVinc) await updateDoc(doc(db, "chips", chipVinc.id), { patrimonio_vinculado: "" });
+            await deleteDoc(doc(db, "smartphones", id));
+            window.carregarDadosSmartphones();
+        };
+
+        // Lógica de Conserto (Registrando Datas)
+        window.toggleConserto = async function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            let hist = sp.historico_conserto || [];
+            let novoStatus = "";
+            const dataHoje = new Date().toISOString().split('T')[0];
+
+            if (sp.status === 'CONSERTO') {
+                novoStatus = "ATIVO";
+                if (hist.length > 0 && !hist[hist.length - 1].data_volta) {
+                    hist[hist.length - 1].data_volta = dataHoje; // Registra a data de volta
+                }
+            } else {
+                novoStatus = "CONSERTO";
+                hist.push({ data_ida: dataHoje, data_volta: null }); // Registra a ida
+            }
+
+            await updateDoc(doc(db, "smartphones", id), { status: novoStatus, historico_conserto: hist });
+            window.carregarDadosSmartphones();
+        };
+
+        // ================= CHIPS =================
+        window.lerPlanilhaChips = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                
+                let numerosDbSet = new Set(window.baseChips.map(c => c.numero.replace(/[^0-9]/g, '')));
+                window.chipsPreviewAguardando = [];
+                let htmlPreview = "";
+
+                rows.forEach(row => {
+                    if (row[0]) {
+                        let num = String(row[0]).trim();
+                        let numClean = num.replace(/[^0-9]/g, '');
+                        // Impede duplicação: só entra se tiver no mínimo 8 dígitos e não existir no BD
+                        if (numClean.length >= 8 && !numerosDbSet.has(numClean)) {
+                            window.chipsPreviewAguardando.push(num);
+                            numerosDbSet.add(numClean);
+                            htmlPreview += `<span style="display:inline-block; background:rgba(37,99,235,0.1); color:#2563eb; padding:4px 8px; border-radius:4px; margin:3px; font-weight:bold; font-size:11px;">${num}</span>`;
+                        }
+                    }
+                });
+
+                document.getElementById('preview-chips').innerHTML = htmlPreview || "<p style='color:red;'>Nenhum número novo encontrado (todos já cadastrados ou planilha inválida).</p>";
+                document.getElementById('btn-salvar-chips').style.display = window.chipsPreviewAguardando.length > 0 ? 'block' : 'none';
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.salvarChipsImportados = async function() {
+            try {
+                const batch = writeBatch(db);
+                window.chipsPreviewAguardando.forEach(num => {
+                    const docRef = doc(collection(db, "chips")); 
+                    batch.set(docRef, { numero: num, patrimonio_vinculado: "" });
+                });
+                await batch.commit();
+                
+                document.getElementById('preview-chips').innerHTML = "<p>Chips importados!</p>";
+                document.getElementById('btn-salvar-chips').style.display = "none";
+                document.getElementById('file-import-chips').value = "";
+                
+                window.carregarDadosSmartphones();
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao salvar chips.");
+            }
+        };
+
+        window.preencherSelectPatrimonios = function() {
+            const sel = document.getElementById('edit-chip-patrimonio');
+            sel.innerHTML = `<option value="">Nenhum (Sem Uso)</option>`;
+            window.baseSmartphones.forEach(sp => {
+                sel.innerHTML += `<option value="${sp.patrimonio}">${sp.patrimonio} (${sp.motorista || 'Sem motorista'})</option>`;
+            });
+        };
+
+        window.renderizarTabelaChips = function() {
+            const tbody = document.getElementById('lista-chips-banco');
+            tbody.innerHTML = "";
+            window.baseChips.forEach(chip => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">${chip.numero}</td>
+                        <td>${chip.patrimonio_vinculado || 'Livre'}</td>
+                        <td style="display:flex; justify-content:center; gap:8px;">
+                            <button onclick="window.abrirEdicaoChip('${chip.id}')" class="btn btn-sm btn-primary">✏️</button>
+                            <button onclick="window.excluirChip('${chip.id}')" class="btn btn-sm btn-danger">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.abrirEdicaoChip = function(id) {
+            const chip = window.baseChips.find(c => c.id === id);
+            document.getElementById('edit-chip-id').value = chip.id;
+            document.getElementById('edit-chip-numero').value = chip.numero;
+            document.getElementById('edit-chip-patrimonio').value = chip.patrimonio_vinculado || "";
+            window.fecharModal('modal-verificar-chips'); // Fecha a lista antes de abrir edição
+            window.abrirModal('modal-edit-chip');
+        };
+
+        window.salvarEdicaoChip = async function() {
+            const id = document.getElementById('edit-chip-id').value;
+            const novoPat = document.getElementById('edit-chip-patrimonio').value;
+            
+            // Regra: se atrelou o chip a um patrimonio que já tinha chip, remove do anterior
+            if(novoPat !== "") {
+                const chipAnterior = window.baseChips.find(c => c.patrimonio_vinculado === novoPat && c.id !== id);
+                if(chipAnterior) await updateDoc(doc(db, "chips", chipAnterior.id), { patrimonio_vinculado: "" });
+            }
+
+            await updateDoc(doc(db, "chips", id), {
+                numero: document.getElementById('edit-chip-numero').value.trim(),
+                patrimonio_vinculado: novoPat
+            });
+
+            window.fecharModal('modal-edit-chip');
+            await window.carregarDadosSmartphones();
+            window.abrirModal('modal-verificar-chips'); // Volta pra tela de verificação
+        };
+
+        window.excluirChip = async function(id) {
+            if(!confirm("Deletar este chip?")) return;
+            await deleteDoc(doc(db, "chips", id));
+            window.carregarDadosSmartphones();
+        };
+
+        // Certifique-se de chamar carregarDadosSmartphones() no script de navegação ao clicar no menu "Smartphones"
 
     </script>
 </body>
