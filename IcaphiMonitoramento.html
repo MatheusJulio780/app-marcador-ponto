@@ -8725,11 +8725,24 @@
                             let placaOriginal = trimUpper(no.placa || "").replace(/[^A-Z0-9]/g, '');
                             let placaFinal = deParaTroca[placaOriginal] || no.placa;
 
-                            // 🟢 CORREÇÃO: Limpa o status operacional, mas carimba a observação
+                            // Busca o transporte correto na base do painel antigo para a placa
+                            let transporteHerdado = no.viagem || ""; // Pega direto da nota se houver
+                            if (!transporteHerdado && sOntemPainel.exists()) {
+                                let rotaAntiga = sOntemPainel.data().rotas.find(r => 
+                                    trimUpper(r.placa).replace(/[^A-Z0-9]/g, '') === placaOriginal || 
+                                    (r.troca && trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') === placaOriginal)
+                                );
+                                if (rotaAntiga && rotaAntiga.transporte) {
+                                    transporteHerdado = rotaAntiga.transporte;
+                                }
+                            }
+
+                            // 🟢 CORREÇÃO: Limpa o status operacional, mas carimba a observação E FORÇA O TRANSPORTE
                             notasParaApresentar.push({ 
                                 ...no, 
                                 status: "", 
                                 placa: placaFinal,
+                                viagem: transporteHerdado, // <- GARANTIA DO TRANSPORTE CORRETO
                                 obs: (no.obs ? no.obs + " | " : "") + "Pernoite do dia anterior" 
                             });
                         }
@@ -8784,7 +8797,7 @@
                 <td data-col="telefone" contenteditable="true">${telefone}</td>
                 <td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
             
-            configurarDragAndDrop(tr, tbodyEditorNotas); 
+            configurarDragAndDrop(tr);
             tbodyEditorNotas.appendChild(tr);
         };
 
@@ -9127,7 +9140,7 @@
             const optionsHTML = statuses.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
             tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="placa" contenteditable="true" style="font-weight:700;">${placa}</td><td data-col="troca" contenteditable="true" style="color:var(--warning); font-weight:800;">${dados.troca ? dados.troca.replace(/[^A-Z0-9]/g, '') : ""}</td><td data-col="perfil">${info.perfil}</td><td data-col="tipo">${info.tipo}</td><td data-col="oc" contenteditable="true">${dados.oc || ""}</td><td data-col="transporte" contenteditable="true">${dados.transporte || ""}</td><td data-col="motorista" contenteditable="true">${dados.motorista || ""}</td><td data-col="contato" contenteditable="true">${dados.contato || ""}</td><td data-col="status"><select class="select-status" style="${getStRotaStyle(statusAtual)}">${optionsHTML}</select></td><td data-col="km" contenteditable="true">${formatNumber(dados.km || "0")}</td><td data-col="regiao" contenteditable="true">${dados.regiao || ""}</td><td data-col="ajudante" contenteditable="true">${dados.ajudante || ""}</td><td data-col="valepalete" contenteditable="true">${dados.vale_palete || "NÃO"}</td><td data-col="qtde" contenteditable="true">${dados.qtde || "0"}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
             tr.querySelector('[data-col="placa"]').addEventListener('blur', function () { const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''); this.innerText = val; const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; });
-            configurarDragAndDrop(tr, tbodyPainel); tbodyPainel.appendChild(tr);
+            configurarDragAndDrop(tr);
         };
         document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => {
             const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); tbodyPainel.innerHTML = "";
@@ -9212,10 +9225,52 @@
             }; reader.readAsArrayBuffer(file);
         });
 
-        function configurarDragAndDrop(tr, container) {
-            tr.addEventListener('dragstart', () => tr.classList.add('dragging')); tr.addEventListener('dragend', () => tr.classList.remove('dragging'));
-            container.addEventListener('dragover', e => { e.preventDefault(); const drag = document.querySelector('.dragging'); if (!drag) return; const sib = [...container.querySelectorAll('tr:not(.dragging)')]; let next = sib.find(s => e.clientY <= s.getBoundingClientRect().top + s.offsetHeight / 2); container.insertBefore(drag, next); });
+        // ================= DRAG AND DROP (ALTA PERFORMANCE) =================
+        // Apenas pendura eventos locais na linha
+        function configurarDragAndDrop(tr) {
+            tr.addEventListener('dragstart', (e) => {
+                tr.classList.add('dragging');
+                // Reduz o peso visual do elemento fantasma no mouse (opcional)
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            tr.addEventListener('dragend', () => {
+                tr.classList.remove('dragging');
+            });
         }
+
+        // O Evento de mover (dragover) NUNCA PODE ESTAR DENTRO DO LOOP DE CRIAÇÃO. 
+        // Ele é pendurado no container (Tbody) de forma isolada, apenas UMA VEZ.
+        function inicializarContainerDragAndDrop(containerId) {
+            const container = document.querySelector(`${containerId} tbody`);
+            if (!container || container.dataset.dragAtivo === "true") return; // Evita duplicação
+
+            container.dataset.dragAtivo = "true";
+
+            // Throttle para não estourar a CPU calculando pixels a cada milissegundo
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault(); 
+                const drag = container.querySelector('.dragging'); 
+                if (!drag) return; 
+
+                // Captura todas as linhas exceto a que está sendo movida
+                const siblings = [...container.querySelectorAll('tr:not(.dragging)')]; 
+                
+                // Acha a linha mais próxima baseada na posição do mouse Y
+                let nextSibling = siblings.find(sibling => {
+                    const rect = sibling.getBoundingClientRect();
+                    return e.clientY <= rect.top + (rect.height / 2);
+                });
+                
+                container.insertBefore(drag, nextSibling); 
+            });
+        }
+
+        // Chame a inicialização do pai globalmente (roda só 1 vez)
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarContainerDragAndDrop('#tabela-editor-notas');
+            inicializarContainerDragAndDrop('#tabela-editor-painel');
+        });
 
         function renderizarTabelaPlacas() {
             const tbody = document.querySelector('#tabela-placas tbody'); let htmlBuffer = ""; document.getElementById('placas-count').innerText = `${Object.keys(window.placasCache).length} Veículos Cadastrados`;
