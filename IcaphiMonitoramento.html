@@ -2980,12 +2980,20 @@
         align-items: center; 
         flex-wrap: wrap; 
         gap: 15px;
+        background: var(--bg-panel);
+        padding: 15px 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
     }
 
     .page-header h2 { 
         font-size: 1.25rem; 
         font-weight: 800; 
         color: var(--text-main); 
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .header-actions { 
@@ -3011,26 +3019,87 @@
         flex-direction: column; 
         gap: 6px; 
         border-left: 4px solid var(--accent);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     .kpi-card.kpi-success { border-left-color: var(--success); }
     .kpi-card.kpi-warning { border-left-color: var(--warning); }
-    .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--text-main); }
+    .kpi-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
 
-    /* Tabela Padrão */
+    /* Consertando a Tabela "Flutuante" */
     .table-container {
         background: var(--bg-panel); 
         border: 1px solid var(--border-color); 
         border-radius: 12px; 
-        padding: 15px; 
         flex: 1; 
         overflow-x: auto;
+        box-shadow: var(--shadow-sm);
+        padding: 0; /* REMOVIDO O PADDING PARA O CABEÇALHO TOCAR AS BORDAS */
     }
 
-    .custom-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    .custom-table th { background: var(--bg-table-header); color: #fff; padding: 10px 12px; font-size: 11px; }
-    .custom-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .custom-table { width: 100%; border-collapse: collapse; margin: 0; }
+    .custom-table th { 
+        background: var(--bg-table-header); 
+        color: var(--text-main); 
+        padding: 15px 20px; /* Mais espaço interno */
+        font-size: 11px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        border-bottom: 2px solid var(--border-color); 
+    }
+    .custom-table td { padding: 12px 20px; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-main); }
+    .custom-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    /* Indicadores de Clique nos KPIs */
+    .kpi-card { cursor: pointer; transition: all 0.2s ease; }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+
+    /* Botões de Ação na Tabela (Design Limpo) */
+    .btn-action-icon {
+        background: var(--bg-main);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+    }
+    .btn-action-icon:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    
+    .btn-action-icon.warning:hover { background: var(--warning); color: #111; border-color: var(--warning); }
+    .btn-action-icon.success:hover { background: var(--success); color: white; border-color: var(--success); }
+    .btn-action-icon.danger:hover { background: var(--danger); color: white; border-color: var(--danger); }
+    
+    /* Status Badges */
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-badge.ativo { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-badge.inativo { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .status-badge.conserto { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    /* Badges para Importação de Chips */
+    .badge-import-new {
+        display: inline-block; background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 4px 10px; border-radius: 6px; margin: 3px; font-weight: bold; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-import-missing {
+        display: inline-block; background: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 4px 10px; border-radius: 6px; margin: 3px; font-weight: bold; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.3);
+    }
 
     /* ================= MODAIS POP-UP (100% BLINDADO) ================= */
     .modal-content.modal-lg { max-width: 700px; }
@@ -4339,19 +4408,31 @@
             <div class="smartphones-container">
                 <!-- Cabeçalho e Botões Principais -->
                 <div class="page-header">
-                    <h2>Controle de Celulares e Chips</h2>
+                    <h2><i class="ph ph-device-mobile" style="color: var(--accent);"></i> Controle de Frotas (Smartphones)</h2>
                     <div class="header-actions">
-                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary">📱 Cadastrar Smartphone</button>
-                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary">🔋 Cadastrar Chip</button>
+                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary" style="display:flex; align-items:center; gap:6px;">
+                            <i class="ph ph-plus-circle" style="font-size:1.1rem;"></i> Novo Smartphone
+                        </button>
+                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary" style="display:flex; align-items:center; gap:6px;">
+                            <i class="ph ph-sim-card" style="font-size:1.1rem;"></i> Gerenciar Chips
+                        </button>
                     </div>
                 </div>
                 
                 <!-- KPIs -->
                 <div class="kpi-dashboard">
-                    <div class="kpi-card"><span class="kpi-title">QTD CELULARES</span><span class="kpi-value" id="kpi-celulares">0</span></div>
-                    <div class="kpi-card"><span class="kpi-title">QTD CHIPS</span><span class="kpi-value" id="kpi-chips">0</span></div>
-                    <div class="kpi-card kpi-success"><span class="kpi-title">CHIPS EM USO</span><span class="kpi-value" id="kpi-chips-uso">0</span></div>
-                    <div class="kpi-card kpi-warning"><span class="kpi-title">CHIPS SEM USAR</span><span class="kpi-value" id="kpi-chips-livres">0</span></div>
+                    <div class="kpi-card" onclick="window.abrirListaKPI('celulares')">
+                        <span class="kpi-title">QTD CELULARES</span><span class="kpi-value" id="kpi-celulares">0</span>
+                    </div>
+                    <div class="kpi-card" onclick="window.abrirListaKPI('chips')">
+                        <span class="kpi-title">QTD CHIPS</span><span class="kpi-value" id="kpi-chips">0</span>
+                    </div>
+                    <div class="kpi-card kpi-success" onclick="window.abrirListaKPI('uso')">
+                        <span class="kpi-title">CHIPS EM USO</span><span class="kpi-value" id="kpi-chips-uso">0</span>
+                    </div>
+                    <div class="kpi-card kpi-warning" onclick="window.abrirListaKPI('livres')">
+                        <span class="kpi-title">CHIPS SEM USAR</span><span class="kpi-value" id="kpi-chips-livres">0</span>
+                    </div>
                 </div>
 
                 <!-- Tabela Principal de Smartphones -->
@@ -4418,23 +4499,34 @@
             </div>
         </div>
 
-        <!-- Pop-up: Verificar Chips (Lista) -->
+        <!-- Pop-up: Verificar Chips (Lista com Pesquisa e Ordenação) -->
         <div id="modal-verificar-chips" class="modal-overlay">
             <div class="modal-content modal-lg">
-                <h3>Lista de Chips Cadastrados</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
+                <h3><i class="ph ph-sim-card" style="color:var(--accent);"></i> Lista de Chips Cadastrados</h3>
+                
+                <!-- 🔍 Barra de Pesquisa Instantânea -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="input-busca-chips" placeholder="Pesquisar por número ou patrimônio/vínculo..." oninput="window.filtrarEDesenharChips()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; font-size: 13px;">
+                </div>
+
+                <div style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
                     <table class="custom-table compact">
                         <thead>
                             <tr>
-                                <th>NÚMERO</th>
-                                <th>PATRIMÔNIO ATRELADO</th>
+                                <th onclick="window.ordenarChips('numero')" style="cursor: pointer; user-select: none;" title="Clique para ordenar">
+                                    NÚMERO <i class="ph ph-arrows-down-up" style="font-size: 10px; opacity: 0.7;"></i>
+                                </th>
+                                <th onclick="window.ordenarChips('patrimonio_vinculado')" style="cursor: pointer; user-select: none;" title="Clique para ordenar">
+                                    VÍNCULO / PATRIMÔNIO <i class="ph ph-arrows-down-up" style="font-size: 10px; opacity: 0.7;"></i>
+                                </th>
                                 <th style="text-align: center;">AÇÕES</th>
                             </tr>
                         </thead>
                         <tbody id="lista-chips-banco"></tbody>
                     </table>
                 </div>
-                <div class="modal-actions">
+
+                <div class="modal-actions" style="margin-top: 20px;">
                     <button onclick="window.fecharModal('modal-verificar-chips')" class="btn-cancel">Fechar</button>
                 </div>
             </div>
@@ -4443,15 +4535,15 @@
         <!-- Pop-up: Editar Chip -->
         <div id="modal-edit-chip" class="modal-overlay">
             <div class="modal-content modal-sm">
-                <h3>Editar Chip</h3>
+                <h3>Editar / Vincular Chip</h3>
                 <input type="hidden" id="edit-chip-id">
-                <label>Número do Chip</label>
-                <input type="text" id="edit-chip-numero">
                 
-                <label>Atrelar a um Patrimônio</label>
-                <select id="edit-chip-patrimonio">
-                    <option value="">Nenhum (Sem Uso)</option>
-                </select>
+                <label style="display:block; margin-bottom:6px; font-size:12px; font-weight:bold; color:var(--text-muted);">Número do Chip</label>
+                <input type="text" id="edit-chip-numero" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
+                
+                <label style="display:block; margin-bottom:6px; font-size:12px; font-weight:bold; color:var(--text-muted);">Atrelar a um Patrimônio ou Nome</label>
+                <input type="text" id="edit-chip-vinculo" placeholder="Ex: 26, João Silva, Logística..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
+                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 15px;">Você pode digitar o número de um patrimônio existente ou o nome de uma pessoa/setor.</small>
                 
                 <div class="modal-actions mt-10">
                     <button onclick="window.fecharModal('modal-edit-chip')" class="btn-cancel">Cancelar</button>
@@ -4489,6 +4581,22 @@
                 <div class="modal-actions">
                     <button onclick="window.fecharModal('modal-edit-smartphone')" class="btn-cancel">Cancelar</button>
                     <button onclick="window.salvarEdicaoSmartphone()" class="btn-confirm">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Lista Dinâmica de KPIs -->
+        <div id="modal-kpi-lista" class="modal-overlay">
+            <div class="modal-content modal-lg">
+                <h3 id="titulo-modal-kpi">Lista</h3>
+                <div style="max-height: 400px; overflow-y: auto; margin-top: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <table class="custom-table compact">
+                        <thead id="thead-kpi"></thead>
+                        <tbody id="tbody-kpi"></tbody>
+                    </table>
+                </div>
+                <div class="modal-actions mt-15" style="margin-top: 20px;">
+                    <button onclick="window.fecharModal('modal-kpi-lista')" class="btn-cancel">Fechar</button>
                 </div>
             </div>
         </div>
@@ -15859,24 +15967,40 @@
 
             window.baseSmartphones.forEach(sp => {
                 const chipVinc = window.baseChips.find(c => c.patrimonio_vinculado === sp.patrimonio);
-                const numeroChip = chipVinc ? chipVinc.numero : '-';
+                const numeroChip = chipVinc ? chipVinc.numero : '<span style="color:var(--text-muted); font-size:11px;">Sem Chip</span>';
 
                 const isConserto = sp.status === 'CONSERTO';
-                const btnConsertoText = isConserto ? '🔙 Voltou do Conserto' : '🔧 Enviar p/ Conserto';
-                const btnConsertoColor = isConserto ? '#10b981' : '#f59e0b'; // Verde se volta, Amarelo se vai
+                
+                // Configuração visual do botão de conserto
+                const iconConserto = isConserto ? 'ph-arrow-u-up-left' : 'ph-wrench';
+                const colorClassConserto = isConserto ? 'success' : 'warning';
+                const tooltipConserto = isConserto ? 'Voltou do Conserto' : 'Enviar para Conserto';
+                
+                // Badge de Status Moderno
+                let statusClass = "ativo";
+                if (sp.status === 'INATIVO') statusClass = "inativo";
+                if (sp.status === 'CONSERTO') statusClass = "conserto";
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:bold;">${sp.patrimonio}</td>
-                        <td style="color:var(--accent); font-weight:bold;">${numeroChip}</td>
-                        <td>${sp.placa || '-'}</td>
+                        <td style="font-weight:800; font-size:14px;">${sp.patrimonio}</td>
+                        <td style="color:var(--accent); font-weight:700;">${numeroChip}</td>
+                        <td style="font-weight:600;">${sp.placa || '-'}</td>
                         <td>${sp.motorista || '-'}</td>
-                        <td>${sp.status}</td>
-                        <td>${sp.obs || '-'}</td>
-                        <td style="display:flex; gap:8px; justify-content:center;">
-                            <button onclick="window.abrirEdicaoSmartphone('${sp.id}')" class="btn btn-sm btn-primary">✏️ Editar</button>
-                            <button onclick="window.toggleConserto('${sp.id}')" class="btn btn-sm" style="background:${btnConsertoColor}; color:white;">${btnConsertoText}</button>
-                            <button onclick="window.excluirSmartphone('${sp.id}')" class="btn btn-sm btn-danger">🗑️</button>
+                        <td><span class="status-badge ${statusClass}">${sp.status}</span></td>
+                        <td style="color:var(--text-muted); font-size:11px; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sp.obs || ''}">${sp.obs || '-'}</td>
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button onclick="window.abrirEdicaoSmartphone('${sp.id}')" class="btn-action-icon" title="Editar Aparelho">
+                                    <i class="ph ph-pencil-simple"></i>
+                                </button>
+                                <button onclick="window.toggleConserto('${sp.id}')" class="btn-action-icon ${colorClassConserto}" title="${tooltipConserto}">
+                                    <i class="ph ${iconConserto}"></i>
+                                </button>
+                                <button onclick="window.excluirSmartphone('${sp.id}')" class="btn-action-icon danger" title="Excluir Definitivamente">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -15935,7 +16059,7 @@
             window.carregarDadosSmartphones();
         };
 
-        // ================= CHIPS =================
+        // ================= INTELIGÊNCIA DA PLANILHA DE CHIPS =================
         window.lerPlanilhaChips = function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -15947,26 +16071,94 @@
                 const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
                 
                 let numerosDbSet = new Set(window.baseChips.map(c => c.numero.replace(/[^0-9]/g, '')));
+                let numerosPlanilhaSet = new Set();
                 window.chipsPreviewAguardando = [];
                 let htmlPreview = "";
 
+                // 1. Vasculha a planilha para achar os números
                 rows.forEach(row => {
                     if (row[0]) {
                         let num = String(row[0]).trim();
                         let numClean = num.replace(/[^0-9]/g, '');
-                        // Impede duplicação: só entra se tiver no mínimo 8 dígitos e não existir no BD
-                        if (numClean.length >= 8 && !numerosDbSet.has(numClean)) {
-                            window.chipsPreviewAguardando.push(num);
-                            numerosDbSet.add(numClean);
-                            htmlPreview += `<span style="display:inline-block; background:rgba(37,99,235,0.1); color:#2563eb; padding:4px 8px; border-radius:4px; margin:3px; font-weight:bold; font-size:11px;">${num}</span>`;
+                        
+                        if (numClean.length >= 8) {
+                            numerosPlanilhaSet.add(numClean);
+                            // Se o número não está no banco, ele é NOVO (Verde)
+                            if (!numerosDbSet.has(numClean)) {
+                                window.chipsPreviewAguardando.push(num);
+                                numerosDbSet.add(numClean); // Adiciona pra não repetir
+                                htmlPreview += `<span class="badge-import-new"><i class="ph ph-plus"></i> ${num}</span>`;
+                            }
                         }
                     }
                 });
 
-                document.getElementById('preview-chips').innerHTML = htmlPreview || "<p style='color:red;'>Nenhum número novo encontrado (todos já cadastrados ou planilha inválida).</p>";
+                // 2. Faz o caminho inverso: Verifica se tem alguém no BD que sumiu da planilha
+                let chipsFaltantes = [];
+                window.baseChips.forEach(c => {
+                    let numCleanDb = c.numero.replace(/[^0-9]/g, '');
+                    if (!numerosPlanilhaSet.has(numCleanDb)) {
+                        chipsFaltantes.push(c.numero);
+                        htmlPreview += `<span class="badge-import-missing"><i class="ph ph-warning"></i> ${c.numero} (Não está na planilha)</span>`;
+                    }
+                });
+
+                // 3. Monta o visual
+                if(htmlPreview === "") {
+                    htmlPreview = "<p style='color:var(--text-muted); text-align:center; padding: 20px;'>Nenhuma alteração detectada.<br>A planilha é idêntica ao sistema.</p>";
+                } else {
+                    let txtResumo = `<div style="display: flex; gap: 15px; margin-bottom: 15px; font-weight: bold; font-size: 12px; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
+                        <span style="color:var(--success);">Novos para salvar: ${window.chipsPreviewAguardando.length}</span>
+                        <span style="color:var(--danger);">Ausentes na planilha: ${chipsFaltantes.length}</span>
+                    </div>`;
+                    htmlPreview = txtResumo + htmlPreview;
+                }
+
+                document.getElementById('preview-chips').innerHTML = htmlPreview;
                 document.getElementById('btn-salvar-chips').style.display = window.chipsPreviewAguardando.length > 0 ? 'block' : 'none';
             };
             reader.readAsArrayBuffer(file);
+        };
+
+        // ================= LÓGICA DE CLIQUE NOS KPIs =================
+        window.abrirListaKPI = function(tipo) {
+            const tbody = document.getElementById('tbody-kpi');
+            const thead = document.getElementById('thead-kpi');
+            const titulo = document.getElementById('titulo-modal-kpi');
+            tbody.innerHTML = "";
+            thead.innerHTML = "";
+
+            if (tipo === 'celulares') {
+                titulo.innerHTML = '<i class="ph ph-device-mobile" style="color:var(--accent);"></i> Total de Celulares';
+                thead.innerHTML = `<tr><th>PATRIMÔNIO</th><th>MOTORISTA</th><th>STATUS</th></tr>`;
+                window.baseSmartphones.forEach(sp => {
+                    let corStatus = sp.status === 'ATIVO' ? 'var(--success)' : (sp.status === 'INATIVO' ? 'var(--danger)' : 'var(--warning)');
+                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${sp.patrimonio}</td><td>${sp.motorista || '-'}</td><td style="color:${corStatus}; font-weight:bold;">${sp.status}</td></tr>`;
+                });
+            } 
+            else if (tipo === 'chips') {
+                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--accent);"></i> Total de Chips Cadastrados';
+                thead.innerHTML = `<tr><th>NÚMERO</th><th>VÍNCULO</th></tr>`;
+                window.baseChips.forEach(c => {
+                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td>${c.patrimonio_vinculado || '<span style="color:var(--success);">Livre</span>'}</td></tr>`;
+                });
+            } 
+            else if (tipo === 'uso') {
+                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--success);"></i> Chips em Uso';
+                thead.innerHTML = `<tr><th>NÚMERO</th><th>PATRIMÔNIO ATRELADO</th></tr>`;
+                window.baseChips.filter(c => c.patrimonio_vinculado).forEach(c => {
+                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td style="color:var(--accent); font-weight:bold;">${c.patrimonio_vinculado}</td></tr>`;
+                });
+            } 
+            else if (tipo === 'livres') {
+                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--warning);"></i> Chips Sem Uso';
+                thead.innerHTML = `<tr><th>NÚMERO DO CHIP</th></tr>`;
+                window.baseChips.filter(c => !c.patrimonio_vinculado).forEach(c => {
+                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td></tr>`;
+                });
+            }
+            
+            window.abrirModal('modal-kpi-lista');
         };
 
         window.salvarChipsImportados = async function() {
@@ -15997,50 +16189,136 @@
             });
         };
 
+        // Variáveis de controle de ordenação e estado da lista
+        let chipSortColumn = 'numero';
+        let chipSortAsc = true;
+
         window.renderizarTabelaChips = function() {
+            window.filtrarEDesenharChips();
+        };
+
+        // Função que filtra por texto e ordena dinamicamente
+        window.filtrarEDesenharChips = function() {
+            const termoBusca = document.getElementById('input-busca-chips') ? document.getElementById('input-busca-chips').value.toLowerCase().trim() : "";
             const tbody = document.getElementById('lista-chips-banco');
+            if (!tbody) return;
             tbody.innerHTML = "";
-            window.baseChips.forEach(chip => {
+
+            // 1. Filtragem
+            let chipsFiltrados = window.baseChips.filter(chip => {
+                const num = String(chip.numero || "").toLowerCase();
+                const vinc = String(chip.patrimonio_vinculado || "").toLowerCase();
+                return num.includes(termoBusca) || vinc.includes(termoBusca);
+            });
+
+            // 2. Ordenação
+            chipsFiltrados.sort((a, b) => {
+                let valA = String(a[chipSortColumn] || "").toLowerCase();
+                let valB = String(b[chipSortColumn] || "").toLowerCase();
+
+                if (valA < valB) return chipSortAsc ? -1 : 1;
+                if (valA > valB) return chipSortAsc ? 1 : -1;
+                return 0;
+            });
+
+            // 3. Renderização na tela
+            if (chipsFiltrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" align="center" style="padding: 20px; color: var(--text-muted);">Nenhum chip encontrado.</td></tr>`;
+                return;
+            }
+
+            chipsFiltrados.forEach(chip => {
+                const vinculoText = chip.patrimonio_vinculado ? 
+                                   `<span style="color:var(--accent); font-weight:bold;">${chip.patrimonio_vinculado}</span>` : 
+                                   `<span style="color:var(--success); font-weight:bold; font-size:11px; text-transform:uppercase;">Livre</span>`;
+                
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:bold;">${chip.numero}</td>
-                        <td>${chip.patrimonio_vinculado || 'Livre'}</td>
-                        <td style="display:flex; justify-content:center; gap:8px;">
-                            <button onclick="window.abrirEdicaoChip('${chip.id}')" class="btn btn-sm btn-primary">✏️</button>
-                            <button onclick="window.excluirChip('${chip.id}')" class="btn btn-sm btn-danger">🗑️</button>
+                        <td style="font-weight:800;">${chip.numero}</td>
+                        <td>${vinculoText}</td>
+                        <td>
+                            <div style="display:flex; justify-content:center; gap:6px;">
+                                <button onclick="window.abrirEdicaoChip('${chip.id}')" class="btn-action-icon" title="Vincular/Editar">
+                                    <i class="ph ph-pencil-simple"></i>
+                                </button>
+                                <button onclick="window.excluirChip('${chip.id}')" class="btn-action-icon danger" title="Excluir Chip">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
             });
         };
 
+        // Função de clique no cabeçalho para alternar a ordenação
+        window.ordenarChips = function(coluna) {
+            if (chipSortColumn === coluna) {
+                chipSortAsc = !chipSortAsc; // Inverte a direção se clicar na mesma coluna
+            } else {
+                chipSortColumn = coluna;
+                chipSortAsc = true; // Começa ascendente por padrão na nova coluna
+            }
+            window.filtrarEDesenharChips();
+        };
+
+        // Limpa a busca toda vez que o modal for aberto (Opcional, mas util)
+        const observerModalChips = new MutationObserver((mutations) => {
+            const modal = document.getElementById('modal-verificar-chips');
+            if (modal && modal.classList.contains('active')) {
+                const input = document.getElementById('input-busca-chips');
+                if (input && input.value !== "") {
+                    // Mantém a busca se desejar, ou limpa limpando a linha abaixo:
+                    // input.value = "";
+                    // window.filtrarEDesenharChips();
+                }
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const m = document.getElementById('modal-verificar-chips');
+            if (m) observerModalChips.observe(m, { attributes: true, attributeFilter: ['class'] });
+        });
+
         window.abrirEdicaoChip = function(id) {
             const chip = window.baseChips.find(c => c.id === id);
             document.getElementById('edit-chip-id').value = chip.id;
             document.getElementById('edit-chip-numero').value = chip.numero;
-            document.getElementById('edit-chip-patrimonio').value = chip.patrimonio_vinculado || "";
+            
+            // Suporta o campo antigo (patrimonio_vinculado) e o novo formato livre
+            document.getElementById('edit-chip-vinculo').value = chip.patrimonio_vinculado || "";
+            
             window.fecharModal('modal-verificar-chips'); // Fecha a lista antes de abrir edição
             window.abrirModal('modal-edit-chip');
         };
 
         window.salvarEdicaoChip = async function() {
             const id = document.getElementById('edit-chip-id').value;
-            const novoPat = document.getElementById('edit-chip-patrimonio').value;
+            // Pega o que foi digitado e converte para maiúsculo para manter o padrão
+            const novoVinculo = document.getElementById('edit-chip-vinculo').value.trim().toUpperCase();
+            const novoNumero = document.getElementById('edit-chip-numero').value.trim();
             
-            // Regra: se atrelou o chip a um patrimonio que já tinha chip, remove do anterior
-            if(novoPat !== "") {
-                const chipAnterior = window.baseChips.find(c => c.patrimonio_vinculado === novoPat && c.id !== id);
-                if(chipAnterior) await updateDoc(doc(db, "chips", chipAnterior.id), { patrimonio_vinculado: "" });
+            if (!novoNumero) {
+                alert("O número do chip é obrigatório.");
+                return;
             }
 
+            // Regra opcional de unicidade: se atrelou a um patrimônio que já pertencia a outro chip, limpa o anterior
+            if(novoVinculo !== "") {
+                const chipAnterior = window.baseChips.find(c => c.patrimonio_vinculado === novoVinculo && c.id !== id);
+                if(chipAnterior) {
+                    await updateDoc(doc(db, "chips", chipAnterior.id), { patrimonio_vinculado: "" });
+                }
+            }
+
+            // Grava no Firebase utilizando a mesma propriedade `patrimonio_vinculado` para não quebrar a estrutura dos KPIs
             await updateDoc(doc(db, "chips", id), {
-                numero: document.getElementById('edit-chip-numero').value.trim(),
-                patrimonio_vinculado: novoPat
+                numero: novoNumero,
+                patrimonio_vinculado: novoVinculo
             });
 
             window.fecharModal('modal-edit-chip');
             await window.carregarDadosSmartphones();
-            window.abrirModal('modal-verificar-chips'); // Volta pra tela de verificação
+            window.abrirModal('modal-verificar-chips'); // Retorna para a listagem atualizada
         };
 
         window.excluirChip = async function(id) {
