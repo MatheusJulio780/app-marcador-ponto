@@ -5693,13 +5693,13 @@
     </div>
 
     <!-- TOOLTIP FINANCEIRO (ST. PAINEL) -->
-    <div id="modal-tooltip-financeiro" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-        <div style="background: var(--bg-card); padding: 20px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid var(--border-color);">
+    <div id="modal-tooltip-financeiro" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+        <div class="modal-content" style="width: 90%; max-width: 350px; background: var(--bg-card); padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                 <h3 style="margin: 0; font-size: 14px; color: var(--text-main); font-weight: 800;">
                     <i class="ph-fill ph-wallet" style="color: var(--accent);"></i> Análise: <span id="tooltip-fin-placa" style="color: var(--warning);"></span>
                 </h3>
-                <button onclick="document.getElementById('modal-tooltip-financeiro').style.display='none'" style="background:none; border:none; font-size: 18px; cursor:pointer; color:var(--text-muted);">&times;</button>
+                <button onclick="document.getElementById('modal-tooltip-financeiro').style.setProperty('display', 'none', 'important');" style="background:none; border:none; font-size: 22px; cursor:pointer; color:var(--danger); font-weight: bold;">&times;</button>
             </div>
             
             <div style="margin-bottom: 15px;">
@@ -5719,10 +5719,9 @@
                 </div>
             </div>
 
-            <!-- 🟢 CONTROLE DE PAGAMENTO ADICIONADO -->
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">STATUS DE PAGAMENTO (REEMBOLSO)</div>
-                <button id="btn-toggle-pgto" style="width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">STATUS DE PAGAMENTO</div>
+                <button id="btn-toggle-pgto" style="width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;">
                     Aguardando...
                 </button>
             </div>
@@ -6395,62 +6394,57 @@
             if (modal) modal.classList.remove('active');
         };
 
-        // Delegação de clique cega à estrutura de IDs do HTML (Força Bruta)
+        // ================= GATILHO GLOBAL: TOOLTIP FINANCEIRO (ST. PAINEL) =================
         document.addEventListener('click', async (e) => {
-            const btn = e.target.closest('button, .btn');
+            // Procura se o elemento clicado é a célula ou texto do Status do Painel na tabela
+            // (Ajuste o seletor conforme a classe ou atributo que você usa na coluna de status da tabela principal)
+            const tdStatus = e.target.closest('[data-col="status"], .status-painel-celula, td:nth-child(10)'); 
+            
+            if (tdStatus) {
+                // Encontra a linha (tr) correspondente a esse clique
+                const tr = tdStatus.closest('tr');
+                if (!tr) return;
 
-            if (btn && btn.textContent.includes('Salvar Veículo')) {
-                e.preventDefault();
+                // Pega a placa da linha (geralmente na segunda coluna ou com o atributo data-col="placa")
+                const placaEl = tr.querySelector('[data-col="placa"]') || tr.querySelector('td:nth-child(2)');
+                if (!placaEl) return;
 
-                // 1. FORÇA BRUTA: Encontra o modal que está REALMENTE ABERTO na sua tela
-                const modalAberto = btn.closest('.active, #modal-placa') || document.querySelector('.active');
+                const placa = placaEl.textContent.trim().toUpperCase();
+                if (!placa || placa === "" || placa === "PLACA") return;
 
-                if (!modalAberto) {
-                    return alert("Erro crítico: O sistema não achou a janela do modal visível.");
+                // 1. Encontra o modal do tooltip financeiro no HTML
+                const modalTooltip = document.getElementById('modal-tooltip-financeiro');
+                if (!modalTooltip) {
+                    console.error("Modal de tooltip financeiro não encontrado no HTML.");
+                    return;
                 }
 
-                // 2. Pega todos os campos de digitação dentro dessa exata janela, ignorando qual é o ID deles
-                const campos = modalAberto.querySelectorAll('input, select');
+                // 2. Preenche os dados básicos na janela
+                const spanPlaca = document.getElementById('tooltip-fin-placa');
+                if (spanPlaca) spanPlaca.innerText = placa;
 
-                if (campos.length < 3) {
-                    return alert("Erro: Estrutura do HTML não contém os 3 campos necessários.");
-                }
+                const divPrestacao = document.getElementById('tooltip-fin-prestacao');
+                if (divPrestacao) divPrestacao.innerText = "Buscando dados no sistema...";
 
-                // 3. Captura os valores baseados na ordem que você vê na tela (0 = Placa, 1 = Perfil, 2 = Tipo)
-                const placaRaw = campos[0].value.trim().toUpperCase();
-                const perfil = campos[1].value.trim().toUpperCase();
-                const tipo = campos[2].value.trim().toUpperCase();
+                const divCompLista = document.getElementById('tooltip-fin-comp-lista');
+                if (divCompLista) divCompLista.innerHTML = "Carregando complementos...";
 
-                // Limpeza e Validação
-                const placaLimpa = placaRaw.replace(/[^A-Z0-9]/g, '');
+                const divCompTotal = document.getElementById('tooltip-fin-comp-total');
+                if (divCompTotal) divCompTotal.innerText = "Total: R$ 0.00";
 
-                if (placaLimpa.length !== 7) {
-                    return alert(`Por favor, digite uma placa válida com exatamente 7 caracteres.\nVocê tentou enviar: [${placaRaw}] - Resultou em ${placaLimpa.length} caracteres válidos.`);
-                }
+                // 3. Abre o modal aplicando a classe .active (padrão do sistema)
+                modalTooltip.classList.add('active');
 
-                if (typeof showLoader === 'function') showLoader();
-
+                // 4. (Opcional) Buscas assíncronas no Firebase para popular o financeiro desta placa
                 try {
-                    await setDoc(doc(db, "placas", placaLimpa), {
-                        perfil: perfil,
-                        tipo: tipo,
-                        placa_formatada: placaRaw
-                    });
-
-                    if (!window.placasCache) window.placasCache = {};
-                    window.placasCache[placaLimpa] = { perfil, tipo };
-
-                    if (typeof renderizarTabelaPlacas === 'function') renderizarTabelaPlacas();
-
-                    // Fecha o modal que está ativo na tela
-                    modalAberto.classList.remove('active');
-
+                    // Exemplo de busca ou chamada que você já possua para carregar os complementos
+                    if (typeof window.carregarDetalhesFinanceirosPlaca === 'function') {
+                        await window.carregarDetalhesFinanceirosPlaca(placa);
+                    }
                 } catch (err) {
-                    console.error("Erro ao salvar veículo:", err);
-                    alert("Erro ao salvar o veículo no banco de dados.");
+                    console.error("Erro ao carregar detalhes do tooltip financeiro:", err);
+                    if (divPrestacao) divPrestacao.innerText = "Erro ao carregar dados financeiros.";
                 }
-
-                if (typeof hideLoader === 'function') hideLoader();
             }
         });
 
@@ -15084,6 +15078,15 @@
 
         window.verificarStatusFinanceiro = async (placa, data, transporteStr, event) => {
             if (event) event.stopPropagation();
+            
+            // 🔥 RASTREADOR: Se isso não aparecer no console (F12), o clique na tabela está morto
+            console.log("🔥 INICIOU verificarStatusFinanceiro | Placa:", placa, "| Data:", data);
+            
+            const modalFin = document.getElementById('modal-tooltip-financeiro');
+            if (!modalFin) {
+                return alert("ERRO CRÍTICO: O HTML do modal-tooltip-financeiro sumiu da página!");
+            }
+
             showLoader();
             
             try {
@@ -15092,7 +15095,6 @@
                     getDoc(doc(db, "painel_diario", data))
                 ]);
 
-                // ================= LÓGICA DOS COMPLEMENTOS =================
                 let compTexto = "<span style='color:var(--text-muted); font-style:italic;'>Sem complementos registrados.</span>";
                 let compTotal = 0;
 
@@ -15109,7 +15111,6 @@
                     }
                 }
 
-                // ================= LÓGICA DA PRESTAÇÃO DE CONTAS =================
                 let statusPrestacao = "<span style='color: var(--warning);'><i class='ph-bold ph-warning'></i> Não prestou contas ainda</span>";
                 let rotaAlvo = null;
 
@@ -15133,13 +15134,11 @@
                     }
                 }
 
-                // ================= INJEÇÃO NO HTML =================
                 document.getElementById('tooltip-fin-placa').innerText = placa;
                 document.getElementById('tooltip-fin-comp-lista').innerHTML = compTexto;
                 document.getElementById('tooltip-fin-comp-total').innerText = `Total: R$ ${compTotal.toFixed(2)}`;
                 document.getElementById('tooltip-fin-prestacao').innerHTML = statusPrestacao;
 
-                // 🟢 LÓGICA DO BOTÃO DE BLOQUEIO DE PAGAMENTO
                 const btnPgto = document.getElementById('btn-toggle-pgto');
                 let isBloqueado = rotaAlvo ? (rotaAlvo.bloqueio_pagamento === true) : false;
 
@@ -15157,10 +15156,8 @@
 
                 atualizarVisualBotao(isBloqueado);
 
-                // Sobrescreve o onclick para sempre apontar para a placa/data atual
                 btnPgto.onclick = async () => {
                     if (!rotaAlvo) return alert("Rota não localizada na base de dados para bloqueio.");
-                    
                     const novoEstado = !isBloqueado;
                     btnPgto.innerHTML = "Salvando...";
                     
@@ -15168,7 +15165,6 @@
                         const snapRecente = await getDoc(doc(db, "painel_diario", data));
                         if (snapRecente.exists()) {
                             let rotasUpdate = snapRecente.data().rotas;
-                            // Busca exata da rota no array para atualizar
                             let rotaIndex = rotasUpdate.findIndex(r => {
                                 let pOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
                                 let pTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
@@ -15185,16 +15181,20 @@
                         }
                     } catch (err) {
                         console.error("Erro ao atualizar bloqueio:", err);
-                        alert("Falha ao sincronizar o status de pagamento com o banco de dados.");
-                        atualizarVisualBotao(isBloqueado); // Reverte o visual em caso de erro
+                        alert("Falha ao sincronizar.");
+                        atualizarVisualBotao(isBloqueado);
                     }
                 };
 
-                document.getElementById('modal-tooltip-financeiro').style.display = 'flex';
+                // 🔥 ABERTURA FORÇADA: Destrói qualquer CSS que estiver escondendo
+                modalFin.style.setProperty('display', 'flex', 'important');
+                modalFin.classList.add('active'); // Mantém pra segurança de animações
+
             } catch (error) {
                 console.error("Erro ao verificar financeiro:", error);
                 alert("Erro ao buscar dados da viagem.");
             }
+            
             hideLoader();
         };
 
