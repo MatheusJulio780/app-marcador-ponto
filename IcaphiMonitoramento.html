@@ -4732,7 +4732,7 @@
     </div>
 
     <div class="modal-overlay" id="modal-motoristas">
-        <div class="modal-content" style="width: 500px;">
+        <div class="modal-content" style="width: 500px; z-index: 99999999999;">
             <div class="modal-header">
                 <h3>Vincular Motoristas</h3><button class="btn-close"
                     onclick="document.getElementById('modal-motoristas').classList.remove('active')">×</button>
@@ -8560,10 +8560,22 @@
 
         // ================= SALVAMENTO DE NOTAS COM MERGE E GRAVAÇÃO ATÔMICA =================
         document.getElementById('btn-confirmar-salvar-notas').addEventListener('click', async () => {
+            // 🟢 CORREÇÃO CRÍTICA: Força pegar a data APENAS do calendário de dentro do Modal, e recusa se a tabela estiver em branco
             const d = document.getElementById('editor-notas-data').value;
-            if (!d) return alert("Por favor, selecione a data no topo.");
+            if (!d) {
+                alert("CRÍTICO: A data de montagem sumiu. Selecione o dia exato no calendário do topo antes de salvar!");
+                return;
+            }
+
+            const trs = document.querySelectorAll('#tabela-editor-notas tbody tr:not(:empty)');
+            if (trs.length === 0 || (trs.length === 1 && trs[0].innerText.includes('Busque a data'))) {
+                if (!confirm("Aviso: A tabela de notas deste dia está vazia. Você está prestes a SALVAR UM DIA EM BRANCO (isso apagará as notas deste dia, se houver). Deseja continuar?")) {
+                    return;
+                }
+            }
 
             showLoader();
+            // ... restante do código do batch.set ...
             const updatesMap = {};
             const batch = writeBatch(db); // Inicializa a gravação atômica
 
@@ -8654,12 +8666,15 @@
                     window.atualizarMotorBuscaNotasAbsoluto(notas, d); // 'notas' é o array montado acima, 'd' é a data
                 }
 
+                alert(`Base de Notas Fiscais salva com sucesso para o dia: ${d.split('-').reverse().join('/')}\nStatus e Anexos Preservados.`);
+    
+                document.getElementById('modal-motoristas').classList.remove('active');
+                document.getElementById('modal-editor-notas').classList.remove('active');
+
+                // 🟢 Só atualiza a tela do fundo se você tiver acabado de editar o dia de HOJE
                 if (document.getElementById('notas-data-select').value === d) {
                     document.getElementById('btn-carregar-notas').click();
                 }
-                alert("Base de Notas Fiscais Salva com Sucesso! Status e Anexos Preservados.");
-                document.getElementById('modal-motoristas').classList.remove('active');
-                document.getElementById('modal-editor-notas').classList.remove('active');
 
             } catch (e) {
                 console.error("Erro ao salvar lote de notas:", e);
@@ -8802,6 +8817,16 @@
         };
 
         document.getElementById('btn-buscar-editor-notas').addEventListener('click', async () => { const d = document.getElementById('editor-notas-data').value; if (!d) return; await carregarNotasParaEdicao(d); });
+
+        // 🟢 ADICIONADO: Gatilho automático ao trocar a data no modal de Editar Notas
+        document.getElementById('editor-notas-data').addEventListener('change', () => {
+            const d = document.getElementById('editor-notas-data').value; 
+            if (d) {
+                document.getElementById('btn-buscar-editor-notas').click();
+            } else {
+                document.querySelector('#tabela-editor-notas tbody').innerHTML = `<tr><td colspan="15" align="center" style="padding: 20px; color: var(--warning); font-weight: bold;">Selecione a data para visualizar.</td></tr>`;
+            }
+        });
 
         document.getElementById('btn-chamar-modal-motoristas').addEventListener('click', () => {
             const dataSel = document.getElementById('editor-notas-data').value; if (!dataSel) return alert("Selecione a data no topo."); const placasMap = {};
@@ -9129,32 +9154,73 @@
 
         // ================= EDITOR PAINEL =================
         const tbodyPainel = document.querySelector('#tabela-editor-painel tbody');
+        
         window.abrirSuperEditorPainel = (modo) => {
             tbodyPainel.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-painel'); const boxImport = document.getElementById('controles-importacao-painel');
             if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; window.adicionarLinhaPainel(); } else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; } else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 20px;">Busque a data para editar.</td></tr>`; }
             document.getElementById('modal-editor-painel').classList.add('active');
         };
+
         window.adicionarLinhaPainel = (dados = {}) => {
-            const placa = dados.placa ? dados.placa.replace(/[^A-Z0-9]/g, '') : ""; const info = window.placasCache[placa] || { perfil: "", tipo: "" }; const tr = document.createElement('tr'); tr.draggable = true;
-            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"]; const statusAtual = dados.status || "Saida Dia";
+            const placa = dados.placa ? dados.placa.replace(/[^A-Z0-9]/g, '') : ""; 
+            const info = window.placasCache[placa] || { perfil: "", tipo: "" }; 
+            const tr = document.createElement('tr'); 
+            tr.draggable = true;
+            
+            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"]; 
+            const statusAtual = dados.status || "Saida Dia";
             const optionsHTML = statuses.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
+            
             tr.innerHTML = `<td class="drag-handle">☰</td><td data-col="placa" contenteditable="true" style="font-weight:700;">${placa}</td><td data-col="troca" contenteditable="true" style="color:var(--warning); font-weight:800;">${dados.troca ? dados.troca.replace(/[^A-Z0-9]/g, '') : ""}</td><td data-col="perfil">${info.perfil}</td><td data-col="tipo">${info.tipo}</td><td data-col="oc" contenteditable="true">${dados.oc || ""}</td><td data-col="transporte" contenteditable="true">${dados.transporte || ""}</td><td data-col="motorista" contenteditable="true">${dados.motorista || ""}</td><td data-col="contato" contenteditable="true">${dados.contato || ""}</td><td data-col="status"><select class="select-status" style="${getStRotaStyle(statusAtual)}">${optionsHTML}</select></td><td data-col="km" contenteditable="true">${formatNumber(dados.km || "0")}</td><td data-col="regiao" contenteditable="true">${dados.regiao || ""}</td><td data-col="ajudante" contenteditable="true">${dados.ajudante || ""}</td><td data-col="valepalete" contenteditable="true">${dados.vale_palete || "NÃO"}</td><td data-col="qtde" contenteditable="true">${dados.qtde || "0"}</td><td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>`;
-            tr.querySelector('[data-col="placa"]').addEventListener('blur', function () { const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''); this.innerText = val; const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; });
+            
+            tr.querySelector('[data-col="placa"]').addEventListener('blur', function () { 
+                const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''); 
+                this.innerText = val; 
+                const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; 
+                tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; 
+                tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; 
+            });
+            
             configurarDragAndDrop(tr);
+            
+            // 🔥 A LINHA QUE FALTAVA PARA A LINHA APARECER NA TELA
+            tbodyPainel.appendChild(tr); 
         };
+        
         document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => {
-            const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); tbodyPainel.innerHTML = "";
+            const d = document.getElementById('editor-painel-data').value; 
+            if (!d) return; 
+            
+            showLoader(); 
+            tbodyPainel.innerHTML = "";
+            
             try {
                 const s = await getDoc(doc(db, "painel_diario", d));
-                if (s.exists()) {
-                    // CORREÇÃO DE PERFORMANCE
+                
+                // Verifica se o documento existe E se ele tem veículos dentro dele
+                if (s.exists() && s.data().rotas && s.data().rotas.length > 0) {
                     tbodyPainel.style.display = 'none';
                     s.data().rotas.forEach(r => window.adicionarLinhaPainel(r));
                     tbodyPainel.style.display = '';
+                } else {
+                    // Se a data estiver vazia, avisa o usuário em vez de sumir silenciosamente
+                    tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 30px; font-weight: bold; color: var(--warning);">Nenhum painel salvo nesta data. Inicie a importação ou adicione manualmente.</td></tr>`;
                 }
-            } catch (e) { console.error("Erro editor painel:", e); }
+            } catch (e) { 
+                console.error("Erro editor painel:", e); 
+            }
+            
             hideLoader();
         });
+
+        // 🟢 ADICIONADO AQUI: Gatilho automático ao trocar a data
+        document.getElementById('editor-painel-data').addEventListener('change', () => {
+            const d = document.getElementById('editor-painel-data').value; 
+            if (d) {
+                document.getElementById('btn-buscar-editor-painel').click();
+            }
+        });
+
         document.getElementById('btn-salvar-editor-painel').addEventListener('click', async () => {
             const d = document.getElementById('editor-painel-data').value; if (!d) return; showLoader(); const rotas = [];
             document.querySelectorAll('#tabela-editor-painel tbody tr').forEach(tr => {
@@ -9164,7 +9230,7 @@
             await setDoc(doc(db, "painel_diario", d), { rotas }); if (document.getElementById('mon-data-select').value === d) { document.getElementById('btn-carregar-painel').click(); } alert("Painel Salvo com sucesso!"); document.getElementById('modal-editor-painel').classList.remove('active'); hideLoader();
         });
 
-        // ================= IMPORTAÇÃO PAINEL COM VALIDAÇÃO DE DATA =================
+        // ================= IMPORTAÇÃO PAINEL (NOVO LEITOR BLINDADO PARA PLANILHA PAGÉ) =================
         document.getElementById('file-import-painel').addEventListener('change', function (e) {
             const file = e.target.files[0]; if (!file) return;
             const dSel = document.getElementById('editor-painel-data').value;
@@ -9172,57 +9238,114 @@
 
             showLoader(); const reader = new FileReader();
             reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' });
-                const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                try {
+                    const data = new Uint8Array(e.target.result); 
+                    // O raw: false força a trazer strings vazias e manter os índices corretos
+                    const wb = XLSX.read(data, { type: 'array' });
+                    // sheet_to_json com defval garante que colunas vazias não desloquem os índices
+                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
 
-                // LÓGICA DE VALIDAÇÃO: Linha 5 (index 4), Colunas I (8) e J (9)
-                let rawDate = raw[4] ? (raw[4][8] || raw[4][9]) : null;
-                let dataPlanilhaFormatada = "Desconhecida";
-                let dataPlanilhaISO = "";
+                    // Validação de Data (Mantida intacta)
+                    let rawDate = raw[4] ? (raw[4][8] || raw[4][9]) : null;
+                    let dataPlanilhaFormatada = "Desconhecida";
+                    let dataPlanilhaISO = "";
 
-                if (rawDate) {
-                    if (!isNaN(rawDate) && typeof rawDate === 'number') {
-                        // Converte data serial do Excel
-                        const dateObj = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
-                        dataPlanilhaISO = dateObj.toISOString().split('T')[0];
-                        dataPlanilhaFormatada = dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-                    } else {
-                        // Tenta ler formato texto DD/MM/YYYY
-                        const parts = String(rawDate).trim().split('/');
-                        if (parts.length === 3) {
-                            const ano = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                            dataPlanilhaISO = `${ano}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            dataPlanilhaFormatada = `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${ano}`;
+                    if (rawDate && rawDate !== "") {
+                        if (!isNaN(rawDate) && typeof rawDate === 'number') {
+                            const dateObj = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
+                            dataPlanilhaISO = dateObj.toISOString().split('T')[0];
+                            dataPlanilhaFormatada = dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                        } else {
+                            const parts = String(rawDate).trim().split('/');
+                            if (parts.length === 3) {
+                                const ano = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                                dataPlanilhaISO = `${ano}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                dataPlanilhaFormatada = `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${ano}`;
+                            }
                         }
                     }
-                }
 
-                const dSelFormatada = dSel.split('-').reverse().join('/');
+                    const dSelFormatada = dSel.split('-').reverse().join('/');
 
-                // Pop-ups orientados à decisão
-                if (dataPlanilhaISO) {
-                    if (dataPlanilhaISO === dSel) {
-                        if (!confirm(`A data da planilha (${dataPlanilhaFormatada}) confere com a data selecionada.\nDeseja prosseguir com a importação?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                    if (dataPlanilhaISO) {
+                        if (dataPlanilhaISO === dSel) {
+                            if (!confirm(`A data da planilha (${dataPlanilhaFormatada}) confere com a data selecionada.\nDeseja prosseguir com a importação?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                        } else {
+                            if (!confirm(`ATENÇÃO CRÍTICA!\n\nA data lida na planilha é ${dataPlanilhaFormatada}, mas você selecionou a data ${dSelFormatada} no painel.\n\nDeseja ignorar a planilha e forçar a montagem na data selecionada (${dSelFormatada})?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                        }
                     } else {
-                        if (!confirm(`ATENÇÃO CRÍTICA!\n\nA data lida na planilha é ${dataPlanilhaFormatada}, mas você selecionou a data ${dSelFormatada} no painel.\n\nDeseja ignorar a planilha e forçar a montagem na data selecionada (${dSelFormatada})?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+                        if (!confirm(`Não foi possível identificar a data na planilha (células I5/J5).\nVocê selecionou ${dSelFormatada}.\nDeseja prosseguir assim mesmo?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
                     }
-                } else {
-                    if (!confirm(`Não foi possível identificar a data na planilha (células I5/J5).\nVocê selecionou ${dSelFormatada}.\nDeseja prosseguir assim mesmo?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
+
+                    // BUSCA DO CABEÇALHO CORRIGIDA
+                    let hIdx = -1; 
+                    for (let i = 0; i < raw.length; i++) { 
+                        const linhaTexto = raw[i].join(' ').toUpperCase();
+                        if (linhaTexto.includes("EMPLACAMENTO")) { 
+                            hIdx = i; 
+                            break; 
+                        } 
+                    }
+                    
+                    if (hIdx === -1) { 
+                        alert("Erro: Cabeçalho 'EMPLACAMENTO' não encontrado."); 
+                        hideLoader(); 
+                        document.getElementById('file-import-painel').value = ''; 
+                        return; 
+                    }
+
+                    tbodyPainel.innerHTML = ''; 
+                    
+                    // Mapeia colunas tirando espaços invisíveis
+                    const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
+                    const cols = { 
+                        placa: h.indexOf("EMPLACAMENTO"), 
+                        troca: h.indexOf("TROCA"), 
+                        regiao: h.indexOf("CIDADES"), // Corrigido para uppercase total
+                        oc: h.indexOf("NUMEROS O.C"), 
+                        km: h.indexOf("KM ROTA"), 
+                        ajudante: h.indexOf("AJUDANTE") 
+                    };
+
+                    let linhasCriadas = 0;
+
+                    for (let i = hIdx + 1; i < raw.length; i++) {
+                        const r = raw[i]; 
+                        
+                        // Se a linha ou a coluna da placa estiverem vazias, pula
+                        if (!r || !r[cols.placa] || String(r[cols.placa]).trim() === "") continue;
+                        
+                        const pOriginal = String(r[cols.placa]).trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); 
+                        
+                        // Pula lixo (como sub-cabeçalhos ou placas falsas)
+                        if (pOriginal === "" || pOriginal.includes("1899") || pOriginal === "EMPLACAMENTO") continue;
+                        
+                        let pTroca = cols.troca !== -1 && r[cols.troca] ? String(r[cols.troca]).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
+                        
+                        window.adicionarLinhaPainel({ 
+                            placa: pOriginal, 
+                            troca: pTroca !== "18991231" ? pTroca : "", 
+                            oc: cols.oc !== -1 ? String(r[cols.oc]).trim() : "", 
+                            km: cols.km !== -1 ? String(r[cols.km]).trim() : "0", 
+                            regiao: cols.regiao !== -1 ? String(r[cols.regiao]).trim() : "", 
+                            ajudante: cols.ajudante !== -1 ? String(r[cols.ajudante]).trim() : "" 
+                        });
+                        
+                        linhasCriadas++;
+                    } 
+                    
+                    if (linhasCriadas === 0) {
+                        alert("A planilha foi lida, mas nenhuma linha com placa válida foi encontrada. Verifique se as linhas abaixo do cabeçalho possuem dados na coluna 'EMPLACAMENTO'.");
+                    }
+                    
+                    hideLoader();
+                } catch (error) {
+                    console.error(error);
+                    alert("Erro catastrófico ao ler a planilha: " + error.message);
+                    hideLoader();
                 }
-
-                let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && raw[i].includes("EMPLACAMENTO")) { hIdx = i; break; } }
-                if (hIdx === -1) { alert("Sem cabeçalho EMPLACAMENTO."); hideLoader(); return; }
-
-                tbodyPainel.innerHTML = ''; const h = raw[hIdx];
-                const cols = { placa: h.indexOf("EMPLACAMENTO"), troca: h.indexOf("TROCA"), regiao: h.indexOf("Cidades"), oc: h.indexOf("NUMEROS O.C"), km: h.indexOf("KM ROTA"), ajudante: h.indexOf("AJUDANTE") };
-
-                for (let i = hIdx + 1; i < raw.length; i++) {
-                    const r = raw[i]; if (!r || !r[cols.placa]) continue;
-                    const pOriginal = String(r[cols.placa]).trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (pOriginal === "" || pOriginal.includes("1899")) continue;
-                    let pTroca = cols.troca !== -1 && r[cols.troca] ? String(r[cols.troca]).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
-                    window.adicionarLinhaPainel({ placa: pOriginal, troca: pTroca !== "18991231" ? pTroca : "", oc: cols.oc !== -1 ? r[cols.oc] : "", km: cols.km !== -1 ? r[cols.km] : "0", regiao: cols.regiao !== -1 ? r[cols.regiao] : "", ajudante: cols.ajudante !== -1 ? r[cols.ajudante] : "" });
-                } hideLoader();
-            }; reader.readAsArrayBuffer(file);
+            }; 
+            reader.readAsArrayBuffer(file);
         });
 
         // ================= DRAG AND DROP (ALTA PERFORMANCE) =================
