@@ -3204,7 +3204,8 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.8</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.0</span></h2>
+                <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
@@ -16494,37 +16495,36 @@
 
         async function checarAtualizacaoSistema() {
             try {
-                // Adicionamos ?t=timestamp para forçar o navegador a buscar o arquivo fresco e não usar cache antigo
                 const resposta = await fetch('version.json?t=' + new Date().getTime());
                 if (!resposta.ok) return;
                 
-                const dados = resposta.json();
-                const versaoServidor = (await dados).version;
+                const dados = await resposta.json();
+                const versaoServidor = dados.version; // Ex: "V1.8.1" ou "1.8.1"
+
+                // Atualiza o texto do header automaticamente na página
+                const spanTitulo = document.getElementById('app-version-title');
+                if (spanTitulo) {
+                    spanTitulo.innerText = versaoServidor.startsWith('V') ? versaoServidor : 'V' + versaoServidor;
+                }
 
                 if (!appVersaoInicial) {
-                    // Define a versão base assim que o app carrega
                     appVersaoInicial = versaoServidor;
                 } else if (appVersaoInicial !== versaoServidor) {
-                    // A versão no GitHub mudou! Exibe a notificação discreta
+                    // Exibe a notificação discreta no canto
                     const toast = document.getElementById('update-toast');
                     if (toast && toast.style.display !== 'flex') {
                         toast.style.display = 'flex';
                     }
                 }
             } catch (e) {
-                // Erros de rede silenciosos para não atrapalhar o console
+                // Silencia erros de rede
             }
         }
 
-        // Inicializa os ouvintes de verificação
         document.addEventListener('DOMContentLoaded', () => {
-            // Checa logo após carregar
             checarAtualizacaoSistema();
+            setInterval(checarAtualizacaoSistema, 10 * 60 * 1000); // Checa a cada 10 min
 
-            // Checa a cada 10 minutos (600.000 ms)
-            setInterval(checarAtualizacaoSistema, 10 * 60 * 1000);
-
-            // Checa instantaneamente se o usuário minimizar a aba e voltar para ela
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
                     checarAtualizacaoSistema();
