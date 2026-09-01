@@ -3777,6 +3777,9 @@
                         <button class="btn btn-danger" onclick="window.abrirModalExcluirPeriodo('painel')">
                             <i class="ph ph-trash"></i> Excluir Período
                         </button>
+                        <button onclick="document.getElementById('modal-copiar-dia').classList.add('active')" class="btn" style="background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 10px 15px; border-radius: 8px; cursor: pointer;">
+                            <i class="ph ph-copy" style="color: var(--accent);"></i> Copiar Dia Operacional
+                        </button>
                     </div>
                 </div>
             </header>
@@ -5724,6 +5727,32 @@
                 <button id="btn-toggle-pgto" style="width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;">
                     Aguardando...
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POP-UP: COPIAR DIA INTEIRO (PAINEL + NOTAS) -->
+    <div id="modal-copiar-dia" class="modal-overlay">
+        <div class="modal-content modal-sm" style="background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-copy" style="color: var(--accent);"></i> Copiar Operação Completa
+            </h3>
+            
+            <label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: bold; color: var(--text-muted);">Copiar dados DO DIA:</label>
+            <input type="date" id="copiar-data-origem" class="filter-input" style="width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+            
+            <label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: bold; color: var(--text-muted);">Para a data DE DESTINO:</label>
+            <input type="date" id="copiar-data-destino" class="filter-input" style="width: 100%; margin-bottom: 20px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+            
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                <small style="color: var(--danger); font-size: 11px; display: block; line-height: 1.4;">
+                    <i class="ph ph-warning"></i> Atenção: Se já houver dados no dia de destino, eles serão substituídos pelas informações do dia de origem. O dia original ficará intacto.
+                </small>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: 10px;">
+                <button onclick="window.fecharModal('modal-copiar-dia')" class="btn-cancel" style="flex: 1; padding: 10px;">Cancelar</button>
+                <button onclick="window.executarCopiaDiaCompleto()" class="btn-confirm" style="flex: 1; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Copiar Tudo</button>
             </div>
         </div>
     </div>
@@ -15204,7 +15233,7 @@
             hideLoader();
         };
 
-        // ================= TRANSFERÊNCIA MANUAL DE PERNOITES =================
+        // ================= TRANSFERÊNCIA MANUAL DE PERNOITES INTELIGENTE (POR TRANSPORTE) =================
         window.transferirPernoitesParaAmanha = async () => {
             const dataAtual = document.getElementById('mon-data-select').value;
             if (!dataAtual) return alert("Selecione a data base no filtro do painel primeiro.");
@@ -15213,11 +15242,11 @@
             dObj.setUTCDate(dObj.getUTCDate() + 1);
             const proximoDia = dObj.toISOString().split('T')[0];
 
-            if (!confirm(`Deseja transferir os veículos e notas em PERNOITE do dia ${formatarDataBR(dataAtual)} para amanhã (${formatarDataBR(proximoDia)})?\n\nIsso criará os fechamentos necessários sem apagar as novas viagens de amanhã.`)) return;
+            if (!confirm(`Deseja transferir os pernoites do dia ${formatarDataBR(dataAtual)} para o dia ${formatarDataBR(proximoDia)} vinculando pelo número do transporte?`)) return;
 
             showLoader();
             try {
-                // 1. Puxa os dados reais de HOJE
+                // 1. Puxa os dados de ONTEM (Hoje na tela)
                 const [snapPainelHoje, snapNotasHoje] = await Promise.all([
                     getDoc(doc(db, "painel_diario", dataAtual)),
                     getDoc(doc(db, "notas_fiscais_diario", dataAtual))
@@ -15226,6 +15255,7 @@
                 let rotasHoje = snapPainelHoje.exists() ? snapPainelHoje.data().rotas || [] : [];
                 let notasHoje = snapNotasHoje.exists() ? snapNotasHoje.data().notas || [] : [];
 
+                // Filtra notas que ficaram em PERNOITE ontem
                 let notasPernoite = notasHoje.filter(n => trimUpper(n.status).includes('PERNOITE'));
                 
                 if (notasPernoite.length === 0) {
@@ -15233,15 +15263,26 @@
                     return alert("Nenhuma nota com status PERNOITE encontrada neste dia.");
                 }
 
-                let placasPernoite = [...new Set(notasPernoite.map(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '')))];
+                // Descobre quais rotas de ontem possuem notas de pernoite
+                let rotasPernoiteOntem = rotasHoje.filter(r => {
+                    const transpRotaStr = String(r.transporte || "").trim();
+                    const transpNums = transpRotaStr.match(/\d+/g) || [];
+                    if (transpNums.length === 0) return false;
 
-                let rotasPernoite = rotasHoje.filter(r => {
-                    let p = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
-                    let t = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
-                    return placasPernoite.includes(p) || placasPernoite.includes(t);
+                    // Verifica se alguma nota de pernoite pertence a este transporte/placa
+                    const placaOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                    const placaTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
+
+                    return notasPernoite.some(n => {
+                        const nPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '');
+                        const nViagem = String(n.viagem || "").trim();
+                        const matchPlaca = (nPlaca === placaOrig || nPlaca === placaTroca);
+                        const matchTransp = transpNums.some(t => nViagem.includes(t));
+                        return matchPlaca && matchTransp;
+                    });
                 });
 
-                // 2. Puxa os dados já existentes no PRÓXIMO DIA
+                // 2. Puxa os dados já existentes no PRÓXIMO DIA (Amanhã)
                 const [snapPainelAmanha, snapNotasAmanha] = await Promise.all([
                     getDoc(doc(db, "painel_diario", proximoDia)),
                     getDoc(doc(db, "notas_fiscais_diario", proximoDia))
@@ -15250,70 +15291,100 @@
                 let rotasAmanha = snapPainelAmanha.exists() ? snapPainelAmanha.data().rotas || [] : [];
                 let notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
 
-                let countRotas = 0;
-                let countNotas = 0;
+                let countNovasRotas = 0;
+                let countNotasTransf = 0;
 
-                // 🟢 LÓGICA CORRIGIDA: INJEÇÃO SEM SOBRESCRITA (CRIAÇÃO DE LINHA CLONE)
-                rotasPernoite.forEach(r => {
-                    let placaLimpa = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
-                    
-                    // Em vez de procurar só a placa, procuramos se a O.C de Pernoite já foi transferida.
-                    let ocPernoite = String(r.oc || "").includes("PERNOITE") ? r.oc : "PERNOITE - " + (r.oc || "S/OC");
-                    
-                    let rotaJaTransferida = rotasAmanha.find(ra => 
-                        trimUpper(ra.placa).replace(/[^A-Z0-9]/g, '') === placaLimpa && 
-                        trimUpper(ra.oc) === trimUpper(ocPernoite)
-                    );
-                    
-                    if (!rotaJaTransferida) {
-                        // Fazemos uma cópia profunda da rota de ontem para não sujar a memória
-                        let novaRotaPernoite = JSON.parse(JSON.stringify(r));
+                // 3. Processa cada rota de pernoite de ontem
+                rotasPernoiteOntem.forEach(rOntem => {
+                    const transpOntemStr = String(rOntem.transporte || "").trim();
+                    const numsOntem = transpOntemStr.match(/\d+/g) || [];
+
+                    // Pega as notas específicas de pernoite associadas a essa rota de ontem
+                    const notasDestaRota = notasPernoite.filter(n => {
+                        const nPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '');
+                        const pOrig = trimUpper(rOntem.placa).replace(/[^A-Z0-9]/g, '');
+                        const pTroca = rOntem.troca ? trimUpper(rOntem.troca).replace(/[^A-Z0-9]/g, '') : '';
+                        const nViagem = String(n.viagem || "").trim();
                         
-                        novaRotaPernoite.km = ""; // Limpa a KM do dia anterior
-                        novaRotaPernoite.oc = ocPernoite; // Altera a O.C para não colidir com viagens novas
+                        return (nPlaca === pOrig || nPlaca === pTroca) && numsOntem.some(t => nViagem.includes(t));
+                    });
+
+                    if (notasDestaRota.length === 0) return;
+
+                    // PASSO CRUCIAL: Verifica se amanhã JÁ EXISTE uma linha no painel com esse mesmo número de transporte
+                    let rotaExistenteAmanha = rotasAmanha.find(ra => {
+                        const transpAmanhaStr = String(ra.transporte || "").trim();
+                        const numsAmanha = transpAmanhaStr.match(/\d+/g) || [];
+                        // Se houver interseção nos números de transporte, é a mesma viagem que passou para o novo carro!
+                        return numsOntem.some(t => numsAmanha.includes(t));
+                    });
+
+                    let placaAlvoParaNotas = "";
+
+                    if (rotaExistenteAmanha) {
+                        // CENÁRIO 1: O painel de hoje JÁ TEM essa viagem montada (provavelmente com outra placa/troca)
+                        // Nãodiuplicamos a linha. Apenas pegamos a placa ativa da linha de hoje (se tiver troca, usa troca, senão usa placa)
+                        placaAlvoParaNotas = rotaExistenteAmanha.troca ? trimUpper(rotaExistenteAmanha.troca) : rotaExistenteAmanha.placa;
+                        console.log(`Viagem de transporte [${transpOntemStr}] já existe amanhã. Reaproveitando linha existente. Placa alvo das notas: ${placaAlvoParaNotas}`);
+                    } else {
+                        // CENÁRIO 2: O painel de hoje NÃO TEM essa viagem montada. Criamos a linha de pernoite idêntica à de ontem.
+                        let novaRotaPernoite = JSON.parse(JSON.stringify(rOntem));
+                        novaRotaPernoite.km = "";
                         novaRotaPernoite.status = "PERNOITE";
-                        // Limpa marcadores financeiros que devem ser processados novamente
                         delete novaRotaPernoite.prestacao_impressa;
                         delete novaRotaPernoite.bloqueio_pagamento;
-                        
-                        // Empurra a linha como uma VIAGEM EXTRA. Isso preserva a Saída Dia original.
+
                         rotasAmanha.push(novaRotaPernoite);
-                        countRotas++;
+                        countNovasRotas++;
+
+                        placaAlvoParaNotas = rOntem.troca ? rOntem.troca : rOntem.placa;
                     }
+
+                    // Transfere as notas para amanhã, atualizando a placa para a placa correta do dia de hoje
+                    let notasAdicionadasNestaViagem = 0;
+                    notasDestaRota.forEach(n => {
+                        // Verifica se a NF exata já existe no dia de amanhã
+                        const nfLimpa = cleanNF(n.nf);
+                        const jaExisteNaAmanha = notasAmanha.some(na => cleanNF(na.nf) === nfLimpa);
+
+                        if (!jaExisteNaAmanha) {
+                            let notaCopia = JSON.parse(JSON.stringify(n));
+                            
+                            // Atualiza a placa da nota para a placa real que vai rodar hoje (Placa Nova ou Troca)
+                            notaCopia.placa = placaAlvoParaNotas;
+                            
+                            delete notaCopia.anexos;
+                            notaCopia.status = ""; // Reseta o status para re-trabalhar no dia
+                            notaCopia.statusHora = "";
+                            notaCopia.chegada = "";
+                            notaCopia.saida = "";
+                            notaCopia.viagem = n.viagem || "";
+                            notaCopia.obs = (notaCopia.obs ? notaCopia.obs + " | " : "") + `[Pernoite transferido de ${formatarDataBR(dataAtual)}]`;
+
+                            notasAmanha.push(notaCopia);
+                            countNotasTransf++;
+                            notasAdicionadasNestaViagem++;
+                        }
+                    });
+                    
+                    console.log(`Transporte [${transpOntemStr}] -> ${notasAdicionadasNestaViagem} notas novas adicionadas para a placa ${placaAlvoParaNotas}`);
                 });
 
-                // 🟢 INJEÇÃO DE NOTAS (Vinculando à linha clonada)
-                notasPernoite.forEach(n => {
-                    if (!notasAmanha.find(na => cleanNF(na.nf) === cleanNF(n.nf))) {
-                        let notaCopia = JSON.parse(JSON.stringify(n));
-                        delete notaCopia.anexos; 
-                        notaCopia.status = ""; 
-                        notaCopia.statusHora = "";
-                        notaCopia.chegada = "";
-                        notaCopia.saida = "";
-                        notaCopia.viagem = n.viagem || ""; 
-                        notaCopia.obs = (notaCopia.obs ? notaCopia.obs + " | " : "") + `[Pernoite do dia ${formatarDataBR(dataAtual)}]`;
-                        
-                        notasAmanha.push(notaCopia);
-                        countNotas++;
-                    }
-                });
-
-                // 3. Gravação
-                if (countRotas > 0 || countNotas > 0) {
+                // 4. Grava no Banco de Dados do dia seguinte
+                if (countNovasRotas > 0 || countNotasTransf > 0) {
                     const batch = writeBatch(db);
                     batch.set(doc(db, "painel_diario", proximoDia), { rotas: rotasAmanha }, { merge: true });
                     batch.set(doc(db, "notas_fiscais_diario", proximoDia), { notas: notasAmanha }, { merge: true });
                     await batch.commit();
 
-                    alert(`✅ Transferência concluída!\n\nForam gerados ${countRotas} veículos de pernoite e transferidas ${countNotas} notas para o dia ${formatarDataBR(proximoDia)}.`);
+                    alert(`✅ Pernoites transferidos com sucesso para ${formatarDataBR(proximoDia)}!\n\n- Linhas novas criadas (se faltavam): ${countNovasRotas}\n- Notas transferidas e ajustadas para a placa correta: ${countNotasTransf}`);
                 } else {
-                    alert("Estes pernoites já haviam sido transferidos para o dia seguinte.");
+                    alert("Nenhuma alteração necessária. Os pernoites já estavam devidamente sincronizados.");
                 }
 
             } catch (e) {
-                console.error("Erro na transferência:", e);
-                alert("Erro ao transferir: " + e.message);
+                console.error("Erro na transferência de pernoite:", e);
+                alert("Erro ao transferir pernoites: " + e.message);
             }
             hideLoader();
         };
@@ -16336,7 +16407,64 @@
             window.carregarDadosSmartphones();
         };
 
+        
         // Certifique-se de chamar carregarDadosSmartphones() no script de navegação ao clicar no menu "Smartphones"
+        window.executarCopiaDiaCompleto = async () => {
+            const dataOrigem = document.getElementById('copiar-data-origem').value;
+            const dataDestino = document.getElementById('copiar-data-destino').value;
+
+            if (!dataOrigem || !dataDestino) {
+                return alert("Por favor, preencha tanto a data de origem quanto a data de destino.");
+            }
+
+            if (dataOrigem === dataDestino) {
+                return alert("A data de origem e de destino não podem ser iguais.");
+            }
+
+            if (!confirm(`Confirma a cópia completa de ${formatarDataBR(dataOrigem)} para ${formatarDataBR(dataDestino)}?\n\n- O dia original NÃO será afetado.\n- O dia de destino receberá cópia exata de rotas e notas fiscais.`)) {
+                return;
+            }
+
+            showLoader();
+            try {
+                // 1. Busca os dados do dia de origem no Firebase
+                const [snapPainelOrigem, snapNotasOrigem] = await Promise.all([
+                    getDoc(doc(db, "painel_diario", dataOrigem)),
+                    getDoc(doc(db, "notas_fiscais_diario", dataOrigem))
+                ]);
+
+                if (!snapPainelOrigem.exists() && !snapNotasOrigem.exists()) {
+                    hideLoader();
+                    return alert("Não foram encontrados dados operacionais (painel ou notas) para a data de origem selecionada.");
+                }
+
+                const dadosPainel = snapPainelOrigem.exists() ? snapPainelOrigem.data() : { rotas: [] };
+                const dadosNotas = snapNotasOrigem.exists() ? snapNotasOrigem.data() : { notas: [] };
+
+                // 2. Grava de forma idêntica no dia de destino usando Batch do Firestore
+                const batch = writeBatch(db);
+
+                batch.set(doc(db, "painel_diario", dataDestino), dadosPainel, { merge: false });
+                batch.set(doc(db, "notas_fiscais_diario", dataDestino), dadosNotas, { merge: false });
+
+                await batch.commit();
+
+                hideLoader();
+                window.fecharModal('modal-copiar-dia');
+                alert(`✅ Operação copiada com sucesso!\n\nDe: ${formatarDataBR(dataOrigem)}\nPara: ${formatarDataBR(dataDestino)}`);
+
+                // Se o usuário estiver visualizando exatamente a data de destino no painel, recarrega a tela
+                const dataSelectAtual = document.getElementById('mon-data-select');
+                if (dataSelectAtual && dataSelectAtual.value === dataDestino) {
+                    document.getElementById('btn-carregar-painel').click();
+                }
+
+            } catch (err) {
+                console.error("Erro ao copiar dia completo:", err);
+                hideLoader();
+                alert("Erro crítico ao realizar a cópia dos dados. Verifique o console.");
+            }
+        };
 
     </script>
 </body>
