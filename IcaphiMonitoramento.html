@@ -4033,7 +4033,7 @@
                             <button class="btn btn-secondary" onclick="window.abrirModalLixeira()" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
                                 <i class="ph ph-trash"></i> Lixeira
                             </button>
-                            <button class="btn btn-warning" onclick="document.getElementById('modal-deposito').style.display='flex'" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
+                            <button class="btn btn-warning" onclick="window.abrirModalDeposito()" style="display: flex; align-items: center; gap: 6px; font-weight: 800;">
                                 <i class="ph ph-bank"></i> + Depósito
                             </button>
                             <button class="btn btn-success" onclick="window.abrirModalNovoComplemento()" style="display: flex; align-items: center; gap: 6px;">
@@ -14932,146 +14932,100 @@
             hideLoader();
         };
 
-        // ================= FUNÇÕES DE CRUD (EDITAR / EXCLUIR / LIXEIRA) =================
-        window.abrirModalNovoComplemento = () => {
+        // ================= ABERTURA BLINDADA DOS MODAIS DE COMPLEMENTOS =================
+        
+        window.abrirModalNovoComplemento = async () => {
             window.itemEmEdicao = { dataStr: null, index: null, tipo: null };
-            document.getElementById('comp-input-data').value = new Date().toISOString().split('T')[0];
-            document.getElementById('comp-input-data').disabled = false;
             
-            // Reseta UI
+            const inputData = document.getElementById('comp-input-data');
+            if (inputData) {
+                inputData.value = new Date().toISOString().split('T')[0];
+                inputData.disabled = false;
+            }
+            
+            // Reseta UI com segurança
             const selectPlaca = document.getElementById('comp-input-placa');
-            selectPlaca.innerHTML = '<option value="" disabled selected>Carregando placas...</option>';
-            selectPlaca.disabled = true;
-            document.getElementById('preview-dados-viagem').style.display = 'none';
-            document.getElementById('form-novo-complemento').reset();
-            document.getElementById('comp-input-usuario').value = window.usuarioLogadoNome || "";
-            document.getElementById('btn-salvar-comp').disabled = true;
-            document.getElementById('modal-novo-complemento').style.display = 'flex';
+            if (selectPlaca) {
+                selectPlaca.innerHTML = '<option value="" disabled selected>Carregando placas...</option>';
+                selectPlaca.disabled = true;
+            }
             
-            // Dispara busca automática pro dia atual
-            window.buscarPlacasDoDia(); 
+            const previewViagem = document.getElementById('preview-dados-viagem');
+            if (previewViagem) previewViagem.style.display = 'none';
+            
+            const formComp = document.getElementById('form-novo-complemento');
+            if (formComp) formComp.reset();
+            
+            const inputUsuario = document.getElementById('comp-input-usuario');
+            if (inputUsuario) inputUsuario.value = window.usuarioLogadoNome || "";
+            
+            const btnSalvar = document.getElementById('btn-salvar-comp');
+            if (btnSalvar) btnSalvar.disabled = true;
+
+            // 🟢 FORÇA A ABERTURA DO MODAL IMEDIATAMENTE (Não trava se a busca demorar)
+            const modalNovo = document.getElementById('modal-novo-complemento');
+            if (modalNovo) {
+                modalNovo.style.setProperty('display', 'flex', 'important');
+            } else {
+                alert("Erro: Elemento #modal-novo-complemento não encontrado no HTML.");
+                return;
+            }
+            
+            // Tenta buscar as placas em segundo plano
+            try {
+                if (typeof window.buscarPlacasDoDia === 'function') {
+                    await window.buscarPlacasDoDia();
+                }
+            } catch (err) {
+                console.warn("Aviso ao buscar placas automaticamente:", err);
+            }
         };
 
         window.abrirModalDeposito = () => {
             window.itemEmEdicao = { dataStr: null, index: null, tipo: null };
-            document.getElementById('dep-input-data').value = new Date().toISOString().split('T')[0];
-            document.getElementById('dep-input-data').disabled = false;
-            document.getElementById('dep-input-valor').value = '';
-            document.getElementById('modal-deposito').style.display = 'flex';
-        };
-
-        window.prepararEdicao = async (dataStr, index, tipo) => {
-            showLoader();
-            try {
-                const docSnap = await getDoc(doc(db, "complementos_diario", dataStr));
-                if (!docSnap.exists()) return;
-                
-                window.itemEmEdicao = { dataStr, index, tipo };
-
-                if (tipo === 'complemento') {
-                    const item = docSnap.data().itens[index];
-                    
-                    const inputData = document.getElementById('comp-input-data');
-                    if (inputData) {
-                        inputData.value = dataStr;
-                        inputData.disabled = true;
-                    }
-
-                    // 1. Carrega as placas do dia para preencher o select do modal
-                    if (typeof window.buscarPlacasDoDia === 'function') {
-                        await window.buscarPlacasDoDia();
-                    }
-
-                    // 2. Preenche os campos do formulário com os dados salvos
-                    document.getElementById('comp-input-tipo').value = item.tipo;
-                    document.getElementById('comp-input-valor').value = item.valor;
-                    document.getElementById('comp-input-obs').value = item.obs || '';
-
-                    // 3. Tenta selecionar a placa correta no select
-                    const selectPlaca = document.getElementById('comp-input-placa');
-                    if (selectPlaca && item.placa) {
-                        const placaAlvo = String(item.placa).toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        for (let i = 0; i < selectPlaca.options.length; i++) {
-                            const optText = selectPlaca.options[i].text.toUpperCase();
-                            if (optText.includes(placaAlvo)) {
-                                selectPlaca.selectedIndex = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    document.getElementById('btn-salvar-comp').disabled = false;
-                    document.getElementById('modal-novo-complemento').style.display = 'flex';
-                } else {
-                    const item = docSnap.data().depositos[index];
-                    
-                    const depData = document.getElementById('dep-input-data');
-                    if (depData) {
-                        depData.value = dataStr;
-                        depData.disabled = true;
-                    }
-
-                    document.getElementById('dep-input-valor').value = item.valor;
-                    document.getElementById('modal-deposito').style.display = 'flex';
-                }
-            } catch(e) { 
-                console.error("Erro preparar edição", e); 
+            
+            const depData = document.getElementById('dep-input-data');
+            if (depData) {
+                depData.value = new Date().toISOString().split('T')[0];
+                depData.disabled = false;
             }
-            hideLoader();
-        };
+            
+            const depValor = document.getElementById('dep-input-valor');
+            if (depValor) depValor.value = '';
 
-        window.excluirItemFinanceiro = async (dataStr, index, tipo) => {
-            if (!confirm("Tem certeza que deseja enviar este item para a lixeira?")) return;
-            showLoader();
-            try {
-                const docRef = doc(db, "complementos_diario", dataStr);
-                const docSnap = await getDoc(docRef);
-                const dados = docSnap.data();
-                
-                let itemRemovido = null;
-                if (tipo === 'complemento') {
-                    itemRemovido = dados.itens.splice(index, 1)[0];
-                    await setDoc(docRef, { itens: dados.itens }, { merge: true });
-                } else {
-                    itemRemovido = dados.depositos.splice(index, 1)[0];
-                    await setDoc(docRef, { depositos: dados.depositos }, { merge: true });
-                }
-
-                // Salva na Lixeira
-                const idLixeira = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-                await setDoc(doc(db, "lixeira_complementos", idLixeira), {
-                    ...itemRemovido,
-                    lixeiraTipo: tipo,
-                    dataOriginal: dataStr,
-                    excluidoPor: window.usuarioLogadoNome || "Sistema", // 🟢 MÁGICA: Quem excluiu!
-                    excluidoEm: new Date().toISOString()
-                });
-
-                document.getElementById('btn-carregar-complementos').click();
-            } catch(e) { console.error("Erro excluir", e); alert("Erro ao excluir."); }
-            hideLoader();
+            // 🟢 FORÇA A ABERTURA DO MODAL DE DEPÓSITO
+            const modalDep = document.getElementById('modal-deposito');
+            if (modalDep) {
+                modalDep.style.setProperty('display', 'flex', 'important');
+            } else {
+                alert("Erro: Elemento #modal-deposito não encontrado no HTML.");
+            }
         };
 
         window.abrirModalLixeira = async () => {
-            document.getElementById('modal-lixeira-complementos').style.display = 'flex';
+            // 🟢 FORÇA A ABERTURA DO MODAL DA LIXEIRA IMEDIATAMENTE
+            const modalLixeira = document.getElementById('modal-lixeira-complementos');
+            if (modalLixeira) {
+                modalLixeira.style.setProperty('display', 'flex', 'important');
+            }
+
             const container = document.getElementById('lista-lixeira-complementos');
+            if (!container) return;
+            
             container.innerHTML = `<div style="text-align:center; padding:20px;">Buscando lixeira...</div>`;
             
             try {
                 const snap = await getDocs(collection(db, "lixeira_complementos"));
                 const itens = [];
-                // Calcula limite de 30 dias locais
                 const trintaDiasAtras = new Date();
                 trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
 
                 snap.forEach(d => {
                     const i = d.data();
                     i.idLixeira = d.id;
-                    // Se for mais velho que 30 dias, ignora (auto-delete lógico)
                     if(new Date(i.excluidoEm) >= trintaDiasAtras) itens.push(i);
                 });
 
-                // Ordena do mais recente excluido
                 itens.sort((a,b) => new Date(b.excluidoEm) - new Date(a.excluidoEm));
 
                 if (itens.length === 0) {
@@ -15097,7 +15051,10 @@
                     `;
                 });
                 container.innerHTML = html;
-            } catch(e) { console.error(e); container.innerHTML = 'Erro ao carregar a lixeira.'; }
+            } catch(e) { 
+                console.error(e); 
+                container.innerHTML = 'Erro ao carregar a lixeira.'; 
+            }
         };
 
         window.restaurarItemLixeira = async (idLixeira, dataStr, tipo) => {
