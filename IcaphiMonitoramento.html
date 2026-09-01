@@ -8325,7 +8325,9 @@
 
                     if (rotasParaProcessar.length > 0) {
                         rotasParaProcessar.forEach(rota => {
-                            const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
+                            // 🟢 Identifica se há troca ativa para puxar o perfil/tipo correto do veículo que está rodando
+                            const placaParaConsulta = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
+                            const infoViva = window.placasCache[placaParaConsulta.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
                             const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
 
                             const transpRotaStr = String(rota.transporte || "").trim();
@@ -11732,7 +11734,9 @@
 
                     if (tipoExportacao === 'PAINEL') {
                         rotasParaProcessar.forEach(rota => {
-                            const infoViva = window.placasCache[rota.placa.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
+                            // 🟢 Na exportação também prioriza a placa de troca para o perfil e tipo
+                            const placaParaConsultaExcel = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
+                            const infoViva = window.placasCache[placaParaConsultaExcel.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
                             const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
                             const notasPlaca = notasDoDia.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
 
