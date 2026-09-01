@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.7</h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento V1.8</h2>
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
@@ -15209,12 +15209,11 @@
             const dataAtual = document.getElementById('mon-data-select').value;
             if (!dataAtual) return alert("Selecione a data base no filtro do painel primeiro.");
 
-            // Calcula o dia seguinte
             const dObj = new Date(dataAtual);
             dObj.setUTCDate(dObj.getUTCDate() + 1);
             const proximoDia = dObj.toISOString().split('T')[0];
 
-            if (!confirm(`Deseja transferir os veículos e notas em PERNOITE do dia ${formatarDataBR(dataAtual)} para amanhã (${formatarDataBR(proximoDia)})?\n\n- KM não será transferido.\n- Anexos não serão transferidos.`)) return;
+            if (!confirm(`Deseja transferir os veículos e notas em PERNOITE do dia ${formatarDataBR(dataAtual)} para amanhã (${formatarDataBR(proximoDia)})?\n\nIsso criará os fechamentos necessários sem apagar as novas viagens de amanhã.`)) return;
 
             showLoader();
             try {
@@ -15227,7 +15226,6 @@
                 let rotasHoje = snapPainelHoje.exists() ? snapPainelHoje.data().rotas || [] : [];
                 let notasHoje = snapNotasHoje.exists() ? snapNotasHoje.data().notas || [] : [];
 
-                // Filtra apenas notas que estão como PERNOITE hoje
                 let notasPernoite = notasHoje.filter(n => trimUpper(n.status).includes('PERNOITE'));
                 
                 if (notasPernoite.length === 0) {
@@ -15235,17 +15233,15 @@
                     return alert("Nenhuma nota com status PERNOITE encontrada neste dia.");
                 }
 
-                // Pega as placas que deram pernoite
                 let placasPernoite = [...new Set(notasPernoite.map(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '')))];
 
-                // Filtra os veículos referentes a essas notas
                 let rotasPernoite = rotasHoje.filter(r => {
                     let p = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
                     let t = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
                     return placasPernoite.includes(p) || placasPernoite.includes(t);
                 });
 
-                // 2. Puxa os dados já existentes no PRÓXIMO DIA para fazer o Merge
+                // 2. Puxa os dados já existentes no PRÓXIMO DIA
                 const [snapPainelAmanha, snapNotasAmanha] = await Promise.all([
                     getDoc(doc(db, "painel_diario", proximoDia)),
                     getDoc(doc(db, "notas_fiscais_diario", proximoDia))
@@ -15257,55 +15253,62 @@
                 let countRotas = 0;
                 let countNotas = 0;
 
-                // 🟢 LÓGICA CORRIGIDA: INJEÇÃO COM MESCLAGEM (MERGE) PARA ROTAS
+                // 🟢 LÓGICA CORRIGIDA: INJEÇÃO SEM SOBRESCRITA (CRIAÇÃO DE LINHA CLONE)
                 rotasPernoite.forEach(r => {
                     let placaLimpa = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
-                    let rotaExistente = rotasAmanha.find(ra => trimUpper(ra.placa).replace(/[^A-Z0-9]/g, '') === placaLimpa);
                     
-                    if (!rotaExistente) {
-                        // Cenário A: Placa não estava no dia seguinte. Cria do zero garantindo os dados vitais.
-                        rotasAmanha.push({
-                            ...r,
-                            km: "", 
-                            transporte: r.transporte || "", // Garante captura da chave de transporte
-                            status: "PERNOITE" 
-                        });
+                    // Em vez de procurar só a placa, procuramos se a O.C de Pernoite já foi transferida.
+                    let ocPernoite = String(r.oc || "").includes("PERNOITE") ? r.oc : "PERNOITE - " + (r.oc || "S/OC");
+                    
+                    let rotaJaTransferida = rotasAmanha.find(ra => 
+                        trimUpper(ra.placa).replace(/[^A-Z0-9]/g, '') === placaLimpa && 
+                        trimUpper(ra.oc) === trimUpper(ocPernoite)
+                    );
+                    
+                    if (!rotaJaTransferida) {
+                        // Fazemos uma cópia profunda da rota de ontem para não sujar a memória
+                        let novaRotaPernoite = JSON.parse(JSON.stringify(r));
+                        
+                        novaRotaPernoite.km = ""; // Limpa a KM do dia anterior
+                        novaRotaPernoite.oc = ocPernoite; // Altera a O.C para não colidir com viagens novas
+                        novaRotaPernoite.status = "PERNOITE";
+                        // Limpa marcadores financeiros que devem ser processados novamente
+                        delete novaRotaPernoite.prestacao_impressa;
+                        delete novaRotaPernoite.bloqueio_pagamento;
+                        
+                        // Empurra a linha como uma VIAGEM EXTRA. Isso preserva a Saída Dia original.
+                        rotasAmanha.push(novaRotaPernoite);
                         countRotas++;
-                    } else {
-                        // Cenário B: Placa JÁ EXISTIA amanhã. Força a herança do transporte de ontem para não ficar em branco.
-                        rotaExistente.transporte = r.transporte || rotaExistente.transporte || "";
-                        rotaExistente.status = "PERNOITE";
-                        // Como a rota já existia, não incrementamos countRotas (já estava lá), mas ela foi atualizada.
                     }
                 });
 
-                // Injeta as NOTAS no dia seguinte (Tira anexos, zera status para operar)
+                // 🟢 INJEÇÃO DE NOTAS (Vinculando à linha clonada)
                 notasPernoite.forEach(n => {
                     if (!notasAmanha.find(na => cleanNF(na.nf) === cleanNF(n.nf))) {
-                        let notaCopia = { ...n };
+                        let notaCopia = JSON.parse(JSON.stringify(n));
                         delete notaCopia.anexos; 
                         notaCopia.status = ""; 
                         notaCopia.statusHora = "";
                         notaCopia.chegada = "";
                         notaCopia.saida = "";
-                        notaCopia.viagem = n.viagem || ""; // 🟢 Proteção extra: garante a passagem da viagem na nota fiscal
-                        notaCopia.obs = (notaCopia.obs ? notaCopia.obs + " | " : "") + `[Veio de Pernoite do dia ${formatarDataBR(dataAtual)}]`;
+                        notaCopia.viagem = n.viagem || ""; 
+                        notaCopia.obs = (notaCopia.obs ? notaCopia.obs + " | " : "") + `[Pernoite do dia ${formatarDataBR(dataAtual)}]`;
                         
                         notasAmanha.push(notaCopia);
                         countNotas++;
                     }
                 });
 
-                // 3. Executa a gravação atômica no banco (Dia Seguinte)
+                // 3. Gravação
                 if (countRotas > 0 || countNotas > 0) {
                     const batch = writeBatch(db);
                     batch.set(doc(db, "painel_diario", proximoDia), { rotas: rotasAmanha }, { merge: true });
                     batch.set(doc(db, "notas_fiscais_diario", proximoDia), { notas: notasAmanha }, { merge: true });
                     await batch.commit();
 
-                    alert(`✅ Transferência concluída!\n\nForam criadas/atualizadas ${countRotas > 0 ? countRotas : 'algumas'} rotas e ${countNotas} Notas fisicamente no dia ${formatarDataBR(proximoDia)}.`);
+                    alert(`✅ Transferência concluída!\n\nForam gerados ${countRotas} veículos de pernoite e transferidas ${countNotas} notas para o dia ${formatarDataBR(proximoDia)}.`);
                 } else {
-                    alert("Estes veículos e notas já haviam sido transferidos ou atualizados para o dia seguinte anteriormente.");
+                    alert("Estes pernoites já haviam sido transferidos para o dia seguinte.");
                 }
 
             } catch (e) {
