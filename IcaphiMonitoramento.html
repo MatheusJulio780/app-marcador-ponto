@@ -5517,6 +5517,30 @@
         </div>
     </div>
 
+    <!-- TOAST DE ATUALIZAÇÃO DISPONÍVEL -->
+    <div id="update-toast" style="display: none; position: fixed; bottom: 25px; right: 25px; background: var(--bg-card); border: 1px solid var(--border-color); padding: 16px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 999999; align-items: center; gap: 14px; animation: slideUp 0.3s ease;">
+        <i class="ph-bold ph-arrows-clockwise" style="color: var(--accent); font-size: 22px; animation: spin 2s linear infinite;"></i>
+        <div>
+            <div style="font-weight: 800; font-size: 13px; color: var(--text-main);">Nova versão disponível!</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Uma atualização foi enviada. Atualize para aplicar.</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-left: 5px;">
+            <button onclick="location.reload()" style="background: var(--accent); color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s;">Atualizar (F5)</button>
+            <button onclick="document.getElementById('update-toast').style.display='none'" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 0 4px;" title="Fechar aviso">&times;</button>
+        </div>
+    </div>
+
+    <style>
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+
     <style>
         #welcome-overlay {
             position: fixed;
@@ -16465,6 +16489,48 @@
                 alert("Erro crítico ao realizar a cópia dos dados. Verifique o console.");
             }
         };
+
+        let appVersaoInicial = null;
+
+        async function checarAtualizacaoSistema() {
+            try {
+                // Adicionamos ?t=timestamp para forçar o navegador a buscar o arquivo fresco e não usar cache antigo
+                const resposta = await fetch('version.json?t=' + new Date().getTime());
+                if (!resposta.ok) return;
+                
+                const dados = resposta.json();
+                const versaoServidor = (await dados).version;
+
+                if (!appVersaoInicial) {
+                    // Define a versão base assim que o app carrega
+                    appVersaoInicial = versaoServidor;
+                } else if (appVersaoInicial !== versaoServidor) {
+                    // A versão no GitHub mudou! Exibe a notificação discreta
+                    const toast = document.getElementById('update-toast');
+                    if (toast && toast.style.display !== 'flex') {
+                        toast.style.display = 'flex';
+                    }
+                }
+            } catch (e) {
+                // Erros de rede silenciosos para não atrapalhar o console
+            }
+        }
+
+        // Inicializa os ouvintes de verificação
+        document.addEventListener('DOMContentLoaded', () => {
+            // Checa logo após carregar
+            checarAtualizacaoSistema();
+
+            // Checa a cada 10 minutos (600.000 ms)
+            setInterval(checarAtualizacaoSistema, 10 * 60 * 1000);
+
+            // Checa instantaneamente se o usuário minimizar a aba e voltar para ela
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    checarAtualizacaoSistema();
+                }
+            });
+        });
 
     </script>
 </body>
