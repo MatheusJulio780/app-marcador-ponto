@@ -22,7 +22,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
@@ -3204,7 +3203,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.0</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.5</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -14021,7 +14020,10 @@
                     let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
                     let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
 
-                    let p_q_nfs_val = notasPernoite.length > 0 ? `${notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}` : "";
+                    // 🟢 Pega apenas o peso e a quantidade das notas que são de pernoite
+                    let notasPernoitePlaca = notasPlaca.filter(n => trimUpper(n.status) === 'PERNOITE');
+                    let pesoPernoiteSoma = notasPernoitePlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                    let p_q_nfs_val = notasPernoitePlaca.length > 0 ? `${pesoPernoiteSoma.toFixed(2)}/${notasPernoitePlaca.length}` : "";
 
                     return {
                         "PLACA": rota.placa || "", 
@@ -14074,7 +14076,7 @@
                     }
                 });
 
-                // --- ABA 3: MOTIVO DO PERNOITE ---
+                // --- ABA 3: MOTIVO DO PERNOITE (CORRIGIDO PARA PUXAR DA NOTAS) ---
                 const rotasPernoite = rotasParaProcessar.filter(r => {
                     const p = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                     const t = r.troca ? String(r.troca).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
@@ -14082,6 +14084,19 @@
                 });
 
                 const dadosAba3 = rotasPernoite.map(r => {
+                    const placaRef = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                    const trocaRef = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
+
+                    // 🟢 FILTRA APENAS AS NOTAS DE PERNOITE DESTA PLACA ESPECÍFICA
+                    const notasPernoiteDaPlaca = notasDoDia.filter(n => {
+                        const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                        const statusNota = trimUpper(n.status || "");
+                        return (pNota === placaRef || pNota === trocaRef) && statusNota === 'PERNOITE';
+                    });
+
+                    const qtdNfsPernoite = notasPernoiteDaPlaca.length;
+                    const pesoTotalPernoite = notasPernoiteDaPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+
                     return {
                         "PLACA": r.placa || "", 
                         "TROCA": r.troca || "", 
@@ -14089,8 +14104,8 @@
                         "DATA": dataFormatadaBarra,
                         "ROTA": r.regiao || "", 
                         "TRANSP": r.transporte || "", 
-                        "QTD. NF-e": r.qtde || "", 
-                        "Peso": r.peso || "", 
+                        "QTD. NF-e": qtdNfsPernoite > 0 ? qtdNfsPernoite : "", // 🟢 Qtd correta de notas de pernoite
+                        "Peso": pesoTotalPernoite > 0 ? pesoTotalPernoite.toFixed(2).replace('.', ',') : "", // 🟢 Soma correta do peso
                         "Status": "PERNOITE", 
                         "MOTIVO": "", 
                         "AUTORIZADO": ""
@@ -14186,7 +14201,7 @@
                         // Fundo padrão alternado para as outras colunas
                         fillBg = (R % 2 !== 0) ? "ECECEC" : "FFFFFF";
 
-                        // 🟢 APLICA A COR EXCLUSIVAMENTE NAS COLUNAS: 18 (STATUS), 19 (PENDENTE), 20 (REALIZADA)
+                        // APLICA A COR EXCLUSIVAMENTE NAS COLUNAS: 18 (STATUS), 19 (PENDENTE), 20 (REALIZADA)
                         if ((C === 18 || C === 19 || C === 20) && corDestaque) {
                             fillBg = corDestaque;
                             cellBold = isBold;
@@ -14208,19 +14223,48 @@
                 }
             }
 
-            // Larguras fixas equilibradas
-            ws['!cols'] = [
-                {wch: 12}, {wch: 12}, {wch: 10}, {wch: 8}, {wch: 12}, {wch: 14}, 
-                {wch: 15}, {wch: 16}, {wch: 12}, {wch: 8}, {wch: 12}, {wch: 10}, 
-                {wch: 35}, {wch: 18}, {wch: 12}, {wch: 12}, {wch: 14}, {wch: 10}, 
-                {wch: 15}, {wch: 10}, {wch: 10}, {wch: 8}
-            ];
+            // 🟢 LARGURA INTELIGENTE AUTOMÁTICA (Baseada no nome do cabeçalho)
+            const colunasDinamicas = [];
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRefCabecalho = XLSX.utils.encode_cell({c: C, r: 0});
+                const nomeColuna = ws[cellRefCabecalho] ? String(ws[cellRefCabecalho].v).toUpperCase() : "";
+                
+                let larguraCh = 9; // Tamanho padrão
+
+                if (nomeColuna.includes("PLACA") || nomeColuna.includes("TROCA") || nomeColuna.includes("DEV") || nomeColuna.includes("REEN") || nomeColuna.includes("PARCIAL") || nomeColuna.includes("PEN") || nomeColuna.includes("REAL") || nomeColuna.includes("QTD") || nomeColuna.includes("100%")) {
+                    larguraCh = 10;
+                }
+                if (nomeColuna.includes("DATA") || nomeColuna.includes("O.C.") || nomeColuna.includes("KM") || nomeColuna.includes("Q.NF") || nomeColuna.includes("PAL.")) {
+                    larguraCh = 11;
+                }
+                if (nomeColuna.includes("PERFIL") || nomeColuna.includes("TIPO") || nomeColuna.includes("PGTO.")) {
+                    larguraCh = 8;
+                }
+                if (nomeColuna.includes("TRANS") || nomeColuna.includes("CONTATO")) {
+                    larguraCh = 12;
+                }
+                if (nomeColuna.includes("REGIÃO") || nomeColuna.includes("AJUDANTE") || nomeColuna.includes("MOTORISTA") || nomeColuna.includes("PESO +")) {
+                    larguraCh = 15;
+                }
+                if (nomeColuna.includes("ST.") || nomeColuna.includes("STATUS")) {
+                    larguraCh = 19;
+                }
+
+                colunasDinamicas.push({ wch: larguraCh });
+            }
+            
+            ws['!cols'] = colunasDinamicas;
         }
 
-        // ====== FUNÇÃO ABAS GENÉRICAS (2 E 3) COM A MESMA CORREÇÃO ======
+        // ====== FUNÇÃO ABAS GENÉRICAS (2 E 3) COM LINHAS AJUSTADAS ======
         function aplicarEstilosAbaGenerica(ws, isAba3) {
             const range = XLSX.utils.decode_range(ws['!ref']);
+            
+            // 🟢 Garante altura padrão para todas as linhas para evitar que fiquem gigantes
+            if (!ws['!rows']) ws['!rows'] = [];
             for(let R = range.s.r; R <= range.e.r; ++R) {
+                ws['!rows'][R] = { hpt: 20 }; // Trava a altura da linha em 20 pontos
+                
                 for(let C = range.s.c; C <= range.e.c; ++C) {
                     const cell_ref = XLSX.utils.encode_cell({c:C, r:R});
                     if(!ws[cell_ref]) ws[cell_ref] = { t: "s", v: "" };
@@ -14236,7 +14280,7 @@
                         fill: { fgColor: { rgb: fillBg } },
                         font: { bold: isBold, color: { rgb: fontColor }, name: "Calibri", sz: 11 },
                         border: { top: {style: "thin", color: {rgb: "000000"}}, bottom: {style: "thin", color: {rgb: "000000"}}, left: {style: "thin", color: {rgb: "000000"}}, right: {style: "thin", color: {rgb: "000000"}} },
-                        alignment: { horizontal: "center", vertical: "center", wrapText: true } // 🟢 QUEBRA DE TEXTO ATIVADA
+                        alignment: { horizontal: "center", vertical: "center", wrapText: false } // 🟢 Desativa a quebra automática que esticava a linha
                     };
                 }
             }
