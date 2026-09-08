@@ -2792,7 +2792,7 @@
 
         .selected-cell {
             background-color: rgba(33, 115, 70, 0.15) !important; 
-            outline: 1px solid #217346;
+            outline: 1px solid #216073;
             position: relative;
             /* Removemos a sobrescrita de cor da fonte para não estragar a cor original na cópia! */
         }
@@ -2955,10 +2955,10 @@
     /* Estilo idêntico à seleção nativa do Microsoft Excel */
     table.table-selectable td.selected-cell,
     table.table-selectable th.selected-cell {
-        outline: 1px dashed #217346 !important; /* Linha pontilhada fina verde Excel */
+        outline: 1px dashed #215973 !important; /* Linha pontilhada fina verde Excel */
         outline-offset: -1px;
-        background-color: rgba(33, 115, 70, 0.08) !important; /* Fundo verde quase transparente */
-        border-color: #217346 !important;
+        background-color: rgba(33, 103, 115, 0.08) !important; /* Fundo verde quase transparente */
+        border-color: #215973 !important;
     }
 
     /* ================= CSS UNIFICADO: SMARTPHONES, CHIPS E MODAIS ================= */
@@ -3203,7 +3203,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.5</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.6</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -8040,6 +8040,23 @@
             document.querySelectorAll('.quick-status-update').forEach(select => { select.addEventListener('change', async (e) => { const nfTarget = e.target.getAttribute('data-nf'); const novoStatus = e.target.value; e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;"; const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget); if (notaRef) { notaRef.status = novoStatus; } showLoader(); try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } catch (err) { } hideLoader(); document.getElementById('btn-carregar-painel').click(); }); });
         };
 
+        // ================= MEMÓRIA DE CONGELAMENTO DE FILTROS =================
+        window.linhasCongeladas = {
+            'tabela-monitoramento': null,
+            'tabela-operacao-notas': null,
+            'tabela-editor-painel': null,
+            'tabela-editor-notas': null
+        };
+
+        function obterIdUnicoDaLinha(tr) {
+            // Busca a NF (Operação) ou pega a primeira coluna (Monitoramento/Placa) como ID único
+            const tdNf = tr.querySelector('[data-live="nf"]');
+            if (tdNf) return tdNf.textContent.trim();
+            
+            const primeiraColuna = tr.children[0];
+            return primeiraColuna ? primeiraColuna.textContent.trim() : Math.random().toString();
+        }
+
         // ================= FILTRO EXCEL (DEFINITIVO E CORRIGIDO) =================
         let activeFilters = {
             'tabela-monitoramento': {},
@@ -8179,7 +8196,9 @@
                     if (icon) icon.classList.remove('filter-active');
                 }
                 if (filterPopup) filterPopup.style.setProperty('display', 'none', 'important');
-                applyFilters(activeTableId);
+                
+                // MUDANÇA AQUI: Passa 'true'
+                applyFilters(activeTableId, true);
             });
         }
 
@@ -8209,37 +8228,67 @@
                 }
 
                 if (filterPopup) filterPopup.style.setProperty('display', 'none', 'important');
-                applyFilters(activeTableId);
+                
+                // MUDANÇA AQUI: Passa 'true'
+                applyFilters(activeTableId, true);
             });
         }
 
-        function applyFilters(tableId) {
+        function applyFilters(tableId, isManual = false) {
             const table = document.getElementById(tableId);
             if (!table) return;
 
             const filters = activeFilters[tableId];
-            if (!filters || Object.keys(filters).length === 0) {
-                table.querySelectorAll('tbody tr').forEach(tr => {
-                    if (tr.children.length > 5) tr.style.display = '';
-                });
-                return;
+            const temFiltroAtivo = filters && Object.keys(filters).length > 0;
+
+            // Se o usuário clicou em Aplicar/Limpar, recalcula a memória de congelamento
+            if (isManual) {
+                if (!temFiltroAtivo) {
+                    window.linhasCongeladas[tableId] = null; // Zera a memória
+                } else {
+                    window.linhasCongeladas[tableId] = new Set(); // Prepara para gravar as linhas visíveis
+                }
             }
 
-            table.querySelectorAll('tbody tr').forEach(tr => {
-                if (tr.children.length < 5) return;
-                let show = true;
-                for (let col in filters) {
-                    const colIndex = parseInt(col);
-                    if (!tr.children[colIndex]) continue;
-                    const td = tr.children[colIndex];
-                    let val = obterValorRealCelula(td, tableId);
+            const memoriaCongelada = window.linhasCongeladas[tableId];
 
-                    if (!filters[col].includes(val)) {
-                        show = false;
-                        break;
+            table.querySelectorAll('tbody tr').forEach(tr => {
+                if (tr.children.length < 5) return; // Ignora linhas inválidas
+                const rowId = obterIdUnicoDaLinha(tr);
+
+                if (!temFiltroAtivo) {
+                    tr.style.display = '';
+                    return;
+                }
+
+                if (isManual) {
+                    // CÁLCULO MANUAL: O usuário clicou no botão. Avaliamos as células reais.
+                    let show = true;
+                    for (let col in filters) {
+                        const colIndex = parseInt(col);
+                        if (!tr.children[colIndex]) continue;
+                        const td = tr.children[colIndex];
+                        let val = obterValorRealCelula(td, tableId);
+
+                        if (!filters[col].includes(val)) {
+                            show = false;
+                            break;
+                        }
+                    }
+                    tr.style.display = show ? '' : 'none';
+
+                    // Salva o ID da linha na memória se ela passou no filtro
+                    if (show && memoriaCongelada) {
+                        memoriaCongelada.add(rowId);
+                    }
+                } else {
+                    // CÁLCULO FIREBASE (Automático): Ignora valores da célula. Consulta apenas a memória.
+                    if (memoriaCongelada) {
+                        tr.style.display = memoriaCongelada.has(rowId) ? '' : 'none';
+                    } else {
+                        tr.style.display = 'none';
                     }
                 }
-                tr.style.display = show ? '' : 'none';
             });
         }
 
@@ -8262,6 +8311,8 @@
                 if (activeFilters[idTabela]) {
                     activeFilters[idTabela] = {};
                 }
+                // MUDANÇA AQUI: Zera o congelamento
+                window.linhasCongeladas[idTabela] = null;
 
                 // 2. SE FOR O MONITORAMENTO: Zera também os filtros dos blocos rápidos (Ctrl + Clique)
                 if (idTabela === 'tabela-monitoramento') {
@@ -15569,24 +15620,85 @@
             hideLoader();
         };
 
-        // ================= MOTOR DE SELEÇÃO TIPO EXCEL =================
+        // ================= MOTOR DE SELEÇÃO TIPO EXCEL + CÓPIA E TOAST =================
         document.addEventListener("DOMContentLoaded", () => {
+            // 1. Estilos do Toast de Notificação (Glassmorphism Dark)
+            const styleToast = document.createElement('style');
+            styleToast.innerHTML = `
+                #toast-copiado-excel {
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(20px);
+                    background: rgba(18, 18, 18, 0.92);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid rgba(0, 255, 170, 0.3);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 255, 170, 0.2);
+                    color: #ffffff;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    z-index: 9999999;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s ease, transform 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                #toast-copiado-excel.show {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+                #toast-copiado-excel .toast-icon {
+                    color: var(--accent, #00ffaa);
+                }
+                .bubble-copia-clicavel {
+                    cursor: pointer !important;
+                    transition: transform 0.1s ease, filter 0.15s ease;
+                }
+                .bubble-copia-clicavel:active {
+                    transform: scale(0.95);
+                }
+            `;
+            document.head.appendChild(styleToast);
+
+            // 2. Criar Elemento Toast no DOM
+            const toastEl = document.createElement('div');
+            toastEl.id = 'toast-copiado-excel';
+            toastEl.innerHTML = `<span class="toast-icon">📋</span> <span id="toast-copiado-texto">Copiado para a área de transferência!</span>`;
+            document.body.appendChild(toastEl);
+
+            let toastTimeout;
+            function exibirToast(mensagem) {
+                document.getElementById('toast-copiado-texto').textContent = mensagem;
+                toastEl.classList.add('show');
+
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toastEl.classList.remove('show');
+                }, 1800);
+            }
+
+            // 3. Inicialização das Tabelas Selecionáveis
             const tbMonitoramento = document.getElementById('tabela-monitoramento');
             const tbNotas = document.getElementById('tabela-operacao-notas');
-            if(tbMonitoramento) tbMonitoramento.classList.add('table-selectable');
-            if(tbNotas) tbNotas.classList.add('table-selectable');
+            if (tbMonitoramento) tbMonitoramento.classList.add('table-selectable');
+            if (tbNotas) tbNotas.classList.add('table-selectable');
 
             let isSelecting = false;
             let startCell = null;
             let currentTable = null;
 
+            // 4. Eventos de Seleção (MouseDown / MouseOver / MouseUp)
             document.addEventListener('mousedown', (e) => {
                 if (['INPUT', 'SELECT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
 
-                // Agora aceita tanto TD quanto TH (Células normais e Cabeçalhos)
                 const cell = e.target.closest('td, th');
                 if (!cell || !cell.closest('table.table-selectable')) {
-                    if (!e.target.closest('#selection-stats-container')) {
+                    if (!e.target.closest('#selection-stats-container') && !e.target.closest('.bubble-copia-clicavel')) {
                         limparSelecaoExcel();
                     }
                     return;
@@ -15625,7 +15737,6 @@
                     const row = rows[r];
                     if (!row) continue;
 
-                    // 🟢 TRAVA DE SEGURANÇA: Se a linha estiver oculta pelo filtro, pula ela instantaneamente
                     const rowStyle = window.getComputedStyle(row);
                     if (rowStyle.display === 'none' || row.classList.contains('hide-by-block')) {
                         continue;
@@ -15633,7 +15744,6 @@
 
                     for (let c = minCol; c <= maxCol; c++) {
                         const cell = row.cells[c];
-                        // Checa também a célula (caso alguma coluna específica esteja oculta)
                         if (cell && window.getComputedStyle(cell).display !== 'none') {
                             cell.classList.add('selected-cell');
                         }
@@ -15643,6 +15753,63 @@
             });
 
             document.addEventListener('mouseup', () => { isSelecting = false; });
+
+            // 5. Função de Cópia Matricial (Preserva Tabela ao Colar no Excel)
+            function copiarMatrizSelecao() {
+                const celulasSelecionadas = Array.from(document.querySelectorAll('.selected-cell'));
+                if (celulasSelecionadas.length === 0) return;
+
+                // Agrupa por linha (rowIndex)
+                const mapaLinhas = new Map();
+                celulasSelecionadas.forEach(cell => {
+                    const rIdx = cell.parentElement.rowIndex;
+                    if (!mapaLinhas.has(rIdx)) mapaLinhas.set(rIdx, []);
+                    mapaLinhas.get(rIdx).push(cell);
+                });
+
+                // Ordena linhas e colunas para manter a matriz correta
+                const linhasOrdenadas = Array.from(mapaLinhas.keys()).sort((a, b) => a - b);
+                const textoTabela = linhasOrdenadas.map(rIdx => {
+                    const celulasDaLinha = mapaLinhas.get(rIdx);
+                    celulasDaLinha.sort((a, b) => a.cellIndex - b.cellIndex);
+                    return celulasDaLinha.map(c => c.innerText.trim()).join('\t'); // Colunas separadas por TAB
+                }).join('\n'); // Linhas separadas por ENTER
+
+                navigator.clipboard.writeText(textoTabela).then(() => {
+                    const qtd = celulasSelecionadas.length;
+                    exibirToast(qtd === 1 ? 'Célula copiada!' : `${qtd} células copiadas!`);
+                });
+            }
+
+            // 6. Ouvinte do Teclado (Ctrl + C / Cmd + C)
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                    const celulasSelecionadas = document.querySelectorAll('.selected-cell');
+                    if (celulasSelecionadas.length > 0) {
+                        // Se houver seleção de células na tabela, sobrescreve o Ctrl+C padrão
+                        e.preventDefault();
+                        copiarMatrizSelecao();
+                    }
+                }
+            });
+
+            // 7. Clique nas Bolinhas de Resultado (Soma e Contagem)
+            const bContagem = document.getElementById('bubble-contagem');
+            const bSoma = document.getElementById('bubble-soma');
+
+            [bContagem, bSoma].forEach(bubble => {
+                if (!bubble) return;
+                bubble.classList.add('bubble-copia-clicavel');
+                bubble.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const texto = bubble.innerText.trim();
+                    if (!texto) return;
+
+                    navigator.clipboard.writeText(texto).then(() => {
+                        exibirToast(`Valor copiado: ${texto}`);
+                    });
+                });
+            });
         });
 
         function limparSelecaoExcel(resetBolinhas = true) {
@@ -16686,6 +16853,150 @@
                 }
             });
         });
+
+        // ================= NAVEGAÇÃO DE DATAS E FIREBASE DEBOUNCE =================
+        (function inicializarNavegacaoData() {
+            // 1. CSS da Animação Central
+            const style = document.createElement('style');
+            style.innerHTML = `
+                #overlay-transicao-data {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) scale(0.85);
+                    background: rgba(18, 18, 18, 0.88);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 255, 170, 0.15);
+                    color: #ffffff;
+                    padding: 25px 40px;
+                    border-radius: 16px;
+                    text-align: center;
+                    z-index: 9999999;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    min-width: 300px;
+                }
+                #overlay-transicao-data.show {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                .overlay-data-texto {
+                    font-size: 1.7rem;
+                    font-weight: 700;
+                    text-transform: capitalize;
+                    color: #ffffff;
+                    letter-spacing: -0.3px;
+                    line-height: 1.2;
+                }
+                .overlay-data-dica {
+                    font-size: 0.8rem;
+                    color: var(--accent, #00ffaa);
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+                .overlay-data-sub {
+                    font-size: 0.72rem;
+                    color: rgba(255, 255, 255, 0.7);
+                }
+            `;
+            document.head.appendChild(style);
+
+            // 2. Elemento Overlay Central
+            const overlay = document.createElement('div');
+            overlay.id = 'overlay-transicao-data';
+            overlay.innerHTML = `
+                <div class="overlay-data-texto" id="overlay-data-display"></div>
+            `;
+            document.body.appendChild(overlay);
+
+            let overlayTimeout;
+            let firebaseDebounceTimer = null;
+
+            // 3. Animação Central
+            function exibirAnimacaoData(dataString) {
+                const [ano, mes, dia] = dataString.split('-');
+                const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), 12, 0, 0);
+
+                const dataFormatada = new Intl.DateTimeFormat('pt-BR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }).format(dataObj);
+
+                const textoFinal = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+                document.getElementById('overlay-data-display').textContent = textoFinal;
+                
+                overlay.classList.add('show');
+                
+                clearTimeout(overlayTimeout);
+                overlayTimeout = setTimeout(() => {
+                    overlay.classList.remove('show');
+                }, 1600);
+            }
+
+            function estaVisivel(el) {
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+            }
+
+            // 4. Manipulação de Data com Trava Debounce
+            function alterarDataInput(inputId, buttonId, diasParaAdicionar) {
+                const inputDate = document.getElementById(inputId);
+                const btnLoad = document.getElementById(buttonId);
+
+                if (!inputDate || !btnLoad) return false;
+                if (!estaVisivel(inputDate)) return false;
+
+                let dataAtual = inputDate.value;
+                if (!dataAtual) {
+                    dataAtual = new Date().toISOString().split('T')[0];
+                }
+
+                const [ano, mes, dia] = dataAtual.split('-');
+                const dateObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+                dateObj.setDate(dateObj.getDate() + diasParaAdicionar);
+
+                const a = dateObj.getFullYear();
+                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const d = String(dateObj.getDate()).padStart(2, '0');
+                
+                const novaDataStr = `${a}-${m}-${d}`;
+                inputDate.value = novaDataStr;
+
+                exibirAnimacaoData(novaDataStr);
+
+                clearTimeout(firebaseDebounceTimer);
+                firebaseDebounceTimer = setTimeout(() => {
+                    btnLoad.click();
+                }, 350);
+
+                return true;
+            }
+
+            // 5. Atalho do Teclado
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    e.preventDefault();
+                    const direcao = e.key === 'ArrowRight' ? 1 : -1;
+
+                    const alterouNotas = alterarDataInput('notas-data-select', 'btn-carregar-notas', direcao);
+                    if (!alterouNotas) {
+                        alterarDataInput('mon-data-select', 'btn-carregar-painel', direcao);
+                    }
+                }
+            });
+        })();
 
     </script>
 </body>
