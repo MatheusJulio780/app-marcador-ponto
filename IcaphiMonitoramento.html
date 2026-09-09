@@ -532,6 +532,7 @@
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             padding: 5px 5px;
+            padding-right: 10px;
             border-radius: 10px;
             font-weight: 700;
             font-size: 11px;
@@ -8528,7 +8529,10 @@
                     document.getElementById('progress-bar-fill').style.width = `${porcentagemNotas}%`;
                     document.getElementById('progress-truck').style.left = `${porcentagemNotas}%`;
 
-                    let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
+                    const diaSemana = obterDiaSemana(dataSel);
+
+                    let htmlSummary = `<div class="summary-block"><span style="color:var(--accent);"><i class="ph-fill ph-calendar"></i></span> ${diaSemana || formatarDataBR(dataSel)}</div><div class="summary-block"><span style="color:var(--text-muted);"><i class="ph-fill ph-truck"></i></span> Veículos: ${rotasParaProcessar.length}</div><div style="width: 2px; background: var(--border-color); margin: 0 5px;"></div>`;
+
                     for (const [status, count] of Object.entries(statusCounts)) {
                         if (count > 0 && status !== "") {
                             htmlSummary += `<div class="summary-block-clickable" data-status="${status}" onclick="window.filtrarPainelPorStatus('${status}', event)" style="${getStRotaStyle(status)} padding:10px 15px; border-radius:8px; font-weight:700; font-size:11px; display:flex; align-items:center; gap:8px; white-space:nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s ease;">
@@ -17090,6 +17094,20 @@
                 }
             });
         })();
+
+        // Helper para extrair o dia da semana sem erro de fuso horário
+        function obterDiaSemana(dataStr) {
+            if (!dataStr) return "";
+            const partes = dataStr.split('-');
+            if (partes.length !== 3) return "";
+            
+            // Instancia usando ano, mês (0-indexado) e dia locais
+            const data = new Date(partes[0], partes[1] - 1, partes[2]);
+            const diaSemana = data.toLocaleDateString('pt-BR', { weekday: 'long' });
+            
+            // Capitaliza a primeira letra (ex: "segunda-feira" -> "Segunda-feira")
+            return diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+        }
 
     </script>
 </body>
