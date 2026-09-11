@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.7</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.8</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -3711,6 +3711,10 @@
                             onclick="window.mudarAbaPrestacao('concluidos')"
                             style="background: var(--bg-panel); color: var(--text-muted); font-weight: 700; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 6px; cursor: pointer;">
                             ✅ Prestados / Concluídos
+                        </button>
+                        <!-- Botão de Imprimir Período ao lado dos status -->
+                        <button onclick="document.getElementById('modal-imprimir-periodo').classList.add('active')" class="btn" style="background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 10px 15px; border-radius: 8px; cursor: pointer; height: fit-content;">
+                            <i class="ph ph-printer" style="color: var(--accent);"></i> Imprimir Período
                         </button>
                     </div>
 
@@ -5786,28 +5790,51 @@
     </div>
 
     <!-- MODAL DE REEMBOLSO RÁPIDO -->
-        <div id="modal-reembolso-rapido" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-            <div style="background: var(--bg-card, #fff); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0; font-size: 15px; color: var(--success); font-weight: 700;">
-                        <i class="ph ph-currency-dollar"></i> Lançar Reembolso
-                    </h3>
-                    <button onclick="document.getElementById('modal-reembolso-rapido').style.display='none'" style="background:none; border:none; font-size: 20px; cursor:pointer; color:var(--text-muted);">&times;</button>
+    <div id="modal-reembolso-rapido" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background: var(--bg-card, #fff); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 15px; color: var(--success); font-weight: 700;">
+                    <i class="ph ph-currency-dollar"></i> Lançar Reembolso
+                </h3>
+                <button onclick="document.getElementById('modal-reembolso-rapido').style.display='none'" style="background:none; border:none; font-size: 20px; cursor:pointer; color:var(--text-muted);">&times;</button>
+            </div>
+            <form onsubmit="window.salvarReembolsoRapido(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="hidden" id="reemb-data">
+                <input type="hidden" id="reemb-index">
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">VALOR REEMBOLSADO (R$)</label>
+                    <input type="number" step="0.01" id="reemb-input-valor" class="form-control" placeholder="0.00" required style="width:100%;">
                 </div>
-                <form onsubmit="window.salvarReembolsoRapido(event)" style="display: flex; flex-direction: column; gap: 12px;">
-                    <input type="hidden" id="reemb-data">
-                    <input type="hidden" id="reemb-index">
-                    <div>
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">VALOR REEMBOLSADO (R$)</label>
-                        <input type="number" step="0.01" id="reemb-input-valor" class="form-control" placeholder="0.00" required style="width:100%;">
-                    </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-reembolso-rapido').style.display='none'">Cancelar</button>
-                        <button type="submit" class="btn btn-success" style="font-weight: 800;">Salvar Reembolso</button>
-                    </div>
-                </form>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-reembolso-rapido').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn btn-success" style="font-weight: 800;">Salvar Reembolso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-imprimir-periodo" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3><i class="ph ph-printer"></i> Imprimir Período de Prestações</h3>
+                <button class="btn-close" onclick="document.getElementById('modal-imprimir-periodo').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Data Inicial:</label>
+                    <input type="date" id="imp-data-inicio" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Data Final:</label>
+                    <input type="date" id="imp-data-fim" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-imprimir-periodo').classList.remove('active')">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.gerarImpressaoPeriodo()">Gerar Impressão</button>
             </div>
         </div>
+    </div>
 
     <style>
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -17108,6 +17135,287 @@
             // Capitaliza a primeira letra (ex: "segunda-feira" -> "Segunda-feira")
             return diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
         }
+
+        window.gerarImpressaoPeriodo = async () => {
+            const dInicio = document.getElementById('imp-data-inicio').value;
+            const dFim = document.getElementById('imp-data-fim').value;
+
+            if (!dInicio || !dFim) {
+                alert("Selecione a data inicial e a data final.");
+                return;
+            }
+
+            if (dInicio > dFim) {
+                alert("A data inicial não pode ser maior que a data final.");
+                return;
+            }
+
+            const janelaImpressao = window.open('', '_blank');
+            if (!janelaImpressao) {
+                alert("O navegador bloqueou a abertura da janela de impressão. Por favor, permita pop-ups para este site.");
+                return;
+            }
+
+            janelaImpressao.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head><meta charset="UTF-8"><title>Carregando Relatório...</title></head>
+                <body style="font-family: Arial; text-align: center; padding-top: 50px;">
+                    <h3>Gerando relatório sincronizado com o sistema, aguarde...</h3>
+                </body>
+                </html>
+            `);
+
+            showLoader();
+            document.getElementById('modal-imprimir-periodo').classList.remove('active');
+
+            try {
+                let dataAtualObj = new Date(dInicio + 'T00:00:00');
+                const dataFimObj = new Date(dFim + 'T00:00:00');
+                const diasParaBuscar = [];
+
+                while (dataAtualObj <= dataFimObj) {
+                    diasParaBuscar.push(dataAtualObj.toISOString().split('T')[0]);
+                    dataAtualObj.setDate(dataAtualObj.getDate() + 1);
+                }
+
+                // Busca simultânea dos painéis e das notas fiscais diárias (mesma base do sistema)
+                const promessasPainel = diasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)));
+                const promessasNotas = diasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d)));
+
+                const snapsPainel = await Promise.all(promessasPainel);
+                const snapsNotas = await Promise.all(promessasNotas);
+
+                const resultadosProcessados = [];
+                const dataInicioFormatada = dInicio.split('-').reverse().join('/');
+                const dataFimFormatada = dFim.split('-').reverse().join('/');
+
+                for (let i = 0; i < diasParaBuscar.length; i++) {
+                    const dataIso = diasParaBuscar[i];
+                    const snapPainel = snapsPainel[i];
+                    const snapNotas = snapsNotas[i];
+
+                    if (!snapPainel.exists()) continue;
+
+                    const rotas = snapPainel.data().rotas || [];
+                    const notas = snapNotas.exists() ? (snapNotas.data().notas || []) : [];
+                    const rotasValidasDia = [];
+
+                    rotas.forEach(rota => {
+                        const tipoStatus = trimUpper(rota.status || ""); 
+                        const tipoValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
+                        if (!tipoValido) return;
+
+                        const placaOriginal = trimUpper(rota.placa || "");
+                        const placaTroca = trimUpper(rota.troca || "");
+                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
+                        if (!placaRef) return;
+
+                        const transporteStr = String(rota.transporte || "").trim();
+                        const transpNumArray = transporteStr.match(/\d+/g) || [];
+
+                        // Cruza com as notas fiscais do dia exatamente igual à regra do painel
+                        const notasPlaca = notas.filter(n => {
+                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                            
+                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
+                            if (!matchPlaca) return false;
+
+                            const viagemNota = String(n.viagem || "").trim();
+                            if (transpNumArray.length > 0 && viagemNota !== "") {
+                                return transpNumArray.some(t => viagemNota.includes(t));
+                            }
+                            return true;
+                        });
+
+                        if (notasPlaca.length === 0) return;
+
+                        let qtd_nf = notasPlaca.length;
+                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
+                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+
+                        let finalizou = false;
+                        if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
+                        else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
+
+                        // Se as notas da rota não completaram os critérios, ela não deve gerar pendência de prestação inválida na impressão
+                        if (!finalizou) return;
+
+                        const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
+
+                        // Validação estrita idêntica à aba de concluídos/pendentes do sistema
+                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+                        const foiPrestado = rota.prestacao_impressa === true && (
+                            !rota.transporte_prestado || 
+                            transpPrestadoStr === transporteStr || 
+                            transpPrestadoStr.includes(transporteStr) ||
+                            transpPrestadoStr === ""
+                        );
+
+                        rotasValidasDia.push({
+                            placa: placaExibicao,
+                            transporte: transporteStr || "-",
+                            motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                            qtde: qtd_nf,
+                            oc: rota.oc || "",
+                            km: rota.km || "",
+                            regiao: rota.regiao || "Sem rota def.",
+                            conferente: rota.conferente || "Sistema",
+                            isPrestado: foiPrestado
+                        });
+                    });
+
+                    if (rotasValidasDia.length > 0) {
+                        resultadosProcessados.push({
+                            data: dataIso,
+                            rotas: rotasValidasDia
+                        });
+                    }
+                }
+
+                let htmlConteudoDias = '';
+
+                resultadosProcessados.forEach(item => {
+                    const dataFmt = item.data.split('-').reverse().join('/');
+                    htmlConteudoDias += `
+                        <div class="dia-grupo">
+                            <div class="dia-titulo">Data: ${dataFmt}</div>
+                            <table class="tabela-impressao">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Placa</th>
+                                        <th>Frota/Transp</th>
+                                        <th>Motorista</th>
+                                        <th>Qtd/NFs</th>
+                                        <th>OC</th>
+                                        <th>Km</th>
+                                        <th>Região</th>
+                                        <th>Conferente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${item.rotas.map(r => {
+                                        const linhaStyle = r.isPrestado 
+                                            ? 'background-color: #e6f4ea; color: #137333;' 
+                                            : 'background-color: #fef7e0; color: #b06000;';
+                                        const statusSimbolo = r.isPrestado ? '✅ Prestado' : '⚠️ Pendente';
+
+                                        return `
+                                            <tr style="${linhaStyle}">
+                                                <td style="font-weight: bold; text-align: center;">${statusSimbolo}</td>
+                                                <td><b>${r.placa || ''}</b></td>
+                                                <td>${r.transporte}</td>
+                                                <td>${r.motorista}</td>
+                                                <td>${r.qtde} NFs</td>
+                                                <td>${r.oc}</td>
+                                                <td>${r.km}</td>
+                                                <td>${r.regiao}</td>
+                                                <td>${r.conferente}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+
+                if (!htmlConteudoDias) {
+                    htmlConteudoDias = '<p style="text-align:center; padding: 20px; font-size: 12px;">Nenhuma rota encontrada no período selecionado.</p>';
+                }
+
+                janelaImpressao.document.open();
+                janelaImpressao.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="pt-BR">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Relatório de Prestações - ${dataInicioFormatada} até ${dataFimFormatada}</title>
+                        <style>
+                            * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+                            body { font-size: 9.5px; color: #000; background: #fff; padding: 4mm; display: flex; flex-direction: column; justify-content: space-between; }
+                            
+                            .relatorio-wrapper { width: 100%; }
+                            h2 { font-size: 11px; margin-bottom: 6px; text-align: center; text-transform: uppercase; }
+                            
+                            .dia-grupo { 
+                                margin-bottom: 8px; 
+                                break-inside: avoid; 
+                                page-break-inside: avoid; 
+                                -webkit-column-break-inside: avoid; 
+                            }
+                            .dia-titulo { font-weight: bold; background: #eee; padding: 3px 5px; font-size: 9px; border-bottom: 1px solid #ccc; color: #000; }
+
+                            table.tabela-impressao { width: 100%; border-collapse: collapse; margin-top: 1px; table-layout: fixed; }
+                            table.tabela-impressao th, table.tabela-impressao td {
+                                border: 1px solid #bbb;
+                                padding: 2px 3px;
+                                text-align: left;
+                                font-size: 8px;
+                                overflow: hidden;
+                                white-space: nowrap;
+                                text-overflow: ellipsis;
+                            }
+                            table.tabela-impressao th { background: #f4f4f4; color: #000; }
+                            tr { break-inside: avoid; page-break-inside: avoid; }
+
+                            .recorte-container {
+                                border: 1px dashed #333;
+                                padding: 6px 10px;
+                                margin-top: 10px;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                height: 30px;
+                                background: #fff;
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                            }
+                            .recorte-texto { font-weight: bold; font-size: 10px; color: #000; }
+                            .tesoura { font-size: 10px; color: #000; }
+
+                            @media print {
+                                @page { size: A4 portrait; margin: 4mm; }
+                                body { width: 202mm; height: 100%; }
+                                .dia-grupo { break-inside: avoid; page-break-inside: avoid; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="relatorio-wrapper">
+                            <h2>Relatório Consolidado de Prestações (Prestados e Pendentes)</h2>
+                            ${htmlConteudoDias}
+                        </div>
+
+                        <div class="recorte-container">
+                            <span class="recorte-texto">PERÍODO: ${dataInicioFormatada} ATÉ ${dataFimFormatada}</span>
+                            <span class="tesoura">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</span>
+                        </div>
+
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                    window.close();
+                                }, 300);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                janelaImpressao.document.close();
+
+            } catch (e) {
+                console.error("Erro ao gerar impressão do período:", e);
+                alert("Erro ao gerar relatório: " + e.message);
+                janelaImpressao.close();
+            } finally {
+                hideLoader();
+            }
+        };
 
     </script>
 </body>
