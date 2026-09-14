@@ -14468,66 +14468,66 @@
             if (!tabelaElemento) return alert("Tabela do painel não encontrada.");
 
             showLoader();
-            // Dá um respiro para o loader aparecer antes da renderização pesada
+
+            // Dá um tempo para o loader aparecer e a interface estabilizar
             setTimeout(async () => {
                 try {
-                    // Renderiza com a largura real exata da tabela (sem espremer)
+                    // Renderiza ajustando o deslocamento do scroll para não gerar canvas em branco
                     const canvas = await html2canvas(wrapperElemento, {
                         scale: 2,
                         useCORS: true,
                         backgroundColor: '#ffffff',
+                        scrollX: 0,
+                        scrollY: -window.scrollY, // Anula o scroll da página para capturar a tabela inteira
                         windowWidth: wrapperElemento.scrollWidth
                     });
 
-                    // Altura real baseada no conteúdo visível da tabela para cortar o branco excessivo abaixo
-                    const alturaTabelaPx = tabelaElemento.offsetHeight || wrapperElemento.offsetHeight;
-                    const alturaCorte = Math.min(canvas.height, (alturaTabelaPx + 60) * 2);
-
-                    const canvasCortado = document.createElement('canvas');
-                    canvasCortado.width = canvas.width;
-                    canvasCortado.height = Math.max(alturaCorte, 200);
-
-                    const ctxCortado = canvasCortado.getContext('2d');
-                    ctxCortado.fillStyle = '#ffffff';
-                    ctxCortado.fillRect(0, 0, canvasCortado.width, canvasCortado.height);
-                    ctxCortado.drawImage(canvas, 0, 0, canvas.width, canvasCortado.height, 0, 0, canvas.width, canvasCortado.height);
-
-                    const dataUrl = canvasCortado.toDataURL('image/png');
+                    const dataUrl = canvas.toDataURL('image/png');
                     
-                    // Exibe no modal
+                    // Exibe no preview do modal
                     const imgPreview = document.getElementById('img-preview-print');
-                    imgPreview.src = dataUrl;
+                    if (imgPreview) imgPreview.src = dataUrl;
 
                     // Botão de download
                     const btnBaixar = document.getElementById('btn-baixar-print');
-                    const dataHoje = new Date().toISOString().split('T')[0];
-                    btnBaixar.href = dataUrl;
-                    btnBaixar.download = `Painel_Operacional_${dataHoje}.png`;
+                    if (btnBaixar) {
+                        const dataHoje = new Date().toISOString().split('T')[0];
+                        btnBaixar.href = dataUrl;
+                        btnBaixar.download = `Painel_Operacional_${dataHoje}.png`;
+                    }
 
                     // Botão de copiar para a área de transferência
                     const btnCopiar = document.getElementById('btn-copiar-print');
-                    btnCopiar.onclick = async () => {
-                        try {
-                            const blob = await (await fetch(dataUrl)).blob();
-                            await navigator.clipboard.write([
-                                new ClipboardItem({ 'image/png': blob })
-                            ]);
-                            alert("Imagem copiada com sucesso! Cole (Ctrl+V) onde quiser.");
-                        } catch (err) {
-                            console.error("Erro ao copiar imagem:", err);
-                            alert("Seu navegador bloqueou a cópia direta. Use o botão 'Baixar Imagem'.");
-                        }
-                    };
+                    if (btnCopiar) {
+                        btnCopiar.onclick = async () => {
+                            try {
+                                const blob = await (await fetch(dataUrl)).blob();
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({ 'image/png': blob })
+                                ]);
+                                alert("Imagem copiada com sucesso! Cole (Ctrl+V) onde quiser.");
+                            } catch (err) {
+                                console.error("Erro ao copiar imagem:", err);
+                                alert("Seu navegador bloqueou a cópia direta. Use o botão 'Baixar Imagem'.");
+                            }
+                        };
+                    }
 
                     hideLoader();
-                    document.getElementById('modal-print-tabela').style.display = 'flex';
+
+                    // Ativa o modal garantindo suporte à classe .active e ao style.display
+                    const modal = document.getElementById('modal-print-tabela');
+                    if (modal) {
+                        modal.classList.add('active');
+                        modal.style.display = 'flex';
+                    }
 
                 } catch (e) {
                     hideLoader();
                     console.error("Erro ao gerar print da tabela:", e);
                     alert("Erro ao capturar imagem da tabela.");
                 }
-            }, 100);
+            }, 150);
         };
 
         window.abrirModalPainelMobile = (placaRef) => {
