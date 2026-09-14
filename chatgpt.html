@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <title>ICAPHIDRIVE - Gestão de Quilometragem</title>
+    <style>
+        :root {
+            /* Tema Claro (Padrão) */
+            --bg-main: #f1f5f9;
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+            --surface: #ffffff;
+            --surface-card: #ffffff;
+            --primary: #00A884;
+            --primary-hover: #008f72;
+            --text-main: #0f172a;
+            --text-sec: #64748b;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --table-header-bg: #e2e8f0;
+            --input-bg: #f8fafc;
+        }
+
+        /* Suporte a Tema Escuro Ativado via classe no body */
+        body.dark-theme {
+            --bg-main: #0f172a;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --surface: #1e293b;
+            --surface-card: #0f172a;
+            --text-main: #f8fafc;
+            --text-sec: #94a3b8;
+            --border: #334155;
+            --table-header-bg: #334155;
+            --input-bg: #1e293b;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 16px;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* === LAYOUT MOTORISTA (APP) === */
+        .app-wrapper {
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .brand-card {
+            background: var(--surface);
+            padding: 14px 18px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0px;
+            z-index: 1000;
+            border: 1px solid var(--border);
+        }
+
+        .brand-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -1px;
+        }
+
+        .brand-text h1 {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+
+        .brand-text h1 span {
+            color: var(--primary);
+        }
+
+        .brand-text p {
+            font-size: 0.7rem;
+            color: var(--text-sec);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .top-icons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .top-icons span {
+            width: 36px;
+            height: 36px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: transform 0.1s ease;
+        }
+
+        .top-icons span:hover {
+            transform: scale(1.05);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .hidden { display: none !important; }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Formulários no App Motorista */
+        .app-wrapper .input-group {
+            margin-bottom: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.85rem !important;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 4px rgba(0, 168, 132, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 168, 132, 0.2);
+            margin-top: 8px;
+        }
+
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn.secondary { background: var(--input-bg); color: var(--text-main); box-shadow: none; border: 2px solid var(--border); }
+        .btn.secondary:hover { background: var(--border); }
+        .btn.danger { background: var(--danger); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+        .btn.danger:hover { background: var(--danger-hover); }
+
+        .photo-btn {
+            border: 2px dashed var(--primary);
+            background: rgba(0, 168, 132, 0.05);
+            color: var(--primary);
+            padding: 16px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .photo-btn.captured { border-style: solid; background: #dcfce7; color: #166534; }
+        input[type="file"] { display: none; }
+
+        .footer-credit {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-sec);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+
+        /* === LAYOUT PAINEL ADMIN === */
+        #admin-view {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+        }
+
+        .admin-sidebar {
+            width: 240px;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border-bottom: 1px solid var(--border);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            color: var(--text-sec);
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(0, 168, 132, 0.1);
+            color: var(--primary);
+        }
+
+        .admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 24px;
+            background-color: var(--bg-main);
+        }
+
+        .admin-header {
+            background-color: var(--surface);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .filter-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .date-filters {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* SOBREPOSIÇÃO NECESSÁRIA: Impede que o input-group do Admin Herde layout do app móvel */
+        .admin-header .input-group {
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-header .input-group label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+
+        .admin-header input[type="date"],
+        .admin-header input[type="text"] {
+            padding: 8px 12px;
+            height: 40px;
+        }
+
+        .search-box input {
+            width: 280px;
+        }
+
+        /* Tabela de Dados e Rolagem */
+        .admin-content {
+            width: 100%;
+        }
+
+        .table-container {
+            background-color: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow-x: auto; /* Permite rolagem se a tabela for maior que a tela */
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 700px;
+        }
+
+        .data-table th {
+            background-color: var(--table-header-bg);
+            color: var(--text-main);
+            padding: 14px 16px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        body.dark-theme .data-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Badges de Status da Tabela */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+
+        .status-badge.completed { background: #dcfce7; color: #15803d; }
+        .status-badge.in-progress { background: #fef9c3; color: #a16207; }
+        .status-badge.pending { background: #fee2e2; color: #b91c1c; }
+
+        /* Botão Flutuante Global de Alternar Tema */
+        .theme-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--surface);
+            color: var(--text-main);
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            z-index: 99999;
+        }
+
+        /* Screen Loading */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: var(--bg-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+
+        .loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .admin-content{overflow:hidden}.table-container{overflow:auto;width:100%}.data-table{min-width:1650px}.data-table th,.data-table td{white-space:nowrap;vertical-align:middle}
+        .admin-action-btn{border:0;border-radius:8px;padding:7px 9px;margin:2px;cursor:pointer;color:#fff;font-weight:700}.admin-action-btn.photo{background:#2563eb}.admin-action-btn.map{background:#0891b2}.admin-action-btn.edit{background:#7c3aed}
+        .admin-modal{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:18px}.admin-modal.hidden{display:none}.admin-modal-card{position:relative;width:min(700px,96vw);max-height:92vh;overflow:auto;background:var(--surface);color:var(--text-main);border-radius:16px;padding:24px;box-shadow:0 25px 60px rgba(0,0,0,.3)}.admin-modal-card.wide{width:min(1100px,96vw)}
+        .modal-close{position:absolute;right:12px;top:10px;width:36px;height:36px;border:0;border-radius:50%;font-size:25px;cursor:pointer;background:var(--bg-main);color:var(--text-main)}.modal-title{margin:0 42px 18px 0;font-size:1.2rem}.modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.modal-grid .full{grid-column:1/-1}.modal-grid label{display:block;font-size:.8rem;color:var(--text-sec);margin-bottom:5px;font-weight:700}.modal-grid input,.modal-grid select{width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-main)}.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.photo-box{border:1px solid var(--border);border-radius:12px;padding:10px}.photo-box img{width:100%;max-height:430px;object-fit:contain;background:#111827;border-radius:8px}@media(max-width:700px){.modal-grid,.photo-grid{grid-template-columns:1fr}.modal-grid .full{grid-column:auto}}
+
+        /* =========================================================
+           ICAPHIDRIVE UI 3.0 — visual refresh + Lite mode
+           ========================================================= */
+        :root{
+            --primary-rgb: 0,168,132;
+            --admin-bg:#f4f7fb;
+            --admin-panel:rgba(255,255,255,.88);
+            --admin-panel-solid:#fff;
+            --admin-line:rgba(15,23,42,.07);
+            --admin-line-strong:rgba(15,23,42,.11);
+            --admin-shadow:0 12px 35px rgba(15,23,42,.07);
+            --admin-shadow-hover:0 18px 45px rgba(15,23,42,.12);
+        }
+        body.dark-theme{
+            --admin-bg:#0b1120;
+            --admin-panel:rgba(17,24,39,.84);
+            --admin-panel-solid:#111827;
+            --admin-line:rgba(255,255,255,.07);
+            --admin-line-strong:rgba(255,255,255,.12);
+            --admin-shadow:0 16px 40px rgba(0,0,0,.22);
+            --admin-shadow-hover:0 22px 55px rgba(0,0,0,.3);
+        }
+        body:not(.lite-mode) .brand-card,body:not(.lite-mode) .card,body:not(.lite-mode) .admin-sidebar,
+        body:not(.lite-mode) .admin-header,body:not(.lite-mode) .table-container,body:not(.lite-mode) .admin-modal-card,
+        body:not(.lite-mode) .stat-card{animation:uiIn .42s cubic-bezier(.2,.8,.2,1) both}
+        @keyframes uiIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+        .lite-mode *, .lite-mode *::before, .lite-mode *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+        .lite-mode .btn:hover,.lite-mode .top-icons span:hover{transform:none!important}
+
+        /* Remove o aspecto de “contorno cinza” pesado */
+        .brand-card,.card{border:1px solid color-mix(in srgb,var(--border) 48%,transparent);box-shadow:0 12px 30px rgba(15,23,42,.055)}
+        input,select{border:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+        .btn.secondary{border:1px solid color-mix(in srgb,var(--border) 55%,transparent)}
+        .top-icons span{border:1px solid color-mix(in srgb,var(--border) 55%,transparent)}
+
+        .tracking-status{display:flex;align-items:center;gap:9px;padding:10px 13px;border-radius:12px;margin:10px 0 14px;font-size:.86rem;font-weight:700;border:1px solid rgba(0,168,132,.18);background:rgba(0,168,132,.08);color:var(--primary);transition:all .25s ease}.tracking-status.tracking-on{background:rgba(22,163,74,.09);color:#15803d;border-color:rgba(22,163,74,.2)}.tracking-status.tracking-off{background:rgba(100,116,139,.08);color:#64748b;border-color:rgba(100,116,139,.16)}.tracking-status.tracking-error{background:rgba(220,38,38,.08);color:#b91c1c;border-color:rgba(220,38,38,.16)}.tracking-pulse{animation:trackingPulse 1.8s infinite}@keyframes trackingPulse{0%,100%{opacity:1}50%{opacity:.42}}
+        .live-marker{filter:hue-rotate(95deg) saturate(1.25);}.live-map-banner{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border-radius:12px;background:rgba(0,168,132,.07);border:1px solid rgba(0,168,132,.16);margin:10px 0}.live-map-banner strong{display:block}.live-map-banner span{font-size:.8rem;opacity:.75}
+
+        /* Admin premium */
+        #admin-view{background:var(--admin-bg);background-image:radial-gradient(circle at 8% 0%,rgba(0,168,132,.09),transparent 28%),radial-gradient(circle at 95% 100%,rgba(59,130,246,.07),transparent 30%);}
+        .admin-sidebar{width:252px;padding:18px 14px;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid var(--admin-line);box-shadow:8px 0 35px rgba(15,23,42,.035)}
+        body.dark-theme .admin-sidebar{background:rgba(15,23,42,.72)}
+        .sidebar-header{padding:12px 12px 22px;border-bottom:1px solid var(--admin-line);font-size:1.05rem;letter-spacing:.2px}
+        .sidebar-header .sidebar-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),#00c896);color:#fff;box-shadow:0 9px 20px rgba(0,168,132,.22)}
+        .sidebar-nav{margin-top:18px;gap:7px;flex:1}
+        .nav-button{width:100%;border:0;font:inherit;text-align:left;background:transparent;cursor:pointer}
+.nav-item{position:relative;border-radius:13px;margin:0 2px;padding:13px 14px;gap:13px;color:var(--text-sec);transition:all .22s ease}
+        .nav-item:hover{background:rgba(0,168,132,.07);color:var(--primary);transform:translateX(2px)}
+        .nav-item.active{background:linear-gradient(135deg,rgba(0,168,132,.13),rgba(0,168,132,.06));color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+        .sidebar-bottom{margin-top:auto;padding-top:12px;border-top:1px solid var(--admin-line);display:flex;flex-direction:column;gap:7px}
+        .sidebar-btn{width:100%;border:0;background:transparent;color:var(--text-sec);border-radius:13px;padding:13px 14px;display:flex;align-items:center;gap:13px;font-weight:650;cursor:pointer;text-align:left;font-size:.9rem;transition:all .22s ease}
+        .sidebar-btn:hover{background:rgba(100,116,139,.08);color:var(--text-main);transform:translateX(2px)}
+        .admin-main{padding:28px 30px 36px;background:transparent;overflow:auto}
+        .admin-header{background:var(--admin-panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:20px;border:1px solid var(--admin-line);border-radius:20px;box-shadow:var(--admin-shadow);margin-bottom:18px}
+        .admin-page-title{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:18px}
+        .admin-page-title h1{font-size:1.55rem;line-height:1.1;letter-spacing:-.5px}
+        .admin-page-title p{margin-top:6px;color:var(--text-sec);font-size:.84rem}
+        .admin-live-dot{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;color:var(--text-sec);font-weight:700;background:rgba(16,185,129,.08);padding:8px 11px;border-radius:999px}
+        .admin-live-dot i{font-size:.48rem;color:#10b981;animation:pulseDot 1.6s infinite}
+        @keyframes pulseDot{50%{opacity:.35;transform:scale(.75)}}
+        .filter-box{gap:12px;align-items:end}
+        .date-filters{gap:10px}
+        .admin-header .input-group{background:var(--input-bg);border:1px solid var(--admin-line);border-radius:12px;padding:7px 10px}
+        .admin-header .input-group label{font-size:.67rem;color:var(--text-sec)}
+        .admin-header input[type=date],.admin-header input[type=text]{border:0!important;background:transparent!important;box-shadow:none!important;padding:5px 7px;height:34px}
+        .search-box{position:relative}.search-box::before{content:'\f002';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-sec);z-index:1}.search-box input{width:320px;padding-left:38px!important}
+        .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px}
+        .stat-card{background:var(--admin-panel);border:1px solid var(--admin-line);border-radius:16px;padding:15px 16px;box-shadow:var(--admin-shadow);display:flex;align-items:center;gap:12px;min-width:0}
+        .stat-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;background:rgba(0,168,132,.10);color:var(--primary)}
+        .stat-card:nth-child(2) .stat-icon{background:rgba(245,158,11,.11);color:#d97706}.stat-card:nth-child(3) .stat-icon{background:rgba(16,185,129,.11);color:#059669}.stat-card:nth-child(4) .stat-icon{background:rgba(239,68,68,.10);color:#dc2626}.stat-card:nth-child(5) .stat-icon{background:rgba(59,130,246,.10);color:#2563eb}
+        .stat-label{font-size:.68rem;color:var(--text-sec);text-transform:uppercase;font-weight:800;letter-spacing:.45px}.stat-value{font-size:1.18rem;font-weight:800;margin-top:2px}
+        .table-container{background:var(--admin-panel);border:1px solid var(--admin-line);border-radius:20px;box-shadow:var(--admin-shadow);overflow:auto;max-height:calc(100vh - 250px);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px)}
+        .data-table{min-width:1780px;border-collapse:separate;border-spacing:0}
+        .data-table th{position:sticky;top:0;z-index:3;background:color-mix(in srgb,var(--surface) 94%,var(--primary) 6%);border-bottom:1px solid var(--admin-line-strong);padding:12px 13px;font-size:.68rem;letter-spacing:.55px;color:var(--text-sec)}
+        .data-table td{padding:12px 13px;border-bottom:1px solid var(--admin-line);font-size:.79rem;color:var(--text-main);height:62px}
+        .data-table tbody tr{transition:background .18s ease,transform .18s ease}.data-table tbody tr:hover{background:rgba(0,168,132,.035)}
+        .trip-main{font-weight:800;max-width:180px;overflow:hidden;text-overflow:ellipsis}.trip-id{font-size:.63rem;color:var(--text-sec);margin-top:3px;display:block}.subtle{color:var(--text-sec);font-size:.7rem}
+        .km-main{font-weight:750}.disp-positive{color:#dc2626;font-weight:800}.disp-negative{color:#059669;font-weight:800}.disp-zero{color:var(--text-sec);font-weight:700}
+        .status-badge{border:0;padding:6px 9px;border-radius:999px;font-size:.65rem;letter-spacing:.25px;display:inline-flex;align-items:center;gap:6px}.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+        .status-badge.completed{background:rgba(16,185,129,.11);color:#059669}.status-badge.in-progress{background:rgba(245,158,11,.12);color:#b45309}.status-badge.pending{background:rgba(239,68,68,.11);color:#dc2626}
+        .actions-cell{display:flex;gap:5px}.admin-action-btn{width:33px;height:33px;padding:0!important;border-radius:10px!important;margin:0!important;display:grid;place-items:center;transition:transform .18s ease,filter .18s ease;box-shadow:none}.admin-action-btn:hover{transform:translateY(-2px);filter:brightness(1.05)}.admin-action-btn.photo{background:#2563eb}.admin-action-btn.map{background:#0891b2}.admin-action-btn.edit{background:#7c3aed}
+        .empty-state{padding:48px!important;text-align:center!important;color:var(--text-sec)!important}.empty-state i{font-size:2rem;display:block;margin-bottom:10px;opacity:.5}
+        .admin-modal{background:rgba(2,6,23,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s ease}.admin-modal:not(.hidden){opacity:1}.admin-modal.hidden{display:none}.admin-modal-card{background:var(--admin-panel-solid);border:1px solid var(--admin-line);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.25);transform:translateY(8px) scale(.985);transition:transform .24s cubic-bezier(.2,.8,.2,1)}.admin-modal:not(.hidden) .admin-modal-card{transform:none}
+        .modal-close{background:var(--input-bg);border:1px solid var(--admin-line);transition:transform .18s ease,background .18s ease}.modal-close:hover{transform:rotate(90deg);background:rgba(239,68,68,.1);color:#dc2626}
+        .modal-section{padding:15px;border:1px solid var(--admin-line);border-radius:15px;background:rgba(148,163,184,.035);margin-bottom:14px}.modal-section-title{font-size:.73rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-sec);font-weight:800;margin-bottom:11px}.modal-actions{border-top:1px solid var(--admin-line);padding-top:15px}
+        .settings-list{display:flex;flex-direction:column;gap:10px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px;border:1px solid var(--admin-line);border-radius:15px;background:rgba(148,163,184,.035)}.setting-info strong{display:block;font-size:.88rem}.setting-info span{display:block;color:var(--text-sec);font-size:.74rem;margin-top:3px}.switch{position:relative;width:48px;height:28px;flex:0 0 48px}.switch input{opacity:0;width:0;height:0}.switch-slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.22s}.switch-slider:before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.22s}.switch input:checked + .switch-slider{background:var(--primary)}.switch input:checked + .switch-slider:before{transform:translateX(20px)}
+        .photo-box{border:1px solid var(--admin-line);background:rgba(148,163,184,.035);border-radius:16px}.photo-box h3{font-size:.82rem;margin:3px 0 10px}.photo-box img{border-radius:11px}
+        @media(max-width:1100px){.stats-grid{grid-template-columns:repeat(3,1fr)}.search-box input{width:250px}.admin-main{padding:22px}}
+        @media(max-width:780px){.admin-sidebar{width:72px;padding:14px 8px}.sidebar-text{display:none}.sidebar-header{justify-content:center;padding:8px 0 18px}.sidebar-header .sidebar-icon{width:42px}.nav-item,.sidebar-btn{justify-content:center;padding:13px 8px}.admin-main{padding:16px}.admin-page-title{align-items:flex-start;flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.filter-box{align-items:stretch;flex-direction:column}.date-filters{width:100%}.date-filters .input-group{flex:1}.search-box,.search-box input{width:100%}.table-container{max-height:calc(100vh - 330px)}}
+        @media(max-width:480px){.stats-grid{grid-template-columns:1fr}.admin-main{padding:12px}.date-filters{flex-direction:column}}
+
+    
+        /* Sidebar recolhida por padrão */
+        .admin-sidebar{width:72px;padding:18px 8px;overflow:visible;transition:width .28s cubic-bezier(.2,.8,.2,1)}
+        .admin-sidebar:hover{width:252px}
+        .admin-sidebar .sidebar-text{opacity:0;visibility:hidden;width:0;white-space:nowrap;transition:opacity .18s ease}
+        .admin-sidebar:hover .sidebar-text{opacity:1;visibility:visible;width:auto}
+        .admin-sidebar .sidebar-header{justify-content:center;padding-left:4px;padding-right:4px;white-space:nowrap;overflow:hidden}
+        .admin-sidebar:hover .sidebar-header{justify-content:flex-start;padding-left:12px;padding-right:12px}
+        .admin-sidebar .nav-item,.admin-sidebar .sidebar-btn{justify-content:center;padding-left:8px;padding-right:8px}
+        .admin-sidebar:hover .nav-item,.admin-sidebar:hover .sidebar-btn{justify-content:flex-start;padding-left:14px;padding-right:14px}
+        .admin-sidebar .sidebar-icon{flex:0 0 22px;text-align:center}
+        .admin-sidebar:hover .sidebar-icon{flex-basis:22px}
+        .admin-sidebar .nav-button{border:0;font:inherit;text-align:left;cursor:pointer;background:transparent;width:100%}
+        .admin-users-panel{height:100%}.users-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.section-title{margin:0 0 5px;font-size:1.25rem}.users-table-container{max-height:calc(100vh - 190px)}
+        .user-status{padding:5px 10px;border-radius:999px;font-size:.74rem;font-weight:800}.user-status.autorizado{background:rgba(22,163,74,.12);color:#15803d}.user-status.pendente{background:rgba(234,179,8,.14);color:#a16207}.user-status.bloqueado{background:rgba(220,38,38,.12);color:#b91c1c}.plate-chips{display:flex;gap:5px;flex-wrap:wrap;max-width:360px}.plate-chip{font-size:.7rem;font-weight:750;padding:4px 7px;border-radius:7px;background:rgba(0,168,132,.1);color:var(--primary)}.uid-cell{font-family:monospace;font-size:.72rem;opacity:.7}.user-actions{display:flex;gap:4px}.user-actions .admin-action-btn{padding:7px 9px}
+        @media(max-width:780px){.admin-sidebar:hover{width:252px}.admin-main{padding-left:16px}.users-toolbar{align-items:flex-start;flex-direction:column}}
+        body.lite-mode .admin-sidebar{transition:none}.lite-mode .admin-sidebar .sidebar-text{transition:none}
+
+        /* ===== RELATÓRIO DO MOTORISTA / PROPRIETÁRIO ===== */
+        .report-modal{position:fixed;inset:0;z-index:10000;background:rgba(2,6,23,.68);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:18px}
+        .report-modal.hidden{display:none!important}
+        .report-card{width:min(760px,96vw);max-height:92vh;overflow:auto;background:var(--surface);color:var(--text-main);border:1px solid var(--border);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:22px}
+        .report-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+        .report-title{font-size:1.15rem;font-weight:850;display:flex;align-items:center;gap:9px}.report-title i{color:var(--primary)}
+        .report-close{width:38px;height:38px;border:1px solid var(--border);border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:23px;cursor:pointer;flex:0 0 38px}
+        .report-subtitle{color:var(--text-sec);font-size:.78rem;margin:-7px 0 16px}
+        .report-list{display:flex;flex-direction:column;gap:9px}
+        .report-trip{width:100%;text-align:left;border:1px solid var(--border);background:var(--input-bg);border-radius:14px;padding:13px 14px;cursor:pointer;color:var(--text-main);display:grid;grid-template-columns:92px 105px 1fr auto;gap:10px;align-items:center;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+        .report-trip:hover{transform:translateY(-1px);border-color:var(--primary);background:var(--surface)}
+        .report-trip .rt-label{font-size:.62rem;text-transform:uppercase;color:var(--text-sec);font-weight:800;display:block;margin-bottom:3px}.report-trip .rt-value{font-size:.82rem;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .report-trip .rt-arrow{color:var(--primary);font-size:1rem}
+        .report-empty{text-align:center;padding:38px 18px;color:var(--text-sec);border:1px dashed var(--border);border-radius:15px}.report-empty i{font-size:1.8rem;display:block;margin-bottom:9px}
+        .report-details{display:flex;flex-direction:column;gap:13px}.report-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.report-detail{padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input-bg)}.report-detail.full{grid-column:1/-1}.report-detail small{display:block;color:var(--text-sec);font-size:.62rem;text-transform:uppercase;font-weight:800;margin-bottom:4px}.report-detail strong{font-size:.82rem;word-break:break-word}
+        .report-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}.report-actions .btn{margin:0;min-height:48px}.report-back{background:var(--input-bg)!important;color:var(--text-main)!important;border:1px solid var(--border)!important}
+        .report-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report-photo-box{border:1px solid var(--border);border-radius:14px;padding:10px;background:var(--input-bg)}.report-photo-box h3{font-size:.78rem;margin-bottom:9px}.report-photo-box img{width:100%;max-height:430px;object-fit:contain;border-radius:10px;background:#0f172a}
+        .report-map{height:440px;border-radius:14px;margin-top:4px;border:1px solid var(--border);overflow:hidden}
+        /* O app do motorista/proprietário não deve depender da animação para aparecer. */
+        #app-wrapper,.app-wrapper .card,.app-wrapper .brand-card{opacity:1!important;transform:none!important}
+        @media(max-width:700px){
+            .report-modal{padding:0;align-items:stretch}.report-card{width:100%;max-width:none;max-height:none;height:100%;border-radius:0;border:0;padding:16px 14px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+            .report-header{position:sticky;top:-16px;z-index:2;background:var(--surface);padding:8px 0 12px;margin-bottom:4px}.report-subtitle{margin:0 0 13px}.report-trip{grid-template-columns:78px 90px 1fr 18px;padding:12px 10px;gap:7px}.report-trip .rt-value{font-size:.76rem}.report-detail-grid{grid-template-columns:1fr}.report-detail.full{grid-column:auto}.report-actions{grid-template-columns:1fr}.report-photo-grid{grid-template-columns:1fr}.report-map{height:56vh;min-height:320px}
+        }
+
+
+        /* =========================================================
+           ICAPHIDRIVE UI 3.1 — refinamento visual
+           ========================================================= */
+        :root{
+            --ui-radius:18px;
+            --ui-radius-sm:13px;
+            --ui-border:color-mix(in srgb,var(--border) 62%,transparent);
+            --ui-shadow:0 18px 50px rgba(15,23,42,.08);
+        }
+        body.dark-theme{--ui-shadow:0 22px 60px rgba(0,0,0,.28)}
+        .top-icons{gap:8px!important}
+        .top-icons .top-action{width:38px;height:38px;border-radius:12px;background:var(--input-bg);border:1px solid var(--ui-border);display:grid;place-items:center;color:var(--text-sec);font-size:.92rem!important;box-shadow:0 5px 14px rgba(15,23,42,.04);transition:transform .18s ease,background .18s ease,color .18s ease,border-color .18s ease}
+        .top-icons .top-action:hover{transform:translateY(-2px);color:var(--primary);background:rgba(0,168,132,.08);border-color:rgba(0,168,132,.25)}
+        .top-icons .top-action:active{transform:translateY(0) scale(.97)}
+        .section-title{text-transform:none;letter-spacing:-.1px;font-size:1.08rem;justify-content:flex-start;margin-bottom:18px}
+        .section-title i{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:rgba(0,168,132,.10);color:var(--primary);font-size:.88rem}
+        .btn{min-height:50px;border-radius:13px;box-shadow:0 8px 20px rgba(0,168,132,.12)}
+        .btn.secondary{box-shadow:none}
+        .photo-btn{min-height:52px;border-radius:13px;background:rgba(0,168,132,.055)}
+        .photo-btn i{font-size:1rem}
+        .photo-btn.captured{background:rgba(22,163,74,.09);color:#15803d}
+        .theme-toggle-btn{font-size:1rem;border-width:1px}
+        .theme-toggle-btn #theme-icon{font-size:.95rem}
+
+        /* Sidebar: ícone nunca fica comprimido */
+        .admin-sidebar .sidebar-icon{flex:0 0 24px;width:24px;min-width:24px;text-align:center}
+        .admin-sidebar .sidebar-header .sidebar-icon{flex:0 0 40px;width:40px;min-width:40px;height:40px;font-size:1rem}
+        .admin-sidebar:hover .sidebar-icon{flex-basis:24px}
+        .admin-sidebar:hover .sidebar-header .sidebar-icon{flex-basis:40px}
+        .admin-sidebar .nav-item,.admin-sidebar .sidebar-btn{min-height:46px}
+        .admin-sidebar .nav-item i,.admin-sidebar .sidebar-btn i{font-size:.92rem}
+        .admin-sidebar .sidebar-text{overflow:hidden}
+
+        /* Admin — cabeçalho mais organizado */
+        .admin-header{padding:22px 22px 18px}
+        .admin-page-title h1{font-size:1.48rem;font-weight:850}
+        .admin-page-title p{max-width:700px;line-height:1.45}
+        .filter-box{padding-top:2px}
+        .admin-header .input-group{min-height:48px}
+        .admin-header .input-group label{padding-left:2px}
+        .search-box{min-width:280px}
+        .stats-grid{gap:14px}
+        .stat-card{min-height:74px}
+        .stat-icon{width:42px;height:42px;flex-basis:42px}
+
+        /* Usuários — visual de painel, não de tabela crua */
+        .admin-users-panel{padding:2px 0 4px}
+        .users-toolbar{background:var(--admin-panel);border:1px solid var(--admin-line);border-radius:20px;padding:18px 20px;box-shadow:var(--admin-shadow);margin-bottom:14px}
+        .users-toolbar>div:first-child{position:relative;padding-left:46px}
+        .users-toolbar>div:first-child:before{content:'\f0c0';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;left:0;top:1px;width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:rgba(0,168,132,.1);color:var(--primary)}
+        .users-toolbar .section-title{font-size:1.12rem;margin:0 0 3px;font-weight:850}
+        .users-toolbar .subtle{font-size:.76rem;line-height:1.4}
+        .users-toolbar #btn-refresh-users{width:auto;min-width:130px;padding:12px 16px;margin:0;background:var(--input-bg);color:var(--text-main);border:1px solid var(--admin-line);box-shadow:none}
+        .users-toolbar #btn-refresh-users:hover{background:rgba(0,168,132,.08);color:var(--primary);border-color:rgba(0,168,132,.2)}
+        .users-table-container{max-height:calc(100vh - 245px);border-radius:20px}
+        .users-table{min-width:1120px!important}
+        .users-table th{padding:13px 15px}
+        .users-table td{height:68px;padding:12px 15px}
+        .users-table td:first-child b{font-weight:800}
+        .users-table .plate-chips{max-width:330px}
+        .users-table .uid-cell{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+        .plate-chip{border:1px solid rgba(0,168,132,.12);background:rgba(0,168,132,.075)}
+
+        /* Modais Admin — aparência consistente */
+        .admin-modal{padding:22px}
+        .admin-modal-card{width:min(720px,calc(100vw - 32px));padding:0;overflow:hidden;border-radius:24px;max-height:min(88vh,900px);box-shadow:0 35px 100px rgba(2,6,23,.30)}
+        .admin-modal-card.wide{width:min(1120px,calc(100vw - 32px))}
+        .admin-modal-card>div[id$="-content"]{padding:26px}
+        .admin-modal-card .modal-title{font-size:1.2rem;line-height:1.25;padding-right:45px;margin:0 0 18px;font-weight:850;display:flex;align-items:center;gap:9px}
+        .admin-modal-card .modal-title i{color:var(--primary)}
+        .modal-close{right:16px;top:16px;width:38px;height:38px;font-size:1rem;display:grid;place-items:center;z-index:5}
+        .modal-close i{pointer-events:none}
+        .modal-grid{gap:14px}
+        .modal-grid>div{min-width:0}
+        .modal-grid input,.modal-grid select{min-height:44px;border-radius:11px;padding:10px 12px}
+        .modal-grid label{font-size:.69rem;letter-spacing:.4px}
+        .modal-actions{gap:9px;margin-top:20px;padding-top:17px}
+        .modal-actions .btn{width:auto;flex:1;min-width:160px;margin:0}
+        .admin-modal .photo-grid{gap:14px}
+        .admin-modal .photo-box{padding:13px;border-radius:16px}
+        .admin-modal .photo-box h3{display:flex;align-items:center;gap:7px}
+        .admin-modal .photo-box h3 i{color:var(--primary)}
+        .admin-modal #trip-map{min-height:460px}
+        .danger-outline{background:transparent!important;color:#dc2626!important;border:1px solid rgba(220,38,38,.25)!important;box-shadow:none!important}
+        .danger-outline:hover{background:rgba(220,38,38,.07)!important}
+
+        /* Relatório — painel dedicado ao usuário */
+        .report-modal{padding:20px;background:rgba(2,6,23,.58)}
+        .report-card{width:min(820px,calc(100vw - 36px));max-height:min(88vh,900px);padding:0;overflow:hidden;border-radius:24px;border:1px solid var(--ui-border);box-shadow:0 35px 100px rgba(2,6,23,.30)}
+        .report-card>.report-header{padding:20px 24px 16px;margin:0;border-bottom:1px solid var(--ui-border);background:color-mix(in srgb,var(--surface) 94%,var(--primary) 6%)}
+        .report-title{font-size:1.18rem;letter-spacing:-.2px}
+        .report-title i{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(0,168,132,.1)}
+        .report-close{width:38px;height:38px;display:grid;place-items:center;font-size:1rem;border-radius:11px;transition:.18s ease}
+        .report-close:hover{color:#dc2626;background:rgba(239,68,68,.08);transform:rotate(90deg)}
+        #report-modal-content{padding:20px 24px 24px;overflow:auto;max-height:calc(88vh - 78px)}
+        .report-subtitle{font-size:.77rem;line-height:1.45;margin:0 0 14px}
+        .report-trip{grid-template-columns:110px 120px minmax(0,1fr) 24px;min-height:66px;border-radius:15px;padding:12px 14px;background:var(--input-bg);border-color:var(--ui-border)}
+        .report-trip:focus-visible{outline:3px solid rgba(0,168,132,.18);outline-offset:2px}
+        .report-trip .rt-label{font-size:.61rem;letter-spacing:.35px}
+        .report-trip .rt-value{font-size:.84rem}
+        .report-trip .rt-arrow{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:rgba(0,168,132,.09);font-size:1rem}
+        .report-details{gap:15px}
+        .report-details>.report-header{margin:0!important;padding-bottom:2px}
+        .report-detail-grid{gap:10px}
+        .report-detail{min-height:62px;padding:12px 13px;border-radius:13px;background:var(--input-bg);border-color:var(--ui-border)}
+        .report-detail small{font-size:.6rem;letter-spacing:.4px}
+        .report-detail strong{font-size:.84rem}
+        .report-actions{gap:10px;margin-top:2px}
+        .report-actions .btn{min-height:50px}
+        .report-actions .btn i{margin-right:2px}
+        .report-back{background:transparent!important}
+        .report-empty{padding:50px 24px;border-radius:16px;background:rgba(148,163,184,.035)}
+        .report-empty>i{width:50px;height:50px;display:grid;place-items:center;margin:0 auto 13px;border-radius:15px;background:rgba(0,168,132,.09);color:var(--primary);font-size:1.15rem}
+        .report-photo-grid{gap:14px}
+        .report-photo-box{padding:13px;border-radius:16px;border-color:var(--ui-border)}
+        .report-photo-box h3{display:flex;align-items:center;gap:7px;margin:2px 0 10px}
+        .report-photo-box h3 i{color:var(--primary)}
+        .report-map{height:470px;border-radius:16px}
+
+        /* Mobile */
+        @media(max-width:780px){
+            .admin-sidebar{width:64px;padding:14px 6px}
+            .admin-sidebar .sidebar-header .sidebar-icon{width:40px;min-width:40px}
+            .admin-main{padding:14px}
+            .admin-header{padding:18px 16px}
+            .admin-page-title h1{font-size:1.3rem}
+            .stats-grid{gap:9px}
+            .stat-card{padding:12px;min-height:68px}
+            .users-toolbar{padding:15px}
+            .users-toolbar>div:first-child{padding-left:43px}
+            .users-toolbar #btn-refresh-users{width:100%;margin-top:3px}
+            .users-table-container{max-height:calc(100vh - 300px)}
+            .admin-modal{padding:0}
+            .admin-modal-card,.admin-modal-card.wide{width:100%;height:100%;max-height:none;border-radius:0;border:0}
+            .admin-modal-card>div[id$="-content"]{padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+            .admin-modal-card .modal-title{font-size:1.08rem}
+            .modal-grid{grid-template-columns:1fr}
+            .modal-grid .full{grid-column:auto}
+            .modal-actions{flex-direction:column}
+            .modal-actions .btn{width:100%;min-width:0}
+            .admin-modal #trip-map{min-height:58vh;height:58vh}
+            .report-modal{padding:0;align-items:stretch}
+            .report-card{width:100%;height:100%;max-height:none;border-radius:0;border:0}
+            .report-card>.report-header{padding:15px 15px 13px}
+            #report-modal-content{padding:16px 14px calc(18px + env(safe-area-inset-bottom));max-height:calc(100vh - 69px)}
+            .report-trip{grid-template-columns:78px 82px minmax(0,1fr) 24px;min-height:62px;padding:11px 10px;gap:7px}
+            .report-trip .rt-value{font-size:.76rem}
+            .report-detail-grid{grid-template-columns:1fr}
+            .report-detail.full{grid-column:auto}
+            .report-actions{grid-template-columns:1fr}
+            .report-actions .btn{width:100%}
+            .report-photo-grid{grid-template-columns:1fr}
+            .report-map{height:58vh;min-height:320px}
+        }
+        @media(max-width:480px){
+            .top-icons .top-action{width:35px;height:35px;border-radius:10px}
+            .brand-card{padding:11px 12px}
+            .brand-logo{width:43px;height:43px;border-radius:12px}
+            .brand-text h1{font-size:1rem}
+            .brand-text p{font-size:.61rem;max-width:125px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .top-icons{gap:5px!important}
+            .admin-main{padding:10px}
+            .admin-page-title{gap:10px}
+            .stats-grid{grid-template-columns:1fr 1fr}
+            .stats-grid .stat-card:last-child{grid-column:1/-1}
+            .date-filters{gap:8px}
+        }
+
+</style>
+</head>
+<body>
+    <!-- TELA DE CARREGAMENTO / SPLASH SCREEN -->
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <h2 id="loading-greeting" style="margin-top: 16px; font-size: 1.1rem; text-align: center; color: var(--text-main);">Carregando sistema...</h2>
+    </div>
+
+    <!-- APP PRINCIPAL (MOTORISTA / REGISTRO) -->
+    <div class="app-wrapper" id="app-wrapper">
+        <!-- Top Brand Header -->
+        <div class="brand-card">
+            <div class="brand-info">
+                <div class="brand-logo">ID</div>
+                <div class="brand-text">
+                    <h1>ICAPHI<span>DRIVE</span></h1>
+                    <p id="user-role-badge">Sistema de Quilometragem</p>
+                </div>
+            </div>
+            <!-- CORREÇÃO: Flexbox, Gap de 16px e botão Admin visível -->
+            <div class="top-icons" style="display: flex; gap: 16px; align-items: center;">
+                <span title="Relatório de viagens" id="btn-open-report" class="top-action"><i class="fa-solid fa-chart-column"></i></span>
+                <span title="Painel Admin" id="btn-open-admin" class="top-action hidden"><i class="fa-solid fa-gear"></i></span>
+                <span title="Sair" id="btn-global-logout" class="top-action"><i class="fa-solid fa-right-from-bracket"></i></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <!-- 1. AUTH SECTION -->
+            <div id="auth-section">
+                <div class="section-title"><i class="fa-solid fa-shield-halved"></i> Acesso ao Sistema</div>
+                <div class="input-group">
+                    <label>E-mail Corporativo</label>
+                    <input type="email" id="auth-email" placeholder="seu@email.com">
+                </div>
+                
+                <div id="auth-password-div" class="hidden">
+                    <div class="input-group">
+                        <label>Senha de Acesso</label>
+                        <input type="password" id="auth-password" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div id="auth-register-div" class="hidden">
+                    <div class="input-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="auth-name" placeholder="Seu nome completo">
+                    </div>
+                    <div class="input-group">
+                        <label>Tipo de Usuário</label>
+                        <select id="auth-role">
+                            <option value="motorista">Motorista</option>
+                            <option value="proprietario">Proprietário</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn" id="btn-auth-verify">Continuar</button>
+                <button class="btn hidden" id="btn-auth-action">Entrar no Sistema</button>
+            </div>
+
+            <!-- 2. ADMIN WAIT SECTION -->
+            <div id="admin-wait-section" class="hidden">
+                <div class="section-title"><i class="fa-solid fa-hourglass-half"></i> Aguardando Aprovação</div>
+                <p style="text-align: center; color: var(--text-sec); margin-bottom: 20px; font-size: 0.95rem;">
+                    Seu cadastro de Administrador aguarda autorização no sistema. Clique abaixo para contatar o suporte via WhatsApp.
+                </p>
+                <button class="btn" id="btn-contact-admin"><i class="fa-brands fa-whatsapp"></i> Contatar Admin</button>
+            </div>
+
+            <!-- 3. TRIP START SECTION -->
+            <div id="trip-start-section" class="hidden">
+                <div class="section-title"><i class="fa-solid fa-route"></i> Nova Viagem</div>
+                <div class="input-group">
+                    <label>Placa do Veículo</label>
+                    <input type="text" id="input-placa" placeholder="Ex: ABC1234" style="text-transform: uppercase;">
+                </div>
+                <button class="btn secondary" id="btn-buscar-rotas"><i class="fa-solid fa-magnifying-glass"></i> Buscar Viagens do Dia</button>
+
+                <div id="div-rotas" class="hidden" style="margin-top: 16px;">
+                    <div class="input-group">
+                        <label>Selecionar Rota / Viagem</label>
+                        <select id="select-rota"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Condutor</label>
+                        <input type="text" id="input-condutor" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>KM Inicial do Painel</label>
+                        <input type="number" id="input-kminicial" placeholder="Ex: 348454">
+                    </div>
+                    
+                    <label for="input-foto-inicio" class="photo-btn" id="lbl-foto-inicio">
+                        <i class="fa-solid fa-camera"></i> Foto do Painel Inicial
+                    </label>
+                    <input type="file" id="input-foto-inicio" accept="image/*" capture="environment">
+
+                    <button class="btn" id="btn-iniciar-viagem"><i class="fa-solid fa-play"></i> Iniciar Viagem</button>
+                </div>
+            </div>
+
+            <!-- 4. TRIP ACTIVE SECTION (EM ROTA) -->
+            <div id="trip-active-section" class="hidden">
+                <div class="section-title"><i class="fa-solid fa-truck-fast"></i> Em Rota</div>
+                <div class="timer-display" id="timer">00:00:00</div>
+                
+                <div id="tracking-status" class="tracking-status tracking-off"><i class="fa-solid fa-location-dot"></i><span>Rastreamento aguardando...</span></div>
+                <div class="info-box">
+                    <p><span>Veículo:</span> <strong id="active-placa">-</strong></p>
+                    <p><span>Rota:</span> <strong id="active-rota">-</strong></p>
+                    <p><span>KM Inicial:</span> <strong id="active-kminicial">-</strong></p>
+                    <p><span>Saída:</span> <strong id="active-saida">-</strong></p>
+                </div>
+
+                <div class="input-group">
+                    <label>KM Final do Painel</label>
+                    <input type="number" id="input-kmfinal" placeholder="Ex: 348532">
+                </div>
+
+                <label for="input-foto-fim" class="photo-btn" id="lbl-foto-fim">
+                    <i class="fa-solid fa-flag-checkered"></i> Foto do Painel Final
+                </label>
+                <input type="file" id="input-foto-fim" accept="image/*" capture="environment">
+
+                <button class="btn danger" id="btn-finalizar-viagem"><i class="fa-solid fa-stop"></i> Finalizar Viagem</button>
+            </div>
+
+            <!-- 5. SUMMARY SECTION -->
+            <div id="trip-summary-section" class="hidden">
+                <div class="section-title"><i class="fa-solid fa-circle-check"></i> Viagem Concluída</div>
+                <div class="report-box" id="resumo-box"></div>
+                <button class="btn" id="btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Enviar Relatório para WhatsApp</button>
+                <button class="btn secondary" id="btn-nova-viagem" style="margin-top: 10px;"><i class="fa-solid fa-rotate-right"></i> Iniciar Nova Viagem</button>
+            </div>
+        </div>
+
+        <div class="footer-credit">Icaphi Transportes Ltda</div>
+    </div>
+
+    <!-- TELA ADMIN (ISOLADA) -->
+    <div id="admin-view" class="admin-layout hidden">
+        <!-- Sidebar Retrátil -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-truck-fast sidebar-icon"></i>
+                <span class="sidebar-text">IcaphiAdmin</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="viagens">
+                    <i class="fa-solid fa-route sidebar-icon"></i>
+                    <span class="sidebar-text">Viagens</span>
+                </a>
+                <button type="button" class="nav-item nav-button" id="btn-admin-users" data-tab="usuarios">
+                    <i class="fa-solid fa-users sidebar-icon"></i>
+                    <span class="sidebar-text">Usuários</span>
+                </button>
+            </nav>
+            <div class="sidebar-bottom">
+                <button class="sidebar-btn" id="btn-admin-export" type="button">
+                    <i class="fa-solid fa-file-excel sidebar-icon"></i>
+                    <span class="sidebar-text">Exportar</span>
+                </button>
+                <button class="sidebar-btn" id="btn-admin-settings" type="button">
+                    <i class="fa-solid fa-sliders sidebar-icon"></i>
+                    <span class="sidebar-text">Configurações</span>
+                </button>
+                <button class="sidebar-btn" id="btn-back-to-app" type="button">
+                    <i class="fa-solid fa-arrow-left sidebar-icon"></i>
+                    <span class="sidebar-text">Voltar ao App</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal Admin -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="admin-page-title">
+                    <div>
+                        <h1>Gestão de Viagens</h1>
+                        <p>Acompanhe, consulte e gerencie todas as viagens do ICAPHIDRIVE.</p>
+                    </div>
+                    <div class="admin-live-dot"><i class="fa-solid fa-circle"></i> Dados em tempo real</div>
+                </div>
+                <div class="filter-box">
+                    <div class="date-filters">
+                        <div class="input-group"><label for="filter-start-date">De</label><input type="date" id="filter-start-date"></div>
+                        <div class="input-group"><label for="filter-end-date">Até</label><input type="date" id="filter-end-date"></div>
+                    </div>
+                    <div class="search-box"><input type="text" id="filter-search" placeholder="Buscar placa, motorista, rota ou status..."></div>
+                </div>
+            </header>
+
+            <section class="admin-content">
+                <div class="stats-grid" id="admin-stats">
+                    <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-route"></i></div><div><div class="stat-label">Viagens</div><div class="stat-value" id="stat-total">0</div></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-road"></i></div><div><div class="stat-label">Em rota</div><div class="stat-value" id="stat-active">0</div></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div><div><div class="stat-label">Finalizadas</div><div class="stat-value" id="stat-done">0</div></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-ban"></i></div><div><div class="stat-label">Canceladas</div><div class="stat-value" id="stat-cancelled">0</div></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-gauge-high"></i></div><div><div class="stat-label">KM total</div><div class="stat-value" id="stat-km">0</div></div></div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ID / Rota</th><th>Início</th><th>Fim</th><th>Placa</th><th>Tipo</th><th>Motorista</th><th>Rota</th>
+                            <th>KM Inicial</th><th>KM Final</th><th>Total</th><th>KM Escalado</th><th>Dispersão</th><th>Status</th><th>Ações</th>
+                        </tr></thead>
+                        <tbody id="table-trips-body"></tbody>
+                    </table>
+                </div>
+                <section id="admin-users-panel" class="admin-users-panel hidden">
+                    <div class="users-toolbar">
+                        <div><h2 class="section-title">Usuários do sistema</h2><p class="subtle">Gerencie acessos, perfis, status e placas vinculadas.</p></div>
+                        <button class="btn" id="btn-refresh-users" type="button"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+                    </div>
+                    <div class="table-container users-table-container">
+                        <table class="data-table users-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Placas vinculadas</th><th>UID</th><th>Ações</th></tr></thead><tbody id="table-users-body"></tbody></table>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <!-- RELATÓRIO DO MOTORISTA / PROPRIETÁRIO -->
+    <div id="report-modal" class="report-modal hidden">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-title"><i class="fa-solid fa-chart-column"></i> Minhas viagens</div>
+                <button type="button" class="report-close" id="btn-close-report" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="report-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- MODAIS DO ADMIN -->
+    <div id="admin-modal" class="admin-modal hidden"><div class="admin-modal-card"><button class="modal-close" data-close-modal="admin-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="admin-modal-content"></div></div></div>
+    <div id="photos-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="photos-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="photos-modal-content"></div></div></div>
+    <div id="map-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="map-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="map-modal-content"></div><div id="trip-map" style="height:480px;border-radius:12px;margin-top:12px;"></div></div></div>
+    <div id="user-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="user-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="user-modal-content"></div></div></div>
+    <div id="export-modal" class="admin-modal hidden"><div class="admin-modal-card"><button class="modal-close" data-close-modal="export-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="export-modal-content">
+        <h2 class="modal-title"><i class="fa-solid fa-file-excel" style="color:#16a34a;margin-right:8px"></i>Exportar viagens</h2>
+        <p class="subtle" style="margin-bottom:18px">Selecione o período. O Excel incluirá todas as viagens registradas nesse intervalo.</p>
+        <div class="modal-grid">
+            <div><label for="export-start-date">Data inicial</label><input type="date" id="export-start-date"></div>
+            <div><label for="export-end-date">Data final</label><input type="date" id="export-end-date"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" id="btn-confirm-export" type="button"><i class="fa-solid fa-file-arrow-down"></i> Exportar Excel</button>
+        </div>
+    </div></div></div>
+
+    <div id="settings-modal" class="admin-modal hidden"><div class="admin-modal-card"><button class="modal-close" data-close-modal="settings-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button><div id="settings-modal-content">
+        <h2 class="modal-title"><i class="fa-solid fa-sliders" style="color:var(--primary);margin-right:8px"></i>Configurações</h2>
+        <p class="subtle" style="margin-bottom:16px">Personalize o comportamento do painel. Novas opções poderão ser adicionadas aqui.</p>
+        <div class="settings-list">
+            <div class="setting-row"><div class="setting-info"><strong>Modo Lite</strong><span>Reduz animações e transições para melhorar o desempenho em computadores mais fracos.</span></div><label class="switch"><input type="checkbox" id="lite-mode-switch"><span class="switch-slider"></span></label></div>
+        </div>
+    </div></div></div>
+
+    <!-- BOTÃO FLUTUANTE DE TEMA (MODO CLARO / ESCURO) -->
+    <button id="theme-toggle-btn" class="theme-toggle-btn" title="Alternar Modo Claro/Escuro">
+        <i id="theme-icon" class="fa-solid fa-moon"></i>
+    </button>
+
+    <!-- FIREBASE MODULES & APP LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+
+        // CONFIGURAÇÕES FIREBASE
+        const firebaseConfigKms = {
+            apiKey: "AIzaSyB6o_s4krwWEjy-zkkFrW6YZuGZGXYcvZY",
+            authDomain: "app-kms.firebaseapp.com",
+            projectId: "app-kms",
+            storageBucket: "app-kms.firebasestorage.app",
+            messagingSenderId: "461030778933",
+            appId: "1:461030778933:web:1036fb24d017f920b5e97c"
+        };
+
+        const firebaseConfigMon = {
+            apiKey: "AIzaSyAzQpFOyAMzfKnrDCSTWmZ7x_NGWs0fT2Y",
+            authDomain: "monitoramento-bc533.firebaseapp.com",
+            projectId: "monitoramento-bc533",
+            storageBucket: "monitoramento-bc533.firebasestorage.app",
+            messagingSenderId: "70745510419",
+            appId: "1:70745510419:web:7c21a45dcff85c1f8de5e6"
+        };
+
+        const appKms = initializeApp(firebaseConfigKms, "appKms");
+        const appMon = initializeApp(firebaseConfigMon, "appMon");
+
+        const auth = getAuth(appKms);
+        const dbKms = getFirestore(appKms);
+        const dbMon = getFirestore(appMon);
+
+        let currentUserData = null;
+        let rotasDoDia = [];
+        let timerInterval;
+        let trackingWatchId = null;
+        let trackingInterval = null;
+        let trackingLastSent = 0;
+        let trackingLastPoint = null;
+        let trackingTripId = null;
+        let trackingStatusUnsubscribe = null;
+        let liveAdminMap = null;
+        let liveAdminMarker = null;
+        let liveAdminLine = null;
+        let liveAdminUnsubscribe = null;
+        let liveAdminHistory = [];
+        let fotoInicioCaptured = false;
+        let fotoFimCaptured = false;
+        let fotoInicioFile = null;
+        let fotoFimFile = null;
+        let fotoInicioUrl = null;
+        let fotoFimUrl = null;
+
+        const sections = {
+            auth: document.getElementById('auth-section'),
+            adminWait: document.getElementById('admin-wait-section'),
+            tripStart: document.getElementById('trip-start-section'),
+            tripActive: document.getElementById('trip-active-section'),
+            tripSummary: document.getElementById('trip-summary-section')
+        };
+
+        function showSection(name) {
+            Object.keys(sections).forEach(k => {
+                if (sections[k]) sections[k].classList.toggle('hidden', k !== name);
+            });
+        }
+
+        // FOTO CAPTURE HANDLERS
+        // A foto é mantida em memória até a viagem ser criada/finalizada.
+        // O upload é feito para o Firebase Storage e a URL fica registrada na viagem.
+        function atualizarStatusFoto(tipo, texto, capturada = true) {
+            const id = tipo === 'inicio' ? 'lbl-foto-inicio' : 'lbl-foto-fim';
+            const lbl = document.getElementById(id);
+            if (lbl) {
+                lbl.innerText = texto;
+                lbl.classList.toggle('captured', capturada);
+            }
+        }
+
+        document.getElementById('input-foto-inicio')?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            fotoInicioFile = file;
+            fotoInicioCaptured = true;
+            atualizarStatusFoto('inicio', '✅ Foto Inicial Selecionada');
+        });
+
+        document.getElementById('input-foto-fim')?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            fotoFimFile = file;
+            fotoFimCaptured = true;
+            atualizarStatusFoto('fim', '✅ Foto Final Selecionada');
+        });
+
+        // Fotos são comprimidas e gravadas como Base64 diretamente no Firestore.
+        function comprimirImagemBase64(file, maxSize = 1024, quality = 0.62) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
+                reader.onload = () => { const img = new Image(); img.onerror=()=>reject(new Error('Arquivo de imagem inválido.'));
+                    img.onload=()=>{ const escala=Math.min(1,maxSize/Math.max(img.width,img.height)); const canvas=document.createElement('canvas');
+                        canvas.width=Math.max(1,Math.round(img.width*escala)); canvas.height=Math.max(1,Math.round(img.height*escala));
+                        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height); const dataUrl=canvas.toDataURL('image/jpeg',quality);
+                        if(dataUrl.length>420000) return reject(new Error('A foto ficou muito grande. Tire uma nova foto com menos resolução.')); resolve(dataUrl); }; img.src=reader.result; };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 1. AUTH FLOW
+        document.getElementById('btn-auth-verify')?.addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value.trim();
+            if(!email) return alert("Por favor, digite seu e-mail.");
+
+            try {
+                const userDoc = await getDoc(doc(dbKms, "usuarios", email.toLowerCase()));
+                document.getElementById('btn-auth-verify').classList.add('hidden');
+                document.getElementById('auth-password-div').classList.remove('hidden');
+                const btnAction = document.getElementById('btn-auth-action');
+                btnAction.classList.remove('hidden');
+
+                if(userDoc.exists()) {
+                    btnAction.innerText = "Entrar no Sistema";
+                    btnAction.onclick = () => loginUser(email);
+                } else {
+                    document.getElementById('auth-register-div').classList.remove('hidden');
+                    btnAction.innerText = "Cadastrar e Entrar";
+                    btnAction.onclick = () => registerUser(email);
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao verificar e-mail no banco de dados.");
+            }
+        });
+
+        async function loginUser(email) {
+            const pass = document.getElementById('auth-password').value;
+            if(!pass) return alert("Digite sua senha.");
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch(e) {
+                alert("Senha incorreta ou erro ao autenticar.");
+            }
+        }
+
+        async function registerUser(email) {
+            const pass = document.getElementById('auth-password').value;
+            const nome = document.getElementById('auth-name').value.trim();
+            const role = document.getElementById('auth-role').value;
+            if(!pass || !nome) return alert("Preencha todos os campos para o cadastro.");
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(dbKms, "usuarios", email.toLowerCase()), {
+                    uid: cred.user.uid,
+                    nome,
+                    role,
+                    email,
+                    status: role === 'admin' ? 'pendente' : 'autorizado'
+                });
+            } catch(e) {
+                alert("Erro ao registrar: " + e.message);
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if(loadingScreen) loadingScreen.style.display = 'flex';
+
+            if(user) {
+                try {
+                    const userDoc = await getDoc(doc(dbKms, "usuarios", user.email.toLowerCase()));
+                    if(userDoc.exists()) {
+                        currentUserData = userDoc.data();
+                        const condutorInput = document.getElementById('input-condutor');
+                        if(condutorInput) condutorInput.value = currentUserData.nome;
+                        
+                        const roleBadge = document.getElementById('user-role-badge');
+                        if(roleBadge) roleBadge.innerText = `${currentUserData.role.toUpperCase()} • ${currentUserData.nome}`;
+                        
+                        if (window.checkAdminPermission) {
+                            window.checkAdminPermission(currentUserData.role);
+                        }
+
+                        const hora = new Date().getHours();
+                        let saudacao = "Bom dia";
+                        if (hora >= 12 && hora < 18) saudacao = "Boa tarde";
+                        else if (hora >= 18) saudacao = "Boa noite";
+
+                        const greetingEl = document.getElementById('loading-greeting');
+                        if(greetingEl) greetingEl.innerText = `${saudacao}, ${currentUserData.nome}!`;
+
+                        setTimeout(() => {
+                            if(loadingScreen) loadingScreen.style.display = 'none';
+                            if(currentUserData.role === 'admin' && currentUserData.status !== 'autorizado') {
+                                showSection('adminWait');
+                            } else {
+                                checkActiveTrip();
+                            }
+                        }, 900);
+                    }
+                } catch(e) {
+                    console.error(e);
+                    if(loadingScreen) loadingScreen.style.display = 'none';
+                    showSection('auth');
+                }
+            } else {
+                setTimeout(() => {
+                    if(loadingScreen) loadingScreen.style.display = 'none';
+                    showSection('auth');
+                }, 500);
+            }
+        });
+
+        document.getElementById('btn-global-logout')?.addEventListener('click', () => signOut(auth));
+
+        document.getElementById('btn-contact-admin')?.addEventListener('click', () => {
+            const emailUser = auth.currentUser ? auth.currentUser.email : '';
+            window.open(`https://wa.me/5521969810377?text=${encodeURIComponent('Olá, solicito liberação de acesso Admin para o e-mail: ' + emailUser)}`);
+        });
+
+        // 2. BUSCAR ROTAS (MONITORAMENTO)
+        document.getElementById('btn-buscar-rotas')?.addEventListener('click', async () => {
+            const placa = document.getElementById('input-placa').value.toUpperCase().trim();
+            if(!placa) return alert("Digite a placa do veículo.");
+
+            const hojeStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+
+            try {
+                const docSnap = await getDoc(doc(dbMon, "painel_diario", hojeStr));
+                if(docSnap.exists()) {
+                    const todasRotas = docSnap.data().rotas || [];
+                    rotasDoDia = todasRotas.filter(r => (r.troca && r.troca !== "") ? r.troca === placa : r.placa === placa);
+
+                    if(rotasDoDia.length === 0) {
+                        return alert("Nenhuma viagem encontrada para esta placa hoje.");
+                    }
+
+                    const select = document.getElementById('select-rota');
+                    select.innerHTML = '';
+                    rotasDoDia.forEach((r, index) => {
+                        const opt = document.createElement('option');
+                        opt.value = index;
+                        opt.text = `${r.transporte} - ${r.regiao} (${r.status})`;
+                        select.appendChild(opt);
+                    });
+
+                    document.getElementById('div-rotas').classList.remove('hidden');
+                } else {
+                    alert("Painel diário não encontrado no monitoramento para a data de hoje.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao consultar o banco de monitoramento.");
+            }
+        });
+
+        // 3. INICIAR VIAGEM
+        async function checkActiveTrip() {
+            // Primeiro tenta o cache local (mais rápido).
+            const active = localStorage.getItem('active_trip');
+            if (active) {
+                try {
+                    const trip = JSON.parse(active);
+                    if (trip?.status === 'EM_ROTA') {
+                        restoreTripUI(trip);
+                        return;
+                    }
+                } catch (e) {
+                    localStorage.removeItem('active_trip');
+                }
+            }
+
+            // Se o cache foi perdido, recupera a viagem diretamente do Firebase.
+            if (auth.currentUser?.uid) {
+                try {
+                    const q = query(
+                        collection(dbKms, 'viagens_ativas'),
+                        where('uid', '==', auth.currentUser.uid),
+                        limit(1)
+                    );
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const trip = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                        localStorage.setItem('active_trip', JSON.stringify(trip));
+                        restoreTripUI(trip);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível consultar a viagem ativa no Firebase:', e);
+                }
+            }
+
+            showSection('tripStart');
+        }
+
+        document.getElementById('btn-iniciar-viagem')?.addEventListener('click', async () => {
+            const idx = document.getElementById('select-rota').value;
+            const rota = rotasDoDia[idx];
+            const kmInicialRaw = document.getElementById('input-kminicial').value.trim();
+            const kmInicial = Number(kmInicialRaw);
+
+            if (!rota) return alert('Selecione uma rota antes de iniciar.');
+            if (!kmInicialRaw || !Number.isFinite(kmInicial) || kmInicial < 0) return alert('Digite um KM Inicial válido.');
+            if (!fotoInicioCaptured || !fotoInicioFile) return alert('Por favor, tire a foto do painel inicial antes de iniciar a viagem.');
+
+            // Impede duas viagens simultâneas para o mesmo usuário.
+            const localActive = localStorage.getItem('active_trip');
+            if (localActive) {
+                try {
+                    const trip = JSON.parse(localActive);
+                    if (trip?.status === 'EM_ROTA') {
+                        restoreTripUI(trip);
+                        return alert('Você já possui uma viagem em andamento.');
+                    }
+                } catch (_) {}
+            }
+
+            const btn = document.getElementById('btn-iniciar-viagem');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando viagem...';
+            btn.disabled = true;
+
+            try {
+                const gpsInicio = await obterLocalizacao();
+                const now = new Date();
+                const tripId = `${now.getTime()}_${auth.currentUser?.uid?.slice(0, 6) || 'user'}`;
+                const tripData = {
+                    id: tripId,
+                    uid: auth.currentUser?.uid || null,
+                    email: auth.currentUser?.email || null,
+                    rotaRaw: rota,
+                    condutor: currentUserData.nome,
+                    veiculo: document.getElementById('input-placa').value.toUpperCase(),
+                    tipo: rota.tipo || 'FIXO',
+                    data: now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                    saida: now.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute:'2-digit' }),
+                    inicioDataHora: now.toISOString(), fimDataHora: null, startTimeTs: now.getTime(),
+                    kmInicial: kmInicial, kmFinal: null, totalKm: null,
+                    kmEscalado: Number(String(rota.km || 0).replace(',', '.')) || 0, metaKm: rota.km || '0', dispersaoKm: null,
+                    rota: rota.transporte || rota.regiao || 'N/D', regiao: rota.regiao || 'RIO DE JANEIRO', status: 'EM_ROTA',
+                    gpsInicio: { lat: gpsInicio.lat, lng: gpsInicio.lng }, gpsFim: null,
+                    fotoInicioBase64: null, fotoFimBase64: null, fotoInicioPendente: false, fotoFimPendente: false
+                };
+
+                try {
+                    atualizarStatusFoto('inicio', '<i class="fa-solid fa-spinner fa-spin"></i> Processando Foto...');
+                    tripData.fotoInicioBase64 = await comprimirImagemBase64(fotoInicioFile);
+                    atualizarStatusFoto('inicio', '<i class="fa-solid fa-circle-check"></i> Foto Inicial Salva');
+                } catch (fotoError) {
+                    console.error('Erro ao processar foto inicial:', fotoError); tripData.fotoInicioPendente=true;
+                    atualizarStatusFoto('inicio','<i class="fa-solid fa-triangle-exclamation"></i> Foto pendente'); alert('A viagem será iniciada, mas a foto inicial não pôde ser salva. Tire uma foto com menor resolução.');
+                }
+
+                await setDoc(doc(dbKms, 'viagens_ativas', tripId), tripData);
+                localStorage.setItem('active_trip', JSON.stringify(tripData));
+                restoreTripUI(tripData);
+                iniciarRastreamento(tripData);
+            } catch (e) {
+                console.error('Erro ao iniciar viagem:', e);
+                alert('Não foi possível salvar a viagem. Verifique sua conexão e tente novamente.');
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Viagem';
+                btn.disabled = false;
+            }
+        });
+
+        function setTrackingStatus(type, text){
+            const el=document.getElementById('tracking-status'); if(!el)return;
+            el.className='tracking-status '+(type==='on'?'tracking-on':type==='error'?'tracking-error':'tracking-off');
+            el.innerHTML=`<i class="fa-solid ${type==='on'?'fa-location-dot tracking-pulse':type==='error'?'fa-triangle-exclamation':'fa-location-dot'}"></i><span>${esc(text)}</span>`;
+        }
+        function distanciaMetros(a,b){
+            if(!a||!b)return Infinity;
+            const R=6371000, p1=a.lat*Math.PI/180,p2=b.lat*Math.PI/180,dp=(b.lat-a.lat)*Math.PI/180,dl=(b.lng-a.lng)*Math.PI/180;
+            const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+            return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+        }
+        function pararRastreamento(){
+            if(trackingWatchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;}
+            if(trackingInterval){clearInterval(trackingInterval);trackingInterval=null;}
+            if(trackingStatusUnsubscribe){trackingStatusUnsubscribe();trackingStatusUnsubscribe=null;}
+            trackingTripId=null; trackingLastSent=0; trackingLastPoint=null;
+        }
+        async function salvarPontoRastreamento(trip, pos, force=false){
+            const now=Date.now(), point={lat:Number(pos.coords.latitude),lng:Number(pos.coords.longitude),accuracy:Number(pos.coords.accuracy||0),speed:pos.coords.speed==null?null:Number(pos.coords.speed),heading:pos.coords.heading==null?null:Number(pos.coords.heading),timestamp:new Date(now).toISOString(),timestampMs:now};
+            const moved=distanciaMetros(trackingLastPoint,point);
+            if(!force && now-trackingLastSent<20000 && moved<30)return;
+            trackingLastSent=now; trackingLastPoint=point;
+            const ref=doc(dbKms,'viagens_ativas',trip.id);
+            try{
+                await setDoc(ref,{ultimaLocalizacao:point,ultimaAtualizacaoGPS:new Date(now).toISOString(),rastreamentoAtivo:true},{merge:true});
+                await setDoc(doc(dbKms,'rastreamento_viagens',trip.id,'pontos',String(now)),point);
+                setTrackingStatus('on',`Rastreamento ativo • ${new Date(now).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`);
+            }catch(e){console.warn('Falha ao salvar localização:',e);setTrackingStatus('error','GPS obtido, mas não foi possível sincronizar');}
+        }
+        function iniciarRastreamento(trip){
+            if(!trip?.id||!navigator.geolocation)return setTrackingStatus('error','GPS não disponível neste aparelho');
+            pararRastreamento(); trackingTripId=trip.id;
+            setTrackingStatus('off','Solicitando localização do aparelho...');
+            const options={enableHighAccuracy:true,maximumAge:10000,timeout:15000};
+            trackingWatchId=navigator.geolocation.watchPosition(pos=>salvarPontoRastreamento(trip,pos),err=>{
+                console.warn('GPS:',err); setTrackingStatus('error',err.code===1?'Permissão de localização negada':'Aguardando sinal de GPS...');
+            },options);
+            trackingInterval=setInterval(()=>{
+                try{navigator.geolocation.getCurrentPosition(pos=>salvarPontoRastreamento(trip,pos,true),()=>{},options)}catch{}
+            },30000);
+            try{
+                trackingStatusUnsubscribe=onSnapshot(doc(dbKms,'viagens_ativas',trip.id),snap=>{
+                    if(!snap.exists()||snap.data()?.status!=='EM_ROTA')pararRastreamento();
+                });
+            }catch(e){console.warn('Listener da viagem ativa:',e)}
+            // O navegador pode suspender páginas em segundo plano/bloqueio de tela; este é o melhor rastreamento possível em web/PWA.
+            navigator.geolocation.getCurrentPosition(pos=>salvarPontoRastreamento(trip,pos,true),()=>{},options);
+        }
+
+        function restoreTripUI(trip) {
+            showSection('tripActive');
+            document.getElementById('active-placa').innerText = trip.veiculo;
+            document.getElementById('active-rota').innerText = trip.regiao;
+            document.getElementById('active-kminicial').innerText = trip.kmInicial;
+            document.getElementById('active-saida').innerText = trip.saida;
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const diff = Date.now() - trip.startTimeTs;
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+            iniciarRastreamento(trip);
+        }
+
+        // 4. FINALIZAR VIAGEM
+        let finalReportStr = "";
+
+        document.getElementById('btn-finalizar-viagem')?.addEventListener('click', async () => {
+            const kmFinalRaw = document.getElementById('input-kmfinal').value.trim();
+            const kmFinal = Number(kmFinalRaw);
+            if (!kmFinalRaw || !Number.isFinite(kmFinal) || kmFinal < 0) return alert('Digite um KM Final válido.');
+            if (!fotoFimCaptured || !fotoFimFile) return alert('Por favor, tire a foto do painel final antes de encerrar.');
+
+            const activeRaw = localStorage.getItem('active_trip');
+            if (!activeRaw) return alert('Não encontrei a viagem ativa. Vou tentar recuperar do servidor na próxima abertura.');
+            const trip = JSON.parse(activeRaw);
+            if (kmFinal < Number(trip.kmInicial)) return alert(`O KM Final (${kmFinal}) não pode ser menor que o KM Inicial (${trip.kmInicial}).`);
+
+            const btnFin = document.getElementById('btn-finalizar-viagem');
+            btnFin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando viagem...';
+            btnFin.disabled = true;
+
+            try {
+                const gpsFim = await obterLocalizacao();
+                const now = new Date();
+                clearInterval(timerInterval);
+                pararRastreamento();
+
+                const totalKm = kmFinal - Number(trip.kmInicial);
+                const metaFloat = parseFloat(String(trip.metaKm).replace(',', '.')) || 0;
+                const diffKm = totalKm - metaFloat;
+                const sinal = diffKm > 0 ? '+' : '';
+
+                const diffTs = Math.max(0, now.getTime() - Number(trip.startTimeTs));
+                const h = Math.floor(diffTs / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diffTs % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diffTs % 60000) / 1000).toString().padStart(2, '0');
+                const duracaoStr = `${h}:${m}:${s}`;
+                const chegadaStr = now.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute:'2-digit' });
+
+                let fotoFinalBase64 = null; let fotoFinalPendente = false;
+                try {
+                    atualizarStatusFoto('fim','<i class="fa-solid fa-spinner fa-spin"></i> Processando Foto...'); fotoFinalBase64=await comprimirImagemBase64(fotoFimFile); atualizarStatusFoto('fim','<i class="fa-solid fa-circle-check"></i> Foto Final Salva');
+                } catch (fotoError) {
+                    console.error('Erro ao processar foto final:',fotoError); fotoFinalPendente=true; atualizarStatusFoto('fim','<i class="fa-solid fa-triangle-exclamation"></i> Foto pendente');
+                    alert('A viagem será encerrada, mas a foto final não pôde ser salva. Tire uma foto com menor resolução.');
+                }
+
+                finalReportStr =
+                `RELATÓRIO
+    ---------------------------
+    🚗 Veículo: ${trip.veiculo}
+    👤 Condutor: ${trip.condutor}
+    📝 Tipo: ${trip.tipo}
+    📅 Data: ${trip.data}
+    ⏰ Saída: ${trip.saida}
+    🏁 Chegada: ${chegadaStr}
+    ---------------------------
+    ▶ KM Inicial: ${trip.kmInicial}
+    ⏹ KM Final: ${kmFinal}
+    📏 Total: ${totalKm} km
+    ⏱ Duração: ${duracaoStr}
+    🎯 Meta: ${metaFloat} km
+    📊 Dif: ${sinal}${diffKm.toFixed(1)} km
+    🏙️ Rota: ${trip.regiao}
+    📍 GPS Início: ${trip.gpsInicio?.lat != null ? `${Number(trip.gpsInicio.lat).toFixed(5)}, ${Number(trip.gpsInicio.lng).toFixed(5)}` : 'N/D'}
+    📍 GPS Fim: ${gpsFim.lat != null ? `${Number(gpsFim.lat).toFixed(5)}, ${Number(gpsFim.lng).toFixed(5)}` : 'N/D'}`;
+
+                const concluida = {
+                    ...trip,
+                    kmFinal, totalKm, duracaoStr, chegadaStr, fimDataHora: now.toISOString(), diffKm, dispersaoKm: diffKm,
+                    gpsFim: { lat: gpsFim.lat, lng: gpsFim.lng }, rastreamentoAtivo:false, fotoFimBase64: fotoFinalBase64, fotoFinalPendente, status: 'CONCLUIDA',
+                    relatorio: finalReportStr
+                };
+
+                await setDoc(doc(dbKms, 'viagens_concluidas', trip.id), concluida);
+                await deleteDoc(doc(dbKms, 'viagens_ativas', trip.id));
+                localStorage.removeItem('active_trip');
+                document.getElementById('resumo-box').innerText = finalReportStr;
+                showSection('tripSummary');
+            } catch (e) {
+                console.error('Erro ao finalizar viagem:', e);
+                alert('Não foi possível concluir a viagem no servidor. Seus dados continuam salvos localmente. Verifique a internet e tente novamente.');
+            } finally {
+                btnFin.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Viagem';
+                btnFin.disabled = false;
+            }
+        });
+
+        document.getElementById('btn-whatsapp')?.addEventListener('click', () => {
+            const phone = "5521969810377";
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(finalReportStr)}`, '_blank');
+        });
+
+        document.getElementById('btn-nova-viagem')?.addEventListener('click', () => {
+            document.getElementById('input-placa').value = "";
+            document.getElementById('input-kminicial').value = "";
+            document.getElementById('input-kmfinal').value = "";
+            document.getElementById('div-rotas').classList.add('hidden');
+            fotoInicioCaptured = false;
+            fotoFimCaptured = false;
+            fotoInicioFile = null;
+            fotoFimFile = null;
+            fotoInicioUrl = null;
+            fotoFimUrl = null;
+            const fotoInicioInput = document.getElementById('input-foto-inicio');
+            const fotoFimInput = document.getElementById('input-foto-fim');
+            if (fotoInicioInput) fotoInicioInput.value = '';
+            if (fotoFimInput) fotoFimInput.value = '';
+            atualizarStatusFoto('inicio', '<i class="fa-solid fa-camera"></i> Foto do Painel Inicial', false);
+            atualizarStatusFoto('fim', '<i class="fa-solid fa-flag-checkered"></i> Foto do Painel Final', false);
+            showSection('tripStart');
+        });
+
+        function obterLocalizacao() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve({ lat: null, lng: null, erro: "Geolocalização não suportada" });
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            erro: null
+                        });
+                    },
+                    (error) => {
+                        resolve({ lat: null, lng: null, erro: error.message });
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            });
+        }
+
+        // 5. MÓDULO PAINEL ADMIN - CONSULTA E GESTÃO COMPLETA
+        let adminTripsCache=[]; let adminMap=null;
+        const esc=v=>String(v??'-').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        function formatDateTime(v,d='',h=''){if(v){const x=new Date(v);if(!Number.isNaN(x.getTime()))return x.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});}return `${d||'-'} ${h||''}`.trim();}
+        const statusLabel=s=>({EM_ROTA:'Em Rota',CONCLUIDA:'Finalizado',CANCELADA:'Cancelada'})[s]||s||'-';
+        const statusColor=s=>({EM_ROTA:'#f59e0b',CONCLUIDA:'#10b981',CANCELADA:'#ef4444'})[s]||'#64748b';
+        const tripRoute=t=>t.rota||t.regiao||t.rotaRaw?.transporte||'-'; const tripEscalado=t=>Number(t.kmEscalado??t.metaKm??t.rotaRaw?.km??0)||0;
+        const formatKm=v=>v===null||v===undefined||v===''?'-':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1});
+        function atualizarStats(trips){
+            const total=trips.length, active=trips.filter(t=>t.status==='EM_ROTA').length, done=trips.filter(t=>t.status==='CONCLUIDA').length, cancelled=trips.filter(t=>t.status==='CANCELADA').length;
+            const km=trips.reduce((sum,t)=>sum+(Number(t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):0))||0),0);
+            const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+            set('stat-total',total);set('stat-active',active);set('stat-done',done);set('stat-cancelled',cancelled);set('stat-km',km.toLocaleString('pt-BR',{maximumFractionDigits:1}));
+        }
+        async function carregarViagensAdmin(){
+            const tbody=document.getElementById('table-trips-body');if(!tbody)return;
+            const sd=document.getElementById('filter-start-date')?.value,ed=document.getElementById('filter-end-date')?.value,q=(document.getElementById('filter-search')?.value||'').toLowerCase().trim();if(!sd||!ed)return;
+            tbody.innerHTML='<tr><td colspan="14" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Carregando viagens...</td></tr>';
+            try{
+                const [a,c]=await Promise.all([getDocs(collection(dbKms,'viagens_ativas')),getDocs(collection(dbKms,'viagens_concluidas'))]);const all=[];
+                a.forEach(d=>all.push({id:d.id,...d.data()}));c.forEach(d=>all.push({id:d.id,...d.data()}));
+                const di=new Date(sd+'T00:00:00'),df=new Date(ed+'T23:59:59');
+                adminTripsCache=all.filter(t=>{let dt=new Date(t.inicioDataHora||'');if(Number.isNaN(dt.getTime())&&t.data?.includes('/')){const [aa,bb,cc]=t.data.split('/');dt=new Date(`${cc}-${bb}-${aa}T12:00:00`)}const hay=[t.id,t.condutor,t.veiculo,t.regiao,t.rota,tripRoute(t),t.tipo,statusLabel(t.status)].join(' ').toLowerCase();return (Number.isNaN(dt.getTime())||(dt>=di&&dt<=df))&&(!q||hay.includes(q));}).sort((x,y)=>Number(y.startTimeTs||new Date(y.inicioDataHora||0).getTime()||0)-Number(x.startTimeTs||new Date(x.inicioDataHora||0).getTime()||0));
+                atualizarStats(adminTripsCache);
+                if(!adminTripsCache.length){tbody.innerHTML='<tr><td colspan="14" class="empty-state"><i class="fa-regular fa-folder-open"></i><strong>Nenhuma viagem encontrada</strong><br><span class="subtle">Tente alterar o período ou os filtros de busca.</span></td></tr>';return;}
+                tbody.innerHTML=adminTripsCache.map((t,i)=>{
+                    const total=t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):null),es=tripEscalado(t),dp=t.dispersaoKm??(total!=null?total-es:null);
+                    const dispClass=dp==null?'disp-zero':dp>0?'disp-positive':dp<0?'disp-negative':'disp-zero';
+                    const cls=t.status==='CONCLUIDA'?'completed':t.status==='EM_ROTA'?'in-progress':'pending';
+                    return `<tr><td><div class="trip-main">${esc(tripRoute(t))}</div><span class="trip-id">${esc(t.id)}</span></td><td><span class="km-main">${esc(formatDateTime(t.inicioDataHora,t.data,t.saida))}</span></td><td>${t.fimDataHora?esc(formatDateTime(t.fimDataHora,t.data,t.chegadaStr)):'<span class="subtle">Ainda não finalizada</span>'}</td><td><strong style="text-transform:uppercase">${esc(t.veiculo)}</strong></td><td>${esc(t.tipo)}</td><td>${esc(t.condutor)}</td><td>${esc(tripRoute(t))}</td><td>${formatKm(t.kmInicial)}</td><td>${formatKm(t.kmFinal)}</td><td><strong>${formatKm(total)}</strong></td><td>${formatKm(es)}</td><td><span class="${dispClass}">${dp==null?'-':(dp>0?'+':'')+formatKm(dp)}</span></td><td><span class="status-badge ${cls}">${esc(statusLabel(t.status))}</span></td><td><div class="actions-cell"><button class="admin-action-btn photo" title="Ver fotos" onclick="window.adminFotos(${i})"><i class="fa-solid fa-camera"></i></button><button class="admin-action-btn map" title="Ver mapa" onclick="window.adminMapa(${i})"><i class="fa-solid fa-map-location-dot"></i></button>${t.status==='EM_ROTA'?`<button class="admin-action-btn live" title="Rastrear em tempo real" onclick="window.adminRastrear(${i})"><i class="fa-solid fa-satellite-dish"></i></button>`:''}<button class="admin-action-btn edit" title="Editar viagem" onclick="window.adminEditar(${i})"><i class="fa-solid fa-pen"></i></button></div></td></tr>`;
+                }).join('');
+            }catch(e){console.error(e);atualizarStats([]);tbody.innerHTML='<tr><td colspan="14" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><strong>Não foi possível carregar as viagens</strong><br><span class="subtle">Verifique sua conexão e as permissões do Firebase.</span></td></tr>';}
+        }
+        function openAdminModal(id,html){document.getElementById(id+'-content').innerHTML=html;document.getElementById(id).classList.remove('hidden');}function closeAdminModal(id){document.getElementById(id)?.classList.add('hidden');if(id==='map-modal'){if(liveAdminUnsubscribe){liveAdminUnsubscribe();liveAdminUnsubscribe=null;}if(liveAdminMap){liveAdminMap.remove();liveAdminMap=null;}liveAdminMarker=null;liveAdminLine=null;liveAdminHistory=[];}}
+        document.addEventListener('click',e=>{const b=e.target.closest('[data-close-modal]');if(b)closeAdminModal(b.dataset.closeModal);});
+        window.adminFotos=i=>{const t=adminTripsCache[i],a=t.fotoInicioBase64||t.fotoInicioUrl,b=t.fotoFimBase64||t.fotoFinalUrl;openAdminModal('photos-modal',`<h2 class="modal-title">Fotos da viagem</h2><p><b>Data:</b> ${esc(t.data)} &nbsp; <b>Placa:</b> ${esc(t.veiculo)}</p><div class="photo-grid"><div class="photo-box"><h3>📷 Foto de Início</h3>${a?`<img src="${a}" alt="Foto de início">`:'<p>Foto de início não disponível.</p>'}</div><div class="photo-box"><h3>🏁 Foto de Fim</h3>${b?`<img src="${b}" alt="Foto de fim">`:'<p>Foto de fim não disponível.</p>'}</div></div>`);};
+        window.adminMapa=i=>{const t=adminTripsCache[i],a=t.gpsInicio,b=t.gpsFim;openAdminModal('map-modal',`<h2 class="modal-title">Mapa da viagem</h2><p><b>Data:</b> ${esc(t.data)} &nbsp; <b>Placa:</b> ${esc(t.veiculo)}</p><p>📍 Início: ${a?.lat!=null?`${Number(a.lat).toFixed(6)}, ${Number(a.lng).toFixed(6)}`:'N/D'} &nbsp;&nbsp; 🏁 Fim: ${b?.lat!=null?`${Number(b.lat).toFixed(6)}, ${Number(b.lng).toFixed(6)}`:'N/D'}</p>`);setTimeout(()=>{if(adminMap)adminMap.remove();adminMap=L.map('trip-map').setView(a?.lat!=null?[a.lat,a.lng]:[-22.9,-43.2],a?.lat!=null?12:5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(adminMap);const pts=[];if(a?.lat!=null){pts.push([a.lat,a.lng]);L.marker([a.lat,a.lng]).addTo(adminMap).bindPopup('<i class="fa-solid fa-location-dot"></i> Início');}if(b?.lat!=null){pts.push([b.lat,b.lng]);L.marker([b.lat,b.lng]).addTo(adminMap).bindPopup('<i class="fa-solid fa-flag-checkered"></i> Fim');}if(pts.length>1){L.polyline(pts).addTo(adminMap);adminMap.fitBounds(pts,{padding:[30,30]});}adminMap.invalidateSize();},100);};
+        window.adminEditar=i=>{const t=adminTripsCache[i],loc=v=>v?new Date(v).toLocaleString('sv-SE',{timeZone:'America/Sao_Paulo'}).replace(' ','T').slice(0,16):'';openAdminModal('admin-modal',`<h2 class="modal-title">Editar viagem</h2><div class="modal-grid"><div><label>Placa</label><input id="ed-placa" value="${esc(t.veiculo)}"></div><div><label>Tipo</label><input id="ed-tipo" value="${esc(t.tipo)}"></div><div><label>Motorista</label><input id="ed-condutor" value="${esc(t.condutor)}"></div><div><label>Rota</label><input id="ed-rota" value="${esc(tripRoute(t))}"></div><div><label>KM Inicial</label><input id="ed-kmi" type="number" value="${t.kmInicial??''}"></div><div><label>KM Final</label><input id="ed-kmf" type="number" value="${t.kmFinal??''}"></div><div><label>KM Escalado</label><input id="ed-escalado" type="number" value="${tripEscalado(t)}"></div><div><label>Status</label><select id="ed-status"><option value="EM_ROTA">Em Rota</option><option value="CONCLUIDA">Finalizado</option><option value="CANCELADA">Cancelada</option></select></div><div class="full"><label>Data/hora de início</label><input id="ed-inicio" type="datetime-local" value="${loc(t.inicioDataHora)}"></div><div class="full"><label>Data/hora de fim</label><input id="ed-fim" type="datetime-local" value="${loc(t.fimDataHora)}"></div></div><div class="modal-actions"><button class="btn" onclick="window.salvarEdicao(${i})">💾 <i class="fa-solid fa-floppy-disk"></i> Salvar alterações</button>${t.status!=='CANCELADA'?`<button class="btn danger" onclick="window.cancelarViagem(${i})"><i class="fa-solid fa-ban"></i> Cancelar viagem</button>`:''}<button class="btn danger-outline" onclick="window.excluirViagem(${i})"><i class="fa-solid fa-trash"></i> Excluir viagem</button></div>`);document.getElementById('ed-status').value=t.status||'EM_ROTA';};
+        const targetCollection=t=>t.status==='EM_ROTA'?'viagens_ativas':'viagens_concluidas';
+        window.salvarEdicao=async i=>{const old=adminTripsCache[i],kmi=Number(document.getElementById('ed-kmi').value),raw=document.getElementById('ed-kmf').value,kmf=raw===''?null:Number(raw);if(!Number.isFinite(kmi)||kmi<0)return alert('KM inicial inválido.');if(kmf!==null&&(!Number.isFinite(kmf)||kmf<kmi))return alert('KM final inválido.');const es=Number(document.getElementById('ed-escalado').value)||0,total=kmf===null?null:kmf-kmi,st=document.getElementById('ed-status').value,il=document.getElementById('ed-inicio').value,fl=document.getElementById('ed-fim').value;const d={...old,veiculo:document.getElementById('ed-placa').value.trim().toUpperCase(),tipo:document.getElementById('ed-tipo').value.trim(),condutor:document.getElementById('ed-condutor').value.trim(),rota:document.getElementById('ed-rota').value.trim(),regiao:document.getElementById('ed-rota').value.trim(),kmInicial:kmi,kmFinal:kmf,kmEscalado:es,metaKm:es,totalKm:total,dispersaoKm:total===null?null:total-es,status:st,inicioDataHora:il?new Date(il).toISOString():old.inicioDataHora,fimDataHora:fl?new Date(fl).toISOString():old.fimDataHora,saida:il?new Date(il).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):old.saida,chegadaStr:fl?new Date(fl).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):old.chegadaStr};try{const oc=targetCollection(old),nc=targetCollection(d);await setDoc(doc(dbKms,nc,old.id),d);if(oc!==nc)await deleteDoc(doc(dbKms,oc,old.id));if(st==='EM_ROTA')localStorage.setItem('active_trip',JSON.stringify(d));else{try{if(JSON.parse(localStorage.getItem('active_trip')||'{}').id===d.id)localStorage.removeItem('active_trip')}catch{}}closeAdminModal('admin-modal');await carregarViagensAdmin();alert('Viagem atualizada com sucesso.');}catch(e){console.error(e);alert('Não foi possível salvar as alterações: '+e.message);}};
+        window.cancelarViagem=async i=>{const old=adminTripsCache[i];if(!confirm('Tem certeza que deseja cancelar esta viagem?'))return;const d={...old,status:'CANCELADA',canceladaEm:new Date().toISOString()};try{await setDoc(doc(dbKms,'viagens_concluidas',old.id),d);if(old.status==='EM_ROTA')await deleteDoc(doc(dbKms,'viagens_ativas',old.id));try{if(JSON.parse(localStorage.getItem('active_trip')||'{}').id===old.id){localStorage.removeItem('active_trip');pararRastreamento();}}catch{}closeAdminModal('admin-modal');await carregarViagensAdmin();alert('Viagem cancelada.');}catch(e){console.error(e);alert('Erro ao cancelar viagem: '+e.message);}};
+
+        window.excluirViagem=async i=>{
+            const old=adminTripsCache[i];
+            if(!old?.id)return;
+            const placa=old.veiculo||'-',rota=tripRoute(old)||'-';
+            if(!confirm(`Excluir definitivamente esta viagem?\n\nPlaca: ${placa}\nRota: ${rota}\n\nEsta ação não pode ser desfeita.`))return;
+            try{
+                await deleteDoc(doc(dbKms,old.status==='EM_ROTA'?'viagens_ativas':'viagens_concluidas',old.id));
+                try{if(JSON.parse(localStorage.getItem('active_trip')||'{}').id===old.id)localStorage.removeItem('active_trip')}catch{}
+                closeAdminModal('admin-modal');
+                await carregarViagensAdmin();
+                alert('Viagem excluída com sucesso.');
+            }catch(e){console.error(e);alert('Não foi possível excluir a viagem: '+e.message);}
+        };
+
+        window.adminRastrear=async i=>{
+            const t=adminTripsCache[i]; if(!t?.id)return;
+            if(t.status!=='EM_ROTA')return alert('O rastreamento em tempo real está disponível apenas para viagens em rota.');
+            openAdminModal('map-modal',`<h2 class="modal-title"><i class="fa-solid fa-satellite-dish"></i> Rastreamento em tempo real</h2><div class="live-map-banner"><div><strong>${esc(t.condutor||'Motorista')} • ${esc(t.veiculo||'-')}</strong><span>${esc(tripRoute(t)||'Rota não informada')}</span></div><span id="live-gps-time">Conectando...</span></div>`);
+            setTimeout(async()=>{
+                if(liveAdminUnsubscribe){liveAdminUnsubscribe();liveAdminUnsubscribe=null;}
+                if(liveAdminMap){liveAdminMap.remove();liveAdminMap=null;}
+                liveAdminMap=L.map('trip-map').setView(t.gpsInicio?.lat!=null?[t.gpsInicio.lat,t.gpsInicio.lng]:[-22.9,-43.2],t.gpsInicio?.lat!=null?12:5);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(liveAdminMap);
+                const initial=t.ultimaLocalizacao||t.gpsInicio;
+                if(initial?.lat!=null)liveAdminMarker=L.marker([initial.lat,initial.lng]).addTo(liveAdminMap).bindPopup('Localização atual').openPopup();
+                if(t.gpsInicio?.lat!=null){L.marker([t.gpsInicio.lat,t.gpsInicio.lng]).addTo(liveAdminMap).bindPopup('📍 Início da viagem');}
+                try{
+                    const hs=await getDocs(collection(dbKms,'rastreamento_viagens',t.id,'pontos')); liveAdminHistory=[]; hs.forEach(d=>{const p=d.data();if(p.lat!=null)liveAdminHistory.push([Number(p.lat),Number(p.lng)])});
+                    if(liveAdminHistory.length>1)liveAdminLine=L.polyline(liveAdminHistory,{weight:4}).addTo(liveAdminMap);
+                }catch(e){console.warn('Histórico GPS:',e)}
+                liveAdminUnsubscribe=onSnapshot(doc(dbKms,'viagens_ativas',t.id),snap=>{
+                    if(!snap.exists()){document.getElementById('live-gps-time')?.replaceChildren(document.createTextNode('Viagem encerrada'));return;}
+                    const d=snap.data(),p=d.ultimaLocalizacao;
+                    const time=document.getElementById('live-gps-time'); if(time)time.textContent=p?.timestamp?`Atualizado ${new Date(p.timestamp).toLocaleTimeString('pt-BR')}`:'Aguardando GPS...';
+                    if(p?.lat!=null){const ll=[Number(p.lat),Number(p.lng)];if(liveAdminMarker)liveAdminMarker.setLatLng(ll);else liveAdminMarker=L.marker(ll).addTo(liveAdminMap).bindPopup('Localização atual');if(liveAdminHistory.length===0||distanciaMetros({lat:liveAdminHistory.at(-1)[0],lng:liveAdminHistory.at(-1)[1]},p)>10)liveAdminHistory.push(ll);if(liveAdminLine)liveAdminLine.setLatLngs(liveAdminHistory);else if(liveAdminHistory.length>1)liveAdminLine=L.polyline(liveAdminHistory,{weight:4}).addTo(liveAdminMap);liveAdminMap.panTo(ll);}
+                });
+                setTimeout(()=>liveAdminMap?.invalidateSize(),150);
+            },80);
+        };
+
+        function dataViagemParaFiltro(t){
+            const raw=t.inicioDataHora||'';
+            let d=new Date(raw);
+            if(Number.isNaN(d.getTime())&&t.data?.includes('/')){
+                const [dd,mm,yyyy]=t.data.split('/');
+                d=new Date(`${yyyy}-${mm}-${dd}T12:00:00`);
+            }
+            return d;
+        }
+        function textoExcel(v){return v===null||v===undefined?'':String(v);}
+        function coordenada(g,parte){return g&&g[parte]!=null?Number(g[parte]):'';}
+        async function exportarViagensExcel(){
+            const ini=document.getElementById('export-start-date')?.value;
+            const fim=document.getElementById('export-end-date')?.value;
+            if(!ini||!fim)return alert('Selecione a data inicial e a data final.');
+            if(ini>fim)return alert('A data inicial não pode ser maior que a data final.');
+            if(typeof XLSX==='undefined')return alert('A biblioteca de Excel não foi carregada. Verifique sua conexão com a internet.');
+            const inicio=new Date(ini+'T00:00:00'), final=new Date(fim+'T23:59:59');
+            const btn=document.getElementById('btn-confirm-export');
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Preparando Excel...';}
+            try{
+                const [a,c]=await Promise.all([getDocs(collection(dbKms,'viagens_ativas')),getDocs(collection(dbKms,'viagens_concluidas'))]);
+                const all=[]; a.forEach(d=>all.push({id:d.id,...d.data()})); c.forEach(d=>all.push({id:d.id,...d.data()}));
+                const viagens=all.filter(t=>{const d=dataViagemParaFiltro(t);return !Number.isNaN(d.getTime())&&d>=inicio&&d<=final;}).sort((x,y)=>dataViagemParaFiltro(x)-dataViagemParaFiltro(y));
+                if(!viagens.length){alert('Nenhuma viagem encontrada nesse período.');return;}
+                const rows=viagens.map(t=>{
+                    const total=t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):'');
+                    const escalado=tripEscalado(t);
+                    const dispersao=t.dispersaoKm??(total!==''?Number(total)-escalado:'');
+                    const gi=t.gpsInicio||{},gf=t.gpsFim||{};
+                    return {
+                        'ID da viagem':textoExcel(t.id),
+                        'Data':textoExcel(t.data),
+                        'Início (data/hora)':textoExcel(t.inicioDataHora?formatDateTime(t.inicioDataHora,t.data,t.saida):''),
+                        'Fim (data/hora)':textoExcel(t.fimDataHora?formatDateTime(t.fimDataHora,t.data,t.chegadaStr):''),
+                        'Placa':textoExcel(t.veiculo),
+                        'Tipo':textoExcel(t.tipo),
+                        'Motorista':textoExcel(t.condutor),
+                        'Rota':textoExcel(tripRoute(t)),
+                        'KM inicial':t.kmInicial??'',
+                        'KM final':t.kmFinal??'',
+                        'Total KM':total,
+                        'KM escalado':escalado,
+                        'Dispersão de KM':dispersao,
+                        'Status':textoExcel(statusLabel(t.status)),
+                        'Latitude início':coordenada(gi,'lat'),
+                        'Longitude início':coordenada(gi,'lng'),
+                        'Latitude fim':coordenada(gf,'lat'),
+                        'Longitude fim':coordenada(gf,'lng'),
+                        'Duração':textoExcel(t.duracaoStr),
+                        'Região':textoExcel(t.regiao),
+                        'Saída':textoExcel(t.saida),
+                        'Chegada':textoExcel(t.chegadaStr),
+                        'Cancelada em':textoExcel(t.canceladaEm),
+                        'Observações/Relatório':textoExcel(t.relatorio)
+                    };
+                });
+                const ws=XLSX.utils.json_to_sheet(rows);
+                ws['!cols']=[
+                    {wch:24},{wch:12},{wch:21},{wch:21},{wch:12},{wch:18},{wch:28},{wch:34},
+                    {wch:13},{wch:13},{wch:13},{wch:15},{wch:18},{wch:15},{wch:17},{wch:18},
+                    {wch:15},{wch:16},{wch:16},{wch:22},{wch:10},{wch:10},{wch:22},{wch:50}
+                ];
+                const wb=XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb,ws,'Viagens');
+                XLSX.writeFile(wb,`ICAPHIDRIVE_Viagens_${ini}_a_${fim}.xlsx`);
+                closeAdminModal('export-modal');
+            }catch(e){console.error(e);alert('Não foi possível exportar as viagens: '+e.message);}
+            finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-file-arrow-down"></i> Exportar Excel';}}
+        }
+
+
+        // ===== RELATÓRIO DO MOTORISTA / PROPRIETÁRIO =====
+        let reportTripsCache = [];
+        let reportMap = null;
+
+        function reportDate(t){
+            return formatDateTime(t.inicioDataHora,t.data,t.saida).split(',')[0] || t.data || '-';
+        }
+        function reportTime(v){
+            if(!v)return '-';
+            const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
+        }
+        function reportDuration(t){
+            const a=t.inicioDataHora?new Date(t.inicioDataHora).getTime():Number(t.startTimeTs||0);
+            const b=t.fimDataHora?new Date(t.fimDataHora).getTime():Date.now();
+            if(!a||Number.isNaN(a)||!b||b<a)return '-';
+            const sec=Math.floor((b-a)/1000),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),ss=sec%60;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+        }
+        function closeReport(){
+            document.getElementById('report-modal')?.classList.add('hidden');
+            if(reportMap){reportMap.remove();reportMap=null;}
+        }
+        function renderReportList(){
+            const el=document.getElementById('report-modal-content'); if(!el)return;
+            const plates=Array.isArray(currentUserData?.placas)?currentUserData.placas:[];
+            el.innerHTML=`<p class="report-subtitle">Viagens das placas vinculadas ao seu usuário • ${reportTripsCache.length} registro(s)</p>`+
+                (reportTripsCache.length?`<div class="report-list">${reportTripsCache.map((t,i)=>`<button type="button" class="report-trip" onclick="window.abrirViagemRelatorio(${i})"><div><span class="rt-label">Placa</span><span class="rt-value">${esc(t.veiculo||'-')}</span></div><div><span class="rt-label">Data</span><span class="rt-value">${esc(reportDate(t))}</span></div><div><span class="rt-label">Rota</span><span class="rt-value">${esc(tripRoute(t))}</span></div><span class="rt-arrow">›</span></button>`).join('')}</div>`:`<div class="report-empty"><i class="fa-regular fa-folder-open"></i><strong>Nenhuma viagem encontrada</strong><br><span>As viagens aparecem aqui quando houver registros para as placas vinculadas ao seu usuário.</span>${plates.length?'':'<br><br>Nenhuma placa está vinculada ao seu cadastro.'}</div>`);
+        }
+        async function carregarRelatorioUsuario(){
+            const content=document.getElementById('report-modal-content');
+            if(content)content.innerHTML='<div class="report-empty"><i class="fa-solid fa-spinner fa-spin"></i>Carregando suas viagens...</div>';
+            document.getElementById('report-modal')?.classList.remove('hidden');
+            try{
+                const placas=(Array.isArray(currentUserData?.placas)?currentUserData.placas:[]).map(p=>String(p).trim().toUpperCase()).filter(Boolean);
+                const uid=auth.currentUser?.uid||currentUserData?.uid||null;
+                const [a,c]=await Promise.all([getDocs(collection(dbKms,'viagens_ativas')),getDocs(collection(dbKms,'viagens_concluidas'))]);
+                const all=[];a.forEach(d=>all.push({id:d.id,...d.data()}));c.forEach(d=>all.push({id:d.id,...d.data()}));
+                reportTripsCache=all.filter(t=>{
+                    const placa=String(t.veiculo||t.placa||'').trim().toUpperCase();
+                    const samePlate=placas.includes(placa);
+                    const sameUid=uid&&String(t.uid||'')===String(uid);
+                    return samePlate||sameUid;
+                }).sort((x,y)=>Number(y.startTimeTs||new Date(y.inicioDataHora||0).getTime()||0)-Number(x.startTimeTs||new Date(x.inicioDataHora||0).getTime()||0));
+                renderReportList();
+            }catch(e){
+                console.error('Relatório:',e);
+                if(content)content.innerHTML='<div class="report-empty"><i class="fa-solid fa-triangle-exclamation"></i><strong>Não foi possível carregar o relatório.</strong><br><span>Verifique sua conexão e as permissões do Firebase.</span></div>';
+            }
+        }
+        window.abrirViagemRelatorio=function(i){
+            const t=reportTripsCache[i]; if(!t)return;
+            const total=t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):null),es=tripEscalado(t),dp=t.dispersaoKm??(total!=null?total-es:null);
+            const content=document.getElementById('report-modal-content');
+            if(!content)return;
+            content.innerHTML=`<div class="report-details">
+                <div class="report-header" style="margin-bottom:2px"><div class="report-title"><i class="fa-solid fa-route"></i> Detalhes da viagem</div><button type="button" class="report-close" onclick="window.fecharDetalhesRelatorio()">&times;</button></div>
+                <div class="report-detail-grid">
+                    <div class="report-detail"><small>Data</small><strong>${esc(reportDate(t))}</strong></div>
+                    <div class="report-detail"><small>Status</small><strong>${esc(statusLabel(t.status))}</strong></div>
+                    <div class="report-detail"><small>Início</small><strong>${esc(formatDateTime(t.inicioDataHora,t.data,t.saida))}</strong></div>
+                    <div class="report-detail"><small>Fim</small><strong>${esc(t.fimDataHora?formatDateTime(t.fimDataHora,t.data,t.chegadaStr):'Ainda não finalizada')}</strong></div>
+                    <div class="report-detail"><small>Placa</small><strong>${esc(t.veiculo||'-')}</strong></div>
+                    <div class="report-detail"><small>Tipo</small><strong>${esc(t.tipo||'-')}</strong></div>
+                    <div class="report-detail"><small>Motorista</small><strong>${esc(t.condutor||'-')}</strong></div>
+                    <div class="report-detail"><small>Rota</small><strong>${esc(tripRoute(t))}</strong></div>
+                    <div class="report-detail"><small>KM inicial</small><strong>${esc(formatKm(t.kmInicial))}</strong></div>
+                    <div class="report-detail"><small>KM final</small><strong>${esc(formatKm(t.kmFinal))}</strong></div>
+                    <div class="report-detail"><small>Total KM</small><strong>${esc(formatKm(total))}</strong></div>
+                    <div class="report-detail"><small>KM escalado</small><strong>${esc(formatKm(es))}</strong></div>
+                    <div class="report-detail"><small>Dispersão</small><strong>${dp==null?'-':esc((dp>0?'+':'')+formatKm(dp))}</strong></div>
+                    <div class="report-detail"><small>Duração</small><strong>${esc(reportDuration(t))}</strong></div>
+                    <div class="report-detail full"><small>Região</small><strong>${esc(t.regiao||'-')}</strong></div>
+                </div>
+                <div class="report-actions"><button type="button" class="btn secondary" onclick="window.abrirRelatorioMapa(${i})"><i class="fa-solid fa-map-location-dot"></i> Ver localização no mapa</button><button type="button" class="btn secondary" onclick="window.abrirRelatorioFotos(${i})"><i class="fa-solid fa-camera"></i> Ver fotos</button><button type="button" class="btn report-back" onclick="window.fecharDetalhesRelatorio()"><i class="fa-solid fa-arrow-left"></i> Voltar para viagens</button></div>
+            </div>`;
+        };
+        window.fecharDetalhesRelatorio=function(){renderReportList();};
+        window.abrirRelatorioFotos=function(i){
+            const t=reportTripsCache[i];if(!t)return;const a=t.fotoInicioBase64||t.fotoInicioUrl,b=t.fotoFimBase64||t.fotoFinalUrl;
+            const content=document.getElementById('report-modal-content');
+            content.innerHTML=`<div class="report-details"><div class="report-header"><div class="report-title"><i class="fa-solid fa-camera"></i> Fotos da viagem</div><button type="button" class="report-close" onclick="window.abrirViagemRelatorio(${i})"><i class="fa-solid fa-xmark"></i></button></div><p class="report-subtitle">${esc(t.veiculo||'-')} • ${esc(reportDate(t))}</p><div class="report-photo-grid"><div class="report-photo-box"><h3><i class="fa-solid fa-camera"></i> Início</h3>${a?`<img src="${a}" alt="Foto do painel inicial">`:'<p>Foto de início não disponível.</p>'}</div><div class="report-photo-box"><h3><i class="fa-solid fa-flag-checkered"></i> Fim</h3>${b?`<img src="${b}" alt="Foto do painel final">`:'<p>Foto de fim não disponível.</p>'}</div></div><div class="report-actions"><button type="button" class="btn report-back" onclick="window.abrirViagemRelatorio(${i})"><i class="fa-solid fa-arrow-left"></i> Voltar para detalhes</button></div></div>`;
+        };
+        window.abrirRelatorioMapa=function(i){
+            const t=reportTripsCache[i];if(!t)return;const a=t.gpsInicio,b=t.gpsFim;
+            const content=document.getElementById('report-modal-content');
+            content.innerHTML=`<div class="report-details"><div class="report-header"><div class="report-title"><i class="fa-solid fa-map-location-dot"></i> Localizações da viagem</div><button type="button" class="report-close" onclick="window.abrirViagemRelatorio(${i})"><i class="fa-solid fa-xmark"></i></button></div><p class="report-subtitle">📍 Início: ${a?.lat!=null?`${Number(a.lat).toFixed(6)}, ${Number(a.lng).toFixed(6)}`:'Não disponível'} &nbsp; • &nbsp; 🏁 Fim: ${b?.lat!=null?`${Number(b.lat).toFixed(6)}, ${Number(b.lng).toFixed(6)}`:'Não disponível'}</p><div id="report-map" class="report-map"></div><div class="report-actions"><button type="button" class="btn report-back" onclick="window.abrirViagemRelatorio(${i})"><i class="fa-solid fa-arrow-left"></i> Voltar para detalhes</button></div></div>`;
+            setTimeout(()=>{
+                if(reportMap)reportMap.remove();
+                const center=a?.lat!=null?[Number(a.lat),Number(a.lng)]:b?.lat!=null?[Number(b.lat),Number(b.lng)]:[-22.9,-43.2];
+                reportMap=L.map('report-map').setView(center,(a?.lat!=null||b?.lat!=null)?12:5);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(reportMap);
+                const pts=[];
+                if(a?.lat!=null){const p=[Number(a.lat),Number(a.lng)];pts.push(p);L.marker(p).addTo(reportMap).bindPopup('<i class="fa-solid fa-location-dot"></i> Início').openPopup();}
+                if(b?.lat!=null){const p=[Number(b.lat),Number(b.lng)];pts.push(p);L.marker(p).addTo(reportMap).bindPopup('<i class="fa-solid fa-flag-checkered"></i> Fim');}
+                if(pts.length>1){L.polyline(pts).addTo(reportMap);reportMap.fitBounds(pts,{padding:[30,30]});}
+                reportMap.invalidateSize();
+            },80);
+        };
+        document.getElementById('btn-open-report')?.addEventListener('click',carregarRelatorioUsuario);
+        document.getElementById('btn-close-report')?.addEventListener('click',closeReport);
+        document.getElementById('report-modal')?.addEventListener('click',e=>{if(e.target.id==='report-modal')closeReport();});
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tema Claro / Escuro
+            const themeBtn = document.getElementById('theme-toggle-btn');
+            const themeIcon = document.getElementById('theme-icon');
+            const savedTheme = localStorage.getItem('theme');
+
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                if(themeIcon) themeIcon.textContent = '☀️';
+            } else {
+                document.body.classList.remove('dark-theme');
+                if(themeIcon) themeIcon.textContent = '🌙';
+            }
+
+            themeBtn?.addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                const isLight = !document.body.classList.contains('dark-theme');
+                if(themeIcon) themeIcon.textContent = isLight ? '☀️' : '🌙';
+                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            });
+
+            // Exportação Excel
+            const exportBtn=document.getElementById('btn-admin-export');
+            const exportModal=document.getElementById('export-modal');
+            const exportStart=document.getElementById('export-start-date');
+            const exportEnd=document.getElementById('export-end-date');
+            const hoje=new Date();
+            const isoHoje=new Date(hoje.getTime()-hoje.getTimezoneOffset()*60000).toISOString().slice(0,10);
+            if(exportStart&&!exportStart.value) exportStart.value=isoHoje;
+            if(exportEnd&&!exportEnd.value) exportEnd.value=isoHoje;
+            exportBtn?.addEventListener('click',()=>{
+                if(exportStart&&!exportStart.value)exportStart.value=document.getElementById('filter-start-date')?.value||isoHoje;
+                if(exportEnd&&!exportEnd.value)exportEnd.value=document.getElementById('filter-end-date')?.value||isoHoje;
+                exportModal?.classList.remove('hidden');
+            });
+            document.getElementById('btn-confirm-export')?.addEventListener('click',exportarViagensExcel);
+
+            // Configurações / Modo Lite
+            const settingsBtn=document.getElementById('btn-admin-settings');
+            const liteSwitch=document.getElementById('lite-mode-switch');
+            const savedLite=localStorage.getItem('lite_mode')==='true';
+            document.body.classList.toggle('lite-mode',savedLite);
+            if(liteSwitch) liteSwitch.checked=savedLite;
+            settingsBtn?.addEventListener('click',()=>{ if(liteSwitch) liteSwitch.checked=document.body.classList.contains('lite-mode'); document.getElementById('settings-modal')?.classList.remove('hidden'); });
+            liteSwitch?.addEventListener('change',()=>{ const on=liteSwitch.checked; document.body.classList.toggle('lite-mode',on); localStorage.setItem('lite_mode',String(on)); });
+
+            // Alternância App / Admin
+            const appWrapper = document.getElementById('app-wrapper');
+            const adminView = document.getElementById('admin-view');
+            const btnOpenAdmin = document.getElementById('btn-open-admin');
+            const btnBackToApp = document.getElementById('btn-back-to-app');
+
+            window.checkAdminPermission = function(userRole) {
+                // Relatório é liberado para motorista/proprietário e admin.
+                document.getElementById('btn-open-report')?.classList.remove('hidden');
+                if (String(userRole || '').toLowerCase() === 'admin') {
+                    btnOpenAdmin?.classList.remove('hidden');
+                } else {
+                    btnOpenAdmin?.classList.add('hidden');
+                }
+            };
+
+            btnOpenAdmin?.addEventListener('click', () => {
+                appWrapper.classList.add('hidden');
+                adminView.classList.remove('hidden');
+
+                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+                const startDate = document.getElementById('filter-start-date');
+                const endDate = document.getElementById('filter-end-date');
+                if (startDate && !startDate.value) startDate.value = today;
+                if (endDate && !endDate.value) endDate.value = today;
+
+                carregarViagensAdmin();
+            });
+
+            btnBackToApp?.addEventListener('click', (e) => {
+                e.preventDefault();
+                adminView.classList.add('hidden');
+                appWrapper.classList.remove('hidden');
+            });
+
+    
+        // ===== GERENCIAMENTO DE USUÁRIOS =====
+        let adminUsersCache=[];
+        let monitorPlatesCache=[];
+        async function carregarPlacasMonitoramento(){
+            try{
+                const snap=await getDocs(collection(dbMon,'placas'));
+                monitorPlatesCache=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.id).sort((a,b)=>a.id.localeCompare(b.id));
+            }catch(e){console.warn('Não foi possível carregar placas do monitoramento:',e);monitorPlatesCache=[];}
+        }
+        function escapeHtml(v){return String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+        async function carregarUsuariosAdmin(){
+            const body=document.getElementById('table-users-body'); if(!body)return; body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px">Carregando usuários...</td></tr>';
+            try{const snap=await getDocs(collection(dbKms,'usuarios')); adminUsersCache=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
+                body.innerHTML=adminUsersCache.length?adminUsersCache.map((u,i)=>{const plates=Array.isArray(u.placas)?u.placas:[]; const shown=plates.length?plates.slice(0,4).map(x=>`<span class="plate-chip">${escapeHtml(x)}</span>`).join(''):'<span class="subtle">Nenhuma</span>'; const more=plates.length>4?`<span class="subtle">+${plates.length-4}</span>`:''; return `<tr><td><b>${escapeHtml(u.nome||'-')}</b></td><td>${escapeHtml(u.email||u.id||'-')}</td><td>${escapeHtml(u.role||'-')}</td><td><span class="user-status ${(u.status||'').toLowerCase()}">${escapeHtml(u.status||'-')}</span></td><td><div class="plate-chips">${shown}${more}</div></td><td class="uid-cell">${escapeHtml(u.uid||'-')}</td><td><div class="user-actions"><button class="admin-action-btn edit" title="Editar usuário" onclick="window.editarUsuario(${i})"><i class="fa-solid fa-pen"></i></button></div></td></tr>`}).join(''):'<tr><td colspan="7" style="text-align:center;padding:40px">Nenhum usuário encontrado.</td></tr>';
+            }catch(e){console.error(e);body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px">Não foi possível carregar os usuários. Verifique as permissões do Firestore.</td></tr>';}
+        }
+        window.editarUsuario=async function(i){const u=adminUsersCache[i];if(!u)return; if(!monitorPlatesCache.length)await carregarPlacasMonitoramento(); const selected=Array.isArray(u.placas)?u.placas:[]; const options=monitorPlatesCache.length?monitorPlatesCache.map(p=>{const plate=p.id;return `<label class="plate-option"><input type="checkbox" value="${escapeHtml(plate)}" ${selected.includes(plate)?'checked':''}> <span>${escapeHtml(plate)}</span><small>${escapeHtml(p.perfil||'')} ${escapeHtml(p.tipo||'')}</small></label>`}).join(''):'<p class="subtle">Não foi possível carregar a coleção <b>placas</b> do Firebase de monitoramento.</p>';
+            openAdminModal('user-modal',`<h2 class="modal-title"><i class="fa-solid fa-user-gear"></i> Editar usuário</h2><div class="modal-grid"><div><label>Nome</label><input id="usr-nome" value="${escapeHtml(u.nome)}"></div><div><label>E-mail</label><input id="usr-email" type="email" value="${escapeHtml(u.email||u.id)}"></div><div><label>Perfil / Role</label><select id="usr-role"><option value="motorista">motorista</option><option value="proprietario">proprietario</option><option value="admin">admin</option></select></div><div><label>Status</label><select id="usr-status"><option value="autorizado">autorizado</option><option value="pendente">pendente</option><option value="bloqueado">bloqueado</option></select></div><div class="full"><label>Placas vinculadas</label><div class="plate-selector">${options}</div></div><div class="full"><label>UID</label><input value="${escapeHtml(u.uid||'')}" readonly></div></div><div class="subtle" style="margin-top:12px">As placas abaixo são carregadas da coleção <b>placas</b> do Firebase de monitoramento.</div><div class="modal-actions"><button class="btn" onclick="window.salvarUsuario(${i})"><i class="fa-solid fa-floppy-disk"></i> Salvar</button><button class="btn danger" onclick="window.alternarBloqueioUsuario(${i})">${String(u.status).toLowerCase()==='bloqueado'?'🔓 Desbloquear usuário':'🔒 Bloquear usuário'}</button></div>`);document.getElementById('usr-role').value=u.role||'motorista';document.getElementById('usr-status').value=u.status||'autorizado';};
+        window.salvarUsuario=async function(i){const old=adminUsersCache[i];const email=document.getElementById('usr-email').value.trim().toLowerCase();const data={...old,nome:document.getElementById('usr-nome').value.trim(),email,role:document.getElementById('usr-role').value,status:document.getElementById('usr-status').value,placas:[...document.querySelectorAll('#user-modal-content .plate-option input:checked')].map(x=>x.value)};if(!data.nome||!email)return alert('Nome e e-mail são obrigatórios.');try{if(old.id!==email){const newRef=doc(dbKms,'usuarios',email);await setDoc(newRef,data);await deleteDoc(doc(dbKms,'usuarios',old.id));}else await setDoc(doc(dbKms,'usuarios',old.id),data);closeAdminModal('user-modal');await carregarUsuariosAdmin();alert('Usuário atualizado.');}catch(e){console.error(e);alert('Erro ao salvar usuário: '+e.message);}};
+        window.alternarBloqueioUsuario=async function(i){const u=adminUsersCache[i];if(!u)return;const bloquear=String(u.status).toLowerCase()!=='bloqueado';if(!confirm(`${bloquear?'Bloquear':'Desbloquear'} o usuário ${u.nome||u.email}?`))return;try{await setDoc(doc(dbKms,'usuarios',u.id),{...u,status:bloquear?'bloqueado':'autorizado'});closeAdminModal('user-modal');await carregarUsuariosAdmin();alert(bloquear?'Usuário bloqueado.':'Usuário desbloqueado.');}catch(e){alert('Erro: '+e.message);}};
+        const usersBtn=document.getElementById('btn-admin-users'); const usersPanel=document.getElementById('admin-users-panel'); const tripsPanel=document.querySelector('.admin-content > .table-container');
+        usersBtn?.addEventListener('click',async e=>{e.preventDefault();document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));usersBtn.classList.add('active');tripsPanel?.classList.add('hidden');document.getElementById('admin-stats')?.classList.add('hidden');document.querySelector('.filter-box')?.classList.add('hidden');document.querySelector('.admin-page-title h1').textContent='Gestão de Usuários';document.querySelector('.admin-page-title p').textContent='Gerencie acessos, perfis, status e placas vinculadas aos usuários.';usersPanel?.classList.remove('hidden');await carregarPlacasMonitoramento();await carregarUsuariosAdmin();});
+        document.querySelector('.nav-item[data-tab="viagens"]')?.addEventListener('click',e=>{e.preventDefault();usersBtn?.classList.remove('active');e.currentTarget.classList.add('active');usersPanel?.classList.add('hidden');tripsPanel?.classList.remove('hidden');document.getElementById('admin-stats')?.classList.remove('hidden');document.querySelector('.filter-box')?.classList.remove('hidden');document.querySelector('.admin-page-title h1').textContent='Gestão de Viagens';document.querySelector('.admin-page-title p').textContent='Acompanhe, consulte e gerencie todas as viagens do ICAPHIDRIVE.';});
+        document.getElementById('btn-refresh-users')?.addEventListener('click',carregarUsuariosAdmin);
+
+        // Event Listeners dos Filtros do Admin
+            document.getElementById('filter-start-date')?.addEventListener('change', carregarViagensAdmin);
+            document.getElementById('filter-end-date')?.addEventListener('change', carregarViagensAdmin);
+            document.getElementById('filter-search')?.addEventListener('input', carregarViagensAdmin);
+        });
+    </script>
+</body>
+</html>
