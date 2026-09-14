@@ -629,7 +629,8 @@
         input,select,textarea{font-size:16px!important;}
         #trip-active-section .tracking-status{display:none!important;}
       }
-    </style>
+            .report-trip-list{display:flex;flex-direction:column;gap:10px;max-height:65vh;overflow:auto}.report-trip-item{width:100%;text-align:left;border:1px solid var(--admin-line);background:rgba(148,163,184,.035);color:var(--text-main);border-radius:15px;padding:14px;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}.report-trip-item:hover{transform:translateY(-1px);background:rgba(148,163,184,.08)}.report-trip-main,.report-trip-meta{display:flex;align-items:center;gap:10px}.report-trip-main{justify-content:space-between}.report-trip-main span,.report-trip-route{color:var(--text-sec);font-size:.82rem}.report-trip-route{margin:9px 0}.report-trip-meta{justify-content:flex-end}.report-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.report-modal strong{display:block;padding:10px 0}.report-modal .modal-grid label{margin-bottom:0}
+</style>
 </head>
 <body>
     <!-- TELA DE CARREGAMENTO / SPLASH SCREEN -->
@@ -652,6 +653,7 @@
             <!-- CORREÇÃO: Flexbox, Gap de 16px e botão Admin visível -->
             <div class="top-icons" style="display: flex; gap: 16px; align-items: center;">
                 <span title="Painel Admin" id="btn-open-admin" class="hidden" style="cursor: pointer; font-size: 1.1rem;"><i class="fa-solid fa-gear"></i></span>
+                <span title="Minhas viagens" id="btn-open-report" class="hidden" style="cursor: pointer; font-size: 1.1rem;"><i class="fa-solid fa-clipboard-list"></i></span>
                 <span title="Sair" id="btn-global-logout" class="hidden" style="cursor: pointer; font-size: 1.1rem;"><i class="fa-solid fa-right-from-bracket"></i></span>
             </div>
         </div>
@@ -705,7 +707,9 @@
                 <div class="section-title"><i class="fa-solid fa-location-dot"></i> Nova Viagem</div>
                 <div class="input-group">
                     <label>Placa do Veículo</label>
-                    <input type="text" id="input-placa" placeholder="Ex: ABC1234" style="text-transform: uppercase;">
+                    <select id="input-placa">
+                        <option value="">Selecione a placa vinculada</option>
+                    </select>
                 </div>
                 <button class="btn secondary" id="btn-buscar-rotas"><i class="fa-solid fa-magnifying-glass"></i> Buscar Viagens do Dia</button>
 
@@ -854,6 +858,7 @@
     </div>
 
     <!-- MODAIS DO ADMIN -->
+    <div id="report-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="report-modal">&times;</button><div id="report-modal-content"></div></div></div>
     <div id="admin-modal" class="admin-modal hidden"><div class="admin-modal-card"><button class="modal-close" data-close-modal="admin-modal">&times;</button><div id="admin-modal-content"></div></div></div>
     <div id="photos-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="photos-modal">&times;</button><div id="photos-modal-content"></div></div></div>
     <div id="map-modal" class="admin-modal hidden"><div class="admin-modal-card wide"><button class="modal-close" data-close-modal="map-modal">&times;</button><div id="map-modal-content"></div><div id="trip-map" style="height:480px;border-radius:12px;margin-top:12px;"></div></div></div>
@@ -941,6 +946,7 @@
         const appWrapper = document.getElementById('app-wrapper');
         const adminView = document.getElementById('admin-view');
         const btnOpenAdmin = document.getElementById('btn-open-admin');
+        const btnOpenReport = document.getElementById('btn-open-report');
         const btnBackToApp = document.getElementById('btn-back-to-app');
 
         const sections = {
@@ -996,6 +1002,28 @@
                         if(dataUrl.length>420000) return reject(new Error('A foto ficou muito grande. Tire uma nova foto com menos resolução.')); resolve(dataUrl); }; img.src=reader.result; };
                 reader.readAsDataURL(file);
             });
+        }
+
+        function normalizarPlacasUsuario() {
+            const placas = Array.isArray(currentUserData?.placas) ? currentUserData.placas : [];
+            return [...new Set(placas.map(p => String(p || '').trim().toUpperCase()).filter(Boolean))];
+        }
+
+        function preencherPlacasDoUsuario() {
+            const select = document.getElementById('input-placa');
+            if (!select) return;
+            const placas = normalizarPlacasUsuario();
+            select.innerHTML = '<option value="">Selecione a placa vinculada</option>';
+            placas.forEach(placa => {
+                const opt = document.createElement('option');
+                opt.value = placa;
+                opt.textContent = placa;
+                select.appendChild(opt);
+            });
+            select.disabled = placas.length === 0;
+            if (!placas.length) {
+                select.innerHTML = '<option value="">Nenhuma placa vinculada a este usuário</option>';
+            }
         }
 
         // 1. AUTH FLOW
@@ -1063,7 +1091,9 @@
                     const userDoc = await getDoc(doc(dbKms, "usuarios", user.email.toLowerCase()));
                     if(userDoc.exists()) {
                         currentUserData = userDoc.data();
+                        preencherPlacasDoUsuario();
                         btnOpenAdmin?.classList.add('hidden');
+                        btnOpenReport?.classList.remove('hidden');
                         document.getElementById('btn-global-logout')?.classList.remove('hidden');
                         const condutorInput = document.getElementById('input-condutor');
                         if(condutorInput) condutorInput.value = currentUserData.nome;
@@ -1100,7 +1130,10 @@
             } else {
                 currentUserData = null;
                 btnOpenAdmin?.classList.add('hidden');
+                btnOpenReport?.classList.add('hidden');
                 document.getElementById('btn-global-logout')?.classList.add('hidden');
+                const placaSelect = document.getElementById('input-placa');
+                if (placaSelect) { placaSelect.innerHTML = '<option value="">Selecione a placa vinculada</option>'; placaSelect.disabled = true; }
                 adminView?.classList.add('hidden');
                 appWrapper?.classList.remove('hidden');
                 setTimeout(() => {
@@ -1120,7 +1153,10 @@
         // 2. BUSCAR ROTAS (MONITORAMENTO)
         document.getElementById('btn-buscar-rotas')?.addEventListener('click', async () => {
             const placa = document.getElementById('input-placa').value.toUpperCase().trim();
-            if(!placa) return alert("Digite a placa do veículo.");
+            const placasVinculadas = normalizarPlacasUsuario();
+            if (!placasVinculadas.includes(placa)) {
+                return alert(placasVinculadas.length ? 'Selecione uma placa vinculada ao seu usuário.' : 'Nenhuma placa está vinculada ao seu usuário. Solicite ao administrador a vinculação da placa.');
+            }
 
             const hojeStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
 
@@ -1506,6 +1542,75 @@
             const pos=await solicitarLocalizacaoObrigatoria('continuar a viagem');
             return pos || {lat:null,lng:null,erro:'Localização obrigatória não disponível'};
         }
+
+        // 5. RELATÓRIO DO USUÁRIO - SOMENTE VIAGENS DAS PLACAS VINCULADAS
+        let userReportTripsCache = [];
+        let userReportMap = null;
+        function reportTripRoute(t){ return t.rota || t.regiao || t.rotaRaw?.transporte || t.rotaRaw?.regiao || '-'; }
+        function reportStatusLabel(s){ return ({EM_ROTA:'Em Rota',CONCLUIDA:'Finalizado',CANCELADA:'Cancelada'})[s] || s || '-'; }
+        function reportDate(t){
+            const v=t.inicioDataHora || t.createdAt || '';
+            if(v){const d=new Date(v); if(!Number.isNaN(d.getTime())) return d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});}
+            return t.data || '-';
+        }
+        function reportTime(t, end=false){
+            const v=end?t.fimDataHora:t.inicioDataHora;
+            if(v){const d=new Date(v); if(!Number.isNaN(d.getTime())) return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});}
+            return end?(t.chegadaStr||'-'):(t.saida||'-');
+        }
+        function closeUserReport(){
+            if(userReportMap){userReportMap.remove();userReportMap=null;}
+            document.getElementById('report-modal')?.classList.add('hidden');
+        }
+        async function abrirRelatorioUsuario(){
+            if(!auth.currentUser || !currentUserData) return;
+            const placas = normalizarPlacasUsuario();
+            if(!placas.length){
+                openAdminModal('report-modal', '<div class="empty-state" style="padding:40px;text-align:center"><i class="fa-solid fa-car" style="font-size:2rem"></i><h2 style="margin:12px 0 6px">Nenhuma placa vinculada</h2><p class="subtle">Solicite ao administrador a vinculação de uma placa ao seu usuário.</p></div>');
+                return;
+            }
+            const content=document.getElementById('report-modal-content');
+            if(content) content.innerHTML='<div class="empty-state" style="padding:40px;text-align:center"><i class="fa-solid fa-spinner fa-spin"></i><strong>Carregando suas viagens...</strong></div>';
+            document.getElementById('report-modal')?.classList.remove('hidden');
+            try{
+                const [a,c]=await Promise.all([getDocs(collection(dbKms,'viagens_ativas')),getDocs(collection(dbKms,'viagens_concluidas'))]);
+                const uid=auth.currentUser.uid;
+                const all=[];
+                a.forEach(d=>all.push({id:d.id,...d.data()}));
+                c.forEach(d=>all.push({id:d.id,...d.data()}));
+                userReportTripsCache=all.filter(t=>String(t.uid||'')===uid || placas.includes(String(t.veiculo||'').trim().toUpperCase()))
+                    .sort((x,y)=>Number(y.startTimeTs||new Date(y.inicioDataHora||0).getTime()||0)-Number(x.startTimeTs||new Date(x.inicioDataHora||0).getTime()||0));
+                const rows=userReportTripsCache.length?userReportTripsCache.map((t,i)=>{
+                    const total=t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):null);
+                    const status=reportStatusLabel(t.status);
+                    return `<button type="button" class="report-trip-item" onclick="window.abrirDetalheRelatorio(${i})"><div class="report-trip-main"><strong>${esc(t.veiculo||'-')}</strong><span>${esc(reportDate(t))} • ${esc(reportTime(t))}</span></div><div class="report-trip-route"><i class="fa-solid fa-route"></i> ${esc(reportTripRoute(t))}</div><div class="report-trip-meta"><span class="status-badge ${t.status==='CONCLUIDA'?'completed':t.status==='EM_ROTA'?'in-progress':'pending'}">${esc(status)}</span><span>${total==null?'-':formatKm(total)} km</span><i class="fa-solid fa-chevron-right"></i></div></button>`;
+                }).join(''):'<div class="empty-state" style="padding:40px;text-align:center"><i class="fa-regular fa-folder-open" style="font-size:2rem"></i><h2 style="margin:12px 0 6px">Nenhuma viagem encontrada</h2><p class="subtle">Ainda não há viagens registradas para suas placas vinculadas.</p></div>';
+                openAdminModal('report-modal', `<div class="report-header"><div><h2 class="modal-title"><i class="fa-solid fa-clipboard-list"></i> Minhas viagens</h2><p class="subtle">Viagens das placas vinculadas ao seu usuário.</p></div><span class="plate-chip">${placas.length} placa${placas.length===1?'':'s'}</span></div><div class="report-trip-list">${rows}</div>`);
+            }catch(e){
+                console.error(e);
+                openAdminModal('report-modal','<div class="empty-state" style="padding:40px;text-align:center"><i class="fa-solid fa-triangle-exclamation"></i><h2>Não foi possível carregar</h2><p class="subtle">Verifique sua conexão e tente novamente.</p></div>');
+            }
+        }
+        window.abrirDetalheRelatorio=function(i){
+            const t=userReportTripsCache[i]; if(!t)return;
+            const total=t.totalKm??(t.kmFinal!=null?Number(t.kmFinal)-Number(t.kmInicial||0):null);
+            const escalado=Number(t.kmEscalado??t.metaKm??t.rotaRaw?.km??0)||0;
+            const disp=t.dispersaoKm??(total!=null?total-escalado:null);
+            const a=t.gpsInicio,b=t.gpsFim;
+            const photos=`<div class="modal-actions"><button type="button" class="btn secondary" onclick="window.mostrarFotosRelatorio(${i})"><i class="fa-solid fa-camera"></i> Ver fotos</button><button type="button" class="btn secondary" onclick="window.mostrarMapaRelatorio(${i})"><i class="fa-solid fa-map-location-dot"></i> Ver mapa</button><button type="button" class="btn" onclick="abrirRelatorioUsuario()"><i class="fa-solid fa-arrow-left"></i> Voltar às viagens</button></div>`;
+            openAdminModal('report-modal',`<h2 class="modal-title"><i class="fa-solid fa-route"></i> Detalhes da viagem</h2><div class="modal-grid"><div><label>Placa</label><strong>${esc(t.veiculo||'-')}</strong></div><div><label>Status</label><strong>${esc(reportStatusLabel(t.status))}</strong></div><div><label>Data</label><strong>${esc(reportDate(t))}</strong></div><div><label>Início / Fim</label><strong>${esc(reportTime(t))} / ${esc(reportTime(t,true))}</strong></div><div><label>Tipo</label><strong>${esc(t.tipo||'-')}</strong></div><div><label>Motorista</label><strong>${esc(t.condutor||'-')}</strong></div><div class="full"><label>Rota</label><strong>${esc(reportTripRoute(t))}</strong></div><div><label>KM Inicial</label><strong>${formatKm(t.kmInicial)}</strong></div><div><label>KM Final</label><strong>${formatKm(t.kmFinal)}</strong></div><div><label>Total</label><strong>${formatKm(total)} km</strong></div><div><label>KM Escalado</label><strong>${formatKm(escalado)} km</strong></div><div><label>Dispersão</label><strong>${disp==null?'-':(disp>0?'+':'')+formatKm(disp)} km</strong></div></div>${photos}`);
+        };
+        window.mostrarFotosRelatorio=function(i){
+            const t=userReportTripsCache[i]; if(!t)return;
+            const a=t.fotoInicioBase64||t.fotoInicioUrl,b=t.fotoFimBase64||t.fotoFinalUrl;
+            openAdminModal('report-modal',`<h2 class="modal-title"><i class="fa-solid fa-camera"></i> Fotos da viagem</h2><p><b>Placa:</b> ${esc(t.veiculo||'-')} &nbsp; <b>Data:</b> ${esc(reportDate(t))}</p><div class="photo-grid"><div class="photo-box"><h3><i class="fa-solid fa-camera"></i> Foto de início</h3>${a?`<img src="${a}" alt="Foto de início">`:'<p>Foto de início não disponível.</p>'}</div><div class="photo-box"><h3><i class="fa-solid fa-flag-checkered"></i> Foto de fim</h3>${b?`<img src="${b}" alt="Foto de fim">`:'<p>Foto de fim não disponível.</p>'}</div></div><div class="modal-actions"><button class="btn" onclick="window.abrirDetalheRelatorio(${i})"><i class="fa-solid fa-arrow-left"></i> Voltar</button></div>`);
+        };
+        window.mostrarMapaRelatorio=function(i){
+            const t=userReportTripsCache[i],a=t?.gpsInicio,b=t?.gpsFim; if(!t)return;
+            openAdminModal('report-modal',`<h2 class="modal-title"><i class="fa-solid fa-map-location-dot"></i> Mapa da viagem</h2><p><b>Placa:</b> ${esc(t.veiculo||'-')} &nbsp; <b>Data:</b> ${esc(reportDate(t))}</p><p><i class="fa-solid fa-location-dot"></i> Início: ${a?.lat!=null?`${Number(a.lat).toFixed(6)}, ${Number(a.lng).toFixed(6)}`:'N/D'} &nbsp;&nbsp; <i class="fa-solid fa-flag-checkered"></i> Fim: ${b?.lat!=null?`${Number(b.lat).toFixed(6)}, ${Number(b.lng).toFixed(6)}`:'N/D'}</p><div id="report-trip-map" style="height:480px;border-radius:12px;margin-top:12px;"></div><div class="modal-actions"><button class="btn" onclick="window.abrirDetalheRelatorio(${i})"><i class="fa-solid fa-arrow-left"></i> Voltar</button></div>`);
+            setTimeout(()=>{try{if(userReportMap)userReportMap.remove();userReportMap=L.map('report-trip-map').setView(a?.lat!=null?[a.lat,a.lng]:[-22.9,-43.2],a?.lat!=null?12:5);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(userReportMap);const pts=[];if(a?.lat!=null){pts.push([a.lat,a.lng]);L.marker([a.lat,a.lng]).addTo(userReportMap).bindPopup('Início');}if(b?.lat!=null){pts.push([b.lat,b.lng]);L.marker([b.lat,b.lng]).addTo(userReportMap).bindPopup('Fim');}if(pts.length>1){L.polyline(pts).addTo(userReportMap);userReportMap.fitBounds(pts,{padding:[30,30]});}userReportMap.invalidateSize();}catch(e){console.warn('Mapa do relatório:',e)}},100);
+        };
+        btnOpenReport?.addEventListener('click',abrirRelatorioUsuario);
 
         // 5. MÓDULO PAINEL ADMIN - CONSULTA E GESTÃO COMPLETA
         let adminTripsCache=[]; let adminMap=null;
