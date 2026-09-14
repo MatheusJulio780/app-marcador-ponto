@@ -3,7 +3,6 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -194,13 +193,20 @@
             border: 2px solid var(--border);
             background: var(--input-bg);
             color: var(--text-main);
-            font-size: 0.85rem !important;
+            font-size: 16px !important;
             text-overflow: ellipsis;
             font-weight: 500;
             transition: all 0.2s ease;
+            -webkit-text-size-adjust: 100%;
         }
 
-        input:focus, select:focus {
+        textarea {
+            width: 100%;
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
             background: var(--surface);
@@ -1191,14 +1197,36 @@
 
         // 3. INICIAR VIAGEM
         async function checkActiveTrip() {
-            // Primeiro tenta o cache local (mais rápido).
+            // O cache local é apenas um atalho. Antes de restaurar uma viagem,
+            // confirma no Firebase que ela ainda existe e continua EM_ROTA.
+            // Isso evita ressuscitar uma viagem que o administrador excluiu/cancelou.
             const active = localStorage.getItem('active_trip');
             if (active) {
                 try {
                     const trip = JSON.parse(active);
-                    if (trip?.status === 'EM_ROTA') {
-                        restoreTripUI(trip);
-                        return;
+                    if (trip?.id && trip?.status === 'EM_ROTA') {
+                        try {
+                            const serverSnap = await getDoc(doc(dbKms, 'viagens_ativas', trip.id));
+                            if (serverSnap.exists()) {
+                                const serverTrip = { id: trip.id, ...serverSnap.data() };
+                                if (serverTrip.status === 'EM_ROTA' && (!serverTrip.uid || serverTrip.uid === auth.currentUser?.uid)) {
+                                    localStorage.setItem('active_trip', JSON.stringify(serverTrip));
+                                    restoreTripUI(serverTrip);
+                                    return;
+                                }
+                            }
+                            // Não existe mais, ou deixou de estar em rota: limpa o cache local.
+                            localStorage.removeItem('active_trip');
+                            pararRastreamento();
+                        } catch (serverError) {
+                            // Se estiver temporariamente sem internet, preserva o cache para não
+                            // impedir o motorista de continuar trabalhando offline.
+                            console.warn('Não foi possível validar a viagem ativa no Firebase; usando cache local:', serverError);
+                            restoreTripUI(trip);
+                            return;
+                        }
+                    } else {
+                        localStorage.removeItem('active_trip');
                     }
                 } catch (e) {
                     localStorage.removeItem('active_trip');
@@ -1216,9 +1244,11 @@
                     const snap = await getDocs(q);
                     if (!snap.empty) {
                         const trip = { id: snap.docs[0].id, ...snap.docs[0].data() };
-                        localStorage.setItem('active_trip', JSON.stringify(trip));
-                        restoreTripUI(trip);
-                        return;
+                        if (trip.status === 'EM_ROTA') {
+                            localStorage.setItem('active_trip', JSON.stringify(trip));
+                            restoreTripUI(trip);
+                            return;
+                        }
                     }
                 } catch (e) {
                     console.warn('Não foi possível consultar a viagem ativa no Firebase:', e);
@@ -1349,7 +1379,21 @@
             },30000);
             try{
                 trackingStatusUnsubscribe=onSnapshot(doc(dbKms,'viagens_ativas',trip.id),snap=>{
-                    if(!snap.exists()||snap.data()?.status!=='EM_ROTA')pararRastreamento();
+                    const data = snap.exists() ? snap.data() : null;
+                    if(!snap.exists() || data?.status !== 'EM_ROTA'){
+                        // O administrador pode ter excluído/cancelado a viagem.
+                        // Não deixe o cache local recriá-la após um recarregamento.
+                        try{
+                            const localTrip = JSON.parse(localStorage.getItem('active_trip') || '{}');
+                            if(localTrip?.id === trip.id) localStorage.removeItem('active_trip');
+                        }catch(_){}
+                        pararRastreamento();
+                        clearInterval(timerInterval);
+                        showSection('tripStart');
+                    } else {
+                        // Mantém o cache sincronizado com o documento oficial.
+                        try{ localStorage.setItem('active_trip', JSON.stringify({id:trip.id,...data})); }catch(_){}
+                    }
                 });
             }catch(e){console.warn('Listener da viagem ativa:',e)}
             // Reage caso a permissão seja retirada durante a viagem.
@@ -1662,7 +1706,12 @@
             if(!confirm(`Excluir definitivamente esta viagem?\n\nPlaca: ${placa}\nRota: ${rota}\n\nEsta ação não pode ser desfeita.`))return;
             try{
                 await deleteDoc(doc(dbKms,old.status==='EM_ROTA'?'viagens_ativas':'viagens_concluidas',old.id));
-                try{if(JSON.parse(localStorage.getItem('active_trip')||'{}').id===old.id)localStorage.removeItem('active_trip')}catch{}
+                try{
+                    if(JSON.parse(localStorage.getItem('active_trip')||'{}').id===old.id){
+                        localStorage.removeItem('active_trip');
+                        pararRastreamento();
+                    }
+                }catch{}
                 closeAdminModal('admin-modal');
                 await carregarViagensAdmin();
                 alert('Viagem excluída com sucesso.');
