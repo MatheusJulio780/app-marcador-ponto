@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V10.8</span>
+                        Matheus Julio V10.9</span>
                 </div>
             </div>
 
@@ -1972,6 +1972,8 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
+
+        // Exemplo de como deve ficar na inicialização:
         const db = firebase.firestore();
 
         // FUNÇÃO NOVA: Gira o card 3D
@@ -1996,6 +1998,35 @@
         let dadosExtrato = []; let obsViagem = []; let gpsWatchId = null; let ignorarSnapshot = false; let mapaFocado = false;
         let unsubViagemAtual = null;
         let paginaAtualAdmin = 1; let itensPorPaginaAdmin = 20;
+
+        // === LISTENER DE TEMPO REAL PARA O RASTREAMENTO ===
+        db.collection('viagens')
+        .where('status', '==', 'em_curso')
+        .onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                const viagemAtualizada = { id: change.doc.id, ...change.doc.data() };
+                
+                // 1. Atualiza ou insere a viagem no array global
+                const index = todasViagens.findIndex(v => v.id === viagemAtualizada.id);
+                if (index !== -1) {
+                    todasViagens[index] = viagemAtualizada;
+                } else {
+                    todasViagens.push(viagemAtualizada);
+                }
+
+                // 2. Se o modal individual da rota estiver aberto, força o redesenho
+                if (currentRastreioId === viagemAtualizada.id) {
+                    window.abrirRastreioAdmin(currentRastreioId, true);
+                }
+            });
+
+            // 3. Redesenha os pontos no mapa geral de frotas
+            if (typeof window.carregarMapa === 'function') {
+                window.carregarMapa();
+            }
+        }, (error) => {
+            console.warn("Erro no listener de rastreamento:", error);
+        });
 
         function el(id) { return document.getElementById(id); }
 
@@ -3346,9 +3377,31 @@
             }
         }
 
-        window.atualizarRastreioIndividual = function () {
-            if (currentRastreioId) window.abrirRastreioAdmin(currentRastreioId);
-        }
+        window.atualizarRastreioIndividual = async function () {
+            if (!currentRastreioId) return;
+
+            try {
+                // 1. Busca o documento atualizado diretamente do Firestore no momento do clique
+                const doc = await db.collection('viagens').doc(currentRastreioId).get();
+
+                if (doc.exists) {
+                    const viagemAtualizada = { id: doc.id, ...doc.data() };
+
+                    // 2. Atualiza o array local com o dado em tempo real
+                    const index = todasViagens.findIndex(v => v.id === currentRastreioId);
+                    if (index !== -1) {
+                        todasViagens[index] = viagemAtualizada;
+                    } else {
+                        todasViagens.push(viagemAtualizada);
+                    }
+
+                    // 3. Redesenha a rota e a posição do veículo no mapa
+                    window.abrirRastreioAdmin(currentRastreioId, true);
+                }
+            } catch (e) {
+                console.error("Erro ao buscar localização atualizada:", e);
+            }
+        };
 
         window.abrirRastreioAdmin = function (idViagem, isAutoUpdate = false) {
             currentRastreioId = idViagem;
@@ -4978,14 +5031,17 @@
                 }
 
                 if (deveEnviar && idViagem) {
+                    const locComTempo = `${lat},${lng},${agora}`;
+
                     db.collection('viagens').doc(idViagem).update({
                         locAtual: loc,
-                        ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(e => console.log("Rastreio: Erro silencioso ao atualizar no Firebase", e));
+                        ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp(),
+                        rotaReal: firebase.firestore.FieldValue.arrayUnion(locComTempo) // Alimenta a linha do trajeto no mapa
+                    }).catch(e => console.log("Rastreio: Erro ao atualizar no Firebase", e));
 
                     window.ultimaLocEnviada = loc;
                     window.ultimoTempoEnviado = agora;
-                    localStorage.setItem('icaphi_last_loc', loc); // Cache local para resiliência
+                    localStorage.setItem('icaphi_last_loc', loc);
                 }
             };
 
