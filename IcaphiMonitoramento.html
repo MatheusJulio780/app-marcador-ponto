@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.8</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.9</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -3839,8 +3839,6 @@
         <section id="view-placas" class="view-section">
             <header class="header">
                 <h2><i class="ph ph-truck" style="color:var(--accent);"></i> Frota</h2>
-
-                <!-- CONTAINER DIREITO PADRONIZADO -->
                 <div style="display: flex; align-items: center; gap: 20px; margin-left: auto;">
                     <div id="online-users-stack" class="avatar-stack" title="Usuários Online"></div>
                     <div id="current-user-profile" class="user-profile-btn">
@@ -3851,13 +3849,12 @@
             </header>
             <div class="content-container">
                 <div class="controls-bar" style="justify-content: space-between;">
-                    <div style="display: flex; gap: 10px;"><button class="btn btn-primary"
-                            onclick="abrirModalPlaca('')">+ Adicionar Veículo</button><button class="btn btn-secondary"
-                            onclick="document.getElementById('import-placas-file').click()">Importar
-                            Planilha</button><input type="file" id="import-placas-file" accept=".xlsx, .xls, .csv"
-                            style="display: none;"></div>
-                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;"
-                        id="placas-count">Carregando...</span>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="window.abrirModalPlaca('')">+ Adicionar Veículo</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-placas-file').click()">Importar Planilha</button>
+                        <input type="file" id="import-placas-file" accept=".xlsx, .xls, .csv" style="display: none;">
+                    </div>
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;" id="placas-count">Carregando...</span>
                 </div>
                 <div class="table-wrapper">
                     <table id="tabela-placas">
@@ -5001,28 +4998,29 @@
         </div>
     </div>
 
+    <!-- MODAL DE CADASTRO/EDIÇÃO DE FROTA -->
     <div class="modal-overlay" id="modal-placa">
-        <div class="modal-content" style="width: 380px;">
+        <div class="modal-content" style="width: 400px;">
             <div class="modal-header">
-                <h3 id="modal-placa-titulo">Placa</h3><button class="btn-close"
-                    onclick="document.getElementById('modal-placa').classList.remove('active')">×</button>
+                <h3 id="modal-placa-title"><i class="ph ph-truck"></i> Adicionar Veículo</h3>
+                <button class="btn-close" onclick="window.fecharModalPlaca()">&times;</button>
             </div>
-            <div class="modal-body" style="gap: 15px; padding: 25px;">
-                <div><label
-                        style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">PLACA</label><input
-                        type="text" id="input-placa" placeholder="ABC1D23"
-                        style="text-transform:uppercase; width: 100%;"></div>
-                <div><label
-                        style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">PERFIL</label><input
-                        type="text" id="input-perfil" placeholder="EX: VAN, FIORINO..."
-                        style="text-transform:uppercase; width: 100%;"></div>
-                <div><label
-                        style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">TIPO</label><input
-                        type="text" id="input-tipo" placeholder="EX: FIXO, AGREGADO..."
-                        style="text-transform:uppercase; width: 100%;"></div>
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">PLACA DO VEÍCULO:</label>
+                    <input type="text" id="placa-input-placa" style="text-transform: uppercase; font-weight: bold;" placeholder="Ex: ABC1D23">
+
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PERFIL DO VEÍCULO:</label>
+                    <input type="text" id="placa-input-perfil" style="text-transform: uppercase;" placeholder="Ex: FIORINO, LEVE 3/4">
+
+                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">TIPO DE VÍNCULO:</label>
+                    <input type="text" id="placa-input-tipo" style="text-transform: uppercase;" placeholder="Ex: FIXO, AGREGADO">
+                </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-primary" id="btn-salvar-placa"
-                    style="width: 100%; padding: 10px;">Salvar Veículo</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.fecharModalPlaca()">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.salvarPlaca()"><i class="ph ph-floppy-disk"></i> Salvar Veículo</button>
+            </div>
         </div>
     </div>
 
@@ -5480,9 +5478,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="fecharModalPlaca()">Cancelar</button>
-                <button class="btn btn-primary" onclick="salvarPlaca()"><i class="ph ph-floppy-disk"></i> Salvar
-                    Veículo</button>
+                <button class="btn btn-secondary" onclick="window.fecharModalPlaca()">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.salvarPlaca()"><i class="ph ph-floppy-disk"></i> Salvar Veículo</button>
             </div>
         </div>
     </div>
@@ -6467,23 +6464,60 @@
 
         // ================= MOTOR DE CADASTRO DE FROTA (CORRIGIDO PARA O HTML ORIGINAL) =================
 
+        window.renderizarTabelaPlacas = () => {
+            const tbody = document.querySelector('#tabela-placas tbody'); 
+            if (!tbody) return;
+
+            let htmlBuffer = ""; 
+            const total = Object.keys(window.placasCache || {}).length;
+            
+            const countElem = document.getElementById('placas-count');
+            if (countElem) countElem.innerText = `${total} Veículos Cadastrados`;
+            
+            for (const [placa, dados] of Object.entries(window.placasCache || {})) { 
+                htmlBuffer += `<tr>
+                    <td><strong style="color:var(--accent);">${placa}</strong></td>
+                    <td>${safeStr(dados.perfil)}</td>
+                    <td>${safeStr(dados.tipo)}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-sm btn-secondary" onclick="window.abrirModalPlaca('${placa}')">Editar</button> 
+                        <button class="btn btn-sm btn-danger" onclick="window.excluirPlaca('${placa}')">X</button>
+                    </td>
+                </tr>`; 
+            }
+            tbody.innerHTML = htmlBuffer;
+        };
+
         window.abrirModalPlaca = (placa = '') => {
             const modal = document.getElementById('modal-placa');
             const title = document.getElementById('modal-placa-title');
 
-            // IDs originais do seu HTML do modal de placa
             const inputPlaca = document.getElementById('placa-input-placa');
             const inputPerfil = document.getElementById('placa-input-perfil');
             const inputTipo = document.getElementById('placa-input-tipo');
 
-            if (placa && window.placasCache && window.placasCache[placa]) {
+            // Sanitização para comparação cruzada no cache
+            const placaSanitizada = String(placa).toUpperCase().replace(/[^A-Z0-9]/g, '');
+            
+            let dados = null;
+            let chaveReal = null;
+
+            // Busca inteligente no cache desconsiderando divergências de formatação
+            if (window.placasCache && placaSanitizada) {
+                chaveReal = Object.keys(window.placasCache).find(
+                    key => key.toUpperCase().replace(/[^A-Z0-9]/g, '') === placaSanitizada
+                );
+                if (chaveReal) dados = window.placasCache[chaveReal];
+            }
+
+            if (placaSanitizada && dados) {
                 if (title) title.innerHTML = '<i class="ph ph-pencil-simple"></i> Editar Veículo';
                 if (inputPlaca) {
-                    inputPlaca.value = placa;
-                    inputPlaca.disabled = true;
+                    inputPlaca.value = chaveReal || placaSanitizada;
+                    inputPlaca.disabled = true; // Bloqueia alteração da chave primária
                 }
-                if (inputPerfil) inputPerfil.value = window.placasCache[placa].perfil || "";
-                if (inputTipo) inputTipo.value = window.placasCache[placa].tipo || "";
+                if (inputPerfil) inputPerfil.value = dados.perfil || dados.PERFIL || dados.Perfil || "";
+                if (inputTipo) inputTipo.value = dados.tipo || dados.TIPO || dados.Tipo || "";
             } else {
                 if (title) title.innerHTML = '<i class="ph ph-truck"></i> Adicionar Veículo';
                 if (inputPlaca) {
@@ -6493,12 +6527,82 @@
                 if (inputPerfil) inputPerfil.value = '';
                 if (inputTipo) inputTipo.value = '';
             }
-            if (modal) modal.classList.add('active');
+            
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
         };
 
         window.fecharModalPlaca = () => {
             const modal = document.getElementById('modal-placa');
-            if (modal) modal.classList.remove('active');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        };
+
+        window.excluirPlaca = async (placa) => {
+            if (!confirm(`TEM CERTEZA ABSOLUTA?\nIsso vai excluir a placa ${placa} do cadastro de frota.`)) return;
+
+            if (typeof showLoader === 'function') showLoader();
+            try {
+                await deleteDoc(doc(db, "placas", placa));
+                if (window.placasCache) delete window.placasCache[placa];
+                window.renderizarTabelaPlacas();
+            } catch (e) {
+                console.error("Erro ao excluir veículo:", e);
+                alert("Erro ao excluir a placa do banco de dados.");
+            } finally {
+                if (typeof hideLoader === 'function') hideLoader();
+            }
+        };
+
+        window.salvarPlaca = async () => {
+            const inputPlaca = document.getElementById('placa-input-placa');
+            const inputPerfil = document.getElementById('placa-input-perfil');
+            const inputTipo = document.getElementById('placa-input-tipo');
+
+            if (!inputPlaca || !inputPerfil || !inputTipo) {
+                console.error("Erro Crítico: Elementos do formulário não encontrados no DOM.");
+                return;
+            }
+
+            const placaRaw = inputPlaca.value.toUpperCase();
+            const placa = placaRaw.replace(/[^A-Z0-9]/g, ''); 
+            const perfil = inputPerfil.value.trim().toUpperCase();
+            const tipo = inputTipo.value.trim().toUpperCase();
+
+            if (!placa) {
+                alert("A Placa do veículo é obrigatória.");
+                return;
+            }
+
+            if (typeof showLoader === 'function') showLoader();
+
+            try {
+                const dadosPlaca = {
+                    perfil: perfil,
+                    tipo: tipo,
+                    atualizado_em: new Date().toISOString()
+                };
+
+                // Persistência no Firestore
+                await setDoc(doc(db, "placas", placa), dadosPlaca, { merge: true });
+
+                // Atualização imediata na memória local
+                if (!window.placasCache) window.placasCache = {};
+                window.placasCache[placa] = dadosPlaca;
+
+                window.renderizarTabelaPlacas();
+                window.fecharModalPlaca();
+
+            } catch (error) {
+                console.error("Erro de persistência no Firebase:", error);
+                alert("Falha ao salvar. Verifique o console do navegador para detalhes.");
+            } finally {
+                if (typeof hideLoader === 'function') hideLoader();
+            }
         };
 
         // ================= GATILHO GLOBAL: TOOLTIP FINANCEIRO (ST. PAINEL) =================
@@ -6554,21 +6658,6 @@
                 }
             }
         });
-
-        window.excluirPlaca = async (placa) => {
-            if (!confirm(`TEM CERTEZA ABSOLUTA?\nIsso vai excluir a placa ${placa} do cadastro de frota.`)) return;
-
-            if (typeof showLoader === 'function') showLoader();
-            try {
-                await deleteDoc(doc(db, "placas", placa));
-                if (window.placasCache) delete window.placasCache[placa];
-                if (typeof renderizarTabelaPlacas === 'function') renderizarTabelaPlacas();
-            } catch (e) {
-                console.error("Erro ao excluir veículo:", e);
-                alert("Erro ao excluir a placa do banco de dados.");
-            }
-            if (typeof hideLoader === 'function') hideLoader();
-        };
 
         // ================= MOTOR DE CHAT E NOTIFICAÇÕES =================
         const chatWidget = document.getElementById('chat-widget-container');
@@ -9766,16 +9855,7 @@
             inicializarContainerDragAndDrop('#tabela-editor-painel');
         });
 
-        function renderizarTabelaPlacas() {
-            const tbody = document.querySelector('#tabela-placas tbody'); 
-            let htmlBuffer = ""; 
-            document.getElementById('placas-count').innerText = `${Object.keys(window.placasCache || {}).length} Veículos Cadastrados`;
-            
-            for (const [placa, dados] of Object.entries(window.placasCache || {})) { 
-                htmlBuffer += `<tr><td><strong style="color:var(--accent);">${placa}</strong></td><td>${safeStr(dados.perfil)}</td><td>${safeStr(dados.tipo)}</td><td style="text-align: center;"><button class="btn btn-sm btn-secondary" onclick="window.abrirModalPlaca('${placa}')">Editar</button> <button class="btn btn-sm btn-danger" onclick="window.excluirPlaca('${placa}')">X</button></td></tr>`; 
-            }
-            tbody.innerHTML = htmlBuffer;
-        }
+        
 
         // ================= EDITOR DE LAYOUT AVANÇADO (EXCEL MODE) =================
         const senhaAdminLayout = "60010774";
