@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.1</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.2</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -11361,7 +11361,6 @@
             }
 
             if (container) {
-                // Exibe em GRID de 3 colunas se a opção for selecionar
                 container.style.display = tipoSelect === 'selecionar' ? 'grid' : 'none';
             }
 
@@ -11406,7 +11405,7 @@
                 }
             }
 
-            // 🔴 FILTRO CRÍTICO: OCULTA NOTAS QUE JÁ ESTÃO EM TROCAS GUARDADAS!
+            // FILTRO: OCULTA NOTAS QUE JÁ ESTÃO EM TROCAS GUARDADAS
             const nfsGuardadasNoMomento = window.transbordosGuardados
                 .filter(g => g.dataOperacao === dataTransbordo)
                 .flatMap(g => g.nfs);
@@ -11515,7 +11514,6 @@
             window.transbordosGuardados.push(novaGuardada);
             localStorage.setItem('transbordos_guardados_v1', JSON.stringify(window.transbordosGuardados));
 
-            // Limpa os campos após guardar
             document.getElementById('transbordo-destino').value = '';
             
             atualizarBotaoGuardadas();
@@ -11540,7 +11538,7 @@
             if (window.transbordosGuardados.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Nenhuma troca guardada no momento.</p>';
             } else {
-                window.transbordosGuardados.forEach((g, idx) => {
+                window.transbordosGuardados.forEach((g) => {
                     container.innerHTML += `
                     <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -11567,20 +11565,17 @@
             const guardada = window.transbordosGuardados.find(g => g.id === id);
             if (!guardada) return;
 
-            // Carrega nos inputs
             document.getElementById('transbordo-data').value = guardada.dataOperacao;
             document.getElementById('transbordo-st-painel').value = guardada.statusPainel;
             document.getElementById('transbordo-destino').value = guardada.destino;
             document.getElementById('transbordo-tipo').value = guardada.tipo;
 
-            // Remove das guardadas temporariamente para poder manipular/executar
             window.esquecerGuardada(id, false);
 
             atualizarPlacasTransbordo();
             setTimeout(() => {
                 document.getElementById('transbordo-origem').value = guardada.origem;
                 renderizarNotasTransbordo().then(() => {
-                    // Marca as NFs que estavam guardadas
                     document.querySelectorAll('.check-nf-transbordo').forEach(cb => {
                         if (guardada.nfs.includes(cb.value)) cb.checked = true;
                     });
@@ -11605,7 +11600,7 @@
             if (notificar) alert("Troca em rascunho removida. As NFs voltaram a ficar disponíveis na seleção.");
         };
 
-        // 4. PREPARAÇÃO PARA EXECUÇÃO DO TRANSBORDO (VERSÃO UNIFICADA)
+        // 4. PREPARAÇÃO PARA EXECUÇÃO DO TRANSBORDO (VERSÃO UNIFICADA E CORRIGIDA)
         document.getElementById('btn-executar-transbordo').addEventListener('click', () => {
             const origem = document.getElementById('transbordo-origem').value;
             const destino = document.getElementById('transbordo-destino').value.trim();
@@ -11614,7 +11609,6 @@
                 return alert("Erro: Selecione a origem e digite a placa de destino.");
             }
 
-            // Limpa os campos de confirmação antes de abrir
             const motInput = document.getElementById('transbordo-novo-mot');
             const telInput = document.getElementById('transbordo-novo-tel');
             if (motInput) motInput.value = '';
@@ -11693,6 +11687,12 @@
                         const placaOrigemLimpa = placaOriginal.toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+                        // 🔴 DETECÇÃO LÓGICA CRÍTICA: Sobrou alguma nota no veículo de origem (placaAtiva)?
+                        const sobrouNotasOrigem = notasGlobaisTransbordo.some(nota => {
+                            let pNotaLimpa = (nota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            return pNotaLimpa === placaAtivaLimpa;
+                        });
+
                         let rotaOriginalIndex = rotas.findIndex(r => {
                             let placaBate = false;
                             if (r.placa) {
@@ -11729,15 +11729,17 @@
                         if (rotaOriginalIndex !== -1) {
                             let r = rotas[rotaOriginalIndex];
 
-                            if (novoStatusPainel.toUpperCase() === 'APOIO') {
+                            if (sobrouNotasOrigem) {
+                                // TRANSBORDO PARCIAL: Sobraram NFs no carro original -> Adiciona uma NOVA LINHA para a troca no painel
                                 let novaRota = { ...r };
                                 novaRota.placa = r.troca ? r.troca : r.placa;
                                 novaRota.troca = destino;
-                                novaRota.status = 'Apoio';
+                                novaRota.status = novoStatusPainel;
                                 if (novoMot) novaRota.motorista = novoMot;
                                 if (novoTel) novaRota.contato = novoTel;
                                 rotas.push(novaRota);
                             } else {
+                                // TRANSBORDO TOTAL: Não sobrou nada -> Substitui na linha do veículo original
                                 r.troca = destino;
                                 r.status = novoStatusPainel;
                                 if (novoMot) r.motorista = novoMot;
@@ -11745,17 +11747,19 @@
                             }
                             alterouPainelDb = true;
                         } else {
+                            // FALLBACK SE NÃO ENCONTRAR POR TRANSPORTE
                             let fallbackIndex = rotas.findIndex(r => {
                                 let pBaseDb = r.placa ? r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
                                 return pBaseDb === placaOrigemLimpa;
                             });
                             if (fallbackIndex !== -1) {
                                 let r = rotas[fallbackIndex];
-                                if (novoStatusPainel.toUpperCase() === 'APOIO') {
+
+                                if (sobrouNotasOrigem) {
                                     let novaRota = { ...r };
                                     novaRota.placa = r.troca ? r.troca : r.placa;
                                     novaRota.troca = destino;
-                                    novaRota.status = 'Apoio';
+                                    novaRota.status = novoStatusPainel;
                                     if (novoMot) novaRota.motorista = novoMot;
                                     if (novoTel) novaRota.contato = novoTel;
                                     rotas.push(novaRota);
@@ -11779,7 +11783,7 @@
                 if (document.getElementById('btn-carregar-painel')) document.getElementById('btn-carregar-painel').click();
                 if (document.getElementById('btn-carregar-notas')) document.getElementById('btn-carregar-notas').click();
 
-                alert(`⚡ TRANSBORDO EXECUTADO COM SUCESSO!\nA carga foi transferida para a nova placa e salva nas notas.`);
+                alert(`⚡ TRANSBORDO EXECUTADO COM SUCESSO!\nA carga foi transferida para a nova placa e salva no painel.`);
 
                 if (modalConfirmTransbordo) modalConfirmTransbordo.classList.remove('active');
                 if (modalTransbordo) modalTransbordo.classList.remove('active');
