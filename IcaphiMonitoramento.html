@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.8.9</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.0</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5064,72 +5064,101 @@
         </div>
     </div>
 
+    <!-- MODAL DE TRANSBORDO APLIADO -->
     <div class="modal-overlay" id="modal-transbordo">
-        <div class="modal-content" style="width: 450px;">
-            <div class="modal-header">
-                <h3><i class="ph ph-swap"></i> Gestão de Transbordo</h3>
+        <div class="modal-content" style="width: 880px; max-width: 95vw;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;"><i class="ph ph-swap"></i> Gestão de Transbordo</h3>
+                    <!-- BOTAO DE GUARDADAS (Aparece dinamicamente se houver rascunhos) -->
+                    <button type="button" id="btn-ver-guardadas" class="btn btn-sm btn-info" style="display: none; align-items: center; gap: 6px; font-weight: 800; border-radius: 20px; padding: 4px 12px; background: #0284c7; color: #fff; border: none; cursor: pointer;">
+                        <i class="ph ph-archive-box" style="font-size: 14px;"></i> Guardadas (<span id="qtd-guardadas">0</span>)
+                    </button>
+                </div>
                 <button class="btn-close" id="close-transbordo">&times;</button>
             </div>
-            <div class="modal-body">
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">DATA DA
-                        LARGADA:</label>
-                    <input type="date" id="transbordo-data">
-                    <button id="btn-buscar-placas-transbordo" class="btn btn-primary">Buscar Placas</button>
 
-                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">STATUS
-                        NO PAINEL (NOVO VEÍCULO):</label>
-                    <select id="transbordo-st-painel">
-                        <option value="Saida Dia">Saída Dia</option>
-                        <option value="Apoio">Apoio</option>
-                        <option value="Seg. Viagem">Seg. Viagem</option>
-                        <option value="Pernoite">Pernoite</option>
-                    </select>
-                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PLACA
-                        ORIGEM (VEÍCULO COM PROBLEMA):</label>
-                    <select id="transbordo-origem">
-                        <option value="">Selecione a data primeiro...</option>
-                    </select>
-
-                    <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">PLACA
-                        DESTINO (NOVO VEÍCULO):</label>
-                    <input type="text" id="transbordo-destino" placeholder="Ex: LRU3H16"
-                        style="text-transform: uppercase; font-weight: 800;">
-
-                    <label
-                        style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 5px;">ABRANGÊNCIA
-                        DA TRANSFERÊNCIA:</label>
-                    <select id="transbordo-tipo">
-                        <option value="todas">Transferir TODAS as notas desta placa</option>
-                        <option value="selecionar">Selecionar notas específicas</option>
-                    </select>
-
-                    <div id="transbordo-lista-notas"
-                        style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: var(--bg-table-row-alt);">
+            <div class="modal-body" style="padding-top: 15px;">
+                <!-- GRID DE CAMPOS DE CONFIGURAÇÃO -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-weight: 700; font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">DATA DA LARGADA:</label>
+                        <input type="date" id="transbordo-data" style="width: 100%;">
                     </div>
-
-                    <!-- NOVA BARRA DE TOTAIS -->
-                    <div id="transbordo-totais"
-                        style="display: none; background: #e0e7ff; color: #1e3a8a; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; border: 1px solid #c7d2fe;">
-                        <span>NOTAS: <span id="trans-tot-notas" style="color:#2563eb; font-size: 14px;">0</span></span>
-                        <span>PRODUTOS: <span id="trans-tot-prod"
-                                style="color:#2563eb; font-size: 14px;">0</span></span>
-                        <span>PESO: <span id="trans-tot-peso" style="color:#2563eb; font-size: 14px;">0</span>
-                            kg</span>
+                    <div>
+                        <label style="font-weight: 700; font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">STATUS NO PAINEL (NOVO VEÍCULO):</label>
+                        <select id="transbordo-st-painel" style="width: 100%;">
+                            <option value="Saida Dia">Saída Dia</option>
+                            <option value="Apoio">Apoio</option>
+                            <option value="Seg. Viagem">Seg. Viagem</option>
+                            <option value="Pernoite">Pernoite</option>
+                        </select>
                     </div>
+                    <div>
+                        <label style="font-weight: 700; font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">PLACA ORIGEM (VEÍCULO COM PROBLEMA):</label>
+                        <select id="transbordo-origem" style="width: 100%;">
+                            <option value="">Selecione a data primeiro...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 700; font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">PLACA DESTINO (NOVO VEÍCULO):</label>
+                        <input type="text" id="transbordo-destino" placeholder="Ex: LRU3H16" style="text-transform: uppercase; font-weight: 800; width: 100%;">
+                    </div>
+                </div>
 
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-weight: 700; font-size: 11px; color: var(--text-muted);">ABRANGÊNCIA DA TRANSFERÊNCIA:</label>
+                    <button type="button" id="btn-buscar-placas-transbordo" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 2px 10px;">Atualizar Lista</button>
+                </div>
+
+                <select id="transbordo-tipo" style="width: 100%; margin-bottom: 12px;">
+                    <option value="todas">Transferir TODAS as notas desta placa</option>
+                    <option value="selecionar">Selecionar notas específicas</option>
+                </select>
+
+                <!-- CONTAINER DE NOTAS EM 5 COLUNAS (GRID) -->
+                <div id="transbordo-lista-notas" style="display: none; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; background: var(--bg-table-row-alt); grid-template-columns: repeat(5, 1fr); gap: 6px;">
+                </div>
+
+                <!-- BARRA DE TOTAIS -->
+                <div id="transbordo-totais" style="display: none; background: #e0e7ff; color: #1e3a8a; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; font-weight: 700; justify-content: space-around; border: 1px solid #c7d2fe;">
+                    <span>NOTAS: <span id="trans-tot-notas" style="color:#2563eb; font-size: 14px;">0</span></span>
+                    <span>PRODUTOS: <span id="trans-tot-prod" style="color:#2563eb; font-size: 14px;">0</span></span>
+                    <span>PESO: <span id="trans-tot-peso" style="color:#2563eb; font-size: 14px;">0</span> kg</span>
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <button class="btn btn-secondary" id="btn-cancelar-transbordo" style="flex: 1; min-width: 90px;">Cancelar</button>
-                <div style="display: flex; gap: 8px; flex: 2; justify-content: flex-end; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary" onclick="window.gerarPdfTransbordo()" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 11px;">
+
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 10px;">
+                <button class="btn btn-secondary" id="btn-cancelar-transbordo" style="min-width: 90px;">Cancelar</button>
+                <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline-primary" id="btn-guardar-transbordo" style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; border: 1px solid #2563eb; color: #2563eb; background: transparent; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                        <i class="ph ph-bookmark-simple"></i> Guardar Troca
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="window.gerarPdfTransbordo()" style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px;">
                         <i class="ph ph-file-pdf"></i> Imprimir
                     </button>
-                    <button class="btn btn-warning" id="btn-executar-transbordo" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 11px;">
+                    <button class="btn btn-warning" id="btn-executar-transbordo" style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px;">
                         <i class="ph ph-swap"></i> Executar Troca
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUB-MODAL: LISTA DE TROCAS GUARDADAS -->
+    <div class="modal-overlay" id="modal-lista-guardadas" style="z-index: 1050;">
+        <div class="modal-content" style="width: 650px; max-width: 90vw;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                <h3 style="margin: 0;"><i class="ph ph-archive-box"></i> Trocas Guardadas em Rascunho</h3>
+                <button class="btn-close" id="close-guardadas">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 15px 0;">
+                <div id="container-lista-guardadas" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Itens injetados via JS -->
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <button class="btn btn-secondary" id="btn-fechar-guardadas">Fechar</button>
             </div>
         </div>
     </div>
@@ -11185,43 +11214,56 @@
             }
         });
 
-        // ================= MOTOR DE TRANSBORDO APRIMORADO =================
+        // ================= MOTOR DE TRANSBORDO APRIMORADO (COM GUARDAR E 3 COLUNAS) =================
         const modalTransbordo = document.getElementById('modal-transbordo');
         const modalConfirmTransbordo = document.getElementById('modal-confirm-transbordo');
+        const modalListaGuardadas = document.getElementById('modal-lista-guardadas');
+
+        // Armazenamento Local para Trocas Guardadas (Persiste mesmo se recarregar a página)
+        window.transbordosGuardados = JSON.parse(localStorage.getItem('transbordos_guardados_v1') || '[]');
 
         document.getElementById('btn-menu-transbordo').addEventListener('click', () => {
             modalTransbordo.classList.add('active');
-            // Força a data do transbordo ser igual à data que o usuário está visualizando nas Notas
-            const dataOperacao = document.getElementById('notas-data-select').value || new Date().toISOString().split('T')[0];
+            const dataOperacao = document.getElementById('notas-data-select')?.value || new Date().toISOString().split('T')[0];
             document.getElementById('transbordo-data').value = dataOperacao;
             atualizarPlacasTransbordo();
+            atualizarBotaoGuardadas();
         });
 
         document.getElementById('close-transbordo').addEventListener('click', () => modalTransbordo.classList.remove('active'));
         document.getElementById('btn-cancelar-transbordo').addEventListener('click', () => modalTransbordo.classList.remove('active'));
-        document.getElementById('close-confirm-transbordo').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
-        document.getElementById('btn-cancelar-confirm').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
 
-        document.getElementById('transbordo-data').addEventListener('change', atualizarPlacasTransbordo);
-        document.getElementById('transbordo-origem').addEventListener('change', renderizarNotasTransbordo);
-        document.getElementById('transbordo-tipo').addEventListener('change', (e) => {
-            document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
+        if (document.getElementById('close-confirm-transbordo')) {
+            document.getElementById('close-confirm-transbordo').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
+        }
+        if (document.getElementById('btn-cancelar-confirm')) {
+            document.getElementById('btn-cancelar-confirm').addEventListener('click', () => modalConfirmTransbordo.classList.remove('active'));
+        }
+
+        // Eventos de troca de tela/filtros
+        document.getElementById('transbordo-data').addEventListener('change', () => {
+            atualizarPlacasTransbordo();
+            atualizarBotaoGuardadas();
         });
+        document.getElementById('transbordo-origem').addEventListener('change', renderizarNotasTransbordo);
 
-        // Botão de buscar ativado corretamente
         document.getElementById('btn-buscar-placas-transbordo').addEventListener('click', (e) => {
             e.preventDefault();
             atualizarPlacasTransbordo();
         });
 
-        // 1. LÊ CORRETAMENTE O QUE ESTÁ NA TELA DA OPERAÇÃO
+        // Gerenciamento de Modal de Guardadas
+        document.getElementById('btn-ver-guardadas').addEventListener('click', abrirModalGuardadas);
+        document.getElementById('close-guardadas').addEventListener('click', () => modalListaGuardadas.classList.remove('active'));
+        document.getElementById('btn-fechar-guardadas').addEventListener('click', () => modalListaGuardadas.classList.remove('active'));
+
+        // 1. LEITURA DE VEÍCULOS NA OPERAÇÃO
         function atualizarPlacasTransbordo() {
             const selectOrigem = document.getElementById('transbordo-origem');
             selectOrigem.innerHTML = '<option value="">Analisando operação...</option>';
 
             let placasEncontradas = new Map();
 
-            // Lê primariamente da tabela de monitoramento e de notas (Ignora o editor vazio)
             document.querySelectorAll('#tabela-monitoramento tbody tr, #tabela-operacao-notas tbody tr').forEach(tr => {
                 let colPlaca = tr.querySelector('[data-col="placa"], [data-live="placa"], .col-placa');
                 if (!colPlaca) colPlaca = tr.children[0];
@@ -11233,7 +11275,6 @@
                     let pOrig = placaRaw;
                     let pAtiva = placaRaw;
 
-                    // Extração blindada: Se o texto da tabela tem indicador de transbordo, separa as placas.
                     if (placaRaw.includes('TROCA;')) {
                         let partes = placaRaw.split('TROCA;');
                         pOrig = partes[0].trim();
@@ -11243,7 +11284,6 @@
                         pOrig = partes[0].trim();
                         pAtiva = partes[1].trim();
                     } else if (placaRaw.includes('-')) {
-                        // Caso a tabela junte com hífen (ex: LRU3H16-KOY8802)
                         let partes = placaRaw.split('-');
                         if (partes.length === 2 && partes[0].length >= 5 && partes[1].length >= 5) {
                             pOrig = partes[0].trim();
@@ -11251,7 +11291,6 @@
                         }
                     }
 
-                    // Remove caracteres estranhos (limpeza pesada)
                     pOrig = pOrig.replace(/[^A-Z0-9]/g, '');
                     pAtiva = pAtiva.replace(/[^A-Z0-9]/g, '');
 
@@ -11274,7 +11313,7 @@
             if (typeof renderizarNotasTransbordo === "function") renderizarNotasTransbordo();
         }
 
-        // ================= TRANSBORDO COM BUSCA AUTÔNOMA E PESO CORRIGIDO =================
+        // 2. RENDERIZAÇÃO DE NOTAS EM GRID DE 3 COLUNAS (COM FILTRO DE NOTAS GUARDADAS)
         async function renderizarNotasTransbordo() {
             const placaAtiva = document.getElementById('transbordo-origem').value;
             const container = document.getElementById('transbordo-lista-notas');
@@ -11291,13 +11330,14 @@
             }
 
             if (container) {
-                container.style.display = tipoSelect === 'selecionar' ? 'block' : 'none';
+                // Exibe em GRID de 3 colunas se a opção for selecionar
+                container.style.display = tipoSelect === 'selecionar' ? 'grid' : 'none';
             }
 
             let notasExtraidas = [];
             const placaAtivaLimpa = placaAtiva.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-            // 1. Tenta pegar da tabela que está na tela
+            // 1. Tenta extrair da tabela na tela
             document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
                 const tds = tr.querySelectorAll('td');
                 if (tds.length < 15) return;
@@ -11309,14 +11349,13 @@
                 let placaLinhaLimpa = placaTxt.split('TROCA;').pop().split('TROCA:').pop().replace(/[^A-Z0-9]/g, '');
 
                 if (placaLinhaLimpa === placaAtivaLimpa && nfTxt !== "") {
-                    // CORREÇÃO DO PESO: Se tem vírgula, trata como BR. Se não tem, trata como número normal.
                     let pesoValor = pesoTxt.includes(',') ? parseFloat(pesoTxt.replace(/\./g, '').replace(',', '.')) : parseFloat(pesoTxt);
                     let qtdValor = parseInt(qtdTxt.replace(/\D/g, '')) || 0;
                     notasExtraidas.push({ nf: nfTxt, peso: pesoValor || 0, qtd: qtdValor });
                 }
             });
 
-            // 2. SE A TELA ESTIVER VAZIA, BUSCA DIRETO DO BANCO DE DADOS
+            // 2. Se a tela estiver vazia, busca direto do Firebase
             if (notasExtraidas.length === 0 && dataTransbordo) {
                 try {
                     const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataTransbordo));
@@ -11324,7 +11363,6 @@
                         docSnap.data().notas.forEach(nota => {
                             let placaDbLimpa = (nota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                             if (placaDbLimpa === placaAtivaLimpa) {
-                                // CORREÇÃO DO PESO NO FIREBASE
                                 let pStr = String(nota.peso || "0").trim();
                                 let pesoValor = pStr.includes(',') ? parseFloat(pStr.replace(/\./g, '').replace(',', '.')) : parseFloat(pStr);
                                 let qtdValor = parseInt(String(nota.qtde || "0").replace(/\D/g, '')) || 0;
@@ -11337,27 +11375,40 @@
                 }
             }
 
-            // Ordenação Crescente numérica das NFs
+            // 🔴 FILTRO CRÍTICO: OCULTA NOTAS QUE JÁ ESTÃO EM TROCAS GUARDADAS!
+            const nfsGuardadasNoMomento = window.transbordosGuardados
+                .filter(g => g.dataOperacao === dataTransbordo)
+                .flatMap(g => g.nfs);
+
+            notasExtraidas = notasExtraidas.filter(n => !nfsGuardadasNoMomento.includes(n.nf));
+
+            // Ordenação Crescente das NFs
             notasExtraidas.sort((a, b) => parseInt(a.nf.replace(/\D/g, '')) - parseInt(b.nf.replace(/\D/g, '')));
 
-            // Renderiza as notas desmarcadas
-            notasExtraidas.forEach(nota => {
-                if (container) {
-                    container.innerHTML += `
-                    <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; cursor: pointer; background: var(--bg-panel); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color);">
-                        <span>
+            if (container) {
+                if (notasExtraidas.length === 0) {
+                    container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px;">Todas as notas deste veículo já foram guardadas ou transferidas.</div>`;
+                } else {
+                    notasExtraidas.forEach(nota => {
+                        container.innerHTML += `
+                        <label style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer; user-select: none; transition: background-color 0.15s;">
                             <input type="checkbox" value="${nota.nf}" class="check-nf-transbordo" 
-                                data-peso="${nota.peso}" data-qtd="${nota.qtd}"> NF: ${nota.nf}
-                        </span>
-                        <span style="font-size: 11px; color: var(--text-muted);">
-                            ${nota.qtd} un | ${nota.peso.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 })} kg
-                        </span>
-                    </label>`;
+                                data-peso="${nota.peso}" data-qtd="${nota.qtd}" style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; margin: 0;">
+                            <div style="display: flex; flex-direction: column; justify-content: center; flex-grow: 1; min-width: 0;">
+                                <div style="font-weight: 800; font-size: 11px; color: var(--accent); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    NF: ${nota.nf}
+                                </div>
+                                <div style="font-size: 9.5px; font-weight: 600; color: var(--text-muted); margin-top: 2px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${nota.qtd} un &bull; ${nota.peso.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
+                                </div>
+                            </div>
+                        </label>`;
+                    });
                 }
-            });
+            }
 
             if (panelTotais) panelTotais.style.display = 'flex';
-            if (typeof recalcularTotaisTransbordo === 'function') recalcularTotaisTransbordo();
+            recalcularTotaisTransbordo();
 
             document.querySelectorAll('.check-nf-transbordo').forEach(cb => {
                 cb.addEventListener('change', recalcularTotaisTransbordo);
@@ -11390,22 +11441,140 @@
         }
 
         document.getElementById('transbordo-tipo').addEventListener('change', (e) => {
-            document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
+            const container = document.getElementById('transbordo-lista-notas');
+            if (container) container.style.display = e.target.value === 'selecionar' ? 'grid' : 'none';
             recalcularTotaisTransbordo();
         });
 
-        // 4. ATUALIZAR O LISTENER DO SELECT
-        document.getElementById('transbordo-tipo').addEventListener('change', (e) => {
-            document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
-            recalcularTotaisTransbordo();
+        // 3. SISTEMA DE GUARDAR E GERENCIAR RASCUNHOS DE TROCA
+        document.getElementById('btn-guardar-transbordo').addEventListener('click', () => {
+            const origem = document.getElementById('transbordo-origem').value;
+            const destino = document.getElementById('transbordo-destino').value.trim().toUpperCase();
+            const dataOperacao = document.getElementById('transbordo-data').value;
+            const statusPainel = document.getElementById('transbordo-st-painel').value;
+            const tipo = document.getElementById('transbordo-tipo').value;
+
+            if (!origem || !destino) {
+                return alert("Erro: Selecione a Placa Origem e preencha a Placa Destino antes de guardar.");
+            }
+
+            let nfsSel = [];
+            if (tipo === 'selecionar') {
+                document.querySelectorAll('.check-nf-transbordo:checked').forEach(cb => nfsSel.push(cb.value));
+                if (nfsSel.length === 0) return alert("Erro: Selecione ao menos uma NF para guardar a troca.");
+            } else {
+                document.querySelectorAll('.check-nf-transbordo').forEach(cb => nfsSel.push(cb.value));
+            }
+
+            const novaGuardada = {
+                id: Date.now(),
+                dataOperacao,
+                origem,
+                destino,
+                statusPainel,
+                tipo,
+                nfs: nfsSel,
+                totais: {
+                    notas: document.getElementById('trans-tot-notas').innerText,
+                    prod: document.getElementById('trans-tot-prod').innerText,
+                    peso: document.getElementById('trans-tot-peso').innerText
+                }
+            };
+
+            window.transbordosGuardados.push(novaGuardada);
+            localStorage.setItem('transbordos_guardados_v1', JSON.stringify(window.transbordosGuardados));
+
+            // Limpa os campos após guardar
+            document.getElementById('transbordo-destino').value = '';
+            
+            atualizarBotaoGuardadas();
+            renderizarNotasTransbordo();
+
+            alert(`📦 Troca guardada em rascunho com sucesso!\nNFs reservadas: ${nfsSel.length}. Elas foram ocultadas da lista.`);
         });
 
-        // 4. ATUALIZAR O LISTENER DO SELECT (Para somar certo quando alternar entre "Todas" e "Selecionadas")
-        document.getElementById('transbordo-tipo').addEventListener('change', (e) => {
-            document.getElementById('transbordo-lista-notas').style.display = e.target.value === 'selecionar' ? 'block' : 'none';
-            recalcularTotaisTransbordo(); // Recalcula instantaneamente ao mudar o dropdown
-        });
+        function atualizarBotaoGuardadas() {
+            const btn = document.getElementById('btn-ver-guardadas');
+            const qtdSpan = document.getElementById('qtd-guardadas');
+            const total = window.transbordosGuardados.length;
 
+            if (qtdSpan) qtdSpan.innerText = total;
+            if (btn) btn.style.display = total > 0 ? 'inline-flex' : 'none';
+        }
+
+        function abrirModalGuardadas() {
+            const container = document.getElementById('container-lista-guardadas');
+            container.innerHTML = '';
+
+            if (window.transbordosGuardados.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Nenhuma troca guardada no momento.</p>';
+            } else {
+                window.transbordosGuardados.forEach((g, idx) => {
+                    container.innerHTML += `
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 13px; color: var(--accent);">
+                                ${g.origem} <i class="ph ph-arrow-right"></i> ${g.destino} 
+                                <span style="font-size: 10px; background: #e0e7ff; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">${g.statusPainel}</span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                Data: <strong>${g.dataOperacao}</strong> | NFs Guardadas: <strong>${g.nfs.length}</strong> (${g.totais.peso} kg)
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-sm btn-primary" onclick="window.abrirGuardada(${g.id})" style="font-size: 11px; font-weight: 700;">Abrir</button>
+                            <button class="btn btn-sm btn-danger" onclick="window.esquecerGuardada(${g.id})" style="font-size: 11px; font-weight: 700;">Esquecer</button>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            modalListaGuardadas.classList.add('active');
+        }
+
+        window.abrirGuardada = (id) => {
+            const guardada = window.transbordosGuardados.find(g => g.id === id);
+            if (!guardada) return;
+
+            // Carrega nos inputs
+            document.getElementById('transbordo-data').value = guardada.dataOperacao;
+            document.getElementById('transbordo-st-painel').value = guardada.statusPainel;
+            document.getElementById('transbordo-destino').value = guardada.destino;
+            document.getElementById('transbordo-tipo').value = guardada.tipo;
+
+            // Remove das guardadas temporariamente para poder manipular/executar
+            window.esquecerGuardada(id, false);
+
+            atualizarPlacasTransbordo();
+            setTimeout(() => {
+                document.getElementById('transbordo-origem').value = guardada.origem;
+                renderizarNotasTransbordo().then(() => {
+                    // Marca as NFs que estavam guardadas
+                    document.querySelectorAll('.check-nf-transbordo').forEach(cb => {
+                        if (guardada.nfs.includes(cb.value)) cb.checked = true;
+                    });
+                    recalcularTotaisTransbordo();
+                });
+            }, 200);
+
+            modalListaGuardadas.classList.remove('active');
+        };
+
+        window.esquecerGuardada = (id, notificar = true) => {
+            window.transbordosGuardados = window.transbordosGuardados.filter(g => g.id !== id);
+            localStorage.setItem('transbordos_guardados_v1', JSON.stringify(window.transbordosGuardados));
+
+            atualizarBotaoGuardadas();
+            renderizarNotasTransbordo();
+
+            if (modalListaGuardadas.classList.contains('active')) {
+                abrirModalGuardadas();
+            }
+
+            if (notificar) alert("Troca em rascunho removida. As NFs voltaram a ficar disponíveis na seleção.");
+        };
+
+        // 4. EXECUÇÃO FINAL DO TRANSBORDO (EXECUTA A TROCA DE FATO NO FIREBASE)
         document.getElementById('btn-executar-transbordo').addEventListener('click', () => {
             if (!document.getElementById('transbordo-origem').value || !document.getElementById('transbordo-destino').value.trim()) {
                 return alert("Erro: Selecione a origem e digite a placa de destino.");
@@ -11418,7 +11587,6 @@
             modalConfirmTransbordo.classList.add('active');
         });
 
-        // ================= FINALIZAÇÃO DE TRANSBORDO CORRIGIDA (PAINEL + NOTAS) =================
         document.getElementById('btn-finalizar-transbordo').addEventListener('click', async () => {
             const selectElem = document.getElementById('transbordo-origem');
             const optionSel = selectElem.options[selectElem.selectedIndex];
@@ -11448,7 +11616,6 @@
             showLoader();
 
             try {
-                // DECLARAÇÃO GLOBAL: Para o Painel e as Notas enxergarem os mesmos dados
                 let notasGlobaisTransbordo = [];
 
                 // 1. ATUALIZA AS NOTAS DIRETAMENTE NO FIREBASE (notas_fiscais_diario)
@@ -11464,7 +11631,6 @@
                             let placaNotaLimpa = (nota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                             let placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                            // Verifica se é pra transferir todas OU apenas as marcadas E se a placa da nota bate com a origem
                             if (placaNotaLimpa === placaAtivaLimpa && (tipo === 'todas' || nfsSel.includes(String(nota.nf)))) {
                                 nota.placa = destino;
                                 nota.tipo_viagem = novoStatusPainel;
@@ -11491,7 +11657,6 @@
                         const placaOrigemLimpa = placaOriginal.toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                        // 🟢 BUSCA CIRÚRGICA: Localiza a rota pela placa E pelo transporte associado às notas
                         let rotaOriginalIndex = rotas.findIndex(r => {
                             let placaBate = false;
                             if (r.placa) {
@@ -11544,7 +11709,6 @@
                             }
                             alterouPainelDb = true;
                         } else {
-                            // Fallback
                             let fallbackIndex = rotas.findIndex(r => {
                                 let pBaseDb = r.placa ? r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
                                 return pBaseDb === placaOrigemLimpa;
@@ -11575,7 +11739,7 @@
                     }
                 }
 
-                // 3. ATUALIZA A TELA VISUALMENTE
+                // 3. REFRESH VISUAL NA TELA
                 if (document.getElementById('btn-carregar-painel')) document.getElementById('btn-carregar-painel').click();
                 if (document.getElementById('btn-carregar-notas')) document.getElementById('btn-carregar-notas').click();
 
