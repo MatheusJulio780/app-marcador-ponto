@@ -3204,7 +3204,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.2</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.3</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -14076,7 +14076,7 @@
             if (nfsParaBuscar.length === 0) return alert("Nenhuma NF válida encontrada.");
 
             const btn = document.getElementById('btn-executar-busca-nfs');
-            btn.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Buscando...`;
+            btn.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Buscando e Validando...`;
             btn.disabled = true;
 
             window.cacheRastreioNFs = {}; // Reseta o cache
@@ -14084,26 +14084,105 @@
             tbody.innerHTML = '';
 
             try {
-                // Busca em lotes para não sobrecarregar o Firebase
+                const historicosBrutos = {};
+                const datasParaBuscar = new Set();
+
+                // PASSO 1: Busca o índice no cache rastreio_notas
                 for (const nf of nfsParaBuscar) {
                     const docRef = doc(db, "rastreio_notas", String(nf));
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists()) {
-                        const dados = docSnap.data();
-                        // Ordena o histórico da nota para a data mais recente ficar por último
-                        let historico = dados.historico || [];
-                        historico.sort((a, b) => new Date(a.data) - new Date(b.data));
-
-                        // O índice ativo inicial será sempre a última aparição da nota
-                        window.cacheRastreioNFs[nf] = {
-                            historico: historico,
-                            idxAtivo: historico.length - 1 
-                        };
-                    } else {
-                        // Nota não encontrada no banco de rastreio
-                        window.cacheRastreioNFs[nf] = { historico: [], idxAtivo: -1 };
+                        const historico = docSnap.data().historico || [];
+                        historicosBrutos[nf] = historico;
+                        // Mapeia todas as datas onde a NF afirma estar para validação posterior
+                        historico.forEach(h => datasParaBuscar.add(h.data)); 
                     }
+                }
+
+                // PASSO 2: Busca a VERDADE no notas_fiscais_diario (Apenas das datas estritamente necessárias)
+                const dadosDiariosReais = {};
+                for (const dataOp of datasParaBuscar) {
+                    const diarioRef = doc(db, "notas_fiscais_diario", dataOp);
+                    const diarioSnap = await getDoc(diarioRef);
+                    if (diarioSnap.exists()) {
+                        dadosDiariosReais[dataOp] = diarioSnap.data().notas || [];
+                    } else {
+                        dadosDiariosReais[dataOp] = [];
+                    }
+                }
+
+                // PASSO 3: Cruzamento de Dados (Validação Real-time) + Auto-Cura (Self-Healing)
+                const batchLimpeza = writeBatch(db);
+                let precisaLimparFantasmas = false;
+
+                for (const nf of nfsParaBuscar) {
+                    if (!historicosBrutos[nf]) {
+                        window.cacheRastreioNFs[nf] = { historico: [], idxAtivo: -1 };
+                        continue;
+                    }
+
+                    const historicoReal = [];
+                    let encontrouFantasma = false;
+
+                    for (const hBruto of historicosBrutos[nf]) {
+                        const notasDoDia = dadosDiariosReais[hBruto.data] || [];
+                        
+                        // Verifica se a nota REALMENTE existe no diário primário
+                        const notaReal = notasDoDia.find(n => 
+                            String(n.nf).toUpperCase().replace(/[^A-Z0-9]/g, '') === String(nf)
+                        );
+
+                        if (notaReal) {
+                            // Existe: atualiza o histórico com os dados MAIS RECENTES direto da fonte
+                            historicoReal.push({
+                                data: hBruto.data,
+                                nf: String(nf),
+                                viagem: notaReal.viagem || notaReal.transporte || hBruto.viagem || "",
+                                data_nf: notaReal.data_nf || notaReal.data || hBruto.data_nf || "",
+                                peso: notaReal.peso || hBruto.peso || "",
+                                qtde: notaReal.qtde || hBruto.qtde || "",
+                                cliente: notaReal.cliente || hBruto.cliente || "",
+                                cidade: notaReal.cidade || hBruto.cidade || "",
+                                bairro: notaReal.bairro || hBruto.bairro || "",
+                                endereco: notaReal.endereco || hBruto.endereco || "",
+                                placa: notaReal.placa || hBruto.placa || "",
+                                motorista: notaReal.motorista || hBruto.motorista || "",
+                                telefone: notaReal.telefone || hBruto.telefone || "",
+                                status: notaReal.status || hBruto.status || "EM ROTA",
+                                obs: notaReal.obs || hBruto.obs || "",
+                                parcial: notaReal.parcial || hBruto.parcial || "",
+                                app: notaReal.app || hBruto.app || ""
+                            });
+                        } else {
+                            // FANTASMA DETECTADO: A nota foi deletada da fonte mas ficou no cache.
+                            encontrouFantasma = true;
+                            precisaLimparFantasmas = true;
+                        }
+                    }
+
+                    // Força a ordenação cronológica matemática do histórico real
+                    historicoReal.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+                    window.cacheRastreioNFs[nf] = {
+                        historico: historicoReal,
+                        idxAtivo: historicoReal.length > 0 ? historicoReal.length - 1 : -1
+                    };
+
+                    // Adiciona ao Batch para corrigir a sujeira do Firebase em background
+                    if (encontrouFantasma) {
+                        const docRef = doc(db, "rastreio_notas", String(nf));
+                        if (historicoReal.length === 0) {
+                            batchLimpeza.delete(docRef); // Se não sobrou nenhum histórico real, aniquila o documento.
+                        } else {
+                            batchLimpeza.set(docRef, { historico: historicoReal }); // Atualiza apenas com os passos reais.
+                        }
+                    }
+                }
+
+                // Dispara a limpeza fantasma de forma assíncrona (não congela a tela)
+                if (precisaLimparFantasmas) {
+                    batchLimpeza.commit().catch(err => console.error("Erro no background self-healing:", err));
                 }
 
                 renderizarTabelaRastreio();
