@@ -13264,10 +13264,10 @@
                         const primeiroNomeRegistro = conferenteRegistro.split(' ')[0];
 
                         const temPermissao = conferenteRegistro === usuarioLogado || 
-                                            usuarioLogado.includes(conferenteRegistro) || 
-                                            conferenteRegistro.includes(usuarioLogado) || 
-                                            primeiroNomeRegistro === primeiroNomeLogado || 
-                                            conferenteRegistro === "SISTEMA";
+                                             usuarioLogado.includes(conferenteRegistro) || 
+                                             conferenteRegistro.includes(usuarioLogado) || 
+                                             primeiroNomeRegistro === primeiroNomeLogado || 
+                                             conferenteRegistro === "SISTEMA";
 
                         if (temPermissao) {
                             acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
@@ -13410,8 +13410,13 @@
 
                     rotas.forEach(rota => {
                         const tipoStatus = trimUpper(rota.status || ""); 
-                        const tipoValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
-                        if (!tipoValido) return;
+                        const nomeRota = trimUpper(rota.rota || "");
+                        
+                        // CORREÇÃO APLICADA: 'PERNOITE' removido da checagem de status e condicionado à coluna st.rota
+                        const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
+                        const rotaPernoite = nomeRota.includes('PERNOITE');
+                        
+                        if (!statusValido && !rotaPernoite) return;
 
                         const placaOriginal = trimUpper(rota.placa || "");
                         const placaTroca = trimUpper(rota.troca || "");
@@ -13423,7 +13428,9 @@
                         const transpNumArray = transporteStr.match(/\d+/g) || [];
 
                         const notasPlaca = notas.filter(n => {
-                            if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                            const statusNF = trimUpper(n.status);
+                            // REMOVIDAS NOTAS "PERNOITE" DA MATEMÁTICA, IGUAL ÀS NÃO EMBARCADAS
+                            if (statusNF === 'NÃO EMBARCADA' || statusNF === 'PERNOITE') return false; 
                             
                             const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
                             const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
