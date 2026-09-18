@@ -3221,7 +3221,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.4</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.5</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -15849,35 +15849,57 @@
                 const docSnap = await getDoc(docRef);
                 let itensAtuais = docSnap.exists() && docSnap.data().itens ? docSnap.data().itens : [];
                 
+                // Extrai os metadados da viagem selecionada (funciona tanto para novo quanto para edição)
+                let placaFinal = "SEM PLACA";
+                let metadados = { motorista: '', transportadora: '', perfil: '', tipoVeiculo: '', regiao: '', statusPainel: '', ajudante: '', peso: '', qtd_nf: '' };
+
+                if (selectValor !== "SEM_PLACA" && typeof viagensEncontradasParaComplemento !== 'undefined' && viagensEncontradasParaComplemento[selectValor]) {
+                    const v = viagensEncontradasParaComplemento[selectValor];
+                    placaFinal = trimUpper(v.troca || v.placa);
+                    metadados = {
+                        motorista: v._motoristaResolvido || '', 
+                        transportadora: v.transporte || v.transportadora || '',
+                        perfil: v.perfil || '', 
+                        tipoVeiculo: v.tipo || '', 
+                        regiao: v.regiao || '', 
+                        statusPainel: v.status || '',
+                        ajudante: v._ajudanteResolvido || '',
+                        peso: v._pesoResolvido || '',
+                        qtd_nf: v._qtdNfResolvida || ''
+                    };
+                } else if (selectValor === "SEM_PLACA") {
+                    placaFinal = "SEM PLACA";
+                } else if (window.itemEmEdicao.index !== null) {
+                    // Mantém a placa anterior caso não tenha sido alterada no select
+                    placaFinal = itensAtuais[window.itemEmEdicao.index].placa || "SEM PLACA";
+                    // Mantém os metadados antigos se não houver nova seleção de viagem
+                    metadados = {
+                        motorista: itensAtuais[window.itemEmEdicao.index].motorista || '',
+                        transportadora: itensAtuais[window.itemEmEdicao.index].transportadora || '',
+                        perfil: itensAtuais[window.itemEmEdicao.index].perfil || '',
+                        tipoVeiculo: itensAtuais[window.itemEmEdicao.index].tipoVeiculo || '',
+                        regiao: itensAtuais[window.itemEmEdicao.index].regiao || '',
+                        statusPainel: itensAtuais[window.itemEmEdicao.index].statusPainel || '',
+                        ajudante: itensAtuais[window.itemEmEdicao.index].ajudante || '',
+                        peso: itensAtuais[window.itemEmEdicao.index].peso || '',
+                        qtd_nf: itensAtuais[window.itemEmEdicao.index].qtd_nf || ''
+                    };
+                }
+
                 if (window.itemEmEdicao.index !== null) {
+                    // ATUALIZAÇÃO DO ITEM EXISTENTE ( EDIÇÃO )
                     itensAtuais[window.itemEmEdicao.index] = {
                         ...itensAtuais[window.itemEmEdicao.index],
+                        placa: placaFinal,
                         tipo, 
                         valor, 
                         valor_reembolso: valorReembolso, 
                         obs: obsFinal, 
-                        usuario: usuarioCorreto 
+                        usuario: usuarioCorreto,
+                        ...metadados // Grava todos os metadados atualizados para o recibo não vir vazio
                     };
                 } else {
-                    let placaFinal = "SEM PLACA";
-                    let metadados = { motorista: '', transportadora: '', perfil: '', tipoVeiculo: '', regiao: '', statusPainel: '', ajudante: '', peso: '', qtd_nf: '' };
-
-                    if (selectValor !== "SEM_PLACA" && typeof viagensEncontradasParaComplemento !== 'undefined' && viagensEncontradasParaComplemento[selectValor]) {
-                        const v = viagensEncontradasParaComplemento[selectValor];
-                        placaFinal = trimUpper(v.troca || v.placa);
-                        metadados = {
-                            motorista: v._motoristaResolvido || '', 
-                            transportadora: v.transporte || v.transportadora || '',
-                            perfil: v.perfil || '', 
-                            tipoVeiculo: v.tipo || '', 
-                            regiao: v.regiao || '', 
-                            statusPainel: v.status || '',
-                            ajudante: v._ajudanteResolvido || '',
-                            peso: v._pesoResolvido || '',
-                            qtd_nf: v._qtdNfResolvida || ''
-                        };
-                    }
-
+                    // CRIAÇÃO DE NOVO ITEM
                     itensAtuais.push({ 
                         placa: placaFinal, 
                         tipo, 
