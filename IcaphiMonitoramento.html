@@ -15955,6 +15955,226 @@
             hideLoader();
         };
 
+        // ================= PREPARAR EDIÇÃO (COMPLEMENTO OU DEPÓSITO) =================
+        window.prepararEdicao = async (dataStr, index, tipoItem) => {
+            window.itemEmEdicao = { dataStr, index, tipo: tipoItem };
+
+            if (tipoItem === 'complemento') {
+                if (!window._cacheDiasMap || !window._cacheDiasMap[dataStr]) return alert("Erro ao carregar dados para edição.");
+                const item = window._cacheDiasMap[dataStr].complementos[index];
+                if (!item) return alert("Item não encontrado.");
+
+                // Preenche a data e bloqueia para manter a consistência do dia
+                const inputData = document.getElementById('comp-input-data');
+                if (inputData) {
+                    inputData.value = dataStr;
+                    inputData.disabled = true; 
+                }
+                
+                const selectTipo = document.getElementById('comp-input-tipo');
+                if (selectTipo) selectTipo.value = item.tipo || '';
+
+                const inputValor = document.getElementById('comp-input-valor');
+                if (inputValor) inputValor.value = item.valor || '';
+
+                const inputReembolso = document.getElementById('comp-input-reembolso');
+                if (inputReembolso) inputReembolso.value = item.valor_reembolso || '';
+
+                const inputObs = document.getElementById('comp-input-obs');
+                if (inputObs) {
+                    // Limpa o texto de NFs acoplado na observação antiga para exibir limpo no textarea
+                    let obsLimpa = item.obs || '';
+                    if (obsLimpa.includes('| NFs vinculadas:')) {
+                        obsLimpa = obsLimpa.split('| NFs vinculadas:')[0].trim();
+                    }
+                    inputObs.value = obsLimpa;
+                }
+
+                // Abre o modal imediatamente
+                const modal = document.getElementById('modal-novo-complemento');
+                if (modal) modal.style.setProperty('display', 'flex', 'important');
+
+                // 🟢 BUSCA AS PLACAS E NOTAS DO DIA EM SEGUNDO PLANO PARA PERMITIR ALTERAÇÃO NA EDIÇÃO
+                const selectPlaca = document.getElementById('comp-input-placa');
+                const selectNotas = document.getElementById('comp-input-notas');
+                const preview = document.getElementById('preview-dados-viagem');
+
+                if (selectPlaca) {
+                    selectPlaca.disabled = true;
+                    selectPlaca.innerHTML = '<option disabled>Carregando placas do dia...</option>';
+                }
+
+                try {
+                    const [snapPainel, snapNotas] = await Promise.all([
+                        getDoc(doc(db, "painel_diario", dataStr)),
+                        getDoc(doc(db, "notas_fiscais_diario", dataStr))
+                    ]);
+
+                    let notasDoDia = snapNotas.exists() ? snapNotas.data().notas || [] : [];
+                    let optionsHTML = '<option value="" disabled>Selecione a Placa...</option>';
+                    optionsHTML += '<option value="SEM_PLACA">Sem Placa (Avulso)</option>';
+
+                    viagensEncontradasParaComplemento = [];
+
+                    if (snapPainel.exists() && snapPainel.data().rotas && snapPainel.data().rotas.length > 0) {
+                        viagensEncontradasParaComplemento = snapPainel.data().rotas.sort((a, b) => {
+                            let placaA = trimUpper(a.troca || a.placa);
+                            let placaB = trimUpper(b.troca || b.placa);
+                            return placaA.localeCompare(placaB);
+                        });
+
+                        let indiceSelecionado = "";
+
+                        viagensEncontradasParaComplemento.forEach((v, vIndex) => {
+                            let placaOriginal = trimUpper(v.placa).replace(/[^A-Z0-9]/g, '');
+                            let placaTroca = v.troca ? trimUpper(v.troca).replace(/[^A-Z0-9]/g, '') : '';
+                            let placaFinal = placaTroca || placaOriginal;
+
+                            let notasPlaca = notasDoDia.filter(n => {
+                                let nPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '');
+                                return nPlaca === placaOriginal || nPlaca === placaFinal;
+                            });
+
+                            v._notasFiscaisVinculadas = notasPlaca.map(n => n.nota || n.numero || n.nf || n.nNF || "S/N");
+
+                            let motoristaFinal = v.motorista || "";
+                            if (notasPlaca.length > 0) {
+                                const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0];
+                                motoristaFinal = ref.motorista || motoristaFinal;
+                            }
+                            if (!motoristaFinal || motoristaFinal.trim() === "" || motoristaFinal === "-") {
+                                motoristaFinal = v.motoristaNome || v.nomeMotorista || v.condutor || 'S/ Motorista';
+                            }
+
+                            v._motoristaResolvido = motoristaFinal;
+                            v._ajudanteResolvido = v.ajudante || '-';
+                            v._pesoResolvido = v.peso || '-';
+                            v._qtdNfResolvida = v.qtd || notasPlaca.length || '-';
+
+                            let regiaoRota = v.regiao || v.cidade || v.destino || 'S/ Região';
+                            let statusPainel = v.status || 'S/ Status';
+
+                            const desc = `${placaFinal} - ${motoristaFinal} - [${statusPainel}] - ${regiaoRota}`;
+                            
+                            // Se a placa do item salvo bater com esta viagem, deixa selecionada por padrão
+                            const isMatch = placaFinal === trimUpper(item.placa).replace(/[^A-Z0-9]/g, '');
+                            if (isMatch) indiceSelecionado = vIndex;
+
+                            optionsHTML += `<option value="${vIndex}" ${isMatch ? 'selected' : ''}>${desc}</option>`;
+                        });
+
+                        if (indiceSelecionado !== "") {
+                            selectPlaca.value = indiceSelecionado;
+                            window.preencherDadosDaViagemSelecionada();
+                        } else {
+                            selectPlaca.value = "SEM_PLACA";
+                        }
+                    } else {
+                        optionsHTML += `<option value="SEM_PLACA" selected>${item.placa || 'Sem Placa'}</option>`;
+                    }
+
+                    if (selectPlaca) {
+                        selectPlaca.disabled = false;
+                        selectPlaca.innerHTML = optionsHTML;
+                    }
+
+                } catch (err) {
+                    console.error("Erro ao carregar placas na edição:", err);
+                    if (selectPlaca) {
+                        selectPlaca.innerHTML = `<option value="SEM_PLACA" selected>${item.placa || 'Sem Placa'}</option>`;
+                        selectPlaca.disabled = false;
+                    }
+                }
+
+                // Preenche o preview visual inicial com os dados gravados anteriormente no item
+                if (preview) {
+                    document.getElementById('prev-mot').textContent = item.motorista || '-';
+                    document.getElementById('prev-trans').textContent = item.transportadora || '-';
+                    document.getElementById('prev-perfil').textContent = item.perfil || '-';
+                    document.getElementById('prev-tipo').textContent = item.tipoVeiculo || '-';
+                    document.getElementById('prev-regiao').textContent = item.regiao || '-';
+                    document.getElementById('prev-status').textContent = item.statusPainel || '-';
+                    preview.style.display = 'grid';
+                }
+
+                document.getElementById('btn-salvar-comp').disabled = false;
+
+            } else if (tipoItem === 'deposito') {
+                if (!window._cacheDiasMap || !window._cacheDiasMap[dataStr]) return alert("Erro ao carregar depósito.");
+                const dep = window._cacheDiasMap[dataStr].depositos[index];
+                if (!dep) return alert("Depósito não encontrado.");
+
+                const depData = document.getElementById('dep-input-data');
+                if (depData) {
+                    depData.value = dataStr;
+                    depData.disabled = true;
+                }
+                
+                const inputValorDep = document.getElementById('dep-input-valor');
+                if (inputValorDep) inputValorDep.value = dep.valor || '';
+
+                const inputHoraDep = document.getElementById('dep-input-hora');
+                if (inputHoraDep) inputHoraDep.value = dep.hora || '';
+
+                const inputObsDep = document.getElementById('dep-input-obs');
+                if (inputObsDep) inputObsDep.value = dep.obs || '';
+
+                const modalDep = document.getElementById('modal-deposito');
+                if (modalDep) modalDep.style.setProperty('display', 'flex', 'important');
+            }
+        };
+
+        // ================= EXCLUIR ITEM (COM ENVIO PARA LIXEIRA) =================
+        window.excluirItemFinanceiro = async (dataStr, index, tipoItem) => {
+            if (!confirm(`Tem certeza que deseja excluir este ${tipoItem}? Ele será movido para a lixeira.`)) return;
+
+            showLoader();
+            try {
+                const docRef = doc(db, "complementos_diario", dataStr);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    hideLoader();
+                    return alert("Registro diário não encontrado.");
+                }
+
+                const dadosDia = docSnap.data();
+                let itemRemovido = null;
+
+                if (tipoItem === 'complemento') {
+                    let itens = dadosDia.itens || [];
+                    if (itens[index] !== undefined) {
+                        itemRemovido = itens.splice(index, 1)[0];
+                        itemRemovido.lixeiraTipo = 'complemento';
+                        await setDoc(docRef, { itens: itens }, { merge: true });
+                    }
+                } else if (tipoItem === 'deposito') {
+                    let depositos = dadosDia.depositos || [];
+                    if (depositos[index] !== undefined) {
+                        itemRemovido = depositos.splice(index, 1)[0];
+                        itemRemovido.lixeiraTipo = 'deposito';
+                        await setDoc(docRef, { depositos: depositos }, { merge: true });
+                    }
+                }
+
+                if (itemRemovido) {
+                    // Envia cópia para a coleção de lixeira no Firestore
+                    itemRemovido.dataOriginal = dataStr;
+                    itemRemovido.excluidoPor = window.usuarioLogadoNome || "Sistema";
+                    itemRemovido.excluidoEm = new Date().toISOString();
+
+                    await addDoc(collection(db, "lixeira_complementos"), itemRemovido);
+                }
+
+                // Recarrega o painel atual
+                document.getElementById('btn-carregar-complementos').click();
+            } catch (err) {
+                console.error("Erro ao excluir item:", err);
+                alert("Erro ao excluir o registro.");
+            }
+            hideLoader();
+        };
+
         // ================= ABERTURA BLINDADA DOS MODAIS DE COMPLEMENTOS =================
         
         window.abrirModalNovoComplemento = async () => {
