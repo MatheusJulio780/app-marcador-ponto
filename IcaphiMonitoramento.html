@@ -3221,7 +3221,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.5</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.6</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -4082,6 +4082,9 @@
                         <button class="btn btn-primary" id="btn-carregar-complementos" style="display: flex; align-items: center; gap: 6px; padding: 8px 15px;">
                             <i class="ph-bold ph-funnel"></i> Filtrar
                         </button>
+                        <button onclick="window.abrirModalExtrato()" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 700;">
+                            <i class="ph-bold ph-file-pdf" style="font-size: 16px; color: var(--danger);"></i> Gerar Extrato
+                        </button>
                         <button class="btn btn-secondary" onclick="window.abrirModalLixeira()" style="display: flex; align-items: center; gap: 6px; font-weight: 800; padding: 8px 15px;">
                             <i class="ph-bold ph-trash"></i> Lixeira
                         </button>
@@ -4739,29 +4742,37 @@
     <div class="modal-overlay" id="modal-atualizar-apps">
         <div class="modal-content" style="width: 420px;">
             <div class="modal-header">
-                <h3>📱 Atualizar Apps</h3><button class="btn-close"
-                    onclick="document.getElementById('modal-atualizar-apps').classList.remove('active')">×</button>
+                <h3>📱 Atualizar Apps</h3>
+                <button class="btn-close" onclick="document.getElementById('modal-atualizar-apps').classList.remove('active')">×</button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">Selecione a
-                    data da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema
-                    preencherá a coluna APP, RCA e COORDENADOR automaticamente.</p>
-                <div
-                    style="margin-top: 10px; background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <label
-                        style="font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px;">Data
-                        da Operação:</label><input type="date" id="apps-data-select" style="width:100%;">
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                    Selecione o período da operação e importe a planilha que contém a coluna de Assinaturas (Coluna W). O sistema preencherá a coluna APP, RCA e COORDENADOR automaticamente apenas nas notas pendentes.
+                </p>
+                
+                <div style="margin-top: 10px; background: var(--bg-table-row-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">PERÍODO DE ATUALIZAÇÃO</label>
+                    <select id="apps-periodo-select" class="form-control" style="width: 100%; margin-bottom: 10px;" onchange="document.getElementById('box-data-especifica-apps').style.display = this.value === 'especifico' ? 'block' : 'none'">
+                        <option value="hoje" selected>Atualizar Hoje</option>
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="15">Últimos 15 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                        <option value="especifico">Selecionar dia específico</option>
+                    </select>
+
+                    <div id="box-data-especifica-apps" style="display: none;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">DATA ESPECÍFICA</label>
+                        <input type="date" id="apps-data-select" class="form-control" style="width:100%;">
+                    </div>
                 </div>
 
-                <button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;"
-                    onclick="document.getElementById('file-import-apps').click()"><i class="ph ph-upload-simple"></i>
-                    Importar Planilha de Anexos</button>
+                <button class="btn btn-primary" style="width:100%; padding:12px; margin-top:15px;" onclick="document.getElementById('file-import-apps').click()">
+                    <i class="ph ph-upload-simple"></i> Importar Planilha de Anexos
+                </button>
                 <input type="file" id="file-import-apps" accept=".xlsx, .xls, .csv" style="display: none;">
 
                 <!-- Tag para exibir a última importação -->
-                <p id="txt-ultima-importacao"
-                    style="font-size: 12px; color: var(--primary); text-align: center; margin-top: 12px; font-weight: 600;">
-                </p>
+                <p id="txt-ultima-importacao" style="font-size: 12px; color: var(--primary); text-align: center; margin-top: 12px; font-weight: 600;"></p>
             </div>
         </div>
     </div>
@@ -5969,6 +5980,37 @@
             
             <div style="padding: 15px; background: var(--bg-panel); border-top: 1px solid var(--border-color); display: flex; justify-content: center;">
                 <button class="btn btn-primary" onclick="document.getElementById('modal-recibo-complemento').style.display='none'" style="width: 100%; font-weight: 800; padding: 12px;">Fechar Recibo</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL DE SELEÇÃO DE PERÍODO PARA O EXTRATO -->
+    <div id="modal-extrato-periodo" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:999999; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+        <div style="background: var(--bg-card); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid var(--border-color);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 16px; color: var(--text-main); font-weight: 900; display: flex; align-items: center; gap: 8px;">
+                    <i class="ph-bold ph-calendar-check" style="color: var(--accent); font-size: 20px;"></i> Gerar Extrato de Período
+                </h3>
+                <button onclick="document.getElementById('modal-extrato-periodo').style.display='none'" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:18px;"><i class="ph-bold ph-x"></i></button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">DATA INÍCIO</label>
+                    <input type="date" id="extrato-data-inicio" class="form-control" style="width:100%;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display:block;">DATA FIM</label>
+                    <input type="date" id="extrato-data-fim" class="form-control" style="width:100%;">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-extrato-periodo').style.display='none'">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="window.processarGeracaoExtratoPDF()" style="font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                        <i class="ph-bold ph-download-simple"></i> Baixar PDF
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -7863,74 +7905,163 @@
             }
         }
 
-        // ====== LÓGICA ATUALIZAR APPS (COM RCA, COORDENADOR, CÓDIGO DO CLIENTE NA COLUNA J E TIMESTAMP) ======
+        // Função auxiliar para calcular o intervalo de datas
+        function obterLimitesPeriodoApps(periodo) {
+            const dataFim = new Date(); 
+            let dataInicio = new Date();
+
+            if (periodo === '7') dataInicio.setDate(dataInicio.getDate() - 7);
+            else if (periodo === '15') dataInicio.setDate(dataInicio.getDate() - 15);
+            else if (periodo === '30') dataInicio.setDate(dataInicio.getDate() - 30);
+            
+            // Ajuste seguro de timezone para garantir o formato YYYY-MM-DD local
+            const offset = dataInicio.getTimezoneOffset() * 60000;
+            const strInicio = new Date(dataInicio.getTime() - offset).toISOString().split('T')[0];
+            const strFim = new Date(dataFim.getTime() - offset).toISOString().split('T')[0];
+
+            return { inicio: strInicio, fim: strFim };
+        }
+
+        // LÓGICA DE ATUALIZAÇÃO EM LOTE COM HASH MAP
         document.getElementById('file-import-apps').addEventListener('change', async function (e) {
-            const file = e.target.files[0]; if (!file) return;
-            const dSel = document.getElementById('apps-data-select').value;
-            if (!dSel) return alert("Selecione a data!");
+            const file = e.target.files[0]; 
+            if (!file) return;
+            
+            const periodo = document.getElementById('apps-periodo-select').value;
+            let dataInicioStr, dataFimStr;
+
+            if (periodo === 'especifico') {
+                const dSel = document.getElementById('apps-data-select').value;
+                if (!dSel) return alert("Selecione a data específica primeiro!");
+                dataInicioStr = dSel;
+                dataFimStr = dSel;
+            } else {
+                const limites = obterLimitesPeriodoApps(periodo);
+                dataInicioStr = limites.inicio;
+                dataFimStr = limites.fim;
+            }
+
             showLoader();
 
             const reader = new FileReader();
             reader.onload = async function (e) {
                 try {
-                    const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' }); const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                    let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºNFE"))) { hIdx = i; break; } }
-                    if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; }
+                    const data = new Uint8Array(e.target.result); 
+                    const wb = XLSX.read(data, { type: 'array' }); 
+                    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                    
+                    let hIdx = -1; 
+                    for (let i = 0; i < raw.length; i++) { 
+                        if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºNFE"))) { hIdx = i; break; } 
+                    }
+                    if (hIdx === -1) { alert("Cabeçalho não encontrado no Excel."); hideLoader(); return; }
 
                     const headers = raw[hIdx].map(x => String(x).toUpperCase().trim());
                     const colNf = headers.indexOf("NºNFE");
                     const colAssin = headers.findIndex(h => h.includes("ASSIN."));
-                    
-                    // 🟢 Mapeia dinamicamente a coluna "COD.CLI." ou usa a coluna J (índice 9) como fallback seguro
                     let colCodCli = headers.indexOf("COD.CLI.");
-                    if (colCodCli === -1) colCodCli = 9; // Índice da coluna J
+                    if (colCodCli === -1) colCodCli = 9;
 
                     if (colAssin === -1) { alert("Coluna de Assinatura (ASSIN.) não encontrada."); hideLoader(); return; }
 
-                    const snap = await getDoc(doc(db, "notas_fiscais_diario", dSel));
-                    if (snap.exists()) {
-                        let notasDB = snap.data().notas; let alteradasCount = 0;
-                        for (let i = hIdx + 1; i < raw.length; i++) {
-                            const row = raw[i]; if (!row || !row[colNf]) continue;
-                            const nfVal = cleanNF(row[colNf]); 
-                            const assinVal = row[colAssin] ? String(row[colAssin]).trim() : "";
-                            const represVal = row[15] ? String(row[15]).trim() : "";
-                            const supVal = row[17] ? String(row[17]).trim() : "";
-                            
-                            // 🟢 Captura o código do cliente diretamente da coluna J (Cod.Cli.)
-                            const codCliVal = row[colCodCli] ? String(row[colCodCli]).trim() : "";
+                    // 1. INDEXAÇÃO DO EXCEL NA MEMÓRIA (Alta performance O(1))
+                    const nfsExcelMap = {};
+                    for (let i = hIdx + 1; i < raw.length; i++) {
+                        const row = raw[i]; 
+                        if (!row || !row[colNf]) continue;
+                        const nfVal = cleanNF(row[colNf]); 
+                        nfsExcelMap[nfVal] = {
+                            assin: row[colAssin] ? String(row[colAssin]).trim() : "",
+                            repres: row[15] ? String(row[15]).trim() : "",
+                            sup: row[17] ? String(row[17]).trim() : "",
+                            codcli: row[colCodCli] ? String(row[colCodCli]).trim() : ""
+                        };
+                    }
 
-                            let notaTarget = notasDB.find(n => cleanNF(n.nf) === nfVal);
-                            if (notaTarget) {
-                                let mudou = false;
-                                if (represVal && notaTarget.repres !== represVal) { notaTarget.repres = represVal; mudou = true; }
-                                if (supVal && notaTarget.sup !== supVal) { notaTarget.sup = supVal; mudou = true; }
-                                if (codCliVal && notaTarget.codcli !== codCliVal) { notaTarget.codcli = codCliVal; mudou = true; }
+                    // 2. BUSCA NO FIREBASE PELO PERÍODO SELECIONADO
+                    const q = query(
+                        collection(db, "notas_fiscais_diario"),
+                        where(documentId(), ">=", dataInicioStr),
+                        where(documentId(), "<=", dataFimStr)
+                    );
+                    const snap = await getDocs(q);
 
-                                let novoApp = "";
-                                if (assinVal.includes("@0Q@")) novoApp = "ASSINATURA";
-                                else if (assinVal.includes("@FM@") || assinVal.includes("@JN@")) novoApp = "ANEXADO";
-                                else if (assinVal.includes("@SI@")) novoApp = "FOTO";
+                    let totalNotasAlteradas = 0;
+                    let diasAlterados = 0;
+                    const promisesLote = [];
 
-                                if (novoApp !== "" && notaTarget.app !== novoApp) {
-                                    notaTarget.app = novoApp;
-                                    mudou = true;
+                    // 3. PROCESSAMENTO E FILTRO
+                    snap.forEach(docSnap => {
+                        const dataDoc = docSnap.id;
+                        let notasDB = docSnap.data().notas;
+                        if (!notasDB || notasDB.length === 0) return;
+
+                        let alterouOcorrenciaNoDia = false;
+
+                        for (let i = 0; i < notasDB.length; i++) {
+                            let notaTarget = notasDB[i];
+                            const nfClean = cleanNF(notaTarget.nf);
+                            const excelData = nfsExcelMap[nfClean];
+
+                            if (excelData) {
+                                let mudouNota = false;
+
+                                // Atualiza sempre os metadados
+                                if (excelData.repres && notaTarget.repres !== excelData.repres) { notaTarget.repres = excelData.repres; mudouNota = true; }
+                                if (excelData.sup && notaTarget.sup !== excelData.sup) { notaTarget.sup = excelData.sup; mudouNota = true; }
+                                if (excelData.codcli && notaTarget.codcli !== excelData.codcli) { notaTarget.codcli = excelData.codcli; mudouNota = true; }
+
+                                // REGRA DE NEGÓCIO: Só atualiza o anexo se a nota ESTIVER SEM ANEXO
+                                const naoTemAnexo = !notaTarget.app || notaTarget.app.trim() === "" || notaTarget.app === "S/ Anexo" || notaTarget.app === "-";
+                                
+                                if (naoTemAnexo) {
+                                    let novoApp = "";
+                                    if (excelData.assin.includes("@0Q@")) novoApp = "ASSINATURA";
+                                    else if (excelData.assin.includes("@FM@") || excelData.assin.includes("@JN@")) novoApp = "ANEXADO";
+                                    else if (excelData.assin.includes("@SI@")) novoApp = "FOTO";
+
+                                    if (novoApp !== "") {
+                                        notaTarget.app = novoApp;
+                                        mudouNota = true;
+                                    }
                                 }
 
-                                if (mudou) alteradasCount++;
+                                if (mudouNota) {
+                                    totalNotasAlteradas++;
+                                    alterouOcorrenciaNoDia = true;
+                                }
                             }
                         }
-                        await setDoc(doc(db, "notas_fiscais_diario", dSel), { notas: notasDB });
 
-                        // GRAVA O HORÁRIO DA ÚLTIMA IMPORTAÇÃO NO FIREBASE
-                        const dataHoraIso = new Date().toISOString();
-                        await setDoc(doc(db, "configuracoes", "importacao_apps"), { dataHora: dataHoraIso });
-                        document.getElementById('txt-ultima-importacao').innerText = formatarUltimaImportacao(dataHoraIso);
+                        // Se encontrou alguma nota sem anexo para preencher neste dia, agenda a gravação
+                        if (alterouOcorrenciaNoDia) {
+                            diasAlterados++;
+                            promisesLote.push(setDoc(doc(db, "notas_fiscais_diario", dataDoc), { notas: notasDB }, { merge: true }));
+                        }
+                    });
 
-                        alert(`Importação concluída! Dados atualizados em ${alteradasCount} notas.`);
-                        if (document.getElementById('notas-data-select').value === dSel) { document.getElementById('btn-carregar-notas').click(); }
-                    } else { alert("Não existem notas fiscais importadas no sistema para a data selecionada."); }
-                } catch (err) { alert("Erro ao processar: " + err.message); }
+                    // Executa todas as atualizações de banco de dados paralelamente para alavancar a velocidade
+                    if (promisesLote.length > 0) {
+                        await Promise.all(promisesLote);
+                    }
+
+                    // 4. REGISTRO E FEEDBACK
+                    const dataHoraIso = new Date().toISOString();
+                    await setDoc(doc(db, "configuracoes", "importacao_apps"), { dataHora: dataHoraIso });
+                    
+                    const txtInfo = document.getElementById('txt-ultima-importacao');
+                    if (txtInfo) txtInfo.innerText = formatarUltimaImportacao(dataHoraIso);
+
+                    alert(`Varredura concluída!\n- Período analisado: ${dataInicioStr.split('-').reverse().join('/')} a ${dataFimStr.split('-').reverse().join('/')}\n- Notas atualizadas: ${totalNotasAlteradas}\n- Dias afetados: ${diasAlterados}`);
+                    
+                    // Atualiza a tela automaticamente se o dia aberto no painel for afetado pelo período
+                    const dAtualView = document.getElementById('notas-data-select') ? document.getElementById('notas-data-select').value : null;
+                    if (dAtualView && dAtualView >= dataInicioStr && dAtualView <= dataFimStr) {
+                        const btnC = document.getElementById('btn-carregar-notas');
+                        if (btnC) btnC.click();
+                    }
+
+                } catch (err) { alert("Erro crítico ao processar planilha: " + err.message); }
 
                 hideLoader();
                 document.getElementById('modal-atualizar-apps').classList.remove('active');
@@ -18367,6 +18498,102 @@
             } finally {
                 hideLoader();
             }
+        };
+
+        window.abrirModalExtrato = function() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const primeiroDiaMes = hoje.slice(0, 8) + '01';
+            
+            const inputInicio = document.getElementById('extrato-data-inicio');
+            const inputFim = document.getElementById('extrato-data-fim');
+
+            if (inputInicio) inputInicio.value = primeiroDiaMes;
+            if (inputFim) inputFim.value = hoje;
+            
+            const modal = document.getElementById('modal-extrato-periodo');
+            if (modal) modal.style.setProperty('display', 'flex', 'important');
+        };
+
+        window.processarGeracaoExtratoPDF = async function() {
+            const inicio = document.getElementById('extrato-data-inicio')?.value;
+            const fim = document.getElementById('extrato-data-fim')?.value;
+
+            if (!inicio || !fim) return alert("Por favor, selecione a data de início e fim.");
+            if (inicio > fim) return alert("A data inicial não pode ser maior que a data final.");
+
+            const modalPeriodo = document.getElementById('modal-extrato-periodo');
+            if (modalPeriodo) modalPeriodo.style.display = 'none';
+            
+            if (typeof showLoader === 'function') showLoader();
+
+            try {
+                const q = query(collection(db, "complementos_diario"), where(documentId(), ">=", inicio), where(documentId(), "<=", fim));
+                const snap = await getDocs(q);
+
+                let diasExtrato = {};
+                let kpiTotalGasto = 0;
+                let kpiTotalDeposito = 0;
+                let kpiQtdComplementos = 0;
+
+                snap.forEach(docSnap => {
+                    const dataStr = docSnap.id;
+                    const dados = docSnap.data();
+
+                    if (!diasExtrato[dataStr]) diasExtrato[dataStr] = { complementos: [], depositos: [] };
+
+                    if (dados.itens && dados.itens.length > 0) {
+                        dados.itens.forEach(item => {
+                            diasExtrato[dataStr].complementos.push(item);
+                            kpiTotalGasto += parseFloat(item.valor) || 0;
+                            kpiQtdComplementos++;
+                        });
+                    }
+
+                    if (dados.depositos && dados.depositos.length > 0) {
+                        dados.depositos.forEach(dep => {
+                            diasExtrato[dataStr].depositos.push(dep);
+                            kpiTotalDeposito += parseFloat(dep.valor) || 0;
+                        });
+                    }
+                });
+
+                const datasOrdenadas = Object.keys(diasExtrato).sort();
+                if (datasOrdenadas.length === 0) {
+                    if (typeof hideLoader === 'function') hideLoader();
+                    return alert("Nenhum registro encontrado no período selecionado.");
+                }
+
+                let htmlConteudoDias = '';
+                datasOrdenadas.forEach(dataStr => {
+                    const diaObj = diasExtrato[dataStr];
+                    const dataFmt = typeof formatarDataBR === 'function' ? formatarDataBR(dataStr) : dataStr;
+                    let itensHtml = '';
+                    
+                    diaObj.depositos.forEach(dep => {
+                        itensHtml += '<div class="item-card deposito"><div class="item-header"><span><strong>DEPÓSITO</strong> &bull; ' + (dep.hora || 'N/A') + '</span><span class="val-positivo">+ R$ ' + parseFloat(dep.valor || 0).toFixed(2) + '</span></div><div class="item-detalhes">Usuário: ' + (dep.usuario || 'Sistema') + (dep.obs ? ' | Obs: ' + dep.obs : '') + '</div></div>';
+                    });
+
+                    diaObj.complementos.forEach(comp => {
+                        itensHtml += '<div class="item-card complemento"><div class="item-header"><span><strong>' + comp.placa + '</strong> (' + comp.tipo + ')</span><span class="val-negativo">- R$ ' + parseFloat(comp.valor || 0).toFixed(2) + '</span></div><div class="item-detalhes">Motorista: ' + (comp.motorista || 'N/A') + ' | Transporte: ' + (comp.transportadora || 'N/A') + ' | Perfil: ' + (comp.perfil || 'N/A') + (comp.obs ? '<br><em>Obs: ' + comp.obs + '</em>' : '') + '</div></div>';
+                    });
+
+                    htmlConteudoDias += '<div class="dia-bloco"><div class="dia-titulo">Data: ' + dataFmt + '</div>' + itensHtml + '</div>';
+                });
+
+                const scriptImpressao = "<script>window.onload = function() { setTimeout(() => window.print(), 500); };<\/script>";
+
+                const documentoHtml = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Extrato de Complementos - ICAPHI</title><style>body { font-family: Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 20px; background: #fff; }.header-relatorio { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }.logo-empresa { height: 45px; object-fit: contain; }.titulo-relatorio { text-align: right; }.titulo-relatorio h1 { margin: 0; font-size: 18px; color: #0f172a; font-weight: 800; text-transform: uppercase; }.titulo-relatorio p { margin: 4px 0 0; font-size: 11px; color: #64748b; }.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }.kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; border-left: 4px solid #3b82f6; }.kpi-card.verde { border-left-color: #22c55e; }.kpi-card.vermelho { border-left-color: #ef4444; }.kpi-titulo { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }.kpi-valor { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 4px; }.dia-bloco { margin-bottom: 20px; break-inside: avoid; }.dia-titulo { background: #1e293b; color: #fff; padding: 6px 12px; font-size: 12px; font-weight: 800; border-radius: 4px; margin-bottom: 8px; }.item-card { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; font-size: 11px; }.item-card.deposito { border-left: 3px solid #22c55e; background: #f0fdf4; }.item-card.complemento { border-left: 3px solid #3b82f6; }.item-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 4px; }.val-positivo { color: #16a34a; font-weight: 800; }.val-negativo { color: #dc2626; font-weight: 800; }.item-detalhes { color: #475569; font-size: 10px; line-height: 1.3; }@media print { body { padding: 0; } }</style></head><body><div class="header-relatorio"><div><img src="logo_icaphi.png" class="logo-empresa" alt="ICAPHI" onerror="this.style.display=\'none\'"></div><div class="titulo-relatorio"><h1>Extrato Financeiro de Complementos</h1><p>Período: <strong>' + inicio.split('-').reverse().join('/') + '</strong> até <strong>' + fim.split('-').reverse().join('/') + '</strong></p></div></div><div class="kpi-grid"><div class="kpi-card verde"><div class="kpi-titulo">Total Depósitos</div><div class="kpi-valor">R$ ' + kpiTotalDeposito.toFixed(2) + '</div></div><div class="kpi-card vermelho"><div class="kpi-titulo">Total Gastos (Saídas)</div><div class="kpi-valor">R$ ' + kpiTotalGasto.toFixed(2) + '</div></div><div class="kpi-card"><div class="kpi-titulo">Qtd. Lançamentos</div><div class="kpi-valor">' + kpiQtdComplementos + ' Itens</div></div></div>' + htmlConteudoDias + scriptImpressao + '</body></html>';
+
+                const blob = new Blob([documentoHtml], { type: 'text/html;charset=utf-8' });
+                const urlBlob = URL.createObjectURL(blob);
+                const janelaPdf = window.open(urlBlob, '_blank');
+
+                if (!janelaPdf) alert("O navegador bloqueou a abertura da janela de impressão. Permita pop-ups para este site.");
+            } catch (err) {
+                console.error("Erro ao gerar extrato PDF:", err);
+                alert("Erro ao gerar o relatório PDF.");
+            }
+            if (typeof hideLoader === 'function') hideLoader();
         };
 
     </script>
