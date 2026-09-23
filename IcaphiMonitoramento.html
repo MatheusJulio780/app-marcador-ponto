@@ -3221,7 +3221,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.6</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.7</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -12415,7 +12415,6 @@
                 const dataLimite = new Date(dataFim + 'T00:00:00');
 
                 let promessasDeBusca = [];
-                // Busca de forma paralela todas as notas e rotas do período
                 while (dataIteradora <= dataLimite) {
                     const dataDocId = dataIteradora.toISOString().split('T')[0];
                     promessasDeBusca.push(getDoc(doc(db, "painel_diario", dataDocId)).then(s => ({ date: dataDocId, type: 'painel', data: s.exists() ? s.data().rotas : null })));
@@ -12425,7 +12424,6 @@
 
                 const resultados = await Promise.all(promessasDeBusca);
 
-                // Mapeia na memória para cruzamento ultrarrápido
                 let dbData = {};
                 resultados.forEach(r => {
                     if (!dbData[r.date]) dbData[r.date] = { painel: [], notas: [] };
@@ -12433,8 +12431,6 @@
                     if (r.type === 'notas' && r.data) dbData[r.date].notas = r.data;
                 });
 
-                // >>> CORREÇÃO DO BUG DE DATA NO EXCEL <<<
-                // Transforma a string em um Objeto Data Nativo que o Excel reconhece automaticamente
                 const converterDataExcel = (dataStr) => {
                     if (!dataStr) return "";
                     if (dataStr.includes('-')) {
@@ -12448,7 +12444,6 @@
                     return dataStr;
                 };
 
-                // Executa a lógica idêntica à renderização do Painel para o período solicitado
                 let dtAtual = new Date(dataInicio + 'T00:00:00');
                 while (dtAtual <= dataLimite) {
                     const dataSel = dtAtual.toISOString().split('T')[0];
@@ -12456,42 +12451,80 @@
                     dtOntem.setDate(dtOntem.getDate() - 1);
                     const dataOntem = dtOntem.toISOString().split('T')[0];
 
-                    let rotasParaProcessar = dbData[dataSel].painel || [];
-                    let notasDoDia = [...(dbData[dataSel].notas || [])];
+                    let rotasParaProcessar = dbData[dataSel].painel ? [...dbData[dataSel].painel] : [];
+                    let notasDoDia = dbData[dataSel].notas ? [...dbData[dataSel].notas] : [];
                     let rotasOntem = dbData[dataOntem].painel || [];
                     let notasOntem = dbData[dataOntem].notas || [];
 
-                    // Reconstrução dos Transbordos e Pernoites
-                    let deParaTroca = {};
-                    rotasParaProcessar.forEach(r => {
-                        if (r.placa && r.troca && r.troca.trim() !== "") {
-                            deParaTroca[trimUpper(r.placa).replace(/[^A-Z0-9]/g, '')] = trimUpper(r.troca).replace(/[^A-Z0-9]/g, '');
+                    // ================= RECONSTRUÇÃO AVANÇADA (TRANSIÇÃO E HERANÇA) =================
+                    
+                    const getRotaKey = (r) => {
+                        const p = trimUpper(r.placa || '').replace(/[^A-Z0-9]/g, '');
+                        const t = trimUpper(r.troca || '').replace(/[^A-Z0-9]/g, '');
+                        const oc = trimUpper(r.oc || '');
+                        return `${p}_${t}_${oc}`;
+                    };
+                    const chavesHoje = new Set(rotasParaProcessar.map(getRotaKey));
+
+                    rotasOntem.forEach(ro => {
+                        const stRo = trimUpper(ro.status || '');
+                        const pRo = trimUpper(ro.placa || '').replace(/[^A-Z0-9]/g, '');
+                        const tRo = trimUpper(ro.troca || '').replace(/[^A-Z0-9]/g, '');
+                        
+                        const teveNotaPernoiteOntem = notasOntem.some(n => {
+                            if (trimUpper(n.status) !== 'PERNOITE') return false;
+                            const nPlaca = trimUpper(n.placa || '').replace(/[^A-Z0-9]/g, '');
+                            return (nPlaca === pRo || (tRo && nPlaca === tRo));
+                        });
+                        
+                        const isFinalizada = stRo === 'FINALIZADO' || stRo === 'VEÍCULO VAZIO' || stRo === 'ENTREGUE';
+                        const isViagemExpl = stRo.includes('VIAGEM') || stRo.includes('APOIO');
+
+                        if ((!isFinalizada || teveNotaPernoiteOntem) && !chavesHoje.has(getRotaKey(ro))) {
+                            let novoStatus = isViagemExpl ? ro.status : "Pernoite";
+                            rotasParaProcessar.push({ ...ro, status: novoStatus, isRollover: true });
+                            chavesHoje.add(getRotaKey(ro)); 
                         }
                     });
 
                     notasOntem.forEach(no => {
-                        if (trimUpper(no.status) === 'PERNOITE' && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                            let placaOriginal = trimUpper(no.placa).replace(/[^A-Z0-9]/g, '');
-                            let placaFinal = deParaTroca[placaOriginal] || no.placa;
-                            notasDoDia.push({ ...no, status: "", placa: placaFinal });
+                        const stNota = trimUpper(no.status || '');
+                        const isPendente = !['ENTREGUE', 'DEVOLUÇÃO', 'REENTREGA', 'SINISTRADA', 'NÃO EMBARCADA'].includes(stNota);
+                        if (isPendente && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
+                            notasDoDia.push({ ...no, status: stNota === 'PERNOITE' ? "" : no.status });
                         }
                     });
 
-                    rotasOntem.forEach(ro => {
-                        const placaRo = trimUpper(ro.placa).replace(/[^A-Z0-9]/gi, '');
-                        const teveNotaPernoiteOntem = notasOntem.some(n => trimUpper(n.status) === 'PERNOITE' && trimUpper(n.placa).replace(/[^A-Z0-9]/gi, '') === placaRo);
-                        if (teveNotaPernoiteOntem && !rotasParaProcessar.find(r => trimUpper(r.placa).replace(/[^A-Z0-9]/gi, '') === placaRo)) {
-                            rotasParaProcessar.push({ ...ro, status: "Pernoite", isRollover: true });
-                        }
-                    });
+                    dbData[dataSel].painel = rotasParaProcessar;
+                    dbData[dataSel].notas = notasDoDia;
 
                     if (tipoExportacao === 'PAINEL') {
                         rotasParaProcessar.forEach(rota => {
-                            // 🟢 Na exportação também prioriza a placa de troca para o perfil e tipo
                             const placaParaConsultaExcel = (rota.troca && rota.troca.trim() !== "") ? rota.troca : rota.placa;
                             const infoViva = window.placasCache[placaParaConsultaExcel.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
                             const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
-                            const notasPlaca = notasDoDia.filter(n => trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef && trimUpper(n.status) !== 'NÃO EMBARCADA');
+
+                            // 🟢 FILTRO EXATO DO PAINEL AO VIVO (Elimina a duplicação entre viagens da mesma placa)
+                            const transpRotaStr = String(rota.transporte || "").trim();
+                            const transpNumArray = transpRotaStr.match(/\d+/g) || [];
+
+                            const notasPlaca = notasDoDia.filter(n => {
+                                if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                                const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
+                                if (!matchPlaca) return false;
+
+                                const tipoViagemRota = trimUpper(rota.status || "");
+                                const tipoViagemNota = trimUpper(n.tipo_viagem || n.status_viagem || "");
+                                if (tipoViagemRota !== "" && tipoViagemRota !== "SAIDA DIA" && tipoViagemRota !== "PERNOITE") {
+                                    if (tipoViagemNota !== "" && tipoViagemNota !== tipoViagemRota) return false;
+                                }
+
+                                const viagemNota = String(n.viagem || "").trim();
+                                if (transpNumArray.length > 0 && viagemNota !== "") {
+                                    return transpNumArray.some(t => viagemNota.includes(t));
+                                }
+                                return true;
+                            });
 
                             let motoristaFinal = rota.motorista || ""; let contatoFinal = rota.contato || "";
                             if (notasPlaca.length > 0) { const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0]; motoristaFinal = ref.motorista || motoristaFinal; contatoFinal = ref.telefone || contatoFinal; }
@@ -12515,29 +12548,24 @@
 
                             let stRotaCalc = "";
                             if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
-                            // 🟢 DETECTOR DE MUDANÇA DE STATUS EM TEMPO REAL
+                            
                             if (!window._cacheStatusPainelGlobal) window._cacheStatusPainelGlobal = {};
-                            const chaveCacheStatus = `${dataSel}_${placaRef}`;
-
-                            // APLIQUE ISSO EM TODOS OS BLOCOS DE DETECTOR QUE VOCÊ TEM:
-                            if (window.ultimaNotificacaoDisparada === `${placaRef}_${stRotaCalc}`) return; 
-                            window.ultimaNotificacaoDisparada = `${placaRef}_${stRotaCalc}`;
-
-                            // Se já estava na memória e o status mudou comparado ao que estava gravado antes
-                            if (window._cacheStatusPainelGlobal[chaveCacheStatus] && window._cacheStatusPainelGlobal[chaveCacheStatus] !== stRotaCalc) {
-
-                                // Dispara a Gota estilizada para alteração de frota
-                                mostrarGotaNotificacao(
-                                    "Atualização de Frota",
-                                    `Veículo ${placaRef} alterou para: ${stRotaCalc}`,
-                                    "https://cdn-icons-png.flaticon.com/512/3067/3067417.png" // Ícone de caminhão/frota
-                                );
-
-                                const sound = document.getElementById('chat-notification-sound');
-                                if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                            const chaveCacheStatus = `${dataSel}_${placaRef}_${rota.oc || ''}`;
+                            
+                            if (window.ultimaNotificacaoDisparada !== `${placaRef}_${rota.oc || ''}_${stRotaCalc}`) {
+                                window.ultimaNotificacaoDisparada = `${placaRef}_${rota.oc || ''}_${stRotaCalc}`;
+                                
+                                if (window._cacheStatusPainelGlobal[chaveCacheStatus] && window._cacheStatusPainelGlobal[chaveCacheStatus] !== stRotaCalc) {
+                                    mostrarGotaNotificacao(
+                                        "Atualização de Frota",
+                                        `Veículo ${placaRef} alterou para: ${stRotaCalc}`,
+                                        "https://cdn-icons-png.flaticon.com/512/3067/3067417.png" 
+                                    );
+                                    const sound = document.getElementById('chat-notification-sound');
+                                    if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
+                                }
+                                window._cacheStatusPainelGlobal[chaveCacheStatus] = stRotaCalc;
                             }
-                            // Salva o status atual na memória global
-                            window._cacheStatusPainelGlobal[chaveCacheStatus] = stRotaCalc;
 
                             let p_q_nfs = notasPernoite.length > 0 ? `${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}` : "";
                             const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
@@ -12546,10 +12574,9 @@
                             let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
                             let cemPorcentoAss = ""; if (stRotaCalc === "VEÍCULO VAZIO" || stRotaCalc === "FINALIZADO" || stRotaCalc === "PERNOITE") { cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "SIM" : "NÃO"; }
 
-                            // EXPORTAÇÃO EXATA NA ORDEM DO CABEÇALHO DO PAINEL
                             registrosExcel.push({
                                 "DATA OP.": converterDataExcel(dataSel),
-                                "PGTO.": rota.bloqueio_pagamento ? "NÃO PAGAR" : "LIBERADO", // 🟢 INJEÇÃO DA COLUNA DE PAGAMENTO
+                                "PGTO.": rota.bloqueio_pagamento ? "NÃO PAGAR" : "LIBERADO",
                                 "PLACA": rota.placa || "",
                                 "TROCA": rota.troca || "",
                                 "PERFIL": infoViva.perfil,
@@ -12578,7 +12605,6 @@
                             });
                         });
                     } else if (tipoExportacao === 'NOTAS') {
-                        // EXPORTAÇÃO EXATA NA ORDEM DO CABEÇALHO DE NOTAS
                         notasDoDia.forEach(nf => {
                             registrosExcel.push({
                                 "DATA OP.": converterDataExcel(dataSel),
@@ -12609,7 +12635,6 @@
 
                 if (registrosExcel.length === 0) return alert("Não há registros neste intervalo de datas.");
 
-                // ================= MOTOR DE ESTILIZAÇÃO DO EXCEL (CORRIGIDO E PRECISO) =================
                 let htmlStr = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
                 <head><meta charset="utf-8">
                 <style>
@@ -12620,8 +12645,8 @@
                         vertical-align: middle; 
                         font-size: 10pt; 
                         font-family: sans-serif;
-                        mso-number-format: "\@"; 
-                        white-space: nowrap; /* 🟢 ADICIONE ISSO PARA O TEXTO NUNCA QUEBRAR DE LINHA */
+                        mso-number-format: "\\@"; 
+                        white-space: nowrap; 
                     }
                 </style>
                 </head><body>
@@ -12629,7 +12654,6 @@
 
                 const colunas = Object.keys(registrosExcel[0]);
 
-                // Largura proporcional das colunas
                 htmlStr += `<colgroup>`;
                 colunas.forEach(col => {
                     let w = "60px";
@@ -12644,20 +12668,12 @@
                 });
                 htmlStr += `</colgroup>`;
 
-                // 🟢 CABEÇALHO CORRIGIDO: Aplica cor de fundo e texto em cada TH de forma isolada
                 htmlStr += `<tr>`;
                 colunas.forEach(col => {
-                    let thBg = "#1e293b";   // Fundo padrão grafite escuro do título
-                    let thColor = "#ffffff"; // Texto branco padrão do título
-
-                    // Exemplo caso queira personalizar alguma coluna específica no futuro:
-                    // if (col === "PLACA") { thBg = "#0284c7"; }
-
-                    htmlStr += `<th style="background-color: ${thBg}; color: ${thColor}; font-weight: bold; border: 1px solid #334155; padding: 6px 8px; text-align: center; font-size: 10pt; font-family: sans-serif;">${col}</th>`;
+                    htmlStr += `<th style="background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 6px 8px; text-align: center; font-size: 10pt; font-family: sans-serif;">${col}</th>`;
                 });
                 htmlStr += `</tr>`;
 
-                // Tradutores de cor
                 const getHexRowColor = (status) => {
                     if (tipoExportacao === 'PAINEL') return '#ffffff';
                     const s = String(status).trim().toUpperCase();
@@ -12672,7 +12688,7 @@
                     const s = String(val).trim().toUpperCase();
                     if (s.includes('VAZIO')) return 'background-color:#eff6ff; color:#2563eb;';
                     if (s.includes('PERNOITE')) return 'background-color:#dfc2b1; color:#78350f;';
-                    if (s.includes('FINALIZADO')) return 'background-color:#fdf2f8; color:#db2777;'; // 🟢 CORrigido o erro do if aqui
+                    if (s.includes('FINALIZADO')) return 'background-color:#fdf2f8; color:#db2777;'; 
                     if (s.includes('PRÓXIMO') || s.includes('TERMINAR')) return 'background-color:#fefce8; color:#ca8a04;';
                     if (s.includes('EM ROTA')) return 'background-color:#f8fafc; color:#64748b;';
                     if (s.includes('AGUARDANDO')) return 'background-color:#a2eaee; color:#0891b2;';
@@ -12684,7 +12700,6 @@
                     return 'background-color:#e5e7eb; color:#374151;';
                 };
 
-                // Montagem das Linhas com Tipagem Correta e Blindada contra Avisos
                 registrosExcel.forEach(reg => {
                     let statusRef = reg["ST. ROTA"] || reg["ST. PAINEL"] || reg["STATUS"] || "";
                     let corFundoLinha = getHexRowColor(statusRef);
@@ -12699,7 +12714,6 @@
                         let align = 'left';
                         
                         const isNumericCol = ['Q.NF', 'PESO', 'KM', 'DEV', 'REEN', 'PEN', 'REAL', 'QTD', 'ORDEM', 'QTDE'].includes(cUpper);
-                        
                         if (isNumericCol || cUpper.includes('% APP')) align = 'center';
 
                         if (val instanceof Date) {
@@ -12709,42 +12723,36 @@
                             return;
                         }
 
-                        // 🟢 TRATAMENTO NUMÉRICO CEGO E BLINDADO CONTRA LOCALIZAÇÃO
                         if (isNumericCol && val !== "" && !isNaN(val)) {
                             let numVal = Number(val);
-                            // Identifica se é inteiro ou decimal
                             let formatNum = Number.isInteger(numVal) ? "0" : "0.00";
-                            
-                            // 🟢 MAGIA: Converte para string e troca o ponto por vírgula ANTES de enviar pro Excel. 
-                            // Isso obriga o Excel em português a reconhecer a casa decimal perfeitamente.
                             let valorParaOExcel = String(numVal).replace('.', ',');
                             
                             htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; text-align: ${align}; mso-number-format: '${formatNum}';">${valorParaOExcel}</td>`;
                             return;
                         }
 
-                        // 🟢 Tratamentos Especiais por Coluna (Força formato texto \@ para TRANS., PLACA, etc. matando o triângulo verde)
                         if (col === "APP" && val !== "") {
                             let corApp = "#000000"; 
                             let valUpper = String(val).trim().toUpperCase();
                             if (valUpper === "ANEXADO") corApp = "#2563eb"; 
                             if (valUpper === "FOTO") corApp = "#16a34a"; 
-                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: ${corApp}; font-weight: bold; text-align: center; mso-number-format: '\@';">${val}</td>`;
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: ${corApp}; font-weight: bold; text-align: center; mso-number-format: '\\@';">${val}</td>`;
                         }
                         else if (col === "ST. ROTA" && val !== "") {
                             let estiloStRota = getHexStRotaBackgroundAndText(val);
-                            htmlStr += `<td style="${estiloStRota} font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\@';">${val}</td>`;
+                            htmlStr += `<td style="${estiloStRota} font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\\@';">${val}</td>`;
                         } 
                         else if (col === "PGTO." && val !== "") {
                             let corPgtoBg = val === "NÃO PAGAR" ? "#fee2e2" : "#dcfce7";
                             let corPgtoTxt = val === "NÃO PAGAR" ? "#991b1b" : "#166534";
-                            htmlStr += `<td style="background-color: ${corPgtoBg}; color: ${corPgtoTxt}; font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\@';">${val}</td>`;
+                            htmlStr += `<td style="background-color: ${corPgtoBg}; color: ${corPgtoTxt}; font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\\@';">${val}</td>`;
                         }
                         else if (['PLACA', 'TROCA', 'NF', 'STATUS', 'TRANS.', 'O.C.'].includes(col)) {
-                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; font-weight: bold; text-align: ${align}; mso-number-format: '\@';">${val}</td>`;
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; font-weight: bold; text-align: ${align}; mso-number-format: '\\@';">${val}</td>`;
                         }
                         else {
-                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; text-align: ${align}; mso-number-format: '\@';">${val}</td>`;
+                            htmlStr += `<td style="background-color: ${corFundoLinha}; color: #000000; text-align: ${align}; mso-number-format: '\\@';">${val}</td>`;
                         }
                     });
                     
