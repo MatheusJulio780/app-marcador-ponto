@@ -3221,7 +3221,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.7</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.8</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5248,13 +5248,13 @@
             </div>
             <div class="modal-footer">
                 <button id="close-pdf-preview" class="btn btn-secondary">Fechar</button>
-                <button id="btn-baixar-pdf" class="btn btn-primary" style="background-color: var(--success);">Baixar
-                    PDF</button>
+                <button id="btn-baixar-pdf" class="btn btn-primary" style="background-color: var(--success);">Baixar PDF</button>
                 <button id="btn-imprimir-pdf" class="btn btn-primary">Imprimir</button>
             </div>
         </div>
     </div>
 
+    <!-- MODAL DE CONFIRMAÇÃO DO TRANSBORDO COM NOVA OPÇÃO -->
     <div class="modal-overlay" id="modal-confirm-transbordo" style="z-index: 1060;">
         <div class="modal-content" style="width: 400px;">
             <div class="modal-header">
@@ -5263,17 +5263,25 @@
             </div>
             <div class="modal-body">
                 <label style="font-weight: 700; font-size: 12px; color: var(--text-muted);">NOVO MOTORISTA:</label>
-                <input type="text" id="transbordo-novo-mot" placeholder="Nome completo..."
-                    style="text-transform: uppercase;">
+                <input type="text" id="transbordo-novo-mot" placeholder="Nome completo..." style="text-transform: uppercase;">
 
-                <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 10px;">NOVO
-                    TELEFONE:</label>
+                <label style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-top: 10px;">NOVO TELEFONE:</label>
                 <input type="text" id="transbordo-novo-tel" placeholder="(00) 00000-0000">
+
+                <!-- NOVA OPÇÃO DE ALTERAR PAINEL -->
+                <div style="margin-top: 15px; background: var(--bg-panel); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <label style="font-weight: 800; font-size: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="transbordo-alterar-painel" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        CRIAR/ATUALIZAR ROTA NO PAINEL
+                    </label>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; margin-left: 26px;">
+                        Se desmarcado, as notas serão transferidas para a nova placa , sem alterar nada no painel de monitoramento.
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="btn-cancelar-confirm">Cancelar</button>
-                <button class="btn btn-success" id="btn-finalizar-transbordo"><i class="ph ph-check"></i> Concluir
-                    Transferência</button>
+                <button class="btn btn-success" id="btn-finalizar-transbordo"><i class="ph ph-check"></i> Concluir Transferência</button>
             </div>
         </div>
     </div>
@@ -11894,6 +11902,10 @@
             const novoMot = document.getElementById('transbordo-novo-mot') ? document.getElementById('transbordo-novo-mot').value.trim().toUpperCase() : '';
             const novoTel = document.getElementById('transbordo-novo-tel') ? document.getElementById('transbordo-novo-tel').value.trim() : '';
 
+            // 🟢 LÊ SE O USUÁRIO QUER OU NÃO ALTERAR O PAINEL DE MONITORAMENTO
+            const checkboxPainel = document.getElementById('transbordo-alterar-painel');
+            const alterarNoPainel = checkboxPainel ? checkboxPainel.checked : true;
+
             if (!destino) {
                 return alert("Erro: Digite a placa de destino.");
             }
@@ -11938,8 +11950,8 @@
                     }
                 }
 
-                // 2. ATUALIZA O PAINEL NO FIREBASE (painel_diario)
-                if (dataOperacao) {
+                // 2. ATUALIZA O PAINEL NO FIREBASE (SE O CHECKBOX ESTIVER MARCADO)
+                if (dataOperacao && alterarNoPainel) {
                     const snapPainel = await getDoc(doc(db, "painel_diario", dataOperacao));
                     if (snapPainel.exists()) {
                         let rotas = snapPainel.data().rotas || [];
@@ -11948,7 +11960,6 @@
                         const placaOrigemLimpa = placaOriginal.toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                        // 🔴 DETECÇÃO LÓGICA CRÍTICA: Sobrou alguma nota no veículo de origem (placaAtiva)?
                         const sobrouNotasOrigem = notasGlobaisTransbordo.some(nota => {
                             let pNotaLimpa = (nota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                             return pNotaLimpa === placaAtivaLimpa;
@@ -11991,7 +12002,6 @@
                             let r = rotas[rotaOriginalIndex];
 
                             if (sobrouNotasOrigem) {
-                                // TRANSBORDO PARCIAL: Sobraram NFs no carro original -> Adiciona uma NOVA LINHA para a troca no painel
                                 let novaRota = { ...r };
                                 novaRota.placa = r.troca ? r.troca : r.placa;
                                 novaRota.troca = destino;
@@ -12000,7 +12010,6 @@
                                 if (novoTel) novaRota.contato = novoTel;
                                 rotas.push(novaRota);
                             } else {
-                                // TRANSBORDO TOTAL: Não sobrou nada -> Substitui na linha do veículo original
                                 r.troca = destino;
                                 r.status = novoStatusPainel;
                                 if (novoMot) r.motorista = novoMot;
@@ -12008,7 +12017,6 @@
                             }
                             alterouPainelDb = true;
                         } else {
-                            // FALLBACK SE NÃO ENCONTRAR POR TRANSPORTE
                             let fallbackIndex = rotas.findIndex(r => {
                                 let pBaseDb = r.placa ? r.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
                                 return pBaseDb === placaOrigemLimpa;
@@ -12044,7 +12052,11 @@
                 if (document.getElementById('btn-carregar-painel')) document.getElementById('btn-carregar-painel').click();
                 if (document.getElementById('btn-carregar-notas')) document.getElementById('btn-carregar-notas').click();
 
-                alert(`⚡ TRANSBORDO EXECUTADO COM SUCESSO!\nA carga foi transferida para a nova placa e salva no painel.`);
+                if (alterarNoPainel) {
+                    alert(`⚡ TRANSBORDO EXECUTADO COM SUCESSO!\nA carga foi transferida para a nova placa e salva no painel.`);
+                } else {
+                    alert(`📦 NOTAS TRANSFERIDAS!\nAs notas fiscais foram movidas para a nova placa, mas o Painel de Monitoramento não foi alterado.`);
+                }
 
                 if (modalConfirmTransbordo) modalConfirmTransbordo.classList.remove('active');
                 if (modalTransbordo) modalTransbordo.classList.remove('active');
