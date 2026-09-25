@@ -3130,6 +3130,34 @@
         grid-column: 1 / -1 !important;
     }
 
+    /* ================= EFEITO DE OCULTAR HEADER ================= */
+    body.auto-hide-header .view-section.active .header {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1040; /* Fica acima do painel, mas abaixo dos modais */
+        transform: translateY(-100%);
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    body.auto-hide-header .view-section.active .header.header-peek {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* Compensação de espaço para o conteúdo não colar no topo quando o header sumir */
+    body.auto-hide-header .view-section.active .content-container {
+        padding-top: 20px !important; 
+    }
+
+    /* 🟢 TRAVA DO MODO LITE: Corta a transição se o PC for lento */
+    body.lite-mode.auto-hide-header .view-section.active .header {
+        transition: none !important;
+    }
+
     </style>
 </head>
 
@@ -3221,7 +3249,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.8</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.9</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -4842,81 +4870,130 @@
     </div>
 
     <div class="modal-overlay" id="modal-config">
-        <div class="modal-content" style="width: 350px;">
+        <div class="modal-content" style="width: 680px; max-width: 95vw;">
             <div class="modal-header">
-                <h3>⚙️ Configurações</h3><button class="btn-close"
-                    onclick="document.getElementById('modal-config').classList.remove('active')">×</button>
+                <h3>⚙️ Configurações</h3>
+                <button class="btn-close" onclick="document.getElementById('modal-config').classList.remove('active')">×</button>
             </div>
             <div class="modal-body">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
-                    <div>
-                        <strong style="display: block; font-size: 14px;">Modo Lite</strong>
-                        <span style="font-size: 11px; color: var(--text-muted);">Desativa animações para PCs
-                            lentos.</span>
+                
+                <!-- ================= SEÇÃO: SISTEMA ================= -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                        <i class="ph-fill ph-monitor"></i> Sistema
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px;">
+                        
+                        <!-- Modo Lite -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Modo Lite</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Desativa animações para PCs lentos.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-lite-mode">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Som de Notificação -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Som de Notificação</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Tocar alerta sonoro ao receber avisos.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-som-notif" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Notificações Visuais -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Notificações (Gota)</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Exibir balões flutuantes na tela.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-visual-notif" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Ocultar Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Ocultar Header</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Esconde o topo. Passe o mouse para exibir.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-hide-header">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-lite-mode">
-                        <span class="slider"></span>
-                    </label>
                 </div>
 
-                <!-- 🟢 NOVO: Desativar Sons -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
-                    <div>
-                        <strong style="display: block; font-size: 14px;">Som de Notificação</strong>
-                        <span style="font-size: 11px; color: var(--text-muted);">Tocar alerta sonoro ao receber avisos.</span>
+                <!-- ================= SEÇÃO: PAINEL DE MONITORAMENTO ================= -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                        <i class="ph-fill ph-chart-bar"></i> Painel de Monitoramento
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px;">
+                        
+                        <!-- Ocultar Progresso -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Ocultar Progresso</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Esconde a barra da operação.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-hide-progresso">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Ocultar Filtros -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt);">
+                            <div>
+                                <strong style="display: block; font-size: 14px;">Ocultar Filtros</strong>
+                                <span style="font-size: 11px; color: var(--text-muted);">Esconde botões de resumo/status.</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-hide-filtros">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
                     </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-som-notif" checked>
-                        <span class="slider"></span>
-                    </label>
                 </div>
 
-                <!-- 🟢 NOVO: Desativar Notificações Visuais (Gota) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-table-row-alt); margin-bottom: 15px;">
-                    <div>
-                        <strong style="display: block; font-size: 14px;">Notificações Visuais (Gota)</strong>
-                        <span style="font-size: 11px; color: var(--text-muted);">Exibir balões flutuantes na tela.</span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-visual-notif" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div
-                    style="background: var(--bg-table-row-alt); padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
-                    <strong style="display: block; font-size: 14px; margin-bottom: 5px;">Editor de Layout
-                        Avançado</strong>
-                    <span
-                        style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 10px;">Comportamento
-                        de redimensionamento idêntico ao Excel.</span>
+                <!-- ================= BLOCO INFERIOR (LARGURA TOTAL): EDITOR DE LAYOUT ================= -->
+                <div style="background: var(--bg-table-row-alt); padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <strong style="display: block; font-size: 14px; margin-bottom: 5px;">Editor de Layout Avançado</strong>
+                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 12px;">Comportamento de redimensionamento idêntico ao Excel.</span>
 
                     <div id="auth-layout-container" style="display: flex; gap: 10px;">
-                        <input type="password" id="input-senha-layout" placeholder="Senha de ativação..."
-                            style="flex: 1;">
+                        <input type="password" id="input-senha-layout" placeholder="Senha de ativação..." style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
                         <button class="btn btn-primary" id="btn-auth-layout">Desbloquear</button>
                     </div>
 
                     <div id="controls-layout-container" style="display: none; flex-direction: column; gap: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--success); font-size: 12px; font-weight: 700;">✅ Modo Edição
-                                Ativo</span>
+                            <span style="color: var(--success); font-size: 12px; font-weight: 700;">✅ Modo Edição Ativo</span>
                             <div style="display: flex; gap: 5px;">
                                 <button class="btn btn-sm btn-danger" id="btn-cancelar-layout">Cancelar</button>
                                 <button class="btn btn-sm btn-success" id="btn-salvar-layout">Salvar</button>
                             </div>
                         </div>
                         <div>
-                            <label
-                                style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px;">TAMANHO
-                                DA FONTE: <span id="lbl-font-val">12px</span></label>
-                            <input type="range" id="slider-font-tabela" min="8" max="24" value="12"
-                                style="width: 100%;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px;">TAMANHO DA FONTE: <span id="lbl-font-val">12px</span></label>
+                            <input type="range" id="slider-font-tabela" min="8" max="24" value="12" style="width: 100%;">
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -10187,7 +10264,7 @@
         
 
         // ================= EDITOR DE LAYOUT AVANÇADO (EXCEL MODE) =================
-        const senhaAdminLayout = "60010774";
+        const senhaAdminLayout = "60010774@Icaphi";
         let layoutDesbloqueado = false;
 
         // Memória de cache para rollback (Cancelar) e persistência
@@ -18615,6 +18692,86 @@
             }
             if (typeof hideLoader === 'function') hideLoader();
         };
+
+        // ================= CONTROLES DE EXIBIÇÃO DA INTERFACE (PROGRESSO E FILTROS) =================
+        document.addEventListener("DOMContentLoaded", () => {
+            const toggleProgresso = document.getElementById('toggle-hide-progresso');
+            const wrapperProgresso = document.querySelector('.progress-wrapper');
+            
+            const toggleFiltros = document.getElementById('toggle-hide-filtros');
+            const painelSummary = document.getElementById('painel-summary');
+
+            // 1. Carrega o estado salvo no LocalStorage ao abrir a página
+            const progressoOculto = localStorage.getItem('cfg_hide_progresso') === 'true';
+            const filtrosOcultos = localStorage.getItem('cfg_hide_filtros') === 'true';
+
+            if (toggleProgresso) toggleProgresso.checked = progressoOculto;
+            if (toggleFiltros) toggleFiltros.checked = filtrosOcultos;
+
+            if (wrapperProgresso && progressoOculto) wrapperProgresso.style.display = 'none';
+            if (painelSummary && filtrosOcultos) painelSummary.style.display = 'none';
+
+            // 2. Eventos de clique para ocultar/mostrar em tempo real e salvar preferência
+            if (toggleProgresso) {
+                toggleProgresso.addEventListener('change', (e) => {
+                    const isChecked = e.target.checked;
+                    localStorage.setItem('cfg_hide_progresso', isChecked);
+                    // Procura novamente o elemento caso a tela seja renderizada dinamicamente
+                    const divProgresso = document.querySelector('.progress-wrapper');
+                    if (divProgresso) divProgresso.style.display = isChecked ? 'none' : '';
+                });
+            }
+
+            if (toggleFiltros) {
+                toggleFiltros.addEventListener('change', (e) => {
+                    const isChecked = e.target.checked;
+                    localStorage.setItem('cfg_hide_filtros', isChecked);
+                    const divFiltros = document.getElementById('painel-summary');
+                    if (divFiltros) divFiltros.style.display = isChecked ? 'none' : '';
+                });
+            }
+        });
+
+        // ================= CONTROLE DO HEADER AUTO-OCULTÁVEL =================
+        const toggleHeader = document.getElementById('toggle-hide-header');
+        const headerOculto = localStorage.getItem('cfg_hide_header') === 'true';
+
+        // 1. Inicia o estado salvo
+        if (toggleHeader) toggleHeader.checked = headerOculto;
+        if (headerOculto) document.body.classList.add('auto-hide-header');
+
+        // 2. Evento do botão
+        if (toggleHeader) {
+            toggleHeader.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                localStorage.setItem('cfg_hide_header', isChecked);
+                if (isChecked) {
+                    document.body.classList.add('auto-hide-header');
+                } else {
+                    document.body.classList.remove('auto-hide-header');
+                    // Remove a classe de exibição por precaução
+                    document.querySelectorAll('.header.header-peek').forEach(h => h.classList.remove('header-peek'));
+                }
+            });
+        }
+
+        // 3. Radar de Mouse no Topo da Tela
+        document.addEventListener('mousemove', (e) => {
+            if (!document.body.classList.contains('auto-hide-header')) return;
+            
+            // Pega apenas o header da tela que o usuário está vendo no momento
+            const headerAtivo = document.querySelector('.view-section.active .header');
+            if (!headerAtivo) return;
+
+            // Se o mouse estiver a 25px ou menos do topo da tela, o header desce
+            if (e.clientY <= 25) {
+                headerAtivo.classList.add('header-peek');
+            } 
+            // Se o mouse descer mais do que o tamanho do header + uma margem de escape (20px), ele sobe
+            else if (e.clientY > headerAtivo.offsetHeight + 20) {
+                headerAtivo.classList.remove('header-peek');
+            }
+        });
 
     </script>
 </body>
