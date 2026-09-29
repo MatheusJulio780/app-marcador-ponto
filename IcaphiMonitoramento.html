@@ -3249,7 +3249,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.9.9</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -16768,7 +16768,7 @@
             hideLoader();
         };
 
-        // ================= TRANSFERÊNCIA MANUAL DE PERNOITES INTELIGENTE (POR TRANSPORTE) =================
+        // ================= TRANSFERÊNCIA MANUAL DE PERNOITES INTELIGENTE (POR TRANSPORTE E OPÇÃO DE MODO) =================
         window.transferirPernoitesParaAmanha = async () => {
             const dataAtual = document.getElementById('mon-data-select').value;
             if (!dataAtual) return alert("Selecione a data base no filtro do painel primeiro.");
@@ -16777,7 +16777,17 @@
             dObj.setUTCDate(dObj.getUTCDate() + 1);
             const proximoDia = dObj.toISOString().split('T')[0];
 
-            if (!confirm(`Deseja transferir os pernoites do dia ${formatarDataBR(dataAtual)} para o dia ${formatarDataBR(proximoDia)} vinculando pelo número do transporte?`)) return;
+            // 🟢 1. DUPLA VALIDAÇÃO: Permite abortar a operação de verdade
+            if (!confirm(`Deseja iniciar a transferência de pernoites do dia ${formatarDataBR(dataAtual)} para o dia ${formatarDataBR(proximoDia)}?`)) {
+                return; // Aborta tudo imediatamente
+            }
+
+            const desejaPainel = confirm(
+                `Deseja transferir TAMBÉM as linhas do PAINEL?\n\n` +
+                `[ OK ] -> Transfere NOTAS + PAINEL (Cria rotas e atualiza O.C.)\n` +
+                `[ CANCELAR ] -> Transfere APENAS AS NOTAS (Deixa o painel intacto)`
+            );
+            const modoTransferencia = desejaPainel ? "completo" : "so_notas";
 
             showLoader();
             try {
@@ -16804,7 +16814,6 @@
                     const transpNums = transpRotaStr.match(/\d+/g) || [];
                     if (transpNums.length === 0) return false;
 
-                    // Verifica se alguma nota de pernoite pertence a este transporte/placa
                     const placaOrig = trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
                     const placaTroca = r.troca ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : '';
 
@@ -16827,6 +16836,7 @@
                 let notasAmanha = snapNotasAmanha.exists() ? snapNotasAmanha.data().notas || [] : [];
 
                 let countNovasRotas = 0;
+                let countRotasAtualizadas = 0;
                 let countNotasTransf = 0;
 
                 // 3. Processa cada rota de pernoite de ontem
@@ -16846,46 +16856,61 @@
 
                     if (notasDestaRota.length === 0) return;
 
-                    // PASSO CRUCIAL: Verifica se amanhã JÁ EXISTE uma linha no painel com esse mesmo número de transporte
-                    let rotaExistenteAmanha = rotasAmanha.find(ra => {
-                        const transpAmanhaStr = String(ra.transporte || "").trim();
-                        const numsAmanha = transpAmanhaStr.match(/\d+/g) || [];
-                        // Se houver interseção nos números de transporte, é a mesma viagem que passou para o novo carro!
-                        return numsOntem.some(t => numsAmanha.includes(t));
-                    });
+                    let placaAlvoParaNotas = rOntem.troca ? trimUpper(rOntem.troca) : rOntem.placa; // Fallback inicial
 
-                    let placaAlvoParaNotas = "";
+                    if (modoTransferencia === "completo") {
+                        // Verifica se amanhã JÁ EXISTE uma linha no painel com esse mesmo número de transporte
+                        let rotaExistenteAmanha = rotasAmanha.find(ra => {
+                            const transpAmanhaStr = String(ra.transporte || "").trim();
+                            const numsAmanha = transpAmanhaStr.match(/\d+/g) || [];
+                            return numsOntem.some(t => numsAmanha.includes(t));
+                        });
 
-                    if (rotaExistenteAmanha) {
-                        // CENÁRIO 1: O painel de hoje JÁ TEM essa viagem montada (provavelmente com outra placa/troca)
-                        // Nãodiuplicamos a linha. Apenas pegamos a placa ativa da linha de hoje (se tiver troca, usa troca, senão usa placa)
-                        placaAlvoParaNotas = rotaExistenteAmanha.troca ? trimUpper(rotaExistenteAmanha.troca) : rotaExistenteAmanha.placa;
-                        console.log(`Viagem de transporte [${transpOntemStr}] já existe amanhã. Reaproveitando linha existente. Placa alvo das notas: ${placaAlvoParaNotas}`);
+                        if (rotaExistenteAmanha) {
+                            // 🟢 2. SÓ ATUALIZA (E CONTA) SE O O.C DE AMANHÃ FOR DIFERENTE. Isso impede contagem falsa de duplicidade.
+                            if (rOntem.oc && rOntem.oc.trim() !== "" && rotaExistenteAmanha.oc !== rOntem.oc) {
+                                rotaExistenteAmanha.oc = rOntem.oc;
+                                countRotasAtualizadas++;
+                            }
+                            // Pega a placa ativa da linha de amanhã para jogar as notas
+                            placaAlvoParaNotas = rotaExistenteAmanha.troca ? trimUpper(rotaExistenteAmanha.troca) : rotaExistenteAmanha.placa;
+                        } else {
+                            // CENÁRIO 2: O painel de amanhã NÃO TEM essa viagem. Criamos a linha idêntica à de ontem.
+                            let novaRotaPernoite = JSON.parse(JSON.stringify(rOntem));
+                            novaRotaPernoite.km = "";
+                            novaRotaPernoite.status = "PERNOITE";
+                            delete novaRotaPernoite.prestacao_impressa;
+                            delete novaRotaPernoite.bloqueio_pagamento;
+
+                            rotasAmanha.push(novaRotaPernoite);
+                            countNovasRotas++;
+
+                            placaAlvoParaNotas = rOntem.troca ? rOntem.troca : rOntem.placa;
+                        }
                     } else {
-                        // CENÁRIO 2: O painel de hoje NÃO TEM essa viagem montada. Criamos a linha de pernoite idêntica à de ontem.
-                        let novaRotaPernoite = JSON.parse(JSON.stringify(rOntem));
-                        novaRotaPernoite.km = "";
-                        novaRotaPernoite.status = "PERNOITE";
-                        delete novaRotaPernoite.prestacao_impressa;
-                        delete novaRotaPernoite.bloqueio_pagamento;
-
-                        rotasAmanha.push(novaRotaPernoite);
-                        countNovasRotas++;
-
-                        placaAlvoParaNotas = rOntem.troca ? rOntem.troca : rOntem.placa;
+                         // MODO SO_NOTAS: Não mexe no painel, apenas tenta achar a placa correta para jogar as notas amanhã
+                         let rotaAmanhaParaMatch = rotasAmanha.find(ra => {
+                            const transpAmanhaStr = String(ra.transporte || "").trim();
+                            const numsAmanha = transpAmanhaStr.match(/\d+/g) || [];
+                            return numsOntem.some(t => numsAmanha.includes(t));
+                        });
+                        
+                        if (rotaAmanhaParaMatch) {
+                             placaAlvoParaNotas = rotaAmanhaParaMatch.troca ? trimUpper(rotaAmanhaParaMatch.troca) : rotaAmanhaParaMatch.placa;
+                        } else {
+                             placaAlvoParaNotas = rOntem.troca ? trimUpper(rOntem.troca) : trimUpper(rOntem.placa);
+                        }
                     }
 
-                    // Transfere as notas para amanhã, atualizando a placa para a placa correta do dia de hoje
-                    let notasAdicionadasNestaViagem = 0;
+                    // Transfere as notas para amanhã, atualizando a placa para a placa correta
                     notasDestaRota.forEach(n => {
-                        // Verifica se a NF exata já existe no dia de amanhã
                         const nfLimpa = cleanNF(n.nf);
                         const jaExisteNaAmanha = notasAmanha.some(na => cleanNF(na.nf) === nfLimpa);
 
                         if (!jaExisteNaAmanha) {
                             let notaCopia = JSON.parse(JSON.stringify(n));
                             
-                            // Atualiza a placa da nota para a placa real que vai rodar hoje (Placa Nova ou Troca)
+                            // Atualiza a placa da nota para a placa alvo
                             notaCopia.placa = placaAlvoParaNotas;
                             
                             delete notaCopia.anexos;
@@ -16898,24 +16923,36 @@
 
                             notasAmanha.push(notaCopia);
                             countNotasTransf++;
-                            notasAdicionadasNestaViagem++;
                         }
                     });
-                    
-                    console.log(`Transporte [${transpOntemStr}] -> ${notasAdicionadasNestaViagem} notas novas adicionadas para a placa ${placaAlvoParaNotas}`);
                 });
 
-                // 4. Grava no Banco de Dados do dia seguinte
-                if (countNovasRotas > 0 || countNotasTransf > 0) {
-                    const batch = writeBatch(db);
-                    batch.set(doc(db, "painel_diario", proximoDia), { rotas: rotasAmanha }, { merge: true });
-                    batch.set(doc(db, "notas_fiscais_diario", proximoDia), { notas: notasAmanha }, { merge: true });
-                    await batch.commit();
-
-                    alert(`✅ Pernoites transferidos com sucesso para ${formatarDataBR(proximoDia)}!\n\n- Linhas novas criadas (se faltavam): ${countNovasRotas}\n- Notas transferidas e ajustadas para a placa correta: ${countNotasTransf}`);
-                } else {
-                    alert("Nenhuma alteração necessária. Os pernoites já estavam devidamente sincronizados.");
+                // 🟢 3. TRAVA FINAL DE DUPLICIDADE: Verifica se os contadores zeraram.
+                if (countNovasRotas === 0 && countRotasAtualizadas === 0 && countNotasTransf === 0) {
+                    hideLoader();
+                    return alert(`⚠️ Atenção: Os pernoites já foram transferidos anteriormente para o dia ${formatarDataBR(proximoDia)}.\n\nNenhuma informação duplicada foi gerada.`);
                 }
+
+                // 4. Grava no Banco de Dados do dia seguinte
+                const batch = writeBatch(db);
+                
+                if (modoTransferencia === "completo" && (countNovasRotas > 0 || countRotasAtualizadas > 0)) {
+                    batch.set(doc(db, "painel_diario", proximoDia), { rotas: rotasAmanha }, { merge: true });
+                }
+                
+                batch.set(doc(db, "notas_fiscais_diario", proximoDia), { notas: notasAmanha }, { merge: true });
+                
+                await batch.commit();
+
+                let msgSucesso = `✅ Pernoites transferidos com sucesso para ${formatarDataBR(proximoDia)}!\n\n`;
+                msgSucesso += `- Notas transferidas: ${countNotasTransf}\n`;
+                if (modoTransferencia === "completo") {
+                    msgSucesso += `- Novas rotas criadas no painel: ${countNovasRotas}\n`;
+                    msgSucesso += `- Rotas atualizadas com O.C. de ontem: ${countRotasAtualizadas}`;
+                } else {
+                    msgSucesso += `- O Painel não foi alterado.`;
+                }
+                alert(msgSucesso);
 
             } catch (e) {
                 console.error("Erro na transferência de pernoite:", e);
@@ -17332,19 +17369,16 @@
 
             showLoader();
             try {
-                // Busca as notas fiscais do dia no Firebase
                 const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataTransbordo));
                 let notasDoDia = docSnap.exists() ? docSnap.data().notas || [] : [];
 
                 const placaAtivaLimpa = placaOrigemAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-                // Filtra as notas da placa de origem selecionada
                 let notasOrigem = notasDoDia.filter(n => {
                     const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
                     return pNota === placaAtivaLimpa;
                 });
 
-                // Se o usuário marcou "selecionar" notas específicas no modal, filtra apenas as checadas
                 if (tipoTransbordo === 'selecionar') {
                     const nfsSelecionadas = Array.from(document.querySelectorAll('.check-nf-transbordo:checked')).map(cb => String(cb.value));
                     if (nfsSelecionadas.length > 0) {
@@ -17357,12 +17391,10 @@
                     return alert("Nenhuma nota fiscal encontrada para os critérios selecionados no transbordo.");
                 }
 
-                // Descobre o motorista de origem
                 let motoristaOrigem = "NÃO INFORMADO";
                 const nMot = notasOrigem.find(n => n.motorista && n.motorista.trim() !== "");
                 if (nMot) motoristaOrigem = nMot.motorista;
 
-                // Extrai as cidades únicas das notas para formar a rota (sem duplicidade)
                 let cidadesUnicas = [];
                 notasOrigem.forEach(n => {
                     let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
@@ -17374,23 +17406,26 @@
 
                 const conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
 
-                // Ordena as notas em ordem crescente por número de NF
                 notasOrigem.sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
 
                 let pesoTotalGeral = 0;
                 let qtdTotalGeral = 0;
 
-                // Monta o corpo da tabela em 2 colunas paralelas para caber perfeitamente em 1 página
+                // Tabela dupla adaptada para o Modo Paisagem (12 colunas)
                 let corpoTabelaDupla = [
                     [
                         { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'CLIENTE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'CIDADE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
-                        { text: 'Peso', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'PESO', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'CLIENTE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'CIDADE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
-                        { text: 'Peso', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 }
+                        { text: 'PESO', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 }
                     ]
                 ];
 
@@ -17399,8 +17434,12 @@
                     const n1 = notasOrigem[i];
                     const n2 = notasOrigem[i + metade];
 
-                    // Coluna Esquerda
+                    const bg = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+
+                    // Lado Esquerdo
                     const nf1 = cleanNF(n1.nf);
+                    const cliente1 = String(n1.cliente || "").toUpperCase();
+                    const cidade1 = String(n1.cidade || n1.municipio || "").toUpperCase();
                     const qtd1 = parseInt(String(n1.qtde || n1.volumes || "1").replace(/\D/g, '')) || 1;
                     const p1Str = String(n1.peso || "0").trim();
                     const peso1 = p1Str.includes(',') ? parseFloat(p1Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p1Str) || 0;
@@ -17408,15 +17447,19 @@
                     qtdTotalGeral += qtd1;
 
                     let row = [
-                        { text: i + 1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: nf1, alignment: 'left', bold: true, fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: qtd1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                        { text: peso1.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                        { text: i + 1, alignment: 'center', fontSize: 7, fillColor: bg },
+                        { text: nf1, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
+                        { text: cliente1, alignment: 'left', fontSize: 6.5, fillColor: bg },
+                        { text: cidade1, alignment: 'left', fontSize: 6.5, fillColor: bg },
+                        { text: qtd1, alignment: 'center', fontSize: 7, fillColor: bg },
+                        { text: peso1.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg }
                     ];
 
-                    // Coluna Direita
+                    // Lado Direito
                     if (n2) {
                         const nf2 = cleanNF(n2.nf);
+                        const cliente2 = String(n2.cliente || "").toUpperCase();
+                        const cidade2 = String(n2.cidade || n2.municipio || "").toUpperCase();
                         const qtd2 = parseInt(String(n2.qtde || n2.volumes || "1").replace(/\D/g, '')) || 1;
                         const p2Str = String(n2.peso || "0").trim();
                         const peso2 = p2Str.includes(',') ? parseFloat(p2Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p2Str) || 0;
@@ -17424,17 +17467,18 @@
                         qtdTotalGeral += qtd2;
 
                         row.push(
-                            { text: i + metade + 1, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: nf2, alignment: 'left', bold: true, fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: qtd2, alignment: 'center', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: peso2.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 8, fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                            { text: i + metade + 1, alignment: 'center', fontSize: 7, fillColor: bg },
+                            { text: nf2, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
+                            { text: cliente2, alignment: 'left', fontSize: 6.5, fillColor: bg },
+                            { text: cidade2, alignment: 'left', fontSize: 6.5, fillColor: bg },
+                            { text: qtd2, alignment: 'center', fontSize: 7, fillColor: bg },
+                            { text: peso2.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg }
                         );
                     } else {
                         row.push(
-                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' },
-                            { text: '', fillColor: i % 2 === 0 ? '#f8fafc' : '#ffffff' }
+                            { text: '', fillColor: bg }, { text: '', fillColor: bg },
+                            { text: '', fillColor: bg }, { text: '', fillColor: bg },
+                            { text: '', fillColor: bg }, { text: '', fillColor: bg }
                         );
                     }
 
@@ -17443,55 +17487,64 @@
 
                 const dataFormatada = dataTransbordo.split('-').reverse().join('/');
                 const logoHeader = window.logoIcaphiBase64
-                    ? { image: window.logoIcaphiBase64, width: 90, alignment: 'right' }
+                    ? { image: window.logoIcaphiBase64, width: 80, alignment: 'right' }
                     : { text: 'ICAPHI TRANSPORTES', fontSize: 11, bold: true, color: '#b91c1c', alignment: 'right' };
 
                 const docDefinition = {
                     pageSize: 'A4',
+                    pageOrientation: 'landscape', // 🟢 FORÇA O MODO PAISAGEM
                     pageMargins: [25, 25, 25, 25],
                     defaultStyle: { font: 'Roboto', fontSize: 8.5, color: '#0f172a' },
                     content: [
-                        // Header / Título Principal
+                        // 🟢 1. CABEÇALHO COMPACTO (TÍTULO + LOGO)
                         {
                             columns: [
                                 {
                                     stack: [
                                         { text: 'TERMO DE TRANSBORDO DE CARGA', fontSize: 15, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
-                                        { text: 'Controle Transbordo', fontSize: 8.5, color: '#64748b' }
+                                        { text: 'Controle de Operação Logística', fontSize: 8.5, color: '#64748b' }
                                     ],
                                     width: '70%'
                                 },
                                 { stack: [logoHeader], width: '30%' }
                             ],
-                            margin: [0, 0, 0, 10]
+                            margin: [0, 0, 0, 8]
                         },
-                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 545, y2: 0, lineWidth: 1.2, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 10] },
-                        
-                        // Cards de Origem e Destino
+                        // Linha divisória
+                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 790, y2: 0, lineWidth: 1.2, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 10] },
+
+                        // 🟢 2. NOVO "BANNER" DE INFORMAÇÕES (3 COLUNAS EM UMA ÚNICA LINHA)
                         {
                             table: {
-                                widths: ['50%', '50%'],
+                                widths: ['33%', '33%', '34%'],
                                 body: [
                                     [
+                                        // Coluna 1: Origem
                                         {
                                             stack: [
-                                                { text: 'DADOS DO VEÍCULO DE ORIGEM', fontSize: 7.5, bold: true, color: '#64748b', margin: [0, 0, 0, 3] },
-                                                { text: `Placa: ${placaOrigemOriginal.toUpperCase()}`, fontSize: 10, bold: true, color: '#1e293b', margin: [0, 0, 0, 2] },
-                                                { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 8.5, color: '#334155' }
+                                                { text: 'VEÍCULO DE ORIGEM', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
+                                                { text: placaOrigemOriginal.toUpperCase(), fontSize: 12, bold: true, color: '#1e293b' },
+                                                { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 8, color: '#334155', margin: [0, 2, 0, 0] }
                                             ],
-                                            fillColor: '#f8fafc',
-                                            margin: [8, 8, 8, 8],
-                                            border: [true, true, true, true]
+                                            fillColor: '#f8fafc', margin: [8, 6, 8, 6], border: [true, true, false, true]
                                         },
+                                        // Coluna 2: Destino
                                         {
                                             stack: [
-                                                { text: 'DADOS DO VEÍCULO DE DESTINO (NOVO)', fontSize: 7.5, bold: true, color: '#64748b', margin: [0, 0, 0, 3] },
-                                                { text: `Placa Destino: ${placaDestino}`, fontSize: 10, bold: true, color: '#2563eb', margin: [0, 0, 0, 2] },
-                                                { text: `Data da Operação: ${dataFormatada}`, fontSize: 8.5, color: '#334155' }
+                                                { text: 'VEÍCULO DE DESTINO (NOVO)', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
+                                                { text: placaDestino, fontSize: 12, bold: true, color: '#2563eb' },
+                                                { text: `Data da Operação: ${dataFormatada}`, fontSize: 8, color: '#334155', margin: [0, 2, 0, 0] }
                                             ],
-                                            fillColor: '#eff6ff',
-                                            margin: [8, 8, 8, 8],
-                                            border: [true, true, true, true]
+                                            fillColor: '#eff6ff', margin: [8, 6, 8, 6], border: [true, true, false, true]
+                                        },
+                                        // Coluna 3: Operação (Rota e Conferente)
+                                        {
+                                            stack: [
+                                                { text: 'DADOS DA OPERAÇÃO', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
+                                                { text: `Rota: ${transporteViagem}`, fontSize: 9, bold: true, color: '#1e3a8a', margin: [0, 1, 0, 1] },
+                                                { text: `Conferente: ${conferenteNome.toUpperCase()}  |  Total NFs: ${notasOrigem.length}`, fontSize: 8, color: '#475569', margin: [0, 2, 0, 0] }
+                                            ],
+                                            fillColor: '#f1f5f9', margin: [8, 6, 8, 6], border: [true, true, true, true]
                                         }
                                     ]
                                 ]
@@ -17506,32 +17559,17 @@
                                 paddingTop: () => 0,
                                 paddingBottom: () => 0
                             },
-                            margin: [0, 0, 0, 8]
+                            margin: [0, 0, 0, 12]
                         },
 
-                        // Barra de Rota / Transporte e Conferente
-                        {
-                            table: {
-                                widths: ['55%', '45%'],
-                                body: [
-                                    [
-                                        { text: `Rota: ${transporteViagem}`, bold: true, fontSize: 8.5, color: '#1e3a8a', fillColor: '#dbeafe', margin: [8, 5, 8, 5] },
-                                        { text: `Conferente: ${conferenteNome.toUpperCase()} | Total NFs: ${notasOrigem.length}`, bold: true, alignment: 'right', fontSize: 8.5, color: '#475569', fillColor: '#f1f5f9', margin: [8, 5, 8, 5] }
-                                    ]
-                                ]
-                            },
-                            layout: 'noBorders',
-                            margin: [0, 0, 0, 10]
-                        },
-
-                        // Título da Tabela Dupla
                         { text: 'RELAÇÃO DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 10, bold: true, color: '#0f172a', margin: [0, 0, 0, 6] },
 
-                        // Tabela em 2 Colunas Lado a Lado
+                        // 🟢 3. A TABELA DUPLA MANTIDA INTACTA AQUI
                         {
                             table: {
                                 headerRows: 1,
-                                widths: ['5%', '22%', '8%', '15%', '5%', '22%', '8%', '15%'],
+                                // 12 colunas ajustadas para ocupar 100% da folha A4 Paisagem
+                                widths: ['3%', '7%', '20%', '11%', '3%', '6%', '3%', '7%', '20%', '11%', '3%', '6%'],
                                 body: corpoTabelaDupla
                             },
                             layout: {
@@ -17539,42 +17577,32 @@
                                     const totalRows = (node && node.body) ? node.body.length : (corpoTabelaDupla.length || 0);
                                     return (i === 0 || i === 1 || i === totalRows) ? 1 : 0.5;
                                 },
-                                vLineWidth: (i) => (i === 4 ? 2 : 0),
+                                vLineWidth: (i) => (i === 6 ? 2 : 0), // Divisória centralizada na coluna 6
                                 hLineColor: (i) => i === 1 ? '#0f172a' : '#cbd5e1',
                                 vLineColor: () => '#94a3b8',
-                                paddingTop: () => 4,
-                                paddingBottom: () => 4,
-                                paddingLeft: () => 4,
-                                paddingRight: () => 4
+                                paddingTop: () => 4, paddingBottom: () => 4, paddingLeft: () => 4, paddingRight: () => 4
                             },
                             margin: [0, 0, 0, 8]
                         },
 
-                        // Caixa de Totais Gerais
                         {
                             table: {
                                 widths: ['60%', '20%', '20%'],
                                 body: [
                                     [
                                         { text: 'TOTAIS DA CARGA TRANSBORDADA:', bold: true, fontSize: 9, alignment: 'right', fillColor: '#f1f5f9', margin: [6, 6, 6, 6] },
-                                        { text: `${qtdTotalGeral} QTD.`, bold: true, fontSize: 9, alignment: 'center', fillColor: '#f1f5f9', margin: [6, 6, 6, 6] },
+                                        { text: `${qtdTotalGeral} Caixas.`, bold: true, fontSize: 9, alignment: 'center', fillColor: '#f1f5f9', margin: [6, 6, 6, 6] },
                                         { text: `${pesoTotalGeral.toFixed(3).replace('.', ',')} kg`, bold: true, fontSize: 9, alignment: 'right', fillColor: '#f1f5f9', color: '#1e3a8a', margin: [6, 6, 6, 6] }
                                     ]
                                 ]
                             },
-                            layout: {
-                                hLineWidth: () => 1,
-                                vLineWidth: () => 0,
-                                hLineColor: () => '#cbd5e1'
-                            },
+                            layout: { hLineWidth: () => 1, vLineWidth: () => 0, hLineColor: () => '#cbd5e1' },
                             margin: [0, 0, 0, 15]
                         },
 
-                        // Termo de Responsabilidade
                         { text: 'TERMO DE RESPONSABILIDADE', bold: true, fontSize: 8.5, color: '#334155', margin: [0, 0, 0, 2] },
                         { text: 'Declaro para os devidos fins que a carga descrita neste termo foi integralmente transbordada do veículo de origem para o veículo de destino em perfeitas condições de segurança e conferência.', fontSize: 7.5, color: '#64748b', margin: [0, 0, 0, 25] },
 
-                        // Assinaturas
                         {
                             unbreakable: true,
                             columns: [
