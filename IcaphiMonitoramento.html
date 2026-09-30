@@ -3249,7 +3249,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.1</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -8049,18 +8049,33 @@
 
                     if (colAssin === -1) { alert("Coluna de Assinatura (ASSIN.) não encontrada."); hideLoader(); return; }
 
-                    // 1. INDEXAÇÃO DO EXCEL NA MEMÓRIA (Alta performance O(1))
+                    // 1. INDEXAÇÃO DO EXCEL NA MEMÓRIA COM PROTEÇÃO CONTRA DUPLICADAS VAZIAS
                     const nfsExcelMap = {};
                     for (let i = hIdx + 1; i < raw.length; i++) {
                         const row = raw[i]; 
                         if (!row || !row[colNf]) continue;
+                        
                         const nfVal = cleanNF(row[colNf]); 
-                        nfsExcelMap[nfVal] = {
-                            assin: row[colAssin] ? String(row[colAssin]).trim() : "",
-                            repres: row[15] ? String(row[15]).trim() : "",
-                            sup: row[17] ? String(row[17]).trim() : "",
-                            codcli: row[colCodCli] ? String(row[colCodCli]).trim() : ""
-                        };
+                        const assinVal = row[colAssin] ? String(row[colAssin]).trim() : "";
+                        const represVal = row[15] ? String(row[15]).trim() : "";
+                        const supVal = row[17] ? String(row[17]).trim() : "";
+                        const codcliVal = row[colCodCli] ? String(row[colCodCli]).trim() : "";
+
+                        // Se a NF já existe no map, só atualiza os campos se a nova linha tiver algo melhor/preenchido
+                        if (nfsExcelMap[nfVal]) {
+                            if (!nfsExcelMap[nfVal].assin && assinVal) nfsExcelMap[nfVal].assin = assinVal;
+                            if (!nfsExcelMap[nfVal].repres && represVal) nfsExcelMap[nfVal].repres = represVal;
+                            if (!nfsExcelMap[nfVal].sup && supVal) nfsExcelMap[nfVal].sup = supVal;
+                            if (!nfsExcelMap[nfVal].codcli && codcliVal) nfsExcelMap[nfVal].codcli = codcliVal;
+                        } else {
+                            // Primeira vez que vê essa NF, salva normal
+                            nfsExcelMap[nfVal] = {
+                                assin: assinVal,
+                                repres: represVal,
+                                sup: supVal,
+                                codcli: codcliVal
+                            };
+                        }
                     }
 
                     // 2. BUSCA NO FIREBASE PELO PERÍODO SELECIONADO
@@ -12495,12 +12510,8 @@
             try {
                 let registrosExcel = [];
 
-                // Precisamos puxar o dia ANTERIOR ao dataInicio para recalcular corretamente os Pernoites
-                let dtInicioObj = new Date(dataInicio + 'T00:00:00');
-                dtInicioObj.setDate(dtInicioObj.getDate() - 1);
-                let dataOntemStr = dtInicioObj.toISOString().split('T')[0];
-
-                let dataIteradora = new Date(dataOntemStr + 'T00:00:00');
+                // Busca as datas EXATAS informadas no filtro, sem puxar dias anteriores
+                let dataIteradora = new Date(dataInicio + 'T00:00:00');
                 const dataLimite = new Date(dataFim + 'T00:00:00');
 
                 let promessasDeBusca = [];
@@ -12536,56 +12547,10 @@
                 let dtAtual = new Date(dataInicio + 'T00:00:00');
                 while (dtAtual <= dataLimite) {
                     const dataSel = dtAtual.toISOString().split('T')[0];
-                    let dtOntem = new Date(dtAtual);
-                    dtOntem.setDate(dtOntem.getDate() - 1);
-                    const dataOntem = dtOntem.toISOString().split('T')[0];
 
+                    // Puxa estritamente os dados registrados no dia, sem injetar pernoites antigos
                     let rotasParaProcessar = dbData[dataSel].painel ? [...dbData[dataSel].painel] : [];
                     let notasDoDia = dbData[dataSel].notas ? [...dbData[dataSel].notas] : [];
-                    let rotasOntem = dbData[dataOntem].painel || [];
-                    let notasOntem = dbData[dataOntem].notas || [];
-
-                    // ================= RECONSTRUÇÃO AVANÇADA (TRANSIÇÃO E HERANÇA) =================
-                    
-                    const getRotaKey = (r) => {
-                        const p = trimUpper(r.placa || '').replace(/[^A-Z0-9]/g, '');
-                        const t = trimUpper(r.troca || '').replace(/[^A-Z0-9]/g, '');
-                        const oc = trimUpper(r.oc || '');
-                        return `${p}_${t}_${oc}`;
-                    };
-                    const chavesHoje = new Set(rotasParaProcessar.map(getRotaKey));
-
-                    rotasOntem.forEach(ro => {
-                        const stRo = trimUpper(ro.status || '');
-                        const pRo = trimUpper(ro.placa || '').replace(/[^A-Z0-9]/g, '');
-                        const tRo = trimUpper(ro.troca || '').replace(/[^A-Z0-9]/g, '');
-                        
-                        const teveNotaPernoiteOntem = notasOntem.some(n => {
-                            if (trimUpper(n.status) !== 'PERNOITE') return false;
-                            const nPlaca = trimUpper(n.placa || '').replace(/[^A-Z0-9]/g, '');
-                            return (nPlaca === pRo || (tRo && nPlaca === tRo));
-                        });
-                        
-                        const isFinalizada = stRo === 'FINALIZADO' || stRo === 'VEÍCULO VAZIO' || stRo === 'ENTREGUE';
-                        const isViagemExpl = stRo.includes('VIAGEM') || stRo.includes('APOIO');
-
-                        if ((!isFinalizada || teveNotaPernoiteOntem) && !chavesHoje.has(getRotaKey(ro))) {
-                            let novoStatus = isViagemExpl ? ro.status : "Pernoite";
-                            rotasParaProcessar.push({ ...ro, status: novoStatus, isRollover: true });
-                            chavesHoje.add(getRotaKey(ro)); 
-                        }
-                    });
-
-                    notasOntem.forEach(no => {
-                        const stNota = trimUpper(no.status || '');
-                        const isPendente = !['ENTREGUE', 'DEVOLUÇÃO', 'REENTREGA', 'SINISTRADA', 'NÃO EMBARCADA'].includes(stNota);
-                        if (isPendente && !notasDoDia.find(n => cleanNF(n.nf) === cleanNF(no.nf))) {
-                            notasDoDia.push({ ...no, status: stNota === 'PERNOITE' ? "" : no.status });
-                        }
-                    });
-
-                    dbData[dataSel].painel = rotasParaProcessar;
-                    dbData[dataSel].notas = notasDoDia;
 
                     if (tipoExportacao === 'PAINEL') {
                         rotasParaProcessar.forEach(rota => {
@@ -12593,7 +12558,6 @@
                             const infoViva = window.placasCache[placaParaConsultaExcel.replace(/[^A-Z0-9]/gi, '')] || { perfil: rota.perfil || "-", tipo: rota.tipo || "-" };
                             const placaRef = (rota.troca && rota.troca.trim() !== "") ? trimUpper(rota.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(rota.placa).replace(/[^A-Z0-9]/g, '');
 
-                            // 🟢 FILTRO EXATO DO PAINEL AO VIVO (Elimina a duplicação entre viagens da mesma placa)
                             const transpRotaStr = String(rota.transporte || "").trim();
                             const transpNumArray = transpRotaStr.match(/\d+/g) || [];
 
@@ -12638,24 +12602,6 @@
                             let stRotaCalc = "";
                             if (qtd_nf === 0) { stRotaCalc = ""; } else if (isParada) { stRotaCalc = "PARADA"; } else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } else if (hasPernoite) { stRotaCalc = "PERNOITE"; } else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } else { stRotaCalc = "EM ROTA"; }
                             
-                            if (!window._cacheStatusPainelGlobal) window._cacheStatusPainelGlobal = {};
-                            const chaveCacheStatus = `${dataSel}_${placaRef}_${rota.oc || ''}`;
-                            
-                            if (window.ultimaNotificacaoDisparada !== `${placaRef}_${rota.oc || ''}_${stRotaCalc}`) {
-                                window.ultimaNotificacaoDisparada = `${placaRef}_${rota.oc || ''}_${stRotaCalc}`;
-                                
-                                if (window._cacheStatusPainelGlobal[chaveCacheStatus] && window._cacheStatusPainelGlobal[chaveCacheStatus] !== stRotaCalc) {
-                                    mostrarGotaNotificacao(
-                                        "Atualização de Frota",
-                                        `Veículo ${placaRef} alterou para: ${stRotaCalc}`,
-                                        "https://cdn-icons-png.flaticon.com/512/3067/3067417.png" 
-                                    );
-                                    const sound = document.getElementById('chat-notification-sound');
-                                    if (sound) sound.play().catch(e => console.log("Áudio bloqueado."));
-                                }
-                                window._cacheStatusPainelGlobal[chaveCacheStatus] = stRotaCalc;
-                            }
-
                             let p_q_nfs = notasPernoite.length > 0 ? `${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}` : "";
                             const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
                             let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
@@ -17396,13 +17342,18 @@
                 if (nMot) motoristaOrigem = nMot.motorista;
 
                 let cidadesUnicas = [];
+                let viagensUnicas = [];
+
                 notasOrigem.forEach(n => {
                     let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
-                    if (cid && !cidadesUnicas.includes(cid)) {
-                        cidadesUnicas.push(cid);
-                    }
+                    if (cid && !cidadesUnicas.includes(cid)) cidadesUnicas.push(cid);
+
+                    let v = String(n.viagem || n.transporte || "").trim();
+                    if (v && !viagensUnicas.includes(v)) viagensUnicas.push(v);
                 });
+
                 const transporteViagem = cidadesUnicas.length > 0 ? cidadesUnicas.join(" - ") : "GERAL";
+                const transportesOperacao = viagensUnicas.length > 0 ? viagensUnicas.join(" ") : "NÃO INFORMADO";
 
                 const conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
 
@@ -17411,17 +17362,20 @@
                 let pesoTotalGeral = 0;
                 let qtdTotalGeral = 0;
 
-                // Tabela dupla adaptada para o Modo Paisagem (12 colunas)
+                // Tabela dupla adaptada para 14 colunas (Adicionada coluna VIAGEM)
                 let corpoTabelaDupla = [
                     [
                         { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'VIAGEM', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'CLIENTE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'CIDADE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'PESO', bold: true, alignment: 'right', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        
                         { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'NF', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
+                        { text: 'VIAGEM', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'CLIENTE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'CIDADE', bold: true, alignment: 'left', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
                         { text: 'QTD', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
@@ -17438,6 +17392,7 @@
 
                     // Lado Esquerdo
                     const nf1 = cleanNF(n1.nf);
+                    const viagem1 = String(n1.viagem || n1.transporte || "").trim();
                     const cliente1 = String(n1.cliente || "").toUpperCase();
                     const cidade1 = String(n1.cidade || n1.municipio || "").toUpperCase();
                     const qtd1 = parseInt(String(n1.qtde || n1.volumes || "1").replace(/\D/g, '')) || 1;
@@ -17449,6 +17404,7 @@
                     let row = [
                         { text: i + 1, alignment: 'center', fontSize: 7, fillColor: bg },
                         { text: nf1, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
+                        { text: viagem1, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a' },
                         { text: cliente1, alignment: 'left', fontSize: 6.5, fillColor: bg },
                         { text: cidade1, alignment: 'left', fontSize: 6.5, fillColor: bg },
                         { text: qtd1, alignment: 'center', fontSize: 7, fillColor: bg },
@@ -17458,6 +17414,7 @@
                     // Lado Direito
                     if (n2) {
                         const nf2 = cleanNF(n2.nf);
+                        const viagem2 = String(n2.viagem || n2.transporte || "").trim();
                         const cliente2 = String(n2.cliente || "").toUpperCase();
                         const cidade2 = String(n2.cidade || n2.municipio || "").toUpperCase();
                         const qtd2 = parseInt(String(n2.qtde || n2.volumes || "1").replace(/\D/g, '')) || 1;
@@ -17469,6 +17426,7 @@
                         row.push(
                             { text: i + metade + 1, alignment: 'center', fontSize: 7, fillColor: bg },
                             { text: nf2, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
+                            { text: viagem2, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a' },
                             { text: cliente2, alignment: 'left', fontSize: 6.5, fillColor: bg },
                             { text: cidade2, alignment: 'left', fontSize: 6.5, fillColor: bg },
                             { text: qtd2, alignment: 'center', fontSize: 7, fillColor: bg },
@@ -17478,7 +17436,8 @@
                         row.push(
                             { text: '', fillColor: bg }, { text: '', fillColor: bg },
                             { text: '', fillColor: bg }, { text: '', fillColor: bg },
-                            { text: '', fillColor: bg }, { text: '', fillColor: bg }
+                            { text: '', fillColor: bg }, { text: '', fillColor: bg },
+                            { text: '', fillColor: bg }
                         );
                     }
 
@@ -17492,11 +17451,10 @@
 
                 const docDefinition = {
                     pageSize: 'A4',
-                    pageOrientation: 'landscape', // 🟢 FORÇA O MODO PAISAGEM
+                    pageOrientation: 'landscape',
                     pageMargins: [25, 25, 25, 25],
                     defaultStyle: { font: 'Roboto', fontSize: 8.5, color: '#0f172a' },
                     content: [
-                        // 🟢 1. CABEÇALHO COMPACTO (TÍTULO + LOGO)
                         {
                             columns: [
                                 {
@@ -17510,16 +17468,13 @@
                             ],
                             margin: [0, 0, 0, 8]
                         },
-                        // Linha divisória
                         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 790, y2: 0, lineWidth: 1.2, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 10] },
 
-                        // 🟢 2. NOVO "BANNER" DE INFORMAÇÕES (3 COLUNAS EM UMA ÚNICA LINHA)
                         {
                             table: {
                                 widths: ['33%', '33%', '34%'],
                                 body: [
                                     [
-                                        // Coluna 1: Origem
                                         {
                                             stack: [
                                                 { text: 'VEÍCULO DE ORIGEM', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
@@ -17528,7 +17483,6 @@
                                             ],
                                             fillColor: '#f8fafc', margin: [8, 6, 8, 6], border: [true, true, false, true]
                                         },
-                                        // Coluna 2: Destino
                                         {
                                             stack: [
                                                 { text: 'VEÍCULO DE DESTINO (NOVO)', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
@@ -17537,12 +17491,12 @@
                                             ],
                                             fillColor: '#eff6ff', margin: [8, 6, 8, 6], border: [true, true, false, true]
                                         },
-                                        // Coluna 3: Operação (Rota e Conferente)
                                         {
                                             stack: [
-                                                { text: 'DADOS DA OPERAÇÃO', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
-                                                { text: `Rota: ${transporteViagem}`, fontSize: 9, bold: true, color: '#1e3a8a', margin: [0, 1, 0, 1] },
-                                                { text: `Conferente: ${conferenteNome.toUpperCase()}  |  Total NFs: ${notasOrigem.length}`, fontSize: 8, color: '#475569', margin: [0, 2, 0, 0] }
+                                                { text: 'DADOS DA OPERAÇÃO', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 1] },
+                                                { text: `Rota: ${transporteViagem}`, fontSize: 8.5, bold: true, color: '#1e3a8a', margin: [0, 1, 0, 1] },
+                                                { text: `Transportes: ${transportesOperacao}`, fontSize: 8.5, bold: true, color: '#0f172a', margin: [0, 1, 0, 1] },
+                                                { text: `Conferente: ${conferenteNome.toUpperCase()}  |  Total NFs: ${notasOrigem.length}`, fontSize: 7.5, color: '#475569', margin: [0, 1, 0, 0] }
                                             ],
                                             fillColor: '#f1f5f9', margin: [8, 6, 8, 6], border: [true, true, true, true]
                                         }
@@ -17550,26 +17504,20 @@
                                 ]
                             },
                             layout: {
-                                hLineWidth: () => 1,
-                                vLineWidth: () => 1,
-                                hLineColor: () => '#cbd5e1',
-                                vLineColor: () => '#cbd5e1',
-                                paddingLeft: () => 0,
-                                paddingRight: () => 0,
-                                paddingTop: () => 0,
-                                paddingBottom: () => 0
+                                hLineWidth: () => 1, vLineWidth: () => 1,
+                                hLineColor: () => '#cbd5e1', vLineColor: () => '#cbd5e1',
+                                paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0
                             },
                             margin: [0, 0, 0, 12]
                         },
 
                         { text: 'RELAÇÃO DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 10, bold: true, color: '#0f172a', margin: [0, 0, 0, 6] },
 
-                        // 🟢 3. A TABELA DUPLA MANTIDA INTACTA AQUI
                         {
                             table: {
                                 headerRows: 1,
-                                // 12 colunas ajustadas para ocupar 100% da folha A4 Paisagem
-                                widths: ['3%', '7%', '20%', '11%', '3%', '6%', '3%', '7%', '20%', '11%', '3%', '6%'],
+                                // Larguras recalibradas para 14 colunas cravando 100% da página
+                                widths: ['3%', '6%', '7%', '16%', '10%', '3%', '5%', '3%', '6%', '7%', '16%', '10%', '3%', '5%'],
                                 body: corpoTabelaDupla
                             },
                             layout: {
@@ -17577,7 +17525,7 @@
                                     const totalRows = (node && node.body) ? node.body.length : (corpoTabelaDupla.length || 0);
                                     return (i === 0 || i === 1 || i === totalRows) ? 1 : 0.5;
                                 },
-                                vLineWidth: (i) => (i === 6 ? 2 : 0), // Divisória centralizada na coluna 6
+                                vLineWidth: (i) => (i === 7 ? 2 : 0), // Divisória deslocada para o índice 7 (metade das 14 colunas)
                                 hLineColor: (i) => i === 1 ? '#0f172a' : '#cbd5e1',
                                 vLineColor: () => '#94a3b8',
                                 paddingTop: () => 4, paddingBottom: () => 4, paddingLeft: () => 4, paddingRight: () => 4
