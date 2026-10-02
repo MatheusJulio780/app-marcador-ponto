@@ -24,6 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         /* ================= PALETAS DE CORES ================= */
         :root {
@@ -3249,7 +3250,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.1</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.2</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5222,9 +5223,15 @@
             <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;"><i class="ph ph-swap"></i> Gestão de Transbordo</h3>
-                    <!-- BOTAO DE GUARDADAS (Aparece dinamicamente se houver rascunhos) -->
+                    
+                    <!-- BOTAO DE GUARDADAS -->
                     <button type="button" id="btn-ver-guardadas" class="btn btn-sm btn-info" style="display: none; align-items: center; gap: 6px; font-weight: 800; border-radius: 20px; padding: 4px 12px; background: #0284c7; color: #fff; border: none; cursor: pointer;">
                         <i class="ph ph-archive-box" style="font-size: 14px;"></i> Guardadas (<span id="qtd-guardadas">0</span>)
+                    </button>
+
+                    <!-- NOVO BOTAO: ÚLTIMOS TRANSBORDOS -->
+                    <button type="button" id="btn-ultimos-transbordos" onclick="carregarUltimosTransbordos()" class="btn btn-sm btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 800; border-radius: 20px; padding: 4px 12px; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; cursor: pointer;">
+                        <i class="ph ph-clock-counter-clockwise" style="font-size: 14px;"></i> Últimos Transbordos
                     </button>
                 </div>
                 <button class="btn-close" id="close-transbordo">&times;</button>
@@ -5280,6 +5287,17 @@
                 </div>
             </div>
 
+            <!-- COLE ESTE BLOCO LOGO ABAIXO DA DIV class="modal-body", ANTES DOS CAMPOS -->
+            <div id="transbordo-historico-container" style="display: none; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 8px;">
+                    <h4 style="margin: 0; font-size: 13px; color: #0f172a;"><i class="ph ph-clock-counter-clockwise"></i> Últimos 5 Transbordos Realizados</h4>
+                    <button type="button" class="btn-close" onclick="document.getElementById('transbordo-historico-container').style.display='none'" style="font-size: 18px; line-height: 1;">&times;</button>
+                </div>
+                <div id="lista-historico-transbordos" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Itens injetados via JS -->
+                </div>
+            </div>
+
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 10px;">
                 <button class="btn btn-secondary" id="btn-cancelar-transbordo" style="min-width: 90px;">Cancelar</button>
                 <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
@@ -5327,6 +5345,9 @@
                 <button id="close-pdf-preview" class="btn btn-secondary">Fechar</button>
                 <button id="btn-baixar-pdf" class="btn btn-primary" style="background-color: var(--success);">Baixar PDF</button>
                 <button id="btn-imprimir-pdf" class="btn btn-primary">Imprimir</button>
+                <button type="button" id="btn-copiar-img-pdf" class="btn btn-secondary" style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; cursor: pointer;">
+                    <i class="ph ph-copy"></i> Copiar Imagem
+                </button>
             </div>
         </div>
     </div>
@@ -10762,11 +10783,68 @@
                 // Gerenciamento Atômico do Botão de Download
                 const btnBaixar = document.getElementById('btn-baixar-pdf');
                 if (btnBaixar) {
-                    // Clonamos o botão para limpar eventListeners anteriores e evitar downloads múltiplos na mesma sessão
                     const novoBtnBaixar = btnBaixar.cloneNode(true);
                     btnBaixar.parentNode.replaceChild(novoBtnBaixar, btnBaixar);
                     novoBtnBaixar.addEventListener('click', () => {
                         pdfMake.createPdf(docDefinition).download(nomeArquivoExportacao);
+                    });
+                }
+
+                // 🟢 NOVO: Gerenciamento Atômico do Botão de Copiar como Imagem
+                const btnCopiar = document.getElementById('btn-copiar-img-pdf');
+                if (btnCopiar) {
+                    const novoBtnCopiar = btnCopiar.cloneNode(true);
+                    btnCopiar.parentNode.replaceChild(novoBtnCopiar, btnCopiar);
+                    
+                    novoBtnCopiar.addEventListener('click', async () => {
+                        const textoOriginal = novoBtnCopiar.innerHTML;
+                        novoBtnCopiar.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Copiando...';
+                        novoBtnCopiar.style.pointerEvents = 'none'; // Evita múltiplos cliques
+
+                        try {
+                            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                            if (!pdfjsLib) throw new Error("A biblioteca PDF.js não foi carregada no HTML.");
+                            
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+                            // Aproveita a URL Blob já gerada pelo pdfMake (altamente eficiente)
+                            const loadingTask = pdfjsLib.getDocument(url);
+                            const pdf = await loadingTask.promise;
+                            const page = await pdf.getPage(1); // Rasteriza a página 1
+
+                            // Escala 2x para garantir qualidade ao colar (evita serrilhado)
+                            const viewport = page.getViewport({ scale: 2 });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                            // Converte para binário PNG e escreve no Clipboard nativo
+                            canvas.toBlob(async (imgBlob) => {
+                                try {
+                                    await navigator.clipboard.write([
+                                        new ClipboardItem({ 'image/png': imgBlob })
+                                    ]);
+                                    novoBtnCopiar.innerHTML = '<i class="ph ph-check"></i> Copiado!';
+                                } catch (err) {
+                                    console.error("Erro no Clipboard API:", err);
+                                    alert("O navegador bloqueou a cópia direta. Verifique se está usando HTTPS ou Localhost.");
+                                } finally {
+                                    setTimeout(() => {
+                                        novoBtnCopiar.innerHTML = textoOriginal;
+                                        novoBtnCopiar.style.pointerEvents = 'auto';
+                                    }, 2000);
+                                }
+                            }, 'image/png', 1.0);
+
+                        } catch (err) {
+                            console.error("Erro ao converter PDF para imagem:", err);
+                            alert("Falha ao gerar a imagem do PDF.");
+                            novoBtnCopiar.innerHTML = textoOriginal;
+                            novoBtnCopiar.style.pointerEvents = 'auto';
+                        }
                     });
                 }
 
@@ -12012,6 +12090,7 @@
 
             try {
                 let notasGlobaisTransbordo = [];
+                let notasTransbordadas = []; // ARRAY CRIADO PARA O HISTÓRICO
 
                 // 1. ATUALIZA AS NOTAS DIRETAMENTE NO FIREBASE (notas_fiscais_diario)
                 if (dataOperacao) {
@@ -12027,6 +12106,9 @@
                             let placaAtivaLimpa = placaAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
                             if (placaNotaLimpa === placaAtivaLimpa && (tipo === 'todas' || nfsSel.includes(String(nota.nf)))) {
+                                // Captura a nota original antes de alterar para o histórico
+                                notasTransbordadas.push({ ...nota }); 
+
                                 nota.placa = destino;
                                 nota.tipo_viagem = novoStatusPainel;
                                 if (novoMot) nota.motorista = novoMot;
@@ -12140,7 +12222,12 @@
                     }
                 }
 
-                // 3. REFRESH VISUAL NA TELA
+                // 3. SALVAR NO HISTÓRICO DE TRANSBORDOS
+                if (notasTransbordadas.length > 0) {
+                    await registrarLogTransbordo(notasTransbordadas);
+                }
+
+                // 4. REFRESH VISUAL NA TELA
                 if (document.getElementById('btn-carregar-painel')) document.getElementById('btn-carregar-painel').click();
                 if (document.getElementById('btn-carregar-notas')) document.getElementById('btn-carregar-notas').click();
 
@@ -17298,71 +17385,91 @@
             limparSelecaoExcel();
         });
 
-        // ================= GERADOR DE PDF - TRANSBORDO NO GALPÃO (ROTA POR CIDADES ÚNICAS) =================
-        window.gerarPdfTransbordo = async () => {
-            const selectOrigem = document.getElementById('transbordo-origem');
-            const optionSel = selectOrigem ? selectOrigem.options[selectOrigem.selectedIndex] : null;
-
-            const placaOrigemAtiva = optionSel ? optionSel.value : "";
-            const placaOrigemOriginal = optionSel ? (optionSel.getAttribute('data-orig') || placaOrigemAtiva) : "";
-            const placaDestino = document.getElementById('transbordo-destino')?.value.trim().toUpperCase() || "";
-            const dataTransbordo = document.getElementById('transbordo-data')?.value || new Date().toISOString().split('T')[0];
-            const tipoTransbordo = document.getElementById('transbordo-tipo')?.value || "todas";
-
-            if (!placaOrigemAtiva || !placaDestino) {
-                return alert("Selecione a placa de origem e informe a placa de destino para gerar o PDF.");
-            }
-
+        // ================= GERADOR DE PDF - TRANSBORDO (ATUALIZADO COM LIMITADOR E HISTÓRICO) =================
+        window.gerarPdfTransbordo = async (dadosHistorico = null) => {
             showLoader();
             try {
-                const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataTransbordo));
-                let notasDoDia = docSnap.exists() ? docSnap.data().notas || [] : [];
+                let notasOrigem = [];
+                let placaOrigemOriginal, placaDestino, dataTransbordo, motoristaOrigem;
+                let transporteViagem, transportesOperacao, conferenteNome;
 
-                const placaAtivaLimpa = placaOrigemAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                // 1. VERIFICA SE ESTÁ IMPRIMINDO DO HISTÓRICO OU DA TELA
+                if (dadosHistorico) {
+                    // MODO HISTÓRICO
+                    notasOrigem = dadosHistorico.notasOrigem;
+                    placaOrigemOriginal = dadosHistorico.placaOrigem;
+                    placaDestino = dadosHistorico.placaDestino;
+                    dataTransbordo = dadosHistorico.dataTransbordo;
+                    motoristaOrigem = dadosHistorico.motoristaOrigem;
+                    transporteViagem = dadosHistorico.transporteViagem;
+                    transportesOperacao = dadosHistorico.transportesOperacao;
+                    conferenteNome = dadosHistorico.conferenteNome;
+                } else {
+                    // MODO TELA (TEMPO REAL)
+                    const selectOrigem = document.getElementById('transbordo-origem');
+                    const optionSel = selectOrigem ? selectOrigem.options[selectOrigem.selectedIndex] : null;
 
-                let notasOrigem = notasDoDia.filter(n => {
-                    const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    return pNota === placaAtivaLimpa;
-                });
+                    const placaOrigemAtiva = optionSel ? optionSel.value : "";
+                    placaOrigemOriginal = optionSel ? (optionSel.getAttribute('data-orig') || placaOrigemAtiva) : "";
+                    placaDestino = document.getElementById('transbordo-destino')?.value.trim().toUpperCase() || "";
+                    dataTransbordo = document.getElementById('transbordo-data')?.value || new Date().toISOString().split('T')[0];
+                    const tipoTransbordo = document.getElementById('transbordo-tipo')?.value || "todas";
 
-                if (tipoTransbordo === 'selecionar') {
-                    const nfsSelecionadas = Array.from(document.querySelectorAll('.check-nf-transbordo:checked')).map(cb => String(cb.value));
-                    if (nfsSelecionadas.length > 0) {
-                        notasOrigem = notasOrigem.filter(n => nfsSelecionadas.includes(String(n.nf)));
+                    if (!placaOrigemAtiva || !placaDestino) {
+                        hideLoader();
+                        return alert("Selecione a placa de origem e informe a placa de destino para gerar o PDF.");
                     }
+
+                    const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataTransbordo));
+                    let notasDoDia = docSnap.exists() ? docSnap.data().notas || [] : [];
+                    const placaAtivaLimpa = placaOrigemAtiva.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                    notasOrigem = notasDoDia.filter(n => {
+                        const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        return pNota === placaAtivaLimpa;
+                    });
+
+                    if (tipoTransbordo === 'selecionar') {
+                        const nfsSelecionadas = Array.from(document.querySelectorAll('.check-nf-transbordo:checked')).map(cb => String(cb.value));
+                        if (nfsSelecionadas.length > 0) {
+                            notasOrigem = notasOrigem.filter(n => nfsSelecionadas.includes(String(n.nf)));
+                        }
+                    }
+
+                    if (notasOrigem.length === 0) {
+                        hideLoader();
+                        return alert("Nenhuma nota fiscal encontrada para os critérios selecionados.");
+                    }
+
+                    motoristaOrigem = "NÃO INFORMADO";
+                    const nMot = notasOrigem.find(n => n.motorista && n.motorista.trim() !== "");
+                    if (nMot) motoristaOrigem = nMot.motorista;
+
+                    let cidadesUnicas = [];
+                    let viagensUnicas = [];
+                    notasOrigem.forEach(n => {
+                        let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
+                        if (cid && !cidadesUnicas.includes(cid)) cidadesUnicas.push(cid);
+
+                        let v = String(n.viagem || n.transporte || "").trim();
+                        if (v && !viagensUnicas.includes(v)) viagensUnicas.push(v);
+                    });
+
+                    transporteViagem = cidadesUnicas.length > 0 ? cidadesUnicas.join(" - ") : "GERAL";
+                    transportesOperacao = viagensUnicas.length > 0 ? viagensUnicas.join(" ") : "NÃO INFORMADO";
+                    conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
                 }
 
-                if (notasOrigem.length === 0) {
-                    hideLoader();
-                    return alert("Nenhuma nota fiscal encontrada para os critérios selecionados no transbordo.");
-                }
-
-                let motoristaOrigem = "NÃO INFORMADO";
-                const nMot = notasOrigem.find(n => n.motorista && n.motorista.trim() !== "");
-                if (nMot) motoristaOrigem = nMot.motorista;
-
-                let cidadesUnicas = [];
-                let viagensUnicas = [];
-
-                notasOrigem.forEach(n => {
-                    let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
-                    if (cid && !cidadesUnicas.includes(cid)) cidadesUnicas.push(cid);
-
-                    let v = String(n.viagem || n.transporte || "").trim();
-                    if (v && !viagensUnicas.includes(v)) viagensUnicas.push(v);
-                });
-
-                const transporteViagem = cidadesUnicas.length > 0 ? cidadesUnicas.join(" - ") : "GERAL";
-                const transportesOperacao = viagensUnicas.length > 0 ? viagensUnicas.join(" ") : "NÃO INFORMADO";
-
-                const conferenteNome = window.usuarioLogadoNome || "Matheus Leite";
-
+                // 2. ORDENAÇÃO E PREPARAÇÃO
                 notasOrigem.sort((a, b) => parseInt(cleanNF(a.nf)) - parseInt(cleanNF(b.nf)));
 
                 let pesoTotalGeral = 0;
                 let qtdTotalGeral = 0;
 
-                // Tabela dupla adaptada para 14 colunas (Adicionada coluna VIAGEM)
+                // Limita o texto para não quebrar a tabela e destruir o alinhamento
+                const limitarTexto = (texto, limite) => texto.length > limite ? texto.substring(0, limite) + '.' : texto;
+
+                // Tabela dupla 14 colunas. A soma exata é 100%. (50% esquerda, 50% direita)
                 let corpoTabelaDupla = [
                     [
                         { text: '#', bold: true, alignment: 'center', fillColor: '#1e293b', color: '#ffffff', fontSize: 8 },
@@ -17387,14 +17494,13 @@
                 for (let i = 0; i < metade; i++) {
                     const n1 = notasOrigem[i];
                     const n2 = notasOrigem[i + metade];
-
                     const bg = i % 2 === 0 ? '#f8fafc' : '#ffffff';
 
                     // Lado Esquerdo
                     const nf1 = cleanNF(n1.nf);
                     const viagem1 = String(n1.viagem || n1.transporte || "").trim();
-                    const cliente1 = String(n1.cliente || "").toUpperCase();
-                    const cidade1 = String(n1.cidade || n1.municipio || "").toUpperCase();
+                    const cliente1 = limitarTexto(String(n1.cliente || "").toUpperCase(), 20); // Impede quebra de linha
+                    const cidade1 = limitarTexto(String(n1.cidade || n1.municipio || "").toUpperCase(), 12);
                     const qtd1 = parseInt(String(n1.qtde || n1.volumes || "1").replace(/\D/g, '')) || 1;
                     const p1Str = String(n1.peso || "0").trim();
                     const peso1 = p1Str.includes(',') ? parseFloat(p1Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p1Str) || 0;
@@ -17402,21 +17508,21 @@
                     qtdTotalGeral += qtd1;
 
                     let row = [
-                        { text: i + 1, alignment: 'center', fontSize: 7, fillColor: bg },
-                        { text: nf1, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
-                        { text: viagem1, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a' },
-                        { text: cliente1, alignment: 'left', fontSize: 6.5, fillColor: bg },
-                        { text: cidade1, alignment: 'left', fontSize: 6.5, fillColor: bg },
-                        { text: qtd1, alignment: 'center', fontSize: 7, fillColor: bg },
-                        { text: peso1.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg }
+                        { text: i + 1, alignment: 'center', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                        { text: nf1, alignment: 'left', bold: true, fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                        { text: viagem1, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a', margin: [0, 2, 0, 2] },
+                        { text: cliente1, alignment: 'left', fontSize: 6.5, fillColor: bg, margin: [0, 2, 0, 2] },
+                        { text: cidade1, alignment: 'left', fontSize: 6.5, fillColor: bg, margin: [0, 2, 0, 2] },
+                        { text: qtd1, alignment: 'center', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                        { text: peso1.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] }
                     ];
 
                     // Lado Direito
                     if (n2) {
                         const nf2 = cleanNF(n2.nf);
                         const viagem2 = String(n2.viagem || n2.transporte || "").trim();
-                        const cliente2 = String(n2.cliente || "").toUpperCase();
-                        const cidade2 = String(n2.cidade || n2.municipio || "").toUpperCase();
+                        const cliente2 = limitarTexto(String(n2.cliente || "").toUpperCase(), 20);
+                        const cidade2 = limitarTexto(String(n2.cidade || n2.municipio || "").toUpperCase(), 12);
                         const qtd2 = parseInt(String(n2.qtde || n2.volumes || "1").replace(/\D/g, '')) || 1;
                         const p2Str = String(n2.peso || "0").trim();
                         const peso2 = p2Str.includes(',') ? parseFloat(p2Str.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(p2Str) || 0;
@@ -17424,13 +17530,13 @@
                         qtdTotalGeral += qtd2;
 
                         row.push(
-                            { text: i + metade + 1, alignment: 'center', fontSize: 7, fillColor: bg },
-                            { text: nf2, alignment: 'left', bold: true, fontSize: 7, fillColor: bg },
-                            { text: viagem2, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a' },
-                            { text: cliente2, alignment: 'left', fontSize: 6.5, fillColor: bg },
-                            { text: cidade2, alignment: 'left', fontSize: 6.5, fillColor: bg },
-                            { text: qtd2, alignment: 'center', fontSize: 7, fillColor: bg },
-                            { text: peso2.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg }
+                            { text: i + metade + 1, alignment: 'center', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                            { text: nf2, alignment: 'left', bold: true, fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                            { text: viagem2, alignment: 'left', fontSize: 6.5, fillColor: bg, color: '#0f172a', margin: [0, 2, 0, 2] },
+                            { text: cliente2, alignment: 'left', fontSize: 6.5, fillColor: bg, margin: [0, 2, 0, 2] },
+                            { text: cidade2, alignment: 'left', fontSize: 6.5, fillColor: bg, margin: [0, 2, 0, 2] },
+                            { text: qtd2, alignment: 'center', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] },
+                            { text: peso2.toFixed(3).replace('.', ','), alignment: 'right', fontSize: 7, fillColor: bg, margin: [0, 2, 0, 2] }
                         );
                     } else {
                         row.push(
@@ -17440,7 +17546,6 @@
                             { text: '', fillColor: bg }
                         );
                     }
-
                     corpoTabelaDupla.push(row);
                 }
 
@@ -17461,8 +17566,7 @@
                                     stack: [
                                         { text: 'TERMO DE TRANSBORDO DE CARGA', fontSize: 15, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
                                         { text: 'Controle de Operação Logística', fontSize: 8.5, color: '#64748b' }
-                                    ],
-                                    width: '70%'
+                                    ], width: '70%'
                                 },
                                 { stack: [logoHeader], width: '30%' }
                             ],
@@ -17480,16 +17584,14 @@
                                                 { text: 'VEÍCULO DE ORIGEM', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
                                                 { text: placaOrigemOriginal.toUpperCase(), fontSize: 12, bold: true, color: '#1e293b' },
                                                 { text: `Motorista: ${motoristaOrigem.toUpperCase()}`, fontSize: 8, color: '#334155', margin: [0, 2, 0, 0] }
-                                            ],
-                                            fillColor: '#f8fafc', margin: [8, 6, 8, 6], border: [true, true, false, true]
+                                            ], fillColor: '#f8fafc', margin: [8, 6, 8, 6], border: [true, true, false, true]
                                         },
                                         {
                                             stack: [
                                                 { text: 'VEÍCULO DE DESTINO (NOVO)', fontSize: 7, bold: true, color: '#64748b', margin: [0, 0, 0, 2] },
                                                 { text: placaDestino, fontSize: 12, bold: true, color: '#2563eb' },
                                                 { text: `Data da Operação: ${dataFormatada}`, fontSize: 8, color: '#334155', margin: [0, 2, 0, 0] }
-                                            ],
-                                            fillColor: '#eff6ff', margin: [8, 6, 8, 6], border: [true, true, false, true]
+                                            ], fillColor: '#eff6ff', margin: [8, 6, 8, 6], border: [true, true, false, true]
                                         },
                                         {
                                             stack: [
@@ -17497,18 +17599,14 @@
                                                 { text: `Rota: ${transporteViagem}`, fontSize: 8.5, bold: true, color: '#1e3a8a', margin: [0, 1, 0, 1] },
                                                 { text: `Transportes: ${transportesOperacao}`, fontSize: 8.5, bold: true, color: '#0f172a', margin: [0, 1, 0, 1] },
                                                 { text: `Conferente: ${conferenteNome.toUpperCase()}  |  Total NFs: ${notasOrigem.length}`, fontSize: 7.5, color: '#475569', margin: [0, 1, 0, 0] }
-                                            ],
-                                            fillColor: '#f1f5f9', margin: [8, 6, 8, 6], border: [true, true, true, true]
+                                            ], fillColor: '#f1f5f9', margin: [8, 6, 8, 6], border: [true, true, true, true]
                                         }
                                     ]
                                 ]
                             },
                             layout: {
-                                hLineWidth: () => 1, vLineWidth: () => 1,
-                                hLineColor: () => '#cbd5e1', vLineColor: () => '#cbd5e1',
-                                paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0
-                            },
-                            margin: [0, 0, 0, 12]
+                                hLineWidth: () => 1, vLineWidth: () => 1, hLineColor: () => '#cbd5e1', vLineColor: () => '#cbd5e1', paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0
+                            }, margin: [0, 0, 0, 12]
                         },
 
                         { text: 'RELAÇÃO DAS NOTAS FISCAIS TRANSBORDADAS', fontSize: 10, bold: true, color: '#0f172a', margin: [0, 0, 0, 6] },
@@ -17516,8 +17614,8 @@
                         {
                             table: {
                                 headerRows: 1,
-                                // Larguras recalibradas para 14 colunas cravando 100% da página
-                                widths: ['3%', '6%', '7%', '16%', '10%', '3%', '5%', '3%', '6%', '7%', '16%', '10%', '3%', '5%'],
+                                // Percentuais perfeitamente recalibrados (Esquerda = 50%, Direita = 50%)
+                                widths: ['3%', '9%', '7%', '14%', '8%', '4%', '5%', '3%', '9%', '7%', '14%', '8%', '4%', '5%'],
                                 body: corpoTabelaDupla
                             },
                             layout: {
@@ -17525,12 +17623,10 @@
                                     const totalRows = (node && node.body) ? node.body.length : (corpoTabelaDupla.length || 0);
                                     return (i === 0 || i === 1 || i === totalRows) ? 1 : 0.5;
                                 },
-                                vLineWidth: (i) => (i === 7 ? 2 : 0), // Divisória deslocada para o índice 7 (metade das 14 colunas)
+                                vLineWidth: (i) => (i === 7 ? 2 : 0),
                                 hLineColor: (i) => i === 1 ? '#0f172a' : '#cbd5e1',
-                                vLineColor: () => '#94a3b8',
-                                paddingTop: () => 4, paddingBottom: () => 4, paddingLeft: () => 4, paddingRight: () => 4
-                            },
-                            margin: [0, 0, 0, 8]
+                                vLineColor: () => '#94a3b8'
+                            }, margin: [0, 0, 0, 8]
                         },
 
                         {
@@ -17544,8 +17640,7 @@
                                     ]
                                 ]
                             },
-                            layout: { hLineWidth: () => 1, vLineWidth: () => 0, hLineColor: () => '#cbd5e1' },
-                            margin: [0, 0, 0, 15]
+                            layout: { hLineWidth: () => 1, vLineWidth: () => 0, hLineColor: () => '#cbd5e1' }, margin: [0, 0, 0, 15]
                         },
 
                         { text: 'TERMO DE RESPONSABILIDADE', bold: true, fontSize: 8.5, color: '#334155', margin: [0, 0, 0, 2] },
@@ -17569,6 +17664,159 @@
                 alert("Erro ao gerar o documento PDF.");
             }
             hideLoader();
+        };
+
+        // ================= LOGICA DE ÚLTIMOS TRANSBORDOS =================
+        window._cacheHistoricoTransbordos = {}; // Cache para manter os dados na memória para impressão
+
+        // Função ativada ao clicar no botão "Últimos Transbordos"
+        window.carregarUltimosTransbordos = async () => {
+            const container = document.getElementById('transbordo-historico-container');
+            const lista = document.getElementById('lista-historico-transbordos');
+            container.style.display = 'block';
+            lista.innerHTML = '<div style="text-align:center; padding: 10px; font-size: 12px; font-weight: bold;">Buscando histórico...</div>';
+
+            try {
+                // Puxa os últimos 5 logs registrados no firebase
+                const q = query(collection(db, "logs_transbordo"), orderBy("dataHora", "desc"), limit(5));
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    lista.innerHTML = '<div style="text-align:center; padding: 10px; font-size: 12px; color: #64748b;">Nenhum transbordo registrado ainda.</div>';
+                    return;
+                }
+
+                lista.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const log = docSnap.data();
+                    window._cacheHistoricoTransbordos[docSnap.id] = log;
+
+                    const dataBr = log.dataTransbordo.split('-').reverse().join('/');
+                    
+                    lista.innerHTML += `
+                        <div style="background: #ffffff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="font-size: 11px; color: #475569; line-height: 1.4;">
+                                <strong style="color: #0f172a; font-size: 13px;">${log.placaOrigem} <i class="ph ph-arrow-right" style="color: #2563eb;"></i> ${log.placaDestino}</strong><br>
+                                Data Op: <span style="font-weight:bold;">${dataBr}</span> | Conferente: <span style="font-weight:bold;">${log.conferenteNome}</span><br>
+                                Totais: <span style="font-weight:bold; color: #1e3a8a;">${log.notasOrigem.length} NFs</span> | <span style="font-weight:bold;">${log.totalCaixas} Cxs</span> | <span style="font-weight:bold;">${log.pesoTotal.toFixed(2)}kg</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.gerarPdfTransbordo(window._cacheHistoricoTransbordos['${docSnap.id}'])" style="padding: 4px 10px; font-size: 11px; display: flex; align-items: center; gap: 4px;">
+                                <i class="ph ph-printer"></i> Imprimir PDF
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                console.error("Erro ao puxar últimos transbordos:", e);
+                lista.innerHTML = '<div style="color: #dc2626; text-align: center; font-size: 12px;">Erro ao carregar o histórico.</div>';
+            }
+        };
+
+        // CHAMADA OBRIGATÓRIA: Adicione "await registrarLogTransbordo(notasFiltradasQueForamTransferidas);" dentro da sua função que efetivamente EXECUTA a troca (junto ao Firebase batch.commit)
+        window.registrarLogTransbordo = async (notasTransbordadas) => {
+            try {
+                const selectOrigem = document.getElementById('transbordo-origem');
+                const placaOrigem = selectOrigem.options[selectOrigem.selectedIndex].getAttribute('data-orig') || selectOrigem.value;
+                const placaDestino = document.getElementById('transbordo-destino').value.trim().toUpperCase();
+                const dataTransbordo = document.getElementById('transbordo-data').value;
+                const motoristaOrigem = notasTransbordadas.find(n => n.motorista && n.motorista.trim() !== "")?.motorista || "NÃO INFORMADO";
+                
+                let cidadesUnicas = [];
+                let viagensUnicas = [];
+                let pesoTotal = 0;
+                let totalCaixas = 0;
+
+                notasTransbordadas.forEach(n => {
+                    let cid = String(n.cidade || n.municipio || n.destino || "").trim().toUpperCase();
+                    if (cid && !cidadesUnicas.includes(cid)) cidadesUnicas.push(cid);
+                    
+                    let v = String(n.viagem || n.transporte || "").trim();
+                    if (v && !viagensUnicas.includes(v)) viagensUnicas.push(v);
+
+                    pesoTotal += parseFloat(String(n.peso || "0").replace(',', '.')) || 0;
+                    totalCaixas += parseInt(String(n.qtde || n.volumes || "1").replace(/\D/g, '')) || 1;
+                });
+
+                const logData = {
+                    dataHora: new Date().toISOString(),
+                    dataTransbordo: dataTransbordo,
+                    placaOrigem: placaOrigem,
+                    placaDestino: placaDestino,
+                    motoristaOrigem: motoristaOrigem,
+                    conferenteNome: window.usuarioLogadoNome || "Matheus Leite",
+                    transporteViagem: cidadesUnicas.length > 0 ? cidadesUnicas.join(" - ") : "GERAL",
+                    transportesOperacao: viagensUnicas.length > 0 ? viagensUnicas.join(" ") : "NÃO INFORMADO",
+                    pesoTotal: pesoTotal,
+                    totalCaixas: totalCaixas,
+                    notasOrigem: notasTransbordadas
+                };
+
+                await addDoc(collection(db, "logs_transbordo"), logData);
+            } catch (e) {
+                console.error("Aviso: Falha ao registrar log de transbordo no histórico.", e);
+            }
+        };
+
+        window.copiarPdfComoImagem = async (docDefinition) => {
+            const btnCopy = document.getElementById('btn-copy-pdf'); // ID do seu botão
+            const textoOriginal = btnCopy ? btnCopy.innerHTML : 'Copiar Imagem';
+            
+            if (btnCopy) btnCopy.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Copiando...';
+
+            try {
+                // 1. Pede ao pdfmake para gerar o PDF em formato Blob (sem abrir na tela)
+                const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+                
+                pdfDocGenerator.getBlob(async (blob) => {
+                    const url = URL.createObjectURL(blob);
+
+                    // 2. Configura o worker do PDF.js
+                    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+                    // 3. Lê o PDF e extrai a página 1
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    const pdf = await loadingTask.promise;
+                    const page = await pdf.getPage(1);
+
+                    // 4. Renderiza em um Canvas invisível com escala 2 para não perder resolução
+                    const scale = 2;
+                    const viewport = page.getViewport({ scale: scale });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    // 5. Converte o Canvas em Imagem e envia para a Área de Transferência
+                    canvas.toBlob(async (imgBlob) => {
+                        try {
+                            await navigator.clipboard.write([
+                                new ClipboardItem({ 'image/png': imgBlob })
+                            ]);
+                            if (btnCopy) {
+                                btnCopy.innerHTML = '<i class="ph ph-check"></i> Copiado!';
+                                btnCopy.classList.replace('btn-secondary', 'btn-success');
+                                setTimeout(() => {
+                                    btnCopy.innerHTML = textoOriginal;
+                                    btnCopy.classList.replace('btn-success', 'btn-secondary');
+                                }, 2500);
+                            } else {
+                                alert("✅ Imagem do Transbordo copiada! Dê Ctrl+V onde desejar.");
+                            }
+                        } catch (err) {
+                            alert("O navegador bloqueou a cópia. Clique no botão de cópia novamente.");
+                            console.error(err);
+                            if (btnCopy) btnCopy.innerHTML = textoOriginal;
+                        }
+                    }, 'image/png', 1.0);
+                });
+            } catch (error) {
+                console.error("Erro no processamento da imagem:", error);
+                alert("Falha ao converter o documento para imagem.");
+                if (btnCopy) btnCopy.innerHTML = textoOriginal;
+            }
         };
 
         // Adicione esta função ao seu código existente
