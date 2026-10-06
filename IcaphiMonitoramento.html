@@ -3250,7 +3250,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.2</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.3</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -3856,6 +3856,9 @@
 
                         <button class="btn btn-danger" onclick="window.abrirModalExcluirPeriodo('painel')">
                             <i class="ph ph-trash"></i> Excluir Período
+                        </button>
+                        <button onclick="abrirModalConferencia()" class="btn btn-warning" style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="ph ph-check-square-offset"></i> Conferir Transportes
                         </button>
                         <button onclick="document.getElementById('modal-copiar-dia').classList.add('active')" class="btn" style="background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 10px 15px; border-radius: 8px; cursor: pointer;">
                             <i class="ph ph-copy" style="color: var(--accent);"></i> Copiar Dia Operacional
@@ -6116,6 +6119,49 @@
                     <button type="button" class="btn btn-primary" onclick="window.processarGeracaoExtratoPDF()" style="font-weight: 800; display: flex; align-items: center; gap: 6px;">
                         <i class="ph-bold ph-download-simple"></i> Baixar PDF
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFERÊNCIA DE TRANSPORTES -->
+    <div class="modal-overlay" id="modal-conferencia-transporte">
+        <div class="modal-content" style="width: 700px; max-width: 95vw;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;"><i class="ph ph-check-square-offset" style="color: #eab308;"></i> Conferência de Transportes</h3>
+                <button class="btn-close" onclick="document.getElementById('modal-conferencia-transporte').classList.remove('active')">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding-top: 20px;">
+                
+                <!-- 🟢 NOVO: SELETOR DE DATA -->
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <label style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 6px;">Data Base da Conferência</label>
+                    <input type="date" id="data-conferencia-transporte" style="padding: 8px 15px; border-radius: 6px; border: 1px solid #94a3b8; font-weight: 700; color: #0f172a; outline: none; background: #fff;">
+                </div>
+
+                <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
+                    <!-- Botão EDI -->
+                    <button class="btn btn-primary" onclick="document.getElementById('input-conf-edi').click()" style="display: flex; flex-direction: column; align-items: center; padding: 15px 30px; gap: 8px;">
+                        <i class="ph ph-file-xls" style="font-size: 24px;"></i>
+                        <span style="font-weight: 700;">Importar EDI</span>
+                    </button>
+                    <input type="file" id="input-conf-edi" accept=".xlsx, .xls, .csv" style="display: none;">
+
+                    <!-- Botão GRID -->
+                    <button class="btn btn-secondary" onclick="document.getElementById('input-conf-grid').click()" style="display: flex; flex-direction: column; align-items: center; padding: 15px 30px; gap: 8px; background: #334155; color: #fff; border: none;">
+                        <i class="ph ph-table" style="font-size: 24px;"></i>
+                        <span style="font-weight: 700;">Importar GRID</span>
+                    </button>
+                    <input type="file" id="input-conf-grid" accept=".xlsx, .xls, .csv" style="display: none;">
+                </div>
+
+                <!-- Área de Resultados (Erros Encontrados) -->
+                <div id="resultado-conferencia" style="display: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background: var(--bg-secondary); max-height: 400px; overflow-y: auto;">
+                    <h4 style="margin-top: 0; margin-bottom: 12px; color: #dc2626; font-size: 14px;"><i class="ph ph-warning-circle"></i> Divergências Encontradas</h4>
+                    <div id="lista-erros-conferencia" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Injetado via JS -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -18996,6 +19042,249 @@
                 headerAtivo.classList.remove('header-peek');
             }
         });
+
+        // ================= CONFERÊNCIA DE TRANSPORTES (EDI SEM FILTRO / GRID COM FILTRO NA COLUNA D) =================
+
+        window.abrirModalConferencia = function() {
+            const inputDataConf = document.getElementById('data-conferencia-transporte');
+            if (inputDataConf) {
+                const dataMontador = document.getElementById('editor-data-select')?.value;
+                const dataMonitoramento = document.getElementById('mon-data-select')?.value;
+                
+                if (dataMontador) {
+                    inputDataConf.value = dataMontador;
+                } else if (dataMonitoramento) {
+                    inputDataConf.value = dataMonitoramento;
+                } else if (!inputDataConf.value) {
+                    const hoje = new Date();
+                    inputDataConf.value = new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                }
+            }
+            
+            document.getElementById('resultado-conferencia').style.display = 'none';
+            document.getElementById('lista-erros-conferencia').innerHTML = '';
+            
+            const inputEdi = document.getElementById('input-conf-edi');
+            const inputGrid = document.getElementById('input-conf-grid');
+            if (inputEdi) inputEdi.value = '';
+            if (inputGrid) inputGrid.value = '';
+
+            document.getElementById('modal-conferencia-transporte').classList.add('active');
+        };
+
+        document.getElementById('input-conf-edi').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) processarArquivoConferenciaFirebase(e.target.files[0], 'EDI');
+        });
+
+        document.getElementById('input-conf-grid').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) processarArquivoConferenciaFirebase(e.target.files[0], 'GRID');
+        });
+
+        async function processarArquivoConferenciaFirebase(file, tipo) {
+            const dataSel = document.getElementById('data-conferencia-transporte').value;
+            if (!dataSel) return alert('Selecione a data da operação no modal primeiro!');
+            
+            const [anoStr, mesStr, diaStr] = dataSel.split('-');
+
+            const divResultado = document.getElementById('resultado-conferencia');
+            const listaErros = document.getElementById('lista-erros-conferencia');
+            
+            divResultado.style.display = 'block';
+            listaErros.innerHTML = '<div style="text-align:center; padding:20px; font-weight:bold;">Lendo arquivo e cruzando com o banco de dados...</div>';
+
+            try {
+                const snapPainel = await getDoc(doc(db, "painel_diario", dataSel));
+                if (!snapPainel.exists() || !snapPainel.data().rotas || snapPainel.data().rotas.length === 0) {
+                    listaErros.innerHTML = `<div style="color: #ea580c; font-weight:bold; text-align:center; padding: 20px;">O Painel da data ${diaStr}/${mesStr}/${anoStr} está vazio no banco de dados. Impossível conferir.</div>`;
+                    return;
+                }
+                const rotasPainel = snapPainel.data().rotas;
+
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const wb = XLSX.read(data, { type: 'array', raw: false });
+                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                        
+                        const mapaExcel = new Map();
+
+                        const idxPlaca = tipo === 'EDI' ? 3 : 6;
+                        const idxTransp = tipo === 'EDI' ? 4 : 1;
+                        const idxDataGrid = 3; // Coluna D no GRID
+
+                        for (let i = 1; i < rows.length; i++) { 
+                            const row = rows[i];
+                            if (!row || !row[idxPlaca]) continue;
+
+                            // 🟢 REGRA DE DATA BLINDADA PARA O GRID (TRATAMENTO COMPLETO)
+                            if (tipo === 'GRID') {
+                                let dataColunaD = row[idxDataGrid];
+                                let dStr = '';
+
+                                if (dataColunaD !== undefined && dataColunaD !== null && dataColunaD !== '') {
+                                    if (dataColunaD instanceof Date) {
+                                        dStr = new Date(dataColunaD.getTime() - (dataColunaD.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                                    } else if (typeof dataColunaD === 'number') {
+                                        // Caso venha como número serial do Excel
+                                        const excelDate = new Date(Math.round((dataColunaD - (25567 + 2)) * 86400 * 1000));
+                                        dStr = excelDate.toISOString().split('T')[0];
+                                    } else {
+                                        let textoData = String(dataColunaD).trim().split(' ')[0];
+                                        if (textoData.includes('/')) {
+                                            const partes = textoData.split('/');
+                                            if (partes.length === 3) {
+                                                // Suporta tanto DD/MM/YYYY quanto MM/DD/YYYY
+                                                if (partes[0].length === 4) {
+                                                    dStr = `${partes[0]}-${partes[1]}-${partes[2]}`; // YYYY/MM/DD
+                                                } else {
+                                                    dStr = `${partes[2]}-${partes[1]}-${partes[0]}`; // DD/MM/YYYY
+                                                }
+                                            }
+                                        } else if (textoData.includes('-')) {
+                                            dStr = textoData; // YYYY-MM-DD
+                                        }
+                                    }
+                                }
+
+                                // Compara a data formatada (YYYY-MM-DD) com a data selecionada na tela (dataSel)
+                                if (dStr !== dataSel) {
+                                    continue; // Pula se não pertencer ao dia exato
+                                }
+                            }
+
+                            const placa = String(row[idxPlaca]).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            if (placa.length < 5) continue;
+
+                            const transpBruto = String(row[idxTransp] || '');
+                            const numerosTransp = transpBruto.match(/\d+/g); 
+                            const transpLimpo = numerosTransp ? numerosTransp.join(' ') : '';
+
+                            if (transpLimpo) {
+                                if (mapaExcel.has(placa)) {
+                                    let atual = mapaExcel.get(placa);
+                                    let arrayAtual = atual.split(' ');
+                                    let novosNumeros = transpLimpo.split(' ');
+                                    novosNumeros.forEach(num => {
+                                        if (!arrayAtual.includes(num)) arrayAtual.push(num);
+                                    });
+                                    mapaExcel.set(placa, arrayAtual.join(' '));
+                                } else {
+                                    mapaExcel.set(placa, transpLimpo);
+                                }
+                            }
+                        }
+
+                        if (mapaExcel.size === 0) {
+                            listaErros.innerHTML = `<div style="color: #ea580c; font-weight:bold; text-align:center; padding: 20px;">Nenhum transporte válido encontrado para a data ${diaStr}/${mesStr}/${anoStr} neste arquivo.</div>`;
+                            return;
+                        }
+
+                        compararArrayFirebaseComExcel(rotasPainel, mapaExcel, dataSel);
+
+                    } catch (error) {
+                        console.error("Erro na leitura da planilha de conferência:", error);
+                        listaErros.innerHTML = '<div style="color: #dc2626; font-weight:bold; text-align:center;">Erro ao processar a estrutura do arquivo excel.</div>';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (errorFirebase) {
+                console.error("Erro ao puxar dados do Firebase:", errorFirebase);
+                listaErros.innerHTML = '<div style="color: #dc2626; font-weight:bold; text-align:center;">Erro ao conectar com o banco de dados.</div>';
+            }
+        }
+
+        function compararArrayFirebaseComExcel(rotasPainel, mapaExcel, dataSel) {
+            const listaErros = document.getElementById('lista-erros-conferencia');
+            let divergencias = [];
+
+            rotasPainel.forEach((rota, indexInFirebase) => {
+                let placaOriginal = String(rota.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                let placaTroca = String(rota.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                
+                if (!placaOriginal) return;
+
+                let placaAtivaPesquisa = placaTroca.length >= 7 ? placaTroca : placaOriginal;
+
+                let transporteExcel = mapaExcel.get(placaAtivaPesquisa);
+                if (!transporteExcel && placaTroca) {
+                    transporteExcel = mapaExcel.get(placaOriginal);
+                }
+
+                if (transporteExcel) {
+                    let transpPainelBruto = String(rota.transporte || "").trim();
+                    let numerosPainel = transpPainelBruto.match(/\d+/g) || [];
+                    let transpPainelLimpo = numerosPainel.join(' ');
+                    
+                    let arrayPainel = transpPainelLimpo.split(' ').sort().join(' ');
+                    let arrayExcel = transporteExcel.split(' ').sort().join(' ');
+
+                    if (arrayPainel !== arrayExcel) {
+                        divergencias.push({
+                            indiceFirebase: indexInFirebase,
+                            placaExibicao: placaTroca ? `${placaOriginal} (Troca: ${placaTroca})` : placaOriginal,
+                            transpPainel: transpPainelBruto || 'VAZIO',
+                            transpCorretoExcel: transporteExcel
+                        });
+                    }
+                }
+            });
+
+            if (divergencias.length === 0) {
+                listaErros.innerHTML = '<div style="color: #16a34a; font-weight:bold; text-align:center; padding: 20px;"><i class="ph ph-check-circle" style="font-size:36px; display:block; margin-bottom:12px;"></i> Perfeito! Todos os transportes lançados no painel do dia conferem 100% com o arquivo.</div>';
+            } else {
+                listaErros.innerHTML = '';
+                divergencias.forEach(erro => {
+                    listaErros.innerHTML += `
+                    <div style="background: #fff; border: 1px solid #fca5a5; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div>
+                            <div style="font-weight: 800; color: #1e293b; font-size: 13px;">🚗 Veículo: <span style="color: #2563eb;">${erro.placaExibicao}</span></div>
+                            <div style="font-size: 11.5px; color: #475569; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+                                <span>Painel atual: <strong style="color:#dc2626; text-decoration: line-through;">${erro.transpPainel}</strong></span>
+                                <span>Correto (Arquivo): <strong style="color:#16a34a;">${erro.transpCorretoExcel}</strong></span>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-success" onclick="aplicarCorrecaoTransporteFirebase(this, ${erro.indiceFirebase}, '${erro.transpCorretoExcel}', '${dataSel}')" style="font-weight: bold; font-size: 11px; padding: 8px 14px;">
+                            <i class="ph ph-wrench"></i> Corrigir
+                        </button>
+                    </div>`;
+                });
+            }
+        }
+
+        window.aplicarCorrecaoTransporteFirebase = async function(btnElement, indiceFirebase, novoValor, dataSel) {
+            const textoOriginal = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="ph ph-spinner ph-spin"></i> ...';
+            btnElement.style.pointerEvents = 'none';
+
+            try {
+                const docRef = doc(db, "painel_diario", dataSel);
+                const snapPainel = await getDoc(docRef);
+                
+                if (snapPainel.exists()) {
+                    let rotas = snapPainel.data().rotas || [];
+                    
+                    if (rotas[indiceFirebase] !== undefined) {
+                        rotas[indiceFirebase].transporte = novoValor;
+                        
+                        await setDoc(docRef, { rotas: rotas }); 
+
+                        btnElement.innerHTML = '<i class="ph ph-check"></i> Corrigido';
+                        btnElement.classList.replace('btn-success', 'btn-secondary');
+                        btnElement.style.background = '#e2e8f0';
+                        btnElement.style.color = '#64748b';
+                        btnElement.style.border = 'none';
+                    } else {
+                        throw new Error("Índice do veículo não encontrado.");
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao corrigir no banco:", e);
+                alert("Erro de conexão ao aplicar a correção no banco de dados.");
+                btnElement.innerHTML = textoOriginal;
+                btnElement.style.pointerEvents = 'auto';
+            }
+        };
 
     </script>
 </body>
