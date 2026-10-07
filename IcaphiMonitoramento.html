@@ -13907,10 +13907,10 @@
         let listenerStatusPainel = null;
         let cacheStatusAnterior = {};
 
-        // ================= MONITORAMENTO EM TEMPO REAL DE ST. ROTA =================
         window.iniciarMonitoramentoDeRota = (dataOperacao) => {
             if (!dataOperacao) return;
 
+            // Desliga escutador anterior para não duplicar
             if (typeof listenerStatusPainel === 'function') {
                 listenerStatusPainel();
             }
@@ -13930,37 +13930,46 @@
 
                         // Se a placa já estava no cache e o status mudou
                         if (cacheStatusAnterior[placaVeiculo] && cacheStatusAnterior[placaVeiculo] !== statusAtual) {
-                            console.log(`[Alerta Status] Veículo ${placaVeiculo} mudou de '${cacheStatusAnterior[placaVeiculo]}' para '${statusAtual}'`);
+                            console.log(`[Alerta Status] Veículo ${placaVeiculo} mudou para '${statusAtual}'`);
 
-                            // 1. Dispara o balão visual
-                            dispararToastStatus(`Veículo <b>${placaVeiculo}</b> alterou para: <b>${statusAtual}</b>`);
+                            const textoAviso = `O veículo ${placaVeiculo} alterou para ${statusAtual}`;
+                            
+                            // 1. Dispara a Gota Flutuante usando a cor do status
+                            if (typeof window.mostrarGotaNotificacao === 'function') {
+                                window.mostrarGotaNotificacao("Atualização de Frota", textoAviso, "", statusAtual);
+                            }
 
-                            // 2. Toca o som opcional
-                            const sound = document.getElementById('chat-notification-sound');
-                            if (sound) sound.play().catch(e => console.log("Áudio bloqueado pelo navegador."));
+                            // 2. Toca o som (respeitando configurações)
+                            if (typeof window.tocarSomNotificacao === 'function') {
+                                window.tocarSomNotificacao();
+                            }
 
-                            // 3. 🟢 SALVA NO HISTÓRICO DO SINO
+                            // 3. SALVA NO HISTÓRICO DO SINO
                             const agora = new Date();
                             const hojeStr = agora.toISOString().split('T')[0];
                             const horaMinuto = String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0');
 
                             let historico = JSON.parse(localStorage.getItem('historicoNotificacoesSistema') || '[]');
                             historico.push({
-                                id: Date.now(), // Identificador único
-                                timestamp: agora.getTime(), // Para ordenação
-                                dataStr: hojeStr, // Para limpar quando virar o dia
+                                id: Date.now(), 
+                                timestamp: agora.getTime(), 
+                                dataStr: hojeStr, 
                                 horaFormatada: horaMinuto,
+                                tipo: 'frota',
                                 placa: placaVeiculo,
                                 novoStatus: statusAtual
                             });
                             
                             localStorage.setItem('historicoNotificacoesSistema', JSON.stringify(historico));
 
-                            // Acende a bolinha vermelha do Sino (já que chegou notificação nova)
-                            document.getElementById('badge-sino').style.display = 'block';
+                            // Acende a bolinha vermelha do Sino do topo
+                            const badgeSinoTop = document.getElementById('badge-sino');
+                            if (badgeSinoTop) badgeSinoTop.style.display = 'block';
 
-                            // Re-renderiza a aba de notificações imediatamente
-                            window.carregarHistoricoNotificacoes();
+                            // Atualiza a tela de Notificações em tempo real
+                            if (typeof window.carregarHistoricoNotificacoes === 'function') {
+                                window.carregarHistoricoNotificacoes();
+                            }
                         }
 
                         cacheStatusAnterior[placaVeiculo] = statusAtual;
@@ -13973,31 +13982,27 @@
             });
         };
 
-        // Escutador em tempo real do dia ativo no Painel de Monitoramento
+        // Escutador em tempo real do dia ativo no Painel de Monitoramento (Gatilho)
         function iniciarEscutadorDeStatus() {
-            let unsubscribe = null;
-
-            // Sempre que a data do painel mudar ou carregar, reconectamos o listener
             const dataSel = document.getElementById('mon-data-select')?.value;
             if (!dataSel) return;
-
-            // Se já houver um escutador ativo, desliga para não duplicar
-            if (window.unsubscribeNotasAtual) {
-                window.unsubscribeNotasAtual();
-            }
-
-            const docRef = doc(db, "notas_fiscais_diario", dataSel);
-
-            window.unsubscribeNotasAtual = onSnapshot(docRef, (docSnap) => {
-                if (!docSnap.exists()) return;
-                const dadosNovos = docSnap.data();
-
-                // Aqui você pode comparar com um cache anterior se quiser evitar o aviso ao carregar a página pela primeira vez.
-                // Para testes rápidos, ele notificará as mudanças que ocorrerem com a página aberta.
-            }, (error) => {
-                console.error("Erro no listener de status:", error);
-            });
+            
+            // Inicia o monitoramento da frota para essa data específica
+            window.iniciarMonitoramentoDeRota(dataSel);
         }
+
+        // 🟢 NOVO GATILHO: Quando a tela carregar ou trocar a data do painel, ativa o radar
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('mon-data-select');
+            
+            if (dateInput) {
+                // Ao carregar a página já liga o radar na data que estiver lá
+                iniciarEscutadorDeStatus();
+                
+                // Se você mudar a data na tela do painel, ele desliga a antiga e escuta a nova
+                dateInput.addEventListener('change', iniciarEscutadorDeStatus);
+            }
+        });
 
         // ================= CONTROLE DE ABAS E RENDERIZAÇÃO DA PRESTAÇÃO DE CONTAS =================
         window.abaPrestacaoAtual = 'pendentes';
