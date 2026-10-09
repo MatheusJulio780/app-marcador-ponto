@@ -3492,7 +3492,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.6</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.7</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -9349,16 +9349,22 @@
                                 window.cacheStatusVeiculos = {};
                             }
 
-                            if (window.cacheStatusVeiculos[placaRef] && window.cacheStatusVeiculos[placaRef] !== stRotaCalc) {
+                            // 🟢 CORREÇÃO: Cria uma chave única combinando a Placa com o número do Transporte (ou OC). 
+                            // Assim, se o veículo "RNG6E55" tiver 2 viagens diferentes no painel, o sistema não vai misturá-las.
+                            const idUnicoViagem = `${placaRef}_${transpRotaStr.replace(/\s+/g, '')}`;
+
+                            if (window.cacheStatusVeiculos[idUnicoViagem] && window.cacheStatusVeiculos[idUnicoViagem] !== stRotaCalc) {
                                 
                                 // Define explicitamente os únicos status que devem disparar notificação
                                 const statusAlvo = ["VEÍCULO VAZIO", "FINALIZADO", "PRÓXIMO DE TERMINAR"];
 
                                 // Ignora transições iniciais e valida se o novo status está no array alvo
-                                if (window.cacheStatusVeiculos[placaRef] !== "" && statusAlvo.includes(stRotaCalc)) {
-                                    console.log(`[Alerta ST.ROTA] Veículo ${placaRef} mudou para '${stRotaCalc}'`);
+                                if (window.cacheStatusVeiculos[idUnicoViagem] !== "" && statusAlvo.includes(stRotaCalc)) {
+                                    console.log(`[Alerta ST.ROTA] Veículo ${placaRef} (Transp: ${transpRotaStr}) mudou para '${stRotaCalc}'`);
 
-                                    const textoAviso = `O veículo ${placaRef} alterou o status para ${stRotaCalc}`;
+                                    // Adiciona a menção de apoio se for o caso para ficar claro qual viagem é
+                                    const tipoViagem = trimUpper(rota.status) === 'APOIO' ? ' (Apoio)' : '';
+                                    const textoAviso = `O veículo ${placaRef}${tipoViagem} alterou o status para ${stRotaCalc}`;
                                     
                                     if (typeof window.mostrarGotaNotificacao === 'function') {
                                         window.mostrarGotaNotificacao("Atualização de Frota", textoAviso, "", stRotaCalc);
@@ -9369,7 +9375,7 @@
                                     }
 
                                     const agora = new Date();
-                                    const hojeStr = window.obterDataLocalBR();
+                                    const hojeStr = window.obterDataLocalBR ? window.obterDataLocalBR() : agora.toISOString().split('T')[0];
                                     const horaMinuto = String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0');
 
                                     let historico = JSON.parse(localStorage.getItem('historicoNotificacoesSistema') || '[]');
@@ -9394,9 +9400,9 @@
                                 }
                             }
 
-                            // Atualiza a memória com a posição atual para evitar falsos positivos no próximo loop
+                            // Atualiza a memória usando a CHAVE ÚNICA para evitar conflito com carros que rodam duas vezes
                             if (stRotaCalc !== "") {
-                                window.cacheStatusVeiculos[placaRef] = stRotaCalc;
+                                window.cacheStatusVeiculos[idUnicoViagem] = stRotaCalc;
                             }
                             // =========================================================================
                             
