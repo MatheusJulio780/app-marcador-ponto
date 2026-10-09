@@ -3492,7 +3492,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.7</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.8</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -7457,6 +7457,10 @@
                                 mostrarGotaNotificacao(nomeRemetente, ultimaMensagemTexto, fotoRemetente);
                             }
 
+                            if (typeof window.dispararNotificacaoNativa === 'function') {
+                                window.dispararNotificacaoNativa(`Mensagem de ${nomeRemetente}`, ultimaMensagemTexto, fotoRemetente);
+                            }
+
                             // 🟢 3. SALVA NO HISTÓRICO DO SINO DE NOTIFICAÇÕES (Agora com a variável correta)
                             const agora = new Date();
                             const hojeStr = window.obterDataLocalBR();
@@ -9368,6 +9372,10 @@
                                     
                                     if (typeof window.mostrarGotaNotificacao === 'function') {
                                         window.mostrarGotaNotificacao("Atualização de Frota", textoAviso, "", stRotaCalc);
+                                    }
+
+                                    if (typeof window.dispararNotificacaoNativa === 'function') {
+                                        window.dispararNotificacaoNativa("Atualização de Frota", textoAviso);
                                     }
 
                                     if (typeof window.tocarSomNotificacao === 'function') {
@@ -19835,6 +19843,49 @@
         document.addEventListener('DOMContentLoaded', () => {
             window.carregarHistoricoNotificacoes();
         });
+
+        // ================= NOTIFICAÇÕES NATIVAS DO SISTEMA (PC E CELULAR) =================
+
+        // 1. Solicita permissão ao navegador quando a página carrega
+        window.solicitarPermissaoNativa = function() {
+            if (!("Notification" in window)) {
+                console.warn("O navegador não suporta notificações de sistema.");
+                return;
+            }
+            // Se ainda não foi perguntado, abre o pop-up nativo
+            if (Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        };
+
+        // Dispara a pergunta de permissão silenciosamente ao abrir a tela
+        document.addEventListener('DOMContentLoaded', window.solicitarPermissaoNativa);
+
+        // 2. Função disparadora
+        window.dispararNotificacaoNativa = function(titulo, mensagem, iconeUrl) {
+            const visualAtivo = localStorage.getItem('app_visual_ativo') !== 'false';
+            if (!visualAtivo) return; // Respeita a chave geral de notificações do seu painel
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                // Dispara APENAS se a aba atual estiver minimizada ou em segundo plano. 
+                // Isso evita enviar notificação no Windows se o usuário já estiver olhando para a tela do sistema.
+                if (document.hidden) { 
+                    const imgPadrao = 'https://cdn-icons-png.flaticon.com/512/3067/3067417.png';
+                    
+                    const notification = new Notification(titulo, {
+                        body: mensagem,
+                        icon: iconeUrl || imgPadrao,
+                        vibrate: [200, 100, 200] // Faz o Android vibrar
+                    });
+
+                    // Se o usuário clicar no aviso do Windows/Android, a aba do sistema é puxada para frente
+                    notification.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                }
+            }
+        };
 
     </script>
 </body>
