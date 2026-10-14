@@ -3492,7 +3492,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.8</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.10.9</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -4020,6 +4020,18 @@
                             style="flex:1; padding:12px; min-width: 200px;">
                             <i class="ph ph-file-xls"></i> Exportar Dados (Excel)
                         </button>
+                    </div>
+                    <!-- ================= TABELA DE RESUMO DA VIAGEM SELECIONADA ================= -->
+                    <div id="resumo-rota-container" style="display: none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                        <h4 style="margin-bottom: 12px; color: var(--text-color); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                            <i class="ph-fill ph-info" style="color: var(--accent); font-size: 16px;"></i> 
+                            Resumo Operacional da Viagem
+                        </h4>
+                        <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table id="tabela-dinamica-resumo" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; white-space: nowrap;">
+                                <!-- Gerado dinamicamente via JS -->
+                            </table>
+                        </div>
                     </div>
                 </div> <!-- AQUI FECHA A CAIXA BRANCA -->
 
@@ -8157,6 +8169,14 @@
                 containerSeletor.style.display = 'none';
                 selectViagem.innerHTML = '';
             }
+            // 🟢 INSERIR ESTA LINHA AQUI NO FINAL:
+            if (typeof window.exibirResumoViagemSelecionada === 'function') window.exibirResumoViagemSelecionada();
+        });
+
+        document.getElementById('select-viagem-exportacao').addEventListener('change', () => {
+            if (typeof window.exibirResumoViagemSelecionada === 'function') {
+                window.exibirResumoViagemSelecionada();
+            }
         });
 
         // NOVO EVENTO: Monitora quando você escolhe a placa no dropdown
@@ -8932,24 +8952,91 @@
         };
 
         // ================= FUNÇÕES DRILL DOWN & MAPAS =================
-        window.abrirMapaLogistico = (endereco, bairro, cidade) => { const query = decodeURIComponent(endereco) + ', ' + decodeURIComponent(bairro) + ', ' + decodeURIComponent(cidade); document.getElementById('map-placa-title').innerText = `(${query})`; const container = document.getElementById('map-cities-container'); container.innerHTML = ""; const iframe = document.getElementById('iframe-mapa'); iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`; document.getElementById('modal-mapa').classList.add('active'); };
-        window.abrirModalRegiao = (regioesStr, placa) => { document.getElementById('map-placa-title').innerText = `(${placa})`; const container = document.getElementById('map-cities-container'); container.innerHTML = ""; const iframe = document.getElementById('iframe-mapa'); iframe.src = ""; const cidades = regioesStr.split('-').map(c => c.trim()).filter(c => c !== ""); cidades.forEach((cidade, index) => { const btn = document.createElement('button'); btn.className = 'btn-city' + (index === 0 ? ' active' : ''); btn.innerText = cidade; btn.onclick = function () { document.querySelectorAll('.btn-city').forEach(b => b.classList.remove('active')); this.classList.add('active'); iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidade + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`; }; container.appendChild(btn); }); if (cidades.length > 0) { iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(cidades[0] + ", Brasil")}&t=&z=13&ie=UTF8&iwloc=&output=embed`; } document.getElementById('modal-mapa').classList.add('active'); };
-
         window.abrirModalDetalhes = (placa, tipo) => {
-            const notasDaPlaca = window.notasOperacaoAtiva.filter(n => trimUpper(n.placa) === trimUpper(placa) && trimUpper(n.status) !== 'NÃO EMBARCADA'); let notasFiltradas = []; let theadHTML = ""; let trHTML = "";
-            const tbody = document.getElementById('detalhes-tbody'); const thead = document.getElementById('detalhes-thead'); const resumo = document.getElementById('detalhes-resumo'); document.getElementById('detalhes-titulo').innerText = `${tipo} - Veículo: ${placa}`;
+            const notasDaPlaca = window.notasOperacaoAtiva.filter(n => trimUpper(n.placa) === trimUpper(placa) && trimUpper(n.status) !== 'NÃO EMBARCADA'); 
+            let notasFiltradas = []; 
+            let theadHTML = ""; 
+            let trHTML = "";
+            
+            const tbody = document.getElementById('detalhes-tbody'); 
+            const thead = document.getElementById('detalhes-thead'); 
+            const resumo = document.getElementById('detalhes-resumo'); 
+            
+            // 🟢 Formatação inteligente do título do modal
+            let tituloDisplay = tipo;
+            if (tipo === 'ENTREGUE') tituloDisplay = 'ENTREGUES / REALIZADAS';
+            else if (tipo === 'SEM_APP') tituloDisplay = 'ENTREGUES MAS SEM ANEXO (APP)';
+            
+            document.getElementById('detalhes-titulo').innerText = `${tituloDisplay} - Veículo: ${placa}`;
 
-            if (tipo === 'PARCIAL') { notasFiltradas = notasDaPlaca.filter(n => n.parcial && n.parcial.trim() !== ""); theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>INFORMAÇÃO PARCIAL</th></tr>`; notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td style="color:var(--danger); font-weight:600;">${n.parcial}</td></tr>`; }); }
-            else if (tipo === 'PERNOITE' || tipo === 'DEVOLUÇÃO' || tipo === 'REENTREGA') { notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === tipo); theadHTML = `<tr><th>NF</th><th>PESO</th><th>QTD</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th></tr>`; notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.qtde}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td>${n.endereco}</td></tr>`; }); }
-            else if (tipo === 'PENDENTE') {
-                const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA']; notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))); theadHTML = `<tr><th>NF</th><th>PESO</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th><th>ATUALIZAR STATUS</th></tr>`;
-                notasFiltradas.forEach(n => { const statusAtual = trimUpper(n.status); const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join(''); trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td><td><select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;"><option value="" ${statusAtual === "" ? 'selected' : ''}>-</option>${optHTML}</select></td></tr>`; });
+            if (tipo === 'PARCIAL') { 
+                notasFiltradas = notasDaPlaca.filter(n => n.parcial && n.parcial.trim() !== ""); 
+                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>INFORMAÇÃO PARCIAL</th></tr>`; 
+                notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td style="color:var(--danger); font-weight:600;">${n.parcial}</td></tr>`; }); 
             }
+            else if (tipo === 'PERNOITE' || tipo === 'DEVOLUÇÃO' || tipo === 'REENTREGA' || tipo === 'ENTREGUE') { 
+                notasFiltradas = notasDaPlaca.filter(n => {
+                    const st = trimUpper(n.status);
+                    if (tipo === 'ENTREGUE') return st === 'ENTREGUE' || st === 'REALIZADA';
+                    return st === tipo;
+                });
+                theadHTML = `<tr><th>NF</th><th>PESO</th><th>QTD</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th></tr>`; 
+                notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.qtde}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td></tr>`; }); 
+            }
+            // 🟢 AQUI: Nova lógica exigida - Entregues sem documento (APP) anexado
+            else if (tipo === 'SEM_APP') {
+                notasFiltradas = notasDaPlaca.filter(n => {
+                    const st = trimUpper(n.status);
+                    const appInfo = String(n.app || "").trim();
+                    return (st === 'ENTREGUE' || st === 'REALIZADA') && appInfo === "";
+                });
+                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>FALHA APP</th></tr>`; 
+                notasFiltradas.forEach(n => { 
+                    trHTML += `<tr>
+                        <td style="font-weight:700;">${cleanNF(n.nf)}</td>
+                        <td>${formatNumber(n.peso)}</td>
+                        <td>${n.cliente}</td>
+                        <td>${n.cidade}</td>
+                        <td>${n.bairro}</td>
+                        <td style="color:var(--danger); font-weight:800;">SEM ANEXO</td>
+                    </tr>`; 
+                });
+            }
+            else if (tipo === 'PENDENTE') {
+                const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA']; 
+                notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))); 
+                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th><th>ATUALIZAR STATUS</th></tr>`;
+                notasFiltradas.forEach(n => { 
+                    const statusAtual = trimUpper(n.status); 
+                    const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join(''); 
+                    trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td><td><select class="select-status quick-status-update" data-nf="${n.nf}" style="${getStRotaStyle(statusAtual)} padding:4px;"><option value="" ${statusAtual === "" ? 'selected' : ''}>-</option>${optHTML}</select></td></tr>`; 
+                });
+            }
+            
             const totalPeso = notasFiltradas.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2);
             resumo.innerHTML = `<span>📋 Total de Notas: <span style="color:var(--accent);">${notasFiltradas.length}</span></span> <span>⚖️ Peso Total: <span style="color:var(--accent);">${totalPeso} KG</span></span>`;
-            thead.innerHTML = theadHTML; tbody.innerHTML = trHTML || "<tr><td colspan='7' align='center'>Nenhuma nota encontrada.</td></tr>"; document.getElementById('modal-detalhes').classList.add('active');
+            thead.innerHTML = theadHTML; 
+            
+            // Ajusta a mensagem de vazio para fazer sentido no contexto do APP
+            let msgVazio = "Nenhuma nota encontrada.";
+            if (tipo === 'SEM_APP') msgVazio = "✅ Todas as notas entregues possuem anexo!";
+            tbody.innerHTML = trHTML || `<tr><td colspan='7' align='center' style='padding:20px; font-weight:600;'>${msgVazio}</td></tr>`; 
+            
+            document.getElementById('modal-detalhes').classList.add('active');
 
-            document.querySelectorAll('.quick-status-update').forEach(select => { select.addEventListener('change', async (e) => { const nfTarget = e.target.getAttribute('data-nf'); const novoStatus = e.target.value; e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;"; const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget); if (notaRef) { notaRef.status = novoStatus; } showLoader(); try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } catch (err) { } hideLoader(); document.getElementById('btn-carregar-painel').click(); }); });
+            document.querySelectorAll('.quick-status-update').forEach(select => { 
+                select.addEventListener('change', async (e) => { 
+                    const nfTarget = e.target.getAttribute('data-nf'); 
+                    const novoStatus = e.target.value; 
+                    e.target.style.cssText = getStRotaStyle(novoStatus) + " padding:4px;"; 
+                    const notaRef = window.notasOperacaoAtiva.find(n => n.nf === nfTarget); 
+                    if (notaRef) { notaRef.status = novoStatus; } 
+                    showLoader(); 
+                    try { await setDoc(doc(db, "notas_fiscais_diario", window.dataOperacaoAtiva), { notas: window.notasOperacaoAtiva }); } catch (err) { } 
+                    hideLoader(); 
+                    document.getElementById('btn-carregar-painel').click(); 
+                }); 
+            });
         };
 
         // ================= MEMÓRIA DE CONGELAMENTO DE FILTROS =================
@@ -9437,7 +9524,7 @@
                             let vPendente = pendente > 0 ? `<span class="clickable-cell" style="color:var(--danger);" onclick="window.abrirModalDetalhes('${placaRef}', 'PENDENTE')">${pendente}</span>` : "";
                             let p_q_nfs = notasPernoite.length > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'PERNOITE')">${notasPernoite.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0).toFixed(2)}/${notasPernoite.length}</span>` : "";
                             let vRegiao = rota.regiao ? `<span class="clickable-cell" onclick="window.abrirModalRegiao('${rota.regiao}', '${rota.placa}')">${rota.regiao}</span>` : "";
-                            let vRealizada = realizada > 0 ? realizada : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
+                            let vRealizada = realizada > 0 ? `<span class="clickable-cell" onclick="window.abrirModalDetalhes('${placaRef}', 'ENTREGUE')">${realizada}</span>` : ""; let vPalete = (rota.vale_palete && rota.vale_palete !== "0" && trimUpper(rota.vale_palete) !== "NÃO") ? rota.vale_palete : ""; let vQtde = (rota.qtde && rota.qtde !== "0") ? rota.qtde : "";
 
                             const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'PERNOITE'];
                             let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
@@ -9469,7 +9556,7 @@
                                         ${getStRotaPill(rota.status)}
                                     </div>
                                 </td>
-                                <td style="color:var(--accent); font-weight:700;">${qtd_nf}</td>
+                                <td class="clickable-cell" style="color:var(--accent); font-weight:700; text-decoration: underline;" onclick="window.redirecionarParaNotas('${placaRef}', '${dataSel}', event)" title="Ver notas fiscais deste veículo na tela de Operação">${qtd_nf}</td>
                                 <td class="hide-mobile" style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
                                 <td class="hide-mobile">${formatNumber(rota.km)}</td>
                                 <td title="${rota.regiao}">${vRegiao}</td>
@@ -9486,8 +9573,7 @@
                                 </td>
                                 <td class="hide-mobile" style="font-weight:700;">${vPendente}</td>
                                 <td class="hide-mobile" style="color:var(--success); font-weight:700;">${vRealizada}</td>
-                                <td class="hide-mobile" style="font-weight:700;">${percentApp > 0 ? percentApp + '%' : ''}</td>
-                                <td class="hide-mobile" align="center">${cemPorcentoAss}</td>
+                                <td class="hide-mobile" style="font-weight:700;">${percentApp > 0 && percentApp < 100 ? `<span class="clickable-cell" style="text-decoration: underline; cursor: pointer;" onclick="window.abrirModalDetalhes('${placaRef}', 'SEM_APP')" title="Ver notas entregues que estão sem anexo no sistema">${percentApp}%</span>` : (percentApp === 100 ? '100%' : '')}</td>
                                 <td class="hide-mobile">${vPalete}</td>
                                 <td class="hide-mobile">${vQtde}</td>
                             </tr>`;
@@ -9735,6 +9821,81 @@
 
             } catch (e) { console.error("Erro nas notas:", e); hideLoader(); }
         });
+
+        // =========================================================================
+        // 🟢 FUNÇÃO PARA NAVEGAR DO PAINEL DIRETO PARA AS NOTAS DA PLACA (INTEGRADO AO FILTRO EXCEL)
+        // =========================================================================
+        window.redirecionarParaNotas = function(placa, dataPainel, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            // 1. Navega para a aba de Notas Fiscais
+            const abaNotas = document.querySelector('.menu-item[data-target="view-notas"]');
+            if (abaNotas) abaNotas.click();
+
+            // 2. Ajusta a data
+            const inputDataNotas = document.getElementById('notas-data-select');
+            if (inputDataNotas && inputDataNotas.value !== dataPainel) {
+                inputDataNotas.value = dataPainel;
+            }
+
+            // 3. Limpa filtros anteriores da tabela para não gerar conflito
+            if (typeof activeFilters !== 'undefined' && activeFilters['tabela-operacao-notas']) {
+                activeFilters['tabela-operacao-notas'] = {};
+                if (window.linhasCongeladas) window.linhasCongeladas['tabela-operacao-notas'] = null;
+                document.querySelectorAll('#tabela-operacao-notas .filter-icon').forEach(i => i.classList.remove('filter-active'));
+            }
+
+            // 4. Dispara a busca no banco de dados para carregar as notas
+            const btnCarregar = document.getElementById('btn-carregar-notas');
+            if (btnCarregar) btnCarregar.click();
+
+            // 5. Aguarda a renderização (Firebase) e injeta os dados direto no motor do Filtro Excel
+            let tentativas = 0;
+            const intervaloFiltro = setInterval(() => {
+                tentativas++;
+                const tbody = document.querySelector('#tabela-operacao-notas tbody');
+                
+                // Verifica se a tabela já possui as linhas do Firebase desenhadas na tela
+                if ((tbody && tbody.children.length > 0 && !tbody.innerText.includes('Sem notas')) || tentativas > 25) {
+                    clearInterval(intervaloFiltro);
+                    
+                    // Dá um tempo milimétrico pro DOM processar as tags
+                    setTimeout(() => {
+                        let colIndexPlaca = -1;
+                        
+                        // Acha a coluna "Placa" de forma dinâmica verificando onde o data-live="placa" está
+                        const primeiraLinha = tbody.querySelector('tr');
+                        if (primeiraLinha) {
+                            const tds = Array.from(primeiraLinha.children);
+                            const tdPlaca = tds.find(td => td.dataset.live === 'placa');
+                            if (tdPlaca) colIndexPlaca = tdPlaca.cellIndex;
+                        }
+
+                        // Se encontrou a coluna da Placa e o filtro global existe
+                        if (colIndexPlaca !== -1 && typeof activeFilters !== 'undefined') {
+                            
+                            // A) Injeta a placa no objeto raiz do seu Filtro Excel
+                            activeFilters['tabela-operacao-notas'][colIndexPlaca] = [placa];
+                            
+                            // B) Acende a cor visual (azul escuro) no ícone do funil da coluna
+                            const theadTh = document.querySelector(`#tabela-operacao-notas thead th:nth-child(${colIndexPlaca + 1})`);
+                            if (theadTh) {
+                                const icon = theadTh.querySelector('.filter-icon');
+                                if (icon) icon.classList.add('filter-active');
+                            }
+
+                            // C) Executa a função oficial do seu filtro passando `true` (modo manual)
+                            if (typeof applyFilters === 'function') {
+                                applyFilters('tabela-operacao-notas', true);
+                            }
+                        }
+                    }, 300); 
+                }
+            }, 200); 
+        };
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
         
@@ -11618,6 +11779,40 @@
                 ? { image: window.logoIcaphiBase64, width: 120, margin: [0, 0, 0, 10] }
                 : { text: 'ICAPHI\nTRANSPORTES', fontSize: 16, bold: true, color: '#b91c1c' };
 
+            // Função auxiliar para organizar notas em 3 colunas internas no PDF
+            const criarTresColunasPDF = (lista, formatarItemFn, align = 'center') => {
+                if (!lista || lista.length === 0) {
+                    return { text: '\n', alignment: align, margin: [0, 2, 0, 2] };
+                }
+                if (lista.length === 1) {
+                    return { text: formatarItemFn(lista[0]), alignment: align, fontSize: 8, margin: [0, 2, 0, 2] };
+                }
+                if (lista.length === 2) {
+                    return {
+                        columns: [
+                            { text: formatarItemFn(lista[0]), width: '*', alignment: align, fontSize: 8 },
+                            { text: formatarItemFn(lista[1]), width: '*', alignment: align, fontSize: 8 }
+                        ],
+                        margin: [0, 2, 0, 2]
+                    };
+                }
+
+                // Divide a lista em 3 partes iguais
+                const tamanhoColuna = Math.ceil(lista.length / 3);
+                const col1 = lista.slice(0, tamanhoColuna).map(formatarItemFn).join('\n');
+                const col2 = lista.slice(tamanhoColuna, tamanhoColuna * 2).map(formatarItemFn).join('\n');
+                const col3 = lista.slice(tamanhoColuna * 2).map(formatarItemFn).join('\n');
+
+                return {
+                    columns: [
+                        { text: col1, width: '*', alignment: align, fontSize: 8 },
+                        { text: col2, width: '*', alignment: align, fontSize: 8 },
+                        { text: col3, width: '*', alignment: align, fontSize: 8 }
+                    ],
+                    margin: [0, 2, 0, 2]
+                };
+            };
+
             const docDefinition = {
                 pageSize: 'A4',
                 pageMargins: [30, 100, 30, 30], 
@@ -11699,9 +11894,9 @@
                                     { text: 'NOTAS PARCIAIS / OBSERVAÇÕES', alignment: 'center', bold: true, fillColor: '#f1f5f9' }
                                 ],
                                 [
-                                    { text: d.reentregas.map(n => cleanNF(n.nf)).join('\n') || '\n', alignment: 'center', margin: [0, 2, 0, 2] },
-                                    { text: d.devolucoes.map(n => cleanNF(n.nf)).join('\n') || '\n', alignment: 'center', margin: [0, 2, 0, 2] },
-                                    { text: d.parciais.map(n => `${cleanNF(n.nf)} - ${n.parcial}`).join('\n') || '\n', alignment: 'left', margin: [0, 2, 0, 2] }
+                                    criarTresColunasPDF(d.reentregas, n => cleanNF(n.nf), 'center'),
+                                    criarTresColunasPDF(d.devolucoes, n => cleanNF(n.nf), 'center'),
+                                    criarTresColunasPDF(d.parciais, n => `${cleanNF(n.nf)}\n${n.parcial}`, 'left')
                                 ]
                             ]
                         },
@@ -19885,6 +20080,213 @@
                     };
                 }
             }
+        };
+
+        // =========================================================================
+        // 🟢 1. ORDENAÇÃO AUTOMÁTICA (A-Z) DA LISTA DE VEÍCULOS
+        // =========================================================================
+        const seletorPlacaPC = document.getElementById('pc-placa');
+        if (seletorPlacaPC) {
+            const observerAZ = new MutationObserver(() => {
+                let options = Array.from(seletorPlacaPC.options);
+                if (options.length > 2) {
+                    const placeholder = options.shift(); // Remove "Selecione..." do topo
+                    
+                    // Verifica se a lista já está ordenada (para não entrar em loop infinito)
+                    const estaOrdenado = options.every((val, i, arr) => !i || (val.text >= arr[i - 1].text));
+                    
+                    if (!estaOrdenado) {
+                        observerAZ.disconnect(); // Pausa a observação
+                        options.sort((a, b) => a.text.localeCompare(b.text)); // Ordena A-Z
+                        seletorPlacaPC.innerHTML = ''; 
+                        seletorPlacaPC.appendChild(placeholder);
+                        options.forEach(opt => seletorPlacaPC.appendChild(opt)); 
+                        observerAZ.observe(seletorPlacaPC, { childList: true }); // Liga novamente
+                    }
+                }
+            });
+            observerAZ.observe(seletorPlacaPC, { childList: true });
+        }
+
+        // =========================================================================
+        // 🟢 2. FUNÇÃO QUE PREENCHE O RESUMO DA VIAGEM SELECIONADA
+        // =========================================================================
+        window.exibirResumoViagemSelecionada = function() {
+            const containerResumo = document.getElementById('resumo-rota-container');
+            const tabelaResumo = document.getElementById('tabela-dinamica-resumo');
+            const seletorPlaca = document.getElementById('pc-placa');
+            
+            // Some o bloco se não houver placa selecionada
+            if (!seletorPlaca || !seletorPlaca.value || seletorPlaca.value === "") {
+                if (containerResumo) containerResumo.style.display = 'none';
+                return;
+            }
+
+            const placaSelecionada = seletorPlaca.value;
+
+            if (!window.pcRotasCache || window.pcRotasCache.length === 0) {
+                if (containerResumo) containerResumo.style.display = 'none';
+                return;
+            }
+
+            const placaSelLimpa = placaSelecionada.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const selectViagemElem = document.getElementById('select-viagem-exportacao');
+            const containerViagem = document.getElementById('container-seletor-viagem');
+            const viagemSelecionada = (containerViagem && containerViagem.style.display !== 'none' && selectViagemElem) 
+                ? selectViagemElem.value 
+                : "";
+
+            // Localiza a Rota exata
+            const rotasDoVeiculo = window.pcRotasCache.filter(r => {
+                const pRota = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const pTroca = String(r.troca || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return (pTroca !== "") ? pTroca === placaSelLimpa : pRota === placaSelLimpa;
+            });
+
+            if (rotasDoVeiculo.length === 0) {
+                if (containerResumo) containerResumo.style.display = 'none';
+                return;
+            }
+
+            let rotaExata = rotasDoVeiculo[0];
+            if (viagemSelecionada && viagemSelecionada !== "") {
+                const achou = rotasDoVeiculo.find(r => String(r.transporte || "").trim() === viagemSelecionada);
+                if(achou) rotaExata = achou;
+            }
+
+            // Isola as Notas Fiscais exatas dessa rota
+            let notasDestaRota = [];
+            if (window.pcNotasCache) {
+                notasDestaRota = window.pcNotasCache.filter(n => {
+                    const pNota = String(n.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (pNota !== placaSelLimpa) return false;
+                    
+                    const viagemNota = String(n.viagem || "").trim();
+                    if (viagemSelecionada && viagemSelecionada !== "") {
+                        const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                        if (transpArray.length > 0 && viagemNota !== "") {
+                            return transpArray.some(t => viagemNota.includes(t));
+                        }
+                    }
+                    return true;
+                });
+            }
+
+            // MOTORISTA E PERFIL 
+            let motoristaFinal = rotaExata.motorista || "";
+            if (notasDestaRota.length > 0) {
+                const refMot = notasDestaRota.find(n => n.motorista && String(n.motorista).trim() !== "") || notasDestaRota[0];
+                motoristaFinal = refMot.motorista || motoristaFinal;
+            }
+            motoristaFinal = motoristaFinal.trim() !== "" ? motoristaFinal : "-";
+
+            const placaParaConsulta = (rotaExata.troca && rotaExata.troca.trim() !== "") ? rotaExata.troca : rotaExata.placa;
+            const infoViva = (window.placasCache && window.placasCache[placaParaConsulta.replace(/[^A-Z0-9]/gi, '')]) 
+                ? window.placasCache[placaParaConsulta.replace(/[^A-Z0-9]/gi, '')] 
+                : { perfil: rotaExata.perfil || "-" };
+
+            // Cálculos de Status
+            const trimUp = (s) => String(s || "").trim().toUpperCase();
+            let qtdNf = notasDestaRota.length;
+            let qtdDev = notasDestaRota.filter(n => ['DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA'].includes(trimUp(n.status))).length;
+            let qtdReen = notasDestaRota.filter(n => trimUp(n.status) === 'REENTREGA').length;
+            let qtdEntregue = notasDestaRota.filter(n => trimUp(n.status) === 'ENTREGUE').length;
+
+            // Cálculo exato de % APP
+            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+            let notasComApp = notasDestaRota.filter(n => (n.app && String(n.app).trim() !== "") || excecoesApp.includes(trimUp(n.status))).length;
+            let percApp = qtdNf > 0 ? Math.round((notasComApp / qtdNf) * 100) + '%' : '0%';
+
+            // ST.ROTA calculado na memória
+            const transpRotaStr = String(rotaExata.transporte || "").trim();
+            const idUnicoViagem = `${placaSelLimpa}_${transpRotaStr.replace(/\s+/g, '')}`;
+            
+            let stRotaVisual = "VERIFICANDO...";
+            if (window.cacheStatusVeiculos && window.cacheStatusVeiculos[idUnicoViagem]) {
+                stRotaVisual = window.cacheStatusVeiculos[idUnicoViagem];
+            } else {
+                const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'];
+                let pendente = notasDestaRota.filter(n => trimUp(n.status) === "" || pendentesList.includes(trimUp(n.status))).length;
+                if (qtdNf === 0) stRotaVisual = "";
+                else if (trimUp(rotaExata.status) === 'PARADA') stRotaVisual = "PARADA";
+                else if (qtdEntregue === qtdNf && qtdDev === 0 && qtdReen === 0) stRotaVisual = "VEÍCULO VAZIO";
+                else if ((qtdEntregue + qtdDev + qtdReen) === qtdNf) stRotaVisual = "FINALIZADO";
+                else if (pendente > 0 && pendente < 11) stRotaVisual = "PRÓXIMO DE TERMINAR";
+                else stRotaVisual = "EM ROTA";
+            }
+
+            // 🟢 FUNÇÃO QUE LÊ AS VARIÁVEIS DE COR DO CSS NATIVO
+            const getEstiloStRota = (status) => {
+                const s = trimUp(status);
+                switch (s) {
+                    case 'VEÍCULO VAZIO': return 'background: var(--st-vazio-bg); color: var(--st-vazio-txt); border: 1px solid var(--st-vazio-bd);';
+                    case 'PERNOITE': case 'PERNOITE/VIAGEM': return 'background: var(--st-pernoite-bg); color: var(--st-pernoite-txt); border: 1px solid var(--st-pernoite-bd);';
+                    case 'FINALIZADO': return 'background: var(--st-finalizado-bg); color: var(--st-finalizado-txt); border: 1px solid var(--st-finalizado-bd);';
+                    case 'PRÓXIMO DE TERMINAR': return 'background: var(--st-prox-bg); color: var(--st-prox-txt); border: 1px solid var(--st-prox-bd);';
+                    case 'EM ROTA': return 'background: var(--st-emrota-bg); color: var(--st-emrota-txt); border: 1px solid var(--st-emrota-bd);';
+                    case 'AGUARDANDO NO CLIENTE': case 'AGUARDANDO': return 'background: var(--st-aguardando-bg); color: var(--st-aguardando-txt); border: 1px solid var(--st-aguardando-bd);';
+                    case 'TRAFEGANDO': return 'background: var(--st-trafegando-bg); color: var(--st-trafegando-txt); border: 1px solid var(--st-trafegando-bd);';
+                    case 'DESCARREGANDO': return 'background: var(--st-desc-bg); color: var(--st-desc-txt); border: 1px solid var(--st-desc-bd);';
+                    case 'PARADA': case 'SINISTRADA': case 'SINISTRADO': return 'background: var(--st-parada-bg); color: var(--st-parada-txt); border: 1px solid var(--st-parada-bd);';
+                    case 'DEVOLUÇÃO': return 'background: var(--st-dev-bg); color: var(--st-dev-txt); border: 1px solid var(--st-dev-bd);';
+                    case 'REENTREGA': return 'background: var(--st-reen-bg); color: var(--st-reen-txt); border: 1px solid var(--st-reen-bd);';
+                    case 'ENTREGUE': case 'REALIZADA': return 'background: var(--st-entregue-bg); color: var(--st-entregue-txt); border: 1px solid var(--st-entregue-bd);';
+                    default: return 'background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);';
+                }
+            };
+
+            // MONTAGEM DINÂMICA DE COLUNAS
+            const colunas = [];
+            
+            colunas.push({ head: 'PLACA', val: `<span style="font-weight:700;">${rotaExata.placa || "-"}</span>` });
+            
+            if (rotaExata.troca && String(rotaExata.troca).trim() !== "") {
+                colunas.push({ head: 'TROCA', val: `<span style="font-weight:800; color:var(--warning);">${rotaExata.troca}</span>` });
+            }
+            
+            if (infoViva.perfil && String(infoViva.perfil).trim() !== "" && infoViva.perfil !== "-") {
+                colunas.push({ head: 'PERFIL', val: infoViva.perfil });
+            }
+
+            colunas.push({ head: 'TRANS.', val: `<span style="font-weight:600;">${rotaExata.transporte || "-"}</span>` });
+            
+            if (motoristaFinal !== "-") {
+                colunas.push({ head: 'MOT.', val: `<span style="color:var(--accent); font-weight:600;">${motoristaFinal}</span>` });
+            }
+
+            colunas.push({ head: 'ST. PAINEL', val: `<span style="background: var(--bg-body); padding: 4px 8px; border-radius: 4px; font-weight: 600;">${rotaExata.status || "-"}</span>` });
+            colunas.push({ head: 'Q.NF', val: `<span style="color:var(--accent); font-weight:700;">${qtdNf}</span>` });
+            
+            // 🟢 AQUI: Fundo, texto e borda dinâmicos aplicados com o CSS nativo 
+            colunas.push({ 
+                head: 'ST. ROTA', 
+                val: `<span style="padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 10px; display: inline-block; ${getEstiloStRota(stRotaVisual)}">${stRotaVisual}</span>` 
+            });
+            
+            colunas.push({ head: '% APP', val: `<span style="font-weight:700;">${percApp}</span>` });
+
+            if (qtdDev > 0) {
+                colunas.push({ head: 'DEV', val: `<span style="color:#ef4444; font-weight:800;">${qtdDev}</span>` });
+            }
+            if (qtdReen > 0) {
+                colunas.push({ head: 'REEN', val: `<span style="color:#f59e0b; font-weight:800;">${qtdReen}</span>` });
+            }
+
+            // Injeta a Tabela
+            const theadHtml = `
+                <tr style="background: var(--bg-hover); color: var(--text-muted);">
+                    ${colunas.map(c => `<th style="padding: 10px; border-bottom: 1px solid var(--border-color);">${c.head}</th>`).join('')}
+                </tr>
+            `;
+            const tbodyHtml = `
+                <tr style="background: var(--bg-panel); color: var(--text-color);">
+                    ${colunas.map(c => `<td style="padding: 12px 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle;">${c.val}</td>`).join('')}
+                </tr>
+            `;
+
+            tabelaResumo.innerHTML = `<thead>${theadHtml}</thead><tbody>${tbodyHtml}</tbody>`;
+
+            if (containerResumo) containerResumo.style.display = 'block';
         };
 
     </script>
