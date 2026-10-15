@@ -15404,44 +15404,180 @@
                 return alert("Não há dados na tabela para exportar.");
             }
 
-            let dadosParaPlanilha = [];
+            let registrosExcel = [];
 
+            // Conversor de data para o padrão do Excel
+            const converterDataExcel = (dataStr) => {
+                if (!dataStr) return "";
+                if (dataStr.includes('-')) {
+                    const [y, m, d] = dataStr.split('-');
+                    return new Date(y, m - 1, d);
+                }
+                if (dataStr.includes('/')) {
+                    const [d, m, y] = dataStr.split('/');
+                    return new Date(y, m - 1, d);
+                }
+                return dataStr;
+            };
+
+            // Montando a matriz de dados formatados
             for (const [nf, dados] of Object.entries(window.cacheRastreioNFs)) {
                 if (!dados.historico || dados.historico.length === 0) continue;
 
                 dados.historico.forEach((n, index) => {
-                    dadosParaPlanilha.push({
+                    registrosExcel.push({
                         "NF": cleanNF(n.nf || nf),
-                        "Viagem": n.viagem || "",
-                        "Data Operação": n.data || "",
-                        "Peso": n.peso || "",
-                        "Qtde": n.qtde || "",
-                        "Cliente": n.cliente || "",
-                        "Cidade": n.cidade || "",
-                        "Bairro": n.bairro || "",
-                        "Endereço": n.endereco || "",
-                        "Placa": n.placa || "",
-                        "Motorista": n.motorista || "",
-                        "Telefone": n.telefone || "",
-                        "Status": n.status || "EM ROTA",
-                        "Observação": n.obs || "",
-                        "Nº Parcial": n.parcial || "",
-                        "App": n.app || "",
-                        "Histórico (Sequência)": `Passo ${index + 1} de ${dados.historico.length}`
+                        "VIAGEM": n.viagem || "",
+                        "DATA OP.": converterDataExcel(n.data || ""),
+                        "PESO": n.peso ? parseFloat(n.peso) : 0,
+                        "QTDE": n.qtde ? parseInt(n.qtde) : 0,
+                        "CLIENTE": n.cliente || "",
+                        "CIDADE": n.cidade || "",
+                        "BAIRRO": n.bairro || "",
+                        "ENDEREÇO": n.endereco || "",
+                        "PLACA": n.placa || "",
+                        "MOT.": n.motorista || "",
+                        "TELEFONE": n.telefone || "",
+                        "STATUS": n.status || "EM ROTA",
+                        "OBS": n.obs || "",
+                        "PARCIAL": n.parcial || "",
+                        "APP": n.app || "",
+                        "HISTÓRICO": `Passo ${index + 1} de ${dados.historico.length}`
                     });
                 });
             }
 
-            if (dadosParaPlanilha.length === 0) {
+            if (registrosExcel.length === 0) {
                 return alert("Nenhum dado válido encontrado para gerar a planilha.");
             }
 
-            const worksheet = XLSX.utils.json_to_sheet(dadosParaPlanilha);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Rastreio Completo");
+            // ========== CONSTRUÇÃO DO HTML ESTILO EXCEL ==========
+            let htmlStr = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8">
+            <style>
+                tr { height: 20px; mso-height-source: userset; }
+                td { 
+                    border: 1px solid #d1d5db; 
+                    padding: 4px 6px; 
+                    vertical-align: middle; 
+                    font-size: 10pt; 
+                    font-family: sans-serif;
+                    mso-number-format: "\\@"; 
+                    white-space: nowrap; 
+                }
+            </style>
+            </head><body>
+            <table style="border-collapse: collapse; table-layout: fixed; width: 100%;">`;
 
+            const colunas = Object.keys(registrosExcel[0]);
+
+            // Definição das larguras dinâmicas
+            htmlStr += `<colgroup>`;
+            colunas.forEach(col => {
+                let w = "60px";
+                const c = col.toUpperCase();
+                if (c.includes("PLACA") || c.includes("QTDE")) w = "65px";
+                if (c.includes("DATA") || c.includes("PESO") || c.includes("APP") || c.includes("VIAGEM")) w = "75px";
+                if (c.includes("TELEFONE")) w = "90px";
+                if (c.includes("MOT.") || c.includes("CIDADE") || c.includes("BAIRRO") || c.includes("HISTÓRICO")) w = "100px";
+                if (c.includes("STATUS") || c.includes("OBS") || c.includes("ENDEREÇO") || c.includes("CLIENTE")) w = "150px";
+                htmlStr += `<col style="width: ${w};">`;
+            });
+            htmlStr += `</colgroup>`;
+
+            // Cabeçalho da tabela
+            htmlStr += `<tr>`;
+            colunas.forEach(col => {
+                htmlStr += `<th style="background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 6px 8px; text-align: center; font-size: 10pt; font-family: sans-serif;">${col}</th>`;
+            });
+            htmlStr += `</tr>`;
+
+            // Função de cor exclusiva para o Status
+            const getHexStRotaBackgroundAndText = (val) => {
+                const s = String(val).trim().toUpperCase();
+                if (s.includes('VAZIO')) return 'background-color:#eff6ff; color:#2563eb;';
+                if (s.includes('PERNOITE')) return 'background-color:#dfc2b1; color:#78350f;';
+                if (s.includes('FINALIZADO') || s.includes('ENTREGUE')) return 'background-color:#fdf2f8; color:#db2777;'; 
+                if (s.includes('PRÓXIMO') || s.includes('TERMINAR')) return 'background-color:#fefce8; color:#ca8a04;';
+                if (s.includes('EM ROTA')) return 'background-color:#f8fafc; color:#64748b;';
+                if (s.includes('AGUARDANDO')) return 'background-color:#a2eaee; color:#0891b2;';
+                if (s.includes('TRAFEGANDO')) return 'background-color:#fdcb8d; color:#ea580c;';
+                if (s.includes('DESCARREGANDO')) return 'background-color:#faf5ff; color:#9333ea;';
+                if (s.includes('PARADA')) return 'background-color:#fef2f2; color:#dc2626;';
+                if (s.includes('SINISTRADA') || s.includes('DEVOLUÇÃO')) return 'background-color:#ff6d6d; color:#7f1d1d;';
+                if (s.includes('REENTREGA')) return 'background-color:#fdba74; color:#c2410c;';
+                return 'background-color:#e5e7eb; color:#374151;';
+            };
+
+            // Laço inserindo cada nota fiscal e tratando valores
+            registrosExcel.forEach(reg => {
+                htmlStr += `<tr>`;
+                
+                colunas.forEach(col => {
+                    let val = reg[col];
+                    if (val === undefined || val === null) val = "";
+                    
+                    const cUpper = col.toUpperCase();
+                    let align = 'left';
+                    
+                    const isNumericCol = ['PESO', 'QTDE'].includes(cUpper);
+                    if (isNumericCol) align = 'center';
+
+                    // Datas
+                    if (val instanceof Date) {
+                        let d = String(val.getDate()).padStart(2, '0');
+                        let m = String(val.getMonth() + 1).padStart(2, '0');
+                        htmlStr += `<td style="background-color: #ffffff; text-align: center; color: #000000; mso-number-format: 'Short Date';">${d}/${m}/${val.getFullYear()}</td>`;
+                        return;
+                    }
+
+                    // Números (Peso/Qtde)
+                    if (isNumericCol && val !== "" && !isNaN(val)) {
+                        let numVal = Number(val);
+                        let formatNum = Number.isInteger(numVal) ? "0" : "0.00";
+                        let valorParaOExcel = String(numVal).replace('.', ',');
+                        htmlStr += `<td style="background-color: #ffffff; color: #000000; text-align: ${align}; mso-number-format: '${formatNum}';">${valorParaOExcel}</td>`;
+                        return;
+                    }
+
+                    // Status e Formatações Especiais
+                    if (col === "APP" && val !== "") {
+                        let corApp = "#000000"; 
+                        let valUpper = String(val).trim().toUpperCase();
+                        if (valUpper === "ANEXADO") corApp = "#2563eb"; 
+                        if (valUpper === "FOTO") corApp = "#16a34a"; 
+                        htmlStr += `<td style="background-color: #ffffff; color: ${corApp}; font-weight: bold; text-align: center; mso-number-format: '\\@';">${val}</td>`;
+                    }
+                    else if (col === "STATUS" && val !== "") {
+                        let estiloStRota = getHexStRotaBackgroundAndText(val);
+                        htmlStr += `<td style="${estiloStRota} font-weight: bold; text-align: center; border: 1px solid #d1d5db; padding: 4px 6px; mso-number-format: '\\@';">${val}</td>`;
+                    } 
+                    else if (['PLACA', 'NF', 'VIAGEM'].includes(col)) {
+                        htmlStr += `<td style="background-color: #ffffff; color: #000000; font-weight: bold; text-align: ${align}; mso-number-format: '\\@';">${val}</td>`;
+                    }
+                    else {
+                        htmlStr += `<td style="background-color: #ffffff; color: #000000; text-align: ${align}; mso-number-format: '\\@';">${val}</td>`;
+                    }
+                });
+                
+                htmlStr += `</tr>`;
+            });
+
+            htmlStr += `</table></body></html>`;
+
+            // ========== DOWNLOAD ==========
+            const blob = new Blob([htmlStr], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
             const dataAtual = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(workbook, `Rastreio_Global_Notas_${dataAtual}.xlsx`);
+            a.download = `Rastreio_Global_Notas_${dataAtual}.xls`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         // ================= MOTOR DE AUDITORIA DE EXCEÇÕES TRAVADAS =================
