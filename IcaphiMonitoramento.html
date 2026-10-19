@@ -3492,7 +3492,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.2</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.3</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5397,31 +5397,39 @@
                 </div>
 
                 <!-- ================= BLOCO INFERIOR (LARGURA TOTAL): EDITOR DE LAYOUT ================= -->
-                <div style="background: var(--bg-table-row-alt); padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
-                    <strong style="display: block; font-size: 14px; margin-bottom: 5px;">Editor de Layout Avançado</strong>
-                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 12px;">Comportamento de redimensionamento idêntico ao Excel.</span>
+                <div style="background: var(--bg-table-row-alt); padding: 18px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+                    <strong style="display: block; font-size: 14px; margin-bottom: 4px; color: var(--text-main);">Personalização de Layout do Painel</strong>
+                    <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 15px;">Redimensione colunas, linhas e ajuste a fonte das tabelas diretamente na tela de monitoramento.</span>
 
-                    <div id="auth-layout-container" style="display: flex; gap: 10px;">
-                        <input type="password" id="input-senha-layout" placeholder="Senha de ativação..." style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;">
-                        <button class="btn btn-primary" id="btn-auth-layout">Desbloquear</button>
-                    </div>
-
-                    <div id="controls-layout-container" style="display: none; flex-direction: column; gap: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--success); font-size: 12px; font-weight: 700;">✅ Modo Edição Ativo</span>
-                            <div style="display: flex; gap: 5px;">
-                                <button class="btn btn-sm btn-danger" id="btn-cancelar-layout">Cancelar</button>
-                                <button class="btn btn-sm btn-success" id="btn-salvar-layout">Salvar</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px;">TAMANHO DA FONTE: <span id="lbl-font-val">12px</span></label>
-                            <input type="range" id="slider-font-tabela" min="8" max="24" value="12" style="width: 100%;">
-                        </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="window.ativarModoEditorLayout()" style="display: flex; align-items: center; gap: 6px;">
+                            <i class="ph ph-layout" style="font-size: 1.1rem;"></i> Ativar Editor de Layout
+                        </button>
+                        <button class="btn btn-danger" onclick="window.redefinirLayoutPadrao()" style="display: flex; align-items: center; gap: 6px;">
+                            <i class="ph ph-arrow-counter-clockwise" style="font-size: 1.1rem;"></i> Redefinir Layout Padrão
+                        </button>
                     </div>
                 </div>
 
             </div>
+        </div>
+    </div>
+
+    <!-- ================= BLOCO FLUTUANTE FIXO (TOPO DA TELA) ================= -->
+    <div id="floating-layout-editor" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; background: var(--bg-card, #1e293b); color: var(--text-main, #ffffff); padding: 10px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--accent, #2563eb); align-items: center; gap: 18px; min-width: 500px; backdrop-filter: blur(8px);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 10px; height: 10px; background-color: var(--success, #22c55e); border-radius: 50%; box-shadow: 0 0 10px var(--success, #22c55e);"></span>
+            <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modo Editor Ativo</span>
+        </div>
+
+        <div style="flex: 1; display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--border-color, rgba(255,255,255,0.15)); padding-left: 15px;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">FONTE: <span id="lbl-font-val">12px</span></label>
+            <input type="range" id="slider-font-tabela" min="8" max="22" value="12" style="width: 90px; cursor: pointer;">
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-danger" onclick="window.cancelarLayoutEditado()" style="padding: 6px 12px; font-size: 12px; font-weight: 600;">Cancelar</button>
+            <button class="btn btn-sm btn-success" onclick="window.salvarLayoutEditado()" style="padding: 6px 14px; font-size: 12px; font-weight: 600;">Salvar Layout</button>
         </div>
     </div>
 
@@ -11142,8 +11150,7 @@
 
         
 
-        // ================= EDITOR DE LAYOUT AVANÇADO (EXCEL MODE) =================
-        const senhaAdminLayout = "60010774@Icaphi";
+        // ================= EDITOR DE LAYOUT AVANÇADO (SEM SENHA E FLUTUANTE) =================
         let layoutDesbloqueado = false;
 
         // Memória de cache para rollback (Cancelar) e persistência
@@ -11185,25 +11192,30 @@
                 });
             }
         }
-        // Inicializa a persistência assim que o script roda
+
+        // Inicializa a persistência
         carregarMemoriaLayout();
         aplicarLayoutSalvo();
 
-        // --- FUNÇÕES DE CONTROLE ---
+        // --- FUNÇÕES DE CAPTURA E LIMPEZA ---
         function capturarEstadoOriginal() {
             estadoOriginal.colunas = [];
             document.querySelectorAll('colgroup col').forEach(col => {
                 estadoOriginal.colunas.push({ element: col, width: col.style.width || window.getComputedStyle(col).width });
             });
+
             estadoOriginal.linhas = [];
             document.querySelectorAll('tbody tr').forEach(tr => {
                 estadoOriginal.linhas.push({ element: tr, height: tr.style.height || window.getComputedStyle(tr).height });
             });
+
             const rootFontSize = document.documentElement.style.getPropertyValue('--tb-font-size');
             estadoOriginal.fonte = rootFontSize ? rootFontSize.replace('px', '') : "12";
 
-            document.getElementById('slider-font-tabela').value = estadoOriginal.fonte;
-            document.getElementById('lbl-font-val').innerText = estadoOriginal.fonte + "px";
+            const slider = document.getElementById('slider-font-tabela');
+            const lbl = document.getElementById('lbl-font-val');
+            if (slider) slider.value = estadoOriginal.fonte;
+            if (lbl) lbl.innerText = estadoOriginal.fonte + "px";
         }
 
         function removerHandlesEdicao() {
@@ -11213,41 +11225,71 @@
 
         function encerrarModoEdicao() {
             layoutDesbloqueado = false;
-            document.getElementById('auth-layout-container').style.display = 'flex';
-            document.getElementById('controls-layout-container').style.display = 'none';
-            document.getElementById('input-senha-layout').value = '';
+            const floatingBar = document.getElementById('floating-layout-editor');
+            if (floatingBar) floatingBar.style.display = 'none';
             removerHandlesEdicao();
         }
 
-        // Fluxo de Autenticação
-        document.getElementById('btn-auth-layout').addEventListener('click', () => {
-            if (document.getElementById('input-senha-layout').value === senhaAdminLayout) {
-                layoutDesbloqueado = true;
-                capturarEstadoOriginal();
-                document.getElementById('auth-layout-container').style.display = 'none';
-                document.getElementById('controls-layout-container').style.display = 'flex';
-                ativarRedimensionamentoColunas();
-                injetarRowResizers();
-            } else {
-                alert("Senha incorreta.");
+        // --- FLUXO PRINCIPAL: ATIVAR, REDEFINIR, SALVAR E CANCELAR ---
+
+        // 1. Ativar Modo Editor (Navega para o Monitoramento, fecha Configurações e abre o bloco flutuante)
+        window.ativarModoEditorLayout = function() {
+            layoutDesbloqueado = true;
+            capturarEstadoOriginal();
+
+            // 🟢 FECHA O MODAL DE CONFIGURAÇÕES
+            const modalConfig = document.getElementById('modal-config');
+            if (modalConfig) {
+                modalConfig.classList.remove('active'); // Remove a classe que mantém ele aberto
             }
-        });
+            
+            // (Opcional) Se você usa a função global de fechar, garante que vai fechar:
+            if (typeof window.fecharModal === 'function') {
+                window.fecharModal('modal-config');
+            }
 
-        // Fluxo de Cancelamento (Rollback)
-        document.getElementById('btn-cancelar-layout').addEventListener('click', () => {
-            estadoOriginal.colunas.forEach(obj => { if (obj.element) obj.element.style.width = obj.width; });
-            estadoOriginal.linhas.forEach(obj => {
-                if (obj.element) {
-                    obj.element.style.height = obj.height;
-                    obj.element.querySelectorAll('td').forEach(td => td.style.height = obj.height);
-                }
+            // Redireciona automaticamente para a tela de Monitoramento
+            const btnMenuMonitoramento = document.querySelector('[data-target="view-monitoramento"]');
+            if (btnMenuMonitoramento) {
+                btnMenuMonitoramento.click();
+            } else {
+                document.querySelectorAll('.view-section').forEach(sec => sec.style.display = 'none');
+                const viewMon = document.getElementById('view-monitoramento');
+                if (viewMon) viewMon.style.display = 'block';
+            }
+
+            // Exibe a barra flutuante no topo
+            const floatingBar = document.getElementById('floating-layout-editor');
+            if (floatingBar) floatingBar.style.display = 'flex';
+
+            ativarRedimensionamentoColunas();
+            injetarRowResizers();
+        };
+
+        // 2. Redefinir para o Layout Padrão do Sistema
+        window.redefinirLayoutPadrao = function() {
+            if (!confirm("Tem certeza que deseja redefinir o layout das tabelas para o padrão original do sistema?")) return;
+
+            localStorage.removeItem('icaphi_layout_prefs');
+            layoutSalvoEmMemoria = null;
+
+            // Reseta variáveis CSS e estilos aplicados nas células
+            document.documentElement.style.removeProperty('--tb-font-size');
+
+            document.querySelectorAll('colgroup col').forEach(col => {
+                col.style.width = '';
             });
-            document.documentElement.style.setProperty('--tb-font-size', estadoOriginal.fonte + 'px');
-            encerrarModoEdicao();
-        });
 
-        // Fluxo de Salvamento (Commit no LocalStorage)
-        document.getElementById('btn-salvar-layout').addEventListener('click', () => {
+            document.querySelectorAll('tbody tr').forEach(tr => {
+                tr.style.height = '';
+                tr.querySelectorAll('td').forEach(td => td.style.height = '');
+            });
+
+            alert("Layout redefinido para o padrão com sucesso!");
+        };
+
+        // 3. Salvar Layout no LocalStorage
+        window.salvarLayoutEditado = function() {
             const configToSave = {
                 fonte: document.documentElement.style.getPropertyValue('--tb-font-size') || '12px',
                 colunas: [],
@@ -11263,89 +11305,66 @@
             });
 
             localStorage.setItem('icaphi_layout_prefs', JSON.stringify(configToSave));
-            carregarMemoriaLayout(); // Atualiza a variável de memória
+            carregarMemoriaLayout();
             encerrarModoEdicao();
-        });
+            alert("Layout salvo com sucesso!");
+        };
 
-        // Alteração de Fonte via Slider
-        document.getElementById('slider-font-tabela').addEventListener('input', (e) => {
-            const val = e.target.value;
-            document.getElementById('lbl-font-val').innerText = val + "px";
-            document.documentElement.style.setProperty('--tb-font-size', val + 'px');
-        });
-
-        // Manipulação de Colunas
-        function ativarRedimensionamentoColunas() {
-            if (!layoutDesbloqueado) return;
-            document.querySelectorAll('table').forEach(table => {
-                const cols = table.querySelectorAll('colgroup col');
-                const ths = table.querySelectorAll('thead th');
-
-                if (cols.length > 0 && ths.length > 0) {
-                    ths.forEach((th, i) => {
-                        if (cols[i]) {
-                            const rect = th.getBoundingClientRect();
-                            if (!cols[i].style.width) cols[i].style.width = rect.width + 'px';
-                        }
-                        if (!th.querySelector('.resizer-col')) {
-                            const resizer = document.createElement('div');
-                            resizer.classList.add('resizer-col');
-                            th.appendChild(resizer);
-
-                            let startX, startWidth;
-                            resizer.addEventListener('mousedown', (e) => {
-                                startX = e.clientX;
-                                startWidth = parseFloat(window.getComputedStyle(th).width);
-                                document.body.classList.add('is-resizing');
-                                document.body.style.cursor = 'col-resize';
-                                resizer.classList.add('resizing');
-
-                                const onMouseMove = (ev) => {
-                                    const newWidth = startWidth + (ev.clientX - startX);
-                                    if (cols[i]) cols[i].style.width = `${Math.max(20, newWidth)}px`;
-                                };
-
-                                const onMouseUp = () => {
-                                    document.body.classList.remove('is-resizing');
-                                    document.body.style.cursor = '';
-                                    resizer.classList.remove('resizing');
-                                    document.removeEventListener('mousemove', onMouseMove);
-                                    document.removeEventListener('mouseup', onMouseUp);
-                                };
-
-                                document.addEventListener('mousemove', onMouseMove);
-                                document.addEventListener('mouseup', onMouseUp);
-                            });
-                        }
-                    });
+        // 4. Cancelar Alterações (Rollback)
+        window.cancelarLayoutEditado = function() {
+            estadoOriginal.colunas.forEach(obj => { if (obj.element) obj.element.style.width = obj.width; });
+            estadoOriginal.linhas.forEach(obj => {
+                if (obj.element) {
+                    obj.element.style.height = obj.height;
+                    obj.element.querySelectorAll('td').forEach(td => td.style.height = obj.height);
                 }
             });
-        }
+            document.documentElement.style.setProperty('--tb-font-size', estadoOriginal.fonte + 'px');
+            encerrarModoEdicao();
+        };
 
-        // Manipulação de Linhas
-        function injetarRowResizers() {
-            if (!layoutDesbloqueado) return;
-            document.querySelectorAll('tbody tr').forEach(tr => {
-                if (tr.dataset.resizerInjected) return;
-                tr.dataset.resizerInjected = "true";
+        // Listener do Slider de Fonte Flutuante
+document.addEventListener('DOMContentLoaded', () => {
+    const sliderFont = document.getElementById('slider-font-tabela');
+    if (sliderFont) {
+        sliderFont.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const lbl = document.getElementById('lbl-font-val');
+            if (lbl) lbl.innerText = val + "px";
+            document.documentElement.style.setProperty('--tb-font-size', val + 'px');
+        });
+    }
+});
 
-                tr.querySelectorAll('td').forEach(td => {
+// --- CONTROLES DE REDIMENSIONAMENTO ---
+function ativarRedimensionamentoColunas() {
+    if (!layoutDesbloqueado) return;
+    document.querySelectorAll('table').forEach(table => {
+        const cols = table.querySelectorAll('colgroup col');
+        const ths = table.querySelectorAll('thead th');
+
+        if (cols.length > 0 && ths.length > 0) {
+            ths.forEach((th, i) => {
+                if (cols[i]) {
+                    const rect = th.getBoundingClientRect();
+                    if (!cols[i].style.width) cols[i].style.width = rect.width + 'px';
+                }
+                if (!th.querySelector('.resizer-col')) {
                     const resizer = document.createElement('div');
-                    resizer.classList.add('resizer-row');
-                    td.appendChild(resizer);
+                    resizer.classList.add('resizer-col');
+                    th.appendChild(resizer);
 
-                    let startY, startHeight;
+                    let startX, startWidth;
                     resizer.addEventListener('mousedown', (e) => {
-                        startY = e.clientY;
-                        startHeight = parseFloat(window.getComputedStyle(tr).height);
+                        startX = e.clientX;
+                        startWidth = parseFloat(window.getComputedStyle(th).width);
                         document.body.classList.add('is-resizing');
-                        document.body.style.cursor = 'row-resize';
+                        document.body.style.cursor = 'col-resize';
                         resizer.classList.add('resizing');
 
                         const onMouseMove = (ev) => {
-                            const newHeight = startHeight + (ev.clientY - startY);
-                            tr.style.height = `${Math.max(26, newHeight)}px`;
-                            tr.querySelectorAll('td').forEach(t => t.style.height = `${Math.max(26, newHeight)}px`);
+                            const newWidth = startWidth + (ev.clientX - startX);
+                            if (cols[i]) cols[i].style.width = `${Math.max(20, newWidth)}px`;
                         };
 
                         const onMouseUp = () => {
@@ -11359,19 +11378,60 @@
                         document.addEventListener('mousemove', onMouseMove);
                         document.addEventListener('mouseup', onMouseUp);
                     });
-                });
+                }
             });
         }
+    });
+}
 
-        // Observer que reaplica o layout toda vez que o corpo da tabela muda (filtros, paginação, reloads)
-        const observerTabelas = new MutationObserver(() => {
-            aplicarLayoutSalvo();
-            if (layoutDesbloqueado) injetarRowResizers();
-        });
-        document.querySelectorAll('tbody').forEach(tbody => {
-            observerTabelas.observe(tbody, { childList: true });
-        });
+function injetarRowResizers() {
+    if (!layoutDesbloqueado) return;
+    document.querySelectorAll('tbody tr').forEach(tr => {
+        if (tr.dataset.resizerInjected) return;
+        tr.dataset.resizerInjected = "true";
 
+        tr.querySelectorAll('td').forEach(td => {
+            const resizer = document.createElement('div');
+            resizer.classList.add('resizer-row');
+            td.appendChild(resizer);
+
+            let startY, startHeight;
+            resizer.addEventListener('mousedown', (e) => {
+                startY = e.clientY;
+                startHeight = parseFloat(window.getComputedStyle(tr).height);
+                document.body.classList.add('is-resizing');
+                document.body.style.cursor = 'row-resize';
+                resizer.classList.add('resizing');
+
+                const onMouseMove = (ev) => {
+                    const newHeight = startHeight + (ev.clientY - startY);
+                    tr.style.height = `${Math.max(26, newHeight)}px`;
+                    tr.style.querySelectorAll('td').forEach(t => t.style.height = `${Math.max(26, newHeight)}px`);
+                };
+
+                const onMouseUp = () => {
+                    document.body.classList.remove('is-resizing');
+                    document.body.style.cursor = '';
+                    resizer.classList.remove('resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        });
+    });
+}
+
+// Observer para re-aplicar o layout mantendo as dimensões personalizadas
+const observerTabelas = new MutationObserver(() => {
+    aplicarLayoutSalvo();
+    if (layoutDesbloqueado) injetarRowResizers();
+});
+document.querySelectorAll('tbody').forEach(tbody => {
+    observerTabelas.observe(tbody, { childList: true });
+});
 
         // ================= INTEGRAÇÃO OUTLOOK MSAL =================
         async function initOutlook() {
