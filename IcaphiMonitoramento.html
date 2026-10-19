@@ -3400,6 +3400,40 @@
         transition: background 0.2s;
     }
     .btn-dispensar-notificacao:hover { background: var(--bg-hover); color: var(--text-main); }
+    
+    #modal-painel-mobile {
+        position: fixed !important; 
+        top: 0 !important; 
+        left: 0 !important; 
+        right: 0 !important; 
+        bottom: 0 !important; 
+        width: 100% !important; 
+        height: 100% !important;
+        background: rgba(0,0,0,0.7) !important; 
+        z-index: 999999 !important; 
+        display: none; 
+        align-items: flex-end; 
+        justify-content: center; 
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .modal-content-bottom-sheet {
+        background: var(--bg-panel, #ffffff); 
+        width: 100%; 
+        max-width: 100vw;
+        max-height: 85vh; 
+        border-radius: 20px 20px 0 0; 
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.5); 
+        display: flex; 
+        flex-direction: column; 
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
 
     </style>
 </head>
@@ -3492,7 +3526,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.3</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.4</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -6342,26 +6376,24 @@
     </div>
 
     <!-- MODAL DE DETALHES DA ROTA (MOBILE) -->
-    <div id="modal-painel-mobile" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:flex-end; justify-content:center; padding-bottom:0;">
-        <div style="background: var(--bg-panel); width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; animation: slideUp 0.3s ease-out;">
-            
+    <div id="modal-painel-mobile">
+        <div class="modal-content-bottom-sheet">
             <!-- Header do Modal -->
-            <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-panel); z-index: 2; border-radius: 20px 20px 0 0;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-panel, #ffffff); z-index: 2; border-radius: 20px 20px 0 0;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div id="mob-st-rota" style="font-size: 24px;"></div>
+                    <div id="mob-st-rota" style="font-size: 24px; display: flex; align-items: center;"></div>
                     <div>
                         <h3 id="mob-placa" style="margin: 0; font-size: 20px; font-weight: 900; color: var(--text-main);"></h3>
                         <span id="mob-motorista" style="font-size: 12px; color: var(--accent); font-weight: 700;"></span>
                     </div>
                 </div>
-                <button onclick="document.getElementById('modal-painel-mobile').style.display='none'" style="background: var(--bg-card); border: none; width: 36px; height: 36px; border-radius: 50%; color: var(--text-muted); font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">&times;</button>
+                <button onclick="window.fecharModalPainelMobile()" style="background: var(--bg-card, #f1f5f9); border: none; width: 36px; height: 36px; border-radius: 50%; color: var(--text-muted); font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer;">&times;</button>
             </div>
 
             <!-- Corpo com as Informações -->
             <div style="padding: 20px; overflow-y: auto; flex: 1;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <!-- O JS vai injetar os blocos de dados aqui dentro -->
-                    <div id="mob-grid-dados" style="display: contents;"></div>
+                <div id="mob-grid-dados" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <!-- O JS injeta os blocos aqui -->
                 </div>
             </div>
         </div>
@@ -9758,13 +9790,54 @@
                             else if (stUpper.includes("FINALIZADO")) classeStatusLinha = "gradiente-finalizado";
                             else if (stUpper.includes("PERNOITE")) classeStatusLinha = "gradiente-pernoite";
 
-                            let linhaHtml = `<tr class="${classeStatusLinha}" data-st-rota="${stRotaCalc}" onclick="if(window.innerWidth <= 768) window.abrirModalPainelMobile('${placaRef}')">
+                            // =========================================================================
+                            // 🟢 REGISTRO DE DADOS DO MODAL MOBILE
+                            // =========================================================================
+
+                            if (typeof window._dadosPainelMobile === 'undefined') {
+                                window._dadosPainelMobile = {};
+                            }
+
+                            const idModalMobile = `${placaRef}_${transpRotaStr.replace(/\s+/g, '')}`;
+
+                            const dadosViagemMobile = {
+                                placa: rota.placa || '',
+                                troca: rota.troca || '',
+                                motorista: motoristaFinal || '',
+                                stRota: stRotaCalc || '',
+                                tipo: infoViva.tipo || rota.tipo || '',
+                                oc: rota.oc || '',
+                                transporte: transpRotaStr,
+                                contato: contatoFinal || '',
+                                peso: pesoTotal ? pesoTotal.toFixed(2).replace('.', ',') : '0',
+                                km: rota.km || '',
+                                ajudante: rota.ajudante || '',
+                                devolucao: devolucao > 0 ? devolucao : '',
+                                reentrega: reentrega > 0 ? reentrega : '',
+                                pernoite: p_q_nfs || '',
+                                parcial: teveParcialBool ? 'SIM' : '',
+                                pendente: pendente > 0 ? pendente : '',
+                                realizada: realizada > 0 ? realizada : '',
+                                app: percentApp > 0 ? `${percentApp}%` : '',
+                                cemAss: cemPorcentoAss || '',
+                                palete: vPalete || '',
+                                qtde: vQtde || ''
+                            };
+
+                            // Salva em ambas as chaves para evitar divergência
+                            window._dadosPainelMobile[placaRef] = dadosViagemMobile;
+                            window._dadosPainelMobile[idModalMobile] = dadosViagemMobile;
+
+                            // =========================================================================
+
+                            // Linha da Tabela com chamada direta da função
+                            let linhaHtml = `<tr class="${classeStatusLinha}" data-st-rota="${stRotaCalc}" onclick="window.abrirModalPainelMobile('${idModalMobile}')">
                                 <td style="font-weight:700;">${rota.placa}</td>
-                                <td style="font-weight:800; color:var(--warning);">${rota.troca}</td>
-                                <td>${infoViva.perfil}</td>
-                                <td class="hide-mobile">${infoViva.tipo}</td>
-                                <td class="hide-mobile">${rota.oc}</td>
-                                <td class="hide-mobile" title="${rota.transporte}">${rota.transporte}</td>
+                                <td style="font-weight:800; color:var(--warning);">${rota.troca || ""}</td>
+                                <td>${infoViva.perfil || "-"}</td>
+                                <td class="hide-mobile">${infoViva.tipo || "-"}</td>
+                                <td class="hide-mobile">${rota.oc || ""}</td>
+                                <td class="hide-mobile" title="${rota.transporte || ""}">${rota.transporte || ""}</td>
                                 <td style="color:var(--accent); font-weight:600;" title="${motoristaFinal}">${motoristaFinal}</td>
                                 <td class="hide-mobile" style="color:var(--accent);" title="${contatoFinal}">${contatoFinal}</td>
                                 <td style="font-weight:700; cursor:pointer;" onclick="window.verificarStatusFinanceiro('${placaRef}', '${dataSel}', '${transpRotaStr}', event)" title="Clique para ver Complementos / Prestação de contas">
@@ -9774,9 +9847,9 @@
                                 </td>
                                 <td class="clickable-cell" style="color:var(--accent); font-weight:700; text-decoration: underline;" onclick="window.redirecionarParaNotas('${placaRef}', '${dataSel}', event)" title="Ver notas fiscais deste veículo na tela de Operação">${qtd_nf}</td>
                                 <td class="hide-mobile" style="color:var(--accent); font-weight:700;">${pesoTotal.toFixed(2)}</td>
-                                <td class="hide-mobile">${formatNumber(rota.km)}</td>
-                                <td title="${rota.regiao}">${vRegiao}</td>
-                                <td class="hide-mobile" title="${rota.ajudante}">${rota.ajudante}</td>
+                                <td class="hide-mobile">${window.formatNumber ? window.formatNumber(rota.km) : (rota.km || "")}</td>
+                                <td title="${rota.regiao || ""}">${vRegiao}</td>
+                                <td class="hide-mobile" title="${rota.ajudante || ""}">${rota.ajudante || ""}</td>
                                 <td class="hide-mobile" style="color:var(--danger); font-weight:700;">${vDevolucao}</td>
                                 <td class="hide-mobile" style="color:var(--warning); font-weight:700;">${vReentrega}</td>
                                 <td class="hide-mobile" style="color:var(--text-muted); font-weight:700;">${p_q_nfs}</td>
@@ -16470,37 +16543,79 @@ document.querySelectorAll('tbody').forEach(tbody => {
             }, 150);
         };
 
-        window.abrirModalPainelMobile = (placaRef) => {
-            const d = window._dadosPainelMobile[placaRef];
-            if (!d) return;
+        // ================= MODAL MOBILE (CORRIGIDO COM FALLBACK E SCROLL LOCK) =================
+        window.abrirModalPainelMobile = function(chave) {
+            // Tolerância maior para abrir também em tablets (até 1024px)
+            if (window.innerWidth > 1024) return;
+            
+            let d = window._dadosPainelMobile ? window._dadosPainelMobile[chave] : null;
+            
+            // Fallback: Se não achar pela ID completa, procura os dados apenas pela placa
+            if (!d && window._dadosPainelMobile) {
+                const placaBusca = chave.split('_')[0];
+                d = window._dadosPainelMobile[placaBusca] || Object.values(window._dadosPainelMobile).find(x => x.placa === placaBusca);
+            }
 
-            document.getElementById('mob-placa').innerText = d.troca && d.troca.trim() !== "" ? `${d.placa} 🔄 ${d.troca}` : d.placa;
-            document.getElementById('mob-motorista').innerText = d.motorista;
-            document.getElementById('mob-st-rota').innerHTML = d.stRota;
+            if (!d) {
+                console.error("Dados não encontrados para abrir o modal. Chave:", chave);
+                return;
+            }
 
-            const box = (label, val, style = '') => val && val !== "" && val !== "0" ? `<div class="mob-dado-box"><span class="mob-dado-lbl">${label}</span><span class="mob-dado-val" style="${style}">${val}</span></div>` : '';
+            const elemPlaca = document.getElementById('mob-placa');
+            const elemMotorista = document.getElementById('mob-motorista');
+            const elemStRota = document.getElementById('mob-st-rota');
+            const elemGrid = document.getElementById('mob-grid-dados');
 
-            document.getElementById('mob-grid-dados').innerHTML = `
-                ${box('Tipo', d.tipo)}
-                ${box('O.C.', d.oc)}
-                ${box('Transporte', d.transporte)}
-                ${box('Contato', d.contato)}
-                ${box('Peso (KG)', d.peso)}
-                ${box('KM', d.km)}
-                ${box('Ajudante', d.ajudante)}
-                ${box('Devolução', d.devolucao, 'color:var(--danger);')}
-                ${box('Reentrega', d.reentrega, 'color:var(--warning);')}
-                ${box('Pernoite', d.pernoite)}
-                ${box('Parcial', d.parcial)}
-                ${box('Pendentes', d.pendente, 'color:var(--danger);')}
-                ${box('Realizadas', d.realizada, 'color:var(--success);')}
-                ${box('% App', d.app)}
-                ${box('100% Assinado', d.cemAss)}
-                ${box('Paletes', d.palete)}
-                ${box('Qtde', d.qtde)}
-            `;
+            if (elemPlaca) elemPlaca.innerText = d.troca && d.troca.trim() !== "" ? `${d.placa} 🔄 ${d.troca}` : d.placa;
+            if (elemMotorista) elemMotorista.innerText = d.motorista;
+            
+            // Injeta a Pílula Colorida
+            if (elemStRota) {
+                elemStRota.innerHTML = typeof window.getStRotaPill === 'function' ? window.getStRotaPill(d.stRota) : `<span style="font-weight:bold;">${d.stRota}</span>`;
+            }
 
-            document.getElementById('modal-painel-mobile').style.display = 'flex';
+            // Design das caixinhas de dados
+            const box = (label, val, style = '') => (val && val !== "" && val !== "0") ? `<div style="background: var(--bg-table-row-alt, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); padding: 12px; border-radius: 8px;"><span style="display:block; font-size:11px; color:var(--text-muted, #64748b); font-weight:700; margin-bottom: 4px; text-transform: uppercase;">${label}</span><span style="display:block; font-size:14px; font-weight:800; ${style}">${val}</span></div>` : '';
+
+            if (elemGrid) {
+                elemGrid.innerHTML = `
+                    ${box('Tipo', d.tipo)}
+                    ${box('O.C.', d.oc)}
+                    ${box('Transporte', d.transporte)}
+                    ${box('Contato', d.contato)}
+                    ${box('Peso (KG)', d.peso)}
+                    ${box('KM', d.km)}
+                    ${box('Ajudante', d.ajudante)}
+                    ${box('Devolução', d.devolucao, 'color:var(--danger, #ef4444);')}
+                    ${box('Reentrega', d.reentrega, 'color:var(--warning, #f59e0b);')}
+                    ${box('Pernoite', d.pernoite)}
+                    ${box('Parcial', d.parcial)}
+                    ${box('Pendentes', d.pendente, 'color:var(--danger, #ef4444);')}
+                    ${box('Realizadas', d.realizada, 'color:var(--success, #22c55e);')}
+                    ${box('% App', d.app)}
+                    ${box('100% Ass.', d.cemAss)}
+                    ${box('Paletes', d.palete)}
+                    ${box('Qtde', d.qtde)}
+                `;
+            }
+
+            // 🟢 Abre o Modal e Trava o Fundo
+            const modalMob = document.getElementById('modal-painel-mobile');
+            if (modalMob) {
+                modalMob.style.setProperty('display', 'flex', 'important');
+                document.body.style.setProperty('overflow', 'hidden', 'important');
+                document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+            }
+        };
+
+        // 🟢 FUNÇÃO PARA FECHAR O MODAL E DESTRAVAR A TELA
+        window.fecharModalPainelMobile = function() {
+            const modalMob = document.getElementById('modal-painel-mobile');
+            if (modalMob) {
+                modalMob.style.setProperty('display', 'none', 'important');
+                document.body.style.removeProperty('overflow');
+                document.documentElement.style.removeProperty('overflow');
+            }
         };
 
         // ================= GESTÃO DE COMPLEMENTOS (V2) =================
