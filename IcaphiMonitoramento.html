@@ -1047,7 +1047,7 @@
             height: 120vh !important;
             background: rgba(15, 23, 42, 0.75) !important;
             backdrop-filter: blur(4px) !important;
-            z-index: 2147483647 !important; /* Topo absoluto */
+            z-index: 100 !important; /* Topo absoluto */
             justify-content: center !important;
             align-items: center !important;
             margin: 0 !important;
@@ -3637,7 +3637,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.5</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.6</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5587,7 +5587,7 @@
     </div>
 
     <div class="modal-overlay" id="modal-motoristas">
-        <div class="modal-content" style="width: 500px; z-index: 99999999999;">
+        <div class="modal-content" style="width: 500px; z-index: 9999999999999999;">
             <div class="modal-header">
                 <h3>Vincular Motoristas</h3><button class="btn-close"
                     onclick="document.getElementById('modal-motoristas').classList.remove('active')">×</button>
@@ -5668,7 +5668,7 @@
     </div>
 
     <div class="modal-overlay" id="modal-editor-notas">
-        <div class="modal-content" style="width: 96%; height: 92%;">
+        <div class="modal-content" style="width: 90%; height: 90%;">
             <div class="modal-header">
                 <h3 id="titulo-modal-notas">Montagem Base Notas</h3><button class="btn-close"
                     onclick="document.getElementById('modal-editor-notas').classList.remove('active')">×</button>
@@ -10760,10 +10760,18 @@
                         // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
+                            
+                            // 🟢 TRAVA CONTRA SOBRESCRITA (PREVINE O BLOQUEIO POR APOIO)
+                            // Se o transporte já foi lido e liberado como "Saída Dia", 
+                            // a gente dá um "return" e impede que a linha de Apoio estrague a liberação.
+                            if (mapFiltroTransporte[t] && mapFiltroTransporte[t].permitido === true) {
+                                return;
+                            }
+
                             mapFiltroTransporte[t] = {
                                 placaFinal: placaFinal,
                                 statusRota: statusRota,
-                                permitido: isSaidaDia // Trava a alteração SOMENTE para Saída Dia
+                                permitido: isSaidaDia
                             };
                         });
                     });
@@ -10887,8 +10895,17 @@
                         // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
                         const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
+                        // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
+                            
+                            // 🟢 TRAVA CONTRA SOBRESCRITA (PREVINE O BLOQUEIO POR APOIO)
+                            // Se o transporte já foi lido e liberado como "Saída Dia", 
+                            // a gente dá um "return" e impede que a linha de Apoio estrague a liberação.
+                            if (mapFiltroTransporte[t] && mapFiltroTransporte[t].permitido === true) {
+                                return;
+                            }
+
                             mapFiltroTransporte[t] = {
                                 placaFinal: placaFinal,
                                 statusRota: statusRota,
