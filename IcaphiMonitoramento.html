@@ -3448,13 +3448,19 @@
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
     }
 
-    /* Modal do Mural */
+    /* ================= CONTAINER GERAL DESLIZANTE (VERTICAL SLIDER) ================= */
     #modal-anotacoes {
-        position: fixed; top: 0; left: 0; width: 120vw; height: 120vh;
-        background: rgba(15, 23, 42, 0.85); z-index: 999999;
-        display: none; align-items: center; justify-content: center;
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 120vw !important; height: 120vh !important;
+        background: rgba(15, 23, 42, 0.85);
+        z-index: 999999 !important;
+        display: none; /* Controlado via JS */
+        align-items: center; justify-content: center;
         backdrop-filter: blur(5px);
+        overflow: hidden; /* Trava o scroll da tela inteira, permitindo apenas a transição */
     }
+    
     .modal-mural-content {
         width: 95vw; height: 90vh; background: #f8fafc;
         border-radius: 16px; display: flex; flex-direction: column;
@@ -3544,6 +3550,167 @@
     }
     .mural-sem-animacao .post-it.dragging {
         transform: none !important; /* Evita que ele incline/cresça no modo leve */
+    }
+
+    /* ================= ESTRUTURA DOS MODAIS DE ROTINA (FIXED) ================= */
+    #modal-rotinas, #modal-editar-rotina {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 120vw !important;
+        height: 120vh !important;
+        z-index: 999999 !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease, visibility 0.4s;
+        will-change: transform, opacity;
+    }
+
+    .rotina-hidden {
+        visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;
+        transform: translateY(20px) scale(0.95) !important;
+    }
+
+    .rotina-visible {
+        visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+        transform: translateY(0) scale(1) !important;
+    }
+
+    /* ================= HINT DO HEADER ================= */
+    .scroll-hint-rotina {
+        font-size: 11px; font-weight: 600; color: var(--text-muted);
+        padding: 6px 16px; background: var(--bg-hover, #f1f5f9); border-radius: 20px;
+        animation: pulseHint 2s infinite; cursor: pointer; white-space: nowrap; 
+        border: 1px solid var(--border-color);
+    }
+    @keyframes pulseHint { 
+        0%, 100% { opacity: 0.5; transform: translateY(0); } 
+        50% { opacity: 1; transform: translateY(3px); } 
+    }
+
+    /* ================= LAYOUT E CONTEÚDO ================= */
+    .modal-rotinas-content {
+        background: var(--bg-panel, #ffffff); border-radius: 12px; padding: 25px;
+        width: 650px; max-width: 95vw; max-height: 85vh; overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4); border: 1px solid var(--border-color);
+    }
+    .rotinas-header {
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;
+    }
+    .rotinas-controls { display: flex; gap: 15px; align-items: center; }
+
+    /* Lista de Etapas (Drag and Drop) */
+    .lista-etapas { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
+    .etapa-item {
+        display: flex; gap: 12px; align-items: flex-start; padding: 12px;
+        background: var(--bg-table-row-alt, #f8fafc); border: 1px solid var(--border-color);
+        border-radius: 8px; margin-bottom: 8px; cursor: grab; transition: background 0.2s;
+    }
+    .etapa-item:hover { background: var(--bg-hover); }
+    .etapa-item.dragging { opacity: 0.5; background: var(--bg-active); border-style: dashed; }
+    .drag-handle-etapa { font-size: 20px; color: var(--text-muted); cursor: grab; padding-top: 5px; opacity: 0.5; }
+    .etapa-inputs { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .etapa-inputs input { border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; background: var(--bg-input, #fff); color: var(--text-main); font-size: 13px; }
+
+    /* Card de View */
+    .rotina-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; background: var(--bg-secundary, #f8fafc); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .rotina-card-header { display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 15px; color: var(--accent); align-items: center; }
+    .etapa-view { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px; }
+    .etapa-view:last-child { border-bottom: none; }
+    .etapa-time { font-weight: 700; color: var(--danger); background: rgba(239, 68, 68, 0.1); padding: 2px 6px; border-radius: 4px; }
+
+    /* ================= MODO LITE ================= */
+    body.lite-mode #modal-rotinas, body.lite-mode #modal-editar-rotina { transition: none !important; backdrop-filter: none !important; background: rgba(15, 23, 42, 0.9) !important; }
+    body.lite-mode .rotina-hidden { display: none !important; }
+    body.lite-mode .rotina-visible { display: flex !important; opacity: 1 !important; transform: none !important; }
+    body.lite-mode .scroll-hint-rotina { animation: none !important; }
+
+    /* ================= ESTILO DA ETAPA CONCLUÍDA (VERDE ESFUMAÇADO) ================= */
+    .etapa-view {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px;
+        border-radius: 6px; margin-bottom: 6px; transition: all 0.3s ease;
+        background: var(--bg-table-row-alt, #f8fafc);
+    }
+    .etapa-view.concluida {
+        background: rgba(34, 197, 94, 0.08) !important;
+        box-shadow: inset 0 0 12px rgba(34, 197, 94, 0.35) !important;
+        border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+    .etapa-view.concluida span {
+        text-decoration: line-through;
+        color: var(--text-muted);
+    }
+    .btn-check-etapa {
+        background: transparent; border: 2px solid var(--border-color);
+        width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; color: transparent;
+        transition: all 0.2s; flex-shrink: 0; margin-right: 8px;
+    }
+    .etapa-view.concluida .btn-check-etapa {
+        background: #22c55e; border-color: #22c55e; color: #fff;
+    }
+
+    /* ================= TAMANHO IDÊNTICO PARA AMBOS OS MODAIS ================= */
+    .modal-mural-content,
+    .modal-rotinas-content {
+        width: 120% !important;
+        max-width: 1100px !important;
+        height: 120% !important;
+        max-height: 90vh !important;
+        background: var(--bg-panel, #f8fafc) !important;
+        border-radius: 16px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
+        overflow: hidden !important;
+        transform: translateY(0);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    }
+
+    /* ================= FUNDO E TRANSIÇÃO SUAVE DOS MODAIS ================= */
+    .modal-sobreposto, #modal-anotacoes {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 120vw !important; height: 120vh !important;
+        z-index: 999999 !important;
+        display: none;
+        justify-content: center; align-items: center;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Estado Visível com Animação de Deslize Vertical Elegante */
+    .modal-sobreposto.rotina-visible, 
+    #modal-anotacoes[style*="flex"] {
+        opacity: 1;
+    }
+
+    .rotina-hidden .modal-rotinas-content {
+        transform: translateY(25px);
+        opacity: 0;
+    }
+
+    .rotina-visible .modal-rotinas-content {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* ================= MODO LITE (DESATIVA TUDO INSTANTANEAMENTE) ================= */
+    body.lite-mode .modal-sobreposto,
+    body.lite-mode #modal-anotacoes,
+    body.lite-mode .modal-mural-content,
+    body.lite-mode .modal-rotinas-content {
+        transition: none !important;
+        transform: none !important;
+        backdrop-filter: none !important;
+        animation: none !important;
     }
 
     </style>
@@ -3637,7 +3804,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.6</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.7</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -6751,13 +6918,24 @@
 
     <div id="modal-anotacoes">
         <div class="modal-mural-content">
-            <div class="mural-header">
-                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: var(--text-main);">
-                    <i class="ph ph-notepad" style="color: var(--accent);"></i> Meu Mural de Anotações
-                </h3>
-                <div class="mural-actions">
-                    
-                    <!-- SWITCH DE ANIMAÇÕES -->
+            <div class="mural-header" style="display: flex; justify-content: space-between; align-items: center;">
+    
+                <!-- BLOCO 1: Título -->
+                <div style="flex: 1; display: flex; align-items: center;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: var(--text-main);">
+                        <i class="ph ph-notepad" style="color: var(--accent);"></i> Meu Mural
+                    </h3>
+                </div>
+
+                <!-- BLOCO 2: Aviso Centralizado -->
+                <div style="flex: 1; display: flex; justify-content: center;">
+                    <div id="notas-scroll-hint" class="scroll-hint-rotina">
+                        <span>↓ Role para baixo para ver a sua rotina</span>
+                    </div>
+                </div>
+
+                <!-- BLOCO 3: Controles e Botões -->
+                <div class="mural-actions" style="flex: 1; display: flex; justify-content: flex-end; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-right: 15px; border-right: 1px solid var(--border-color); padding-right: 15px;">
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap;">MODO LITE</label>
                         <label class="toggle-switch" style="margin: 0;">
@@ -6765,12 +6943,11 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-
-                    <div style="background: var(--bg-table-row-alt); padding: 4px; border-radius: 8px; display: flex; gap: 4px; border: 1px solid var(--border-color);">
+                    <div style="background: var(--bg-table-row-alt); padding: 4px; border-radius: 8px; display: flex; gap: 4px; border: 1px solid var(--border-color); margin-right: 10px;">
                         <button id="btn-modo-livre" class="btn btn-sm btn-primary" onclick="window.mudarModoMural('livre')">Livre</button>
                         <button id="btn-modo-grid" class="btn btn-sm btn-secondary" onclick="window.mudarModoMural('ordenado')">Ordenado</button>
                     </div>
-                    <button class="btn btn-success" onclick="window.criarPostIt()" style="font-weight: bold;">
+                    <button class="btn btn-success" onclick="window.criarPostIt()" style="font-weight: bold; margin-right: 10px;">
                         <i class="ph-bold ph-plus"></i> Novo Post-it
                     </button>
                     <button class="btn btn-danger" onclick="window.fecharModalAnotacoes()" style="padding: 8px 12px;">
@@ -6782,6 +6959,79 @@
             <!-- Área onde os Post-its ficam -->
             <div id="mural-workspace" class="mural-workspace modo-livre">
                 <!-- Injetados via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAIS DE ROTINAS ================= -->
+    <div id="modal-rotinas" class="modal-sobreposto rotina-hidden">
+        <div class="modal-rotinas-content">
+            <div class="rotinas-header">
+                <h3 style="margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-calendar-check" style="color: var(--accent);"></i> Suas Rotinas
+                </h3>
+                
+                <div class="rotinas-controls">
+                    <!-- Toggle Mostrar Todas -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap;">MOSTRAR TODAS</label>
+                        <label class="toggle-switch" style="margin: 0;">
+                            <input type="checkbox" id="toggle-todas-rotinas">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <!-- Toggle Silenciar Notificações -->
+                    <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 15px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap;">SILENCIAR AVISOS</label>
+                        <label class="toggle-switch" style="margin: 0;">
+                            <input type="checkbox" id="toggle-notif-rotinas">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button id="btn-nova-rotina" class="btn btn-success" style="font-weight: bold;">+ Criar Rotina</button>
+                </div>
+                
+                <!-- No header do modal de rotinas, altere o botão de fechar para: -->
+                <button class="btn btn-danger" onclick="fecharTudoRotinas()" style="padding: 8px 12px;"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div id="lista-rotinas-container" class="rotinas-body">
+                <!-- Rotinas injetadas via JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-editar-rotina" class="modal-sobreposto rotina-hidden">
+        <div class="modal-rotinas-content">
+            <div class="rotinas-header">
+                <h3 id="titulo-modal-rotina" style="margin: 0; color: var(--text-main);">Nova Rotina</h3>
+                <button class="btn btn-danger" onclick="fecharEditorRotina()" style="padding: 8px 12px;"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="rotinas-body form-rotina">
+                <input type="hidden" id="rotina-id">
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; background: var(--bg-hover); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">INÍCIO DA ROTINA</label>
+                        <input type="time" id="rotina-inicio" class="form-control" style="width: 100%; margin-top: 5px;" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">FIM DA ROTINA</label>
+                        <input type="time" id="rotina-fim" class="form-control" style="width: 100%; margin-top: 5px;" required>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: var(--text-main);">Etapas da Atividade</h4>
+                    <button type="button" id="btn-add-etapa" class="btn btn-sm btn-secondary">+ Adicionar Etapa</button>
+                </div>
+                
+                <ul id="lista-etapas-drag" class="lista-etapas">
+                    <!-- Etapas injetadas via JS -->
+                </ul>
+
+                <button id="btn-salvar-rotina" class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 12px; font-weight: bold;">Salvar Rotina</button>
             </div>
         </div>
     </div>
@@ -21620,15 +21870,24 @@ document.querySelectorAll('tbody').forEach(tbody => {
             }
         };
 
-        // ================= ABRIR / FECHAR =================
+        // Abertura inicial do Mural
         window.abrirModalAnotacoes = function() {
-            document.getElementById('modal-anotacoes').style.display = 'flex';
-            window.mudarModoMural(window.modoMural); // Renderiza os notes
-        };
+            if (modalAnos) {
+                modalAnos.style.display = 'flex';
+                modalAnos.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    modalAnos.style.transition = 'opacity 0.3s ease';
+                    modalAnos.style.opacity = '1';
+                });
+            }
+        }
 
         window.fecharModalAnotacoes = function() {
-            document.getElementById('modal-anotacoes').style.display = 'none';
-        };
+            if (modalAnos) {
+                modalAnos.style.opacity = '0';
+                setTimeout(() => { modalAnos.style.display = 'none'; }, 300);
+            }
+        }
 
         // ================= RENDERIZAÇÃO =================
         window.mudarModoMural = function(modo) {
@@ -21879,7 +22138,385 @@ document.querySelectorAll('tbody').forEach(tbody => {
         // Inicializa o sistema ao carregar a página
         document.addEventListener('DOMContentLoaded', window.carregarAnotacoes);
 
-        
+        // ============================================================================
+        // MOTOR DE ROTINAS & NOTIFICAÇÕES (CRONJOB)
+        // ============================================================================
+        window.rotinasUser = JSON.parse(localStorage.getItem('icaphi_user_rotinas')) || [];
+        let rotinasNotificadasCache = {}; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 🟢 FORÇA OS MODAIS PARA A RAIZ DO SITE (Garante tela cheia e corrige o fundo cortado)
+            const mRotinas = document.getElementById('modal-rotinas');
+            const mEditar = document.getElementById('modal-editar-rotina');
+            if (mRotinas) document.body.appendChild(mRotinas);
+            if (mEditar) document.body.appendChild(mEditar);
+
+            // 1. SCROLL PARA BAIXO - Abre modal de rotinas pelo mural
+            const modalMural = document.getElementById('modal-anotacoes');
+            if (modalMural) {
+                modalMural.addEventListener('wheel', (e) => {
+                    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                    if (e.deltaY > 40) abrirRotinas(); // Rola pra baixo
+                });
+            }
+
+            // 2. 🟢 SCROLL PARA CIMA - Fecha rotinas e volta para o mural
+            if (mRotinas) {
+                mRotinas.addEventListener('wheel', (e) => {
+                    // Se estiver rolando dentro da lista de rotinas (e ela tiver rolagem), não volta a tela
+                    const containerRotinas = e.target.closest('.rotinas-body');
+                    if (containerRotinas && containerRotinas.scrollTop > 0) return;
+
+                    if (e.deltaY < -40) { // Rola pra cima
+                        voltarParaNotas();
+                    }
+                });
+            }
+
+            // Clique na dica "Role para baixo"
+            const hintScroll = document.getElementById('notas-scroll-hint');
+            if (hintScroll) hintScroll.addEventListener('click', abrirRotinas);
+
+            // Toggle Mostrar Todas as Rotinas
+            document.getElementById('toggle-todas-rotinas')?.addEventListener('change', renderizarRotinas);
+
+            // Botões de Modal
+            document.getElementById('btn-nova-rotina')?.addEventListener('click', novaRotinaDOM);
+            document.getElementById('btn-add-etapa')?.addEventListener('click', () => adicionarEtapaDOM());
+            document.getElementById('btn-salvar-rotina')?.addEventListener('click', salvarRotinaLogic);
+        });
+
+        // ================= NAVEGAÇÃO DOS MODAIS =================
+        function abrirRotinas() {
+            const modal = document.getElementById('modal-rotinas');
+            modal.classList.remove('rotina-hidden');
+            modal.classList.add('rotina-visible');
+            renderizarRotinas();
+        }
+
+        window.voltarParaNotas = function() {
+            const modal = document.getElementById('modal-rotinas');
+            modal.classList.remove('rotina-visible');
+            modal.classList.add('rotina-hidden');
+        }
+
+        window.fecharEditorRotina = function() {
+            document.getElementById('modal-editar-rotina').classList.remove('rotina-visible');
+            document.getElementById('modal-editar-rotina').classList.add('rotina-hidden');
+        }
+
+        // ================= RENDERIZAÇÃO INTELIGENTE (COM RESET DE MEIA-NOITE) =================
+        function renderizarRotinas() {
+            // 🟢 Verifica e limpa as marcações se virou o dia (Meia-noite)
+            const hojeStr = new Date().toDateString();
+            const ultimaData = localStorage.getItem('icaphi_concluidas_data');
+            if (ultimaData !== hojeStr) {
+                localStorage.removeItem('icaphi_etapas_concluidas');
+                localStorage.setItem('icaphi_concluidas_data', hojeStr);
+            }
+
+            const container = document.getElementById('lista-rotinas-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const toggleTodas = document.getElementById('toggle-todas-rotinas');
+            const mostrarTodas = toggleTodas ? toggleTodas.checked : false;
+            
+            const horaAtualStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            let rotinasVisiveis = window.rotinasUser.filter(r => {
+                if (mostrarTodas) return true;
+                if (r.inicio <= r.fim) return horaAtualStr >= r.inicio && horaAtualStr <= r.fim;
+                return horaAtualStr >= r.inicio || horaAtualStr <= r.fim; 
+            });
+
+            rotinasVisiveis.sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+            if (rotinasVisiveis.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:30px; font-weight: 600; color:var(--text-muted);">Nenhuma rotina programada para o horário atual.<br><span style="font-size:11px; font-weight:normal;">(Use o botão 'Mostrar Todas' ou crie uma nova)</span></div>`;
+                return;
+            }
+
+            let concluidasMap = JSON.parse(localStorage.getItem('icaphi_etapas_concluidas')) || {};
+
+            rotinasVisiveis.forEach(r => {
+                let etapasHtml = r.etapas.map(e => {
+                    let isConcluida = concluidasMap[e.id] ? 'concluida' : '';
+                    return `
+                        <div class="etapa-view ${isConcluida}" id="etapa-view-${e.id}">
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                <button class="btn-check-etapa" onclick="toggleConcluirEtapa('${e.id}')"><i class="ph-bold ph-check"></i></button>
+                                <span><strong>${e.nome}</strong> ${e.desc ? `<span style="color:var(--text-muted);"> - ${e.desc}</span>` : ''}</span>
+                            </div>
+                            ${e.limite ? `<span class="etapa-time"><i class="ph ph-clock"></i> Até ${e.limite}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="rotina-card">
+                        <div class="rotina-card-header">
+                            <span><i class="ph-bold ph-calendar"></i> Rotina: ${r.inicio} às ${r.fim}</span>
+                            <button class="btn btn-sm btn-primary" onclick="window.editarRotina('${r.id}')"><i class="ph ph-pencil-simple"></i> Editar</button>
+                        </div>
+                        <div>${etapasHtml}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Função para marcar/desmarcar etapa concluída
+        window.toggleConcluirEtapa = function(etapaId) {
+            let concluidasMap = JSON.parse(localStorage.getItem('icaphi_etapas_concluidas')) || {};
+            concluidasMap[etapaId] = !concluidasMap[etapaId];
+            localStorage.setItem('icaphi_etapas_concluidas', JSON.stringify(concluidasMap));
+
+            const el = document.getElementById(`etapa-view-${etapaId}`);
+            if (el) {
+                if (concluidasMap[etapaId]) {
+                    el.classList.add('concluida');
+                } else {
+                    el.classList.remove('concluida');
+                }
+            }
+        }
+
+        // ================= CRIAÇÃO, EDIÇÃO E SALVAMENTO =================
+        function novaRotinaDOM() {
+            document.getElementById('rotina-id').value = '';
+            document.getElementById('rotina-inicio').value = '';
+            document.getElementById('rotina-fim').value = '';
+            document.getElementById('lista-etapas-drag').innerHTML = '';
+            document.getElementById('titulo-modal-rotina').innerText = 'Nova Rotina';
+            adicionarEtapaDOM(); // Pelo menos 1 etapa em branco
+            
+            const m = document.getElementById('modal-editar-rotina');
+            m.classList.remove('rotina-hidden');
+            m.classList.add('rotina-visible');
+        }
+
+        window.editarRotina = function(id) {
+            const r = window.rotinasUser.find(x => x.id === id);
+            if(!r) return;
+            
+            document.getElementById('rotina-id').value = r.id;
+            document.getElementById('rotina-inicio').value = r.inicio;
+            document.getElementById('rotina-fim').value = r.fim;
+            document.getElementById('titulo-modal-rotina').innerText = 'Editar Rotina';
+            
+            document.getElementById('lista-etapas-drag').innerHTML = '';
+            r.etapas.forEach(e => adicionarEtapaDOM(e));
+            
+            const m = document.getElementById('modal-editar-rotina');
+            m.classList.remove('rotina-hidden');
+            m.classList.add('rotina-visible');
+        };
+
+        function adicionarEtapaDOM(dados = { nome: '', desc: '', limite: '' }) {
+            const li = document.createElement('li');
+            li.className = 'etapa-item';
+            li.draggable = true;
+            li.innerHTML = `
+                <div class="drag-handle-etapa">☰</div>
+                <div class="etapa-inputs">
+                    <div style="display:flex; gap:10px;">
+                        <input type="time" class="etapa-limite" value="${dados.limite}" title="Horário Limite da Tarefa (Opcional)">
+                        <input type="text" class="etapa-nome" value="${dados.nome}" placeholder="Nome da Atividade/Etapa" style="flex:1;" required>
+                    </div>
+                    <input type="text" class="etapa-desc" value="${dados.desc}" placeholder="Descrição ou observação rápida (Opcional)">
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('li').remove()"><i class="ph-bold ph-trash"></i></button>
+            `;
+            configurarDragAndDropRotina(li);
+            document.getElementById('lista-etapas-drag').appendChild(li);
+        }
+
+        function salvarRotinaLogic() {
+            const id = document.getElementById('rotina-id').value || 'rotina_' + Date.now();
+            const inicio = document.getElementById('rotina-inicio').value;
+            const fim = document.getElementById('rotina-fim').value;
+
+            if (!inicio || !fim) return alert("Defina o horário de início e fim da rotina.");
+
+            const etapas = [];
+            document.querySelectorAll('.etapa-item').forEach((li, idx) => {
+                const nome = li.querySelector('.etapa-nome').value.trim();
+                if (nome) {
+                    etapas.push({
+                        id: 'etapa_' + Date.now() + '_' + idx,
+                        limite: li.querySelector('.etapa-limite').value,
+                        nome: nome,
+                        desc: li.querySelector('.etapa-desc').value.trim()
+                    });
+                }
+            });
+
+            if (etapas.length === 0) return alert("Adicione pelo menos uma etapa com nome para salvar.");
+
+            const novaRotina = { id, inicio, fim, etapas };
+            const index = window.rotinasUser.findIndex(x => x.id === id);
+            if (index >= 0) window.rotinasUser[index] = novaRotina;
+            else window.rotinasUser.push(novaRotina);
+
+            localStorage.setItem('icaphi_user_rotinas', JSON.stringify(window.rotinasUser));
+            
+            fecharEditorRotina();
+            renderizarRotinas();
+        }
+
+        // ================= DRAG AND DROP NATIVO =================
+        let etapaArrastada = null;
+        function configurarDragAndDropRotina(el) {
+            el.addEventListener('dragstart', function(e) {
+                if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return e.preventDefault();
+                etapaArrastada = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', ''); // Necessário pro Firefox
+            });
+            el.addEventListener('dragover', function(e) {
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                const rect = this.getBoundingClientRect();
+                const offset = e.clientY - rect.top;
+                if (offset > rect.height / 2) this.parentNode.insertBefore(etapaArrastada, this.nextSibling);
+                else this.parentNode.insertBefore(etapaArrastada, this);
+            });
+            el.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+                etapaArrastada = null;
+            });
+        }
+
+        // ================= CRONJOB DE NOTIFICAÇÕES (Roda em Background) =================
+        setInterval(() => {
+            // Cancela o processo se a chave de silenciar estiver ativada
+            const checkSilenciar = document.getElementById('toggle-notif-rotinas');
+            if (checkSilenciar && checkSilenciar.checked) return;
+            
+            const agora = new Date();
+            const dataString = agora.toDateString(); 
+
+            window.rotinasUser.forEach(rotina => {
+                rotina.etapas.forEach(etapa => {
+                    if (!etapa.limite) return;
+
+                    // Transforma o horário limite da etapa em um objeto de Date
+                    const [horaLim, minLim] = etapa.limite.split(':').map(Number);
+                    let alvoTempo = new Date(agora);
+                    alvoTempo.setHours(horaLim, minLim, 0, 0);
+                    alvoTempo.setMinutes(alvoTempo.getMinutes() - 30); // Calcula 30 min ANTES
+                    
+                    const horaDisparo = alvoTempo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const horaAtualStr = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    
+                    const cacheKey = `${rotina.id}_${etapa.id}_${dataString}`; // Evita notificar 2x no mesmo dia
+
+                    if (horaAtualStr === horaDisparo && !rotinasNotificadasCache[cacheKey]) {
+                        rotinasNotificadasCache[cacheKey] = true;
+                        
+                        // Emite a notificação do sistema
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(`Rotina Icaphi: ${etapa.nome}`, { body: `Faltam 30 minutos para o limite estipulado.` });
+                        } else {
+                            alert(`⏰ LEMBRETE DE ROTINA:\n\nFaltam 30 minutos para o limite da atividade:\n"${etapa.nome}"`);
+                        }
+                    }
+                });
+            });
+        }, 60000); // Roda a cada minuto sem pesar no PC
+
+        // Pede permissão de notificação (Browser Nativo)
+        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+
+        // ================= TRANSIÇÃO SUAVE POR SCROLL ENTRE MURAL E ROTINAS =================
+        const modalAnos = document.getElementById('modal-anotacoes');
+        const modalRots = document.getElementById('modal-rotinas');
+
+        // Scroll para baixo no Mural -> Mural sobe suavemente e as Rotinas entram
+        if (modalAnos) {
+            modalAnos.addEventListener('wheel', (e) => {
+                if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                if (e.deltaY > 40) {
+                    abrirRotinasComAnimacao();
+                }
+            });
+        }
+
+        // Scroll para cima nas Rotinas -> Rotinas descem e o Mural reaparece
+        if (modalRots) {
+            modalRots.addEventListener('wheel', (e) => {
+                const containerRotinas = e.target.closest('.rotinas-body');
+                if (containerRotinas && containerRotinas.scrollTop > 0) return;
+
+                if (e.deltaY < -40) {
+                    voltarParaNotasComAnimacao();
+                }
+            });
+        }
+
+        function abrirRotinasComAnimacao() {
+            const isLite = document.body.classList.contains('lite-mode');
+            
+            // Anotações sobe e some
+            if (modalAnos) {
+                modalAnos.style.transition = 'transform 0.3s ease, opacity 0.25s ease';
+                modalAnos.style.transform = isLite ? 'none' : 'translateY(-40px)';
+                modalAnos.style.opacity = '0';
+                setTimeout(() => { modalAnos.style.display = 'none'; modalAnos.style.transform = 'translateY(0)'; }, 300);
+            }
+
+            // Rotinas aparece deslizando de baixo para cima
+            if (modalRots) {
+                modalRots.style.display = 'flex';
+                modalRots.classList.remove('rotina-hidden');
+                modalRots.classList.add('rotina-visible');
+                renderizarRotinas();
+            }
+        }
+
+        window.voltarParaNotas = function() {
+            voltarParaNotasComAnimacao();
+        }
+
+        function voltarParaNotasComAnimacao() {
+            const isLite = document.body.classList.contains('lite-mode');
+
+            // Rotinas desce e some
+            if (modalRots) {
+                modalRots.classList.remove('rotina-visible');
+                modalRots.classList.add('rotina-hidden');
+                setTimeout(() => { modalRots.style.display = 'none'; }, 300);
+            }
+
+            // Anotações reaparece suavemente
+            if (modalAnos) {
+                modalAnos.style.display = 'flex';
+                modalAnos.style.transform = isLite ? 'none' : 'translateY(40px)';
+                modalAnos.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    modalAnos.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                    modalAnos.style.transform = 'translateY(0)';
+                    modalAnos.style.opacity = '1';
+                });
+            }
+        }
+
+        // Fecha tanto o modal de rotinas quanto o modal de anotações principal
+        window.fecharTudoRotinas = function() {
+            const modalRots = document.getElementById('modal-rotinas');
+            const modalAnos = document.getElementById('modal-anotacoes');
+            
+            if (modalRots) {
+                modalRots.classList.remove('rotina-visible');
+                modalRots.classList.add('rotina-hidden');
+                modalRots.style.display = 'none';
+            }
+            if (modalAnos) {
+                modalAnos.style.display = 'none';
+            }
+        }
 
     </script>
 </body>
