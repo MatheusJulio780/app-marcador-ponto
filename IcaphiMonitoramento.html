@@ -3435,6 +3435,117 @@
         to { transform: translateY(0); }
     }
 
+    /* Pulso Azul no Header */
+    .badge-pulse-azul {
+        position: absolute; top: -2px; right: -2px; width: 10px; height: 10px;
+        background: #3b82f6; border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        animation: pulseBlue 1.5s infinite;
+    }
+    @keyframes pulseBlue {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+
+    /* Modal do Mural */
+    #modal-anotacoes {
+        position: fixed; top: 0; left: 0; width: 120vw; height: 120vh;
+        background: rgba(15, 23, 42, 0.85); z-index: 999999;
+        display: none; align-items: center; justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .modal-mural-content {
+        width: 95vw; height: 90vh; background: #f8fafc;
+        border-radius: 16px; display: flex; flex-direction: column;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow: hidden;
+        animation: zoomInMural 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes zoomInMural {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Header do Mural */
+    .mural-header {
+        padding: 15px 25px; background: #ffffff; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center; z-index: 10;
+    }
+    .mural-actions { display: flex; gap: 12px; align-items: center; }
+    
+    /* Área de Trabalho */
+    .mural-workspace {
+        flex: 1; overflow: auto; padding: 30px; position: relative;
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 20px 20px; /* Efeito de quadro pontilhado */
+    }
+    .mural-workspace.modo-livre { overflow: hidden; }
+
+    /* Post-it */
+    .post-it {
+        width: 240px; height: 240px; border-radius: 8px;
+        box-shadow: 3px 5px 15px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+        transition: box-shadow 0.2s, transform 0.2s; position: relative;
+        animation: popInPostIt 0.3s ease-out;
+        transform: translateZ(0); /* Força a criação de uma camada na GPU */
+    }
+    .post-it.dragging {
+        opacity: 0.9; transform: scale(1.05) rotate(2deg);
+        box-shadow: 10px 15px 25px rgba(0,0,0,0.25); z-index: 1000 !important;
+        will-change: left, top, transform; /* 🟢 Aceleração de Hardware pura */
+    }
+    .post-it.deleting { animation: popOutPostIt 0.3s forwards; }
+    
+    @keyframes popInPostIt { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+    @keyframes popOutPostIt { to { opacity: 0; transform: scale(0.5); } }
+
+    /* Controles do Post-it */
+    .post-it-header {
+        height: 35px; padding: 0 10px; display: flex; justify-content: space-between;
+        align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: grab;
+    }
+    .post-it-header:active { cursor: grabbing; }
+    .post-it-controls { display: flex; gap: 8px; }
+    .btn-post-it { background: transparent; border: none; cursor: pointer; color: rgba(0,0,0,0.5); border-radius: 4px; padding: 2px; }
+    .btn-post-it:hover { background: rgba(0,0,0,0.1); color: #000; }
+
+    /* Entradas de Texto do Post-it */
+    .post-it-title {
+        border: none; background: transparent; font-weight: 800; font-size: 14px;
+        padding: 10px; width: 100%; outline: none; color: #1e293b;
+    }
+    .post-it-body {
+        border: none; background: transparent; font-size: 13px; resize: none;
+        padding: 0 10px 10px 10px; width: 100%; height: 100%; outline: none;
+        color: #334155; line-height: 1.5; font-family: inherit;
+    }
+
+    /* Paleta de Cores */
+    .color-palette {
+        position: absolute; top: 35px; left: 10px; background: #fff; padding: 5px;
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: none; gap: 5px; z-index: 10;
+    }
+    .color-dot {
+        width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    /* Modo Ordenado (Grid) */
+    .modo-ordenado {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 25px; align-items: start;
+    }
+
+    /* ================= MODO LITE (DESATIVA ANIMAÇÕES DO MURAL) ================= */
+    .mural-sem-animacao .modal-mural-content,
+    .mural-sem-animacao .post-it {
+        animation: none !important;
+        transition: none !important;
+    }
+    .mural-sem-animacao .post-it.dragging {
+        transform: none !important; /* Evita que ele incline/cresça no modo leve */
+    }
+
     </style>
 </head>
 
@@ -3526,7 +3637,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.4</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.5</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -3588,6 +3699,14 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <!-- ADICIONE NO HEADER, JUNTO COM AS NOTIFICAÇÕES -->
+                        <div class="notificacao-wrapper" id="anotacoes-wrapper">
+                            <button id="btn-anotacoes-app" class="btn-sino" onclick="window.abrirModalAnotacoes()" title="Mural de Anotações Pessoais">
+                                <i class="ph ph-notepad"></i>
+                                <!-- Bolinha azul pulsante -->
+                                <span id="badge-anotacoes" class="badge-pulse-azul" style="display: none;"></span>
+                            </button>
                         </div>
                         <button id="btn-transferir-pernoites" class="btn btn-warning" onclick="window.transferirPernoitesParaAmanha()" style="display: none; align-items: center; gap: 6px; font-weight: 800; margin-left: 10px;">
                             <i class="ph-bold ph-arrow-circle-right"></i> Transferir Pernoites
@@ -6626,6 +6745,43 @@
                         <!-- Injetado via JS -->
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-anotacoes">
+        <div class="modal-mural-content">
+            <div class="mural-header">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: var(--text-main);">
+                    <i class="ph ph-notepad" style="color: var(--accent);"></i> Meu Mural de Anotações
+                </h3>
+                <div class="mural-actions">
+                    
+                    <!-- SWITCH DE ANIMAÇÕES -->
+                    <div style="display: flex; align-items: center; gap: 6px; margin-right: 15px; border-right: 1px solid var(--border-color); padding-right: 15px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap;">MODO LITE</label>
+                        <label class="toggle-switch" style="margin: 0;">
+                            <input type="checkbox" id="toggle-anim-mural" onchange="window.toggleAnimacoesMural()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div style="background: var(--bg-table-row-alt); padding: 4px; border-radius: 8px; display: flex; gap: 4px; border: 1px solid var(--border-color);">
+                        <button id="btn-modo-livre" class="btn btn-sm btn-primary" onclick="window.mudarModoMural('livre')">Livre</button>
+                        <button id="btn-modo-grid" class="btn btn-sm btn-secondary" onclick="window.mudarModoMural('ordenado')">Ordenado</button>
+                    </div>
+                    <button class="btn btn-success" onclick="window.criarPostIt()" style="font-weight: bold;">
+                        <i class="ph-bold ph-plus"></i> Novo Post-it
+                    </button>
+                    <button class="btn btn-danger" onclick="window.fecharModalAnotacoes()" style="padding: 8px 12px;">
+                        <i class="ph-bold ph-x"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Área onde os Post-its ficam -->
+            <div id="mural-workspace" class="mural-workspace modo-livre">
+                <!-- Injetados via JS -->
             </div>
         </div>
     </div>
@@ -21405,6 +21561,306 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
             if (containerResumo) containerResumo.style.display = 'block';
         };
+
+        // ============================================================================
+        // MURAL DE ANOTAÇÕES (POST-ITS)
+        // ============================================================================
+
+        window.anotacoes = [];
+        window.modoMural = 'livre'; // 'livre' ou 'ordenado'
+
+        const coresPostIt = {
+            amarelo: '#fef08a',
+            verde: '#bbf7d0',
+            azul: '#bfdbfe',
+            rosa: '#fbcfe8',
+            roxo: '#e9d5ff'
+        };
+
+        // ================= INICIALIZAÇÃO E PERSISTÊNCIA =================
+        window.carregarAnotacoes = function() {
+            // Usa uma chave genérica local. Se você tiver um e-mail logado, pode usar: `icaphi_notas_${usuarioLogado}`
+            const salvas = localStorage.getItem('icaphi_mural_pessoal');
+            if (salvas) {
+                try { window.anotacoes = JSON.parse(salvas); } catch (e) { window.anotacoes = []; }
+            }
+            
+            const modoSalvo = localStorage.getItem('icaphi_mural_modo');
+            if (modoSalvo) window.modoMural = modoSalvo;
+
+            window.verificarPulsoAnotacoes();
+        };
+
+        window.salvarAnotacoes = function() {
+            localStorage.setItem('icaphi_mural_pessoal', JSON.stringify(window.anotacoes));
+            window.verificarPulsoAnotacoes();
+        };
+
+        window.verificarPulsoAnotacoes = function() {
+            const badge = document.getElementById('badge-anotacoes');
+            if (badge) {
+                badge.style.display = window.anotacoes.length > 0 ? 'block' : 'none';
+            }
+        };
+
+        // ================= ABRIR / FECHAR =================
+        window.abrirModalAnotacoes = function() {
+            document.getElementById('modal-anotacoes').style.display = 'flex';
+            window.mudarModoMural(window.modoMural); // Renderiza os notes
+        };
+
+        window.fecharModalAnotacoes = function() {
+            document.getElementById('modal-anotacoes').style.display = 'none';
+        };
+
+        // ================= RENDERIZAÇÃO =================
+        window.mudarModoMural = function(modo) {
+            window.modoMural = modo;
+            localStorage.setItem('icaphi_mural_modo', modo);
+
+            const ws = document.getElementById('mural-workspace');
+            const btnLivre = document.getElementById('btn-modo-livre');
+            const btnGrid = document.getElementById('btn-modo-grid');
+
+            if (modo === 'livre') {
+                ws.className = 'mural-workspace modo-livre';
+                btnLivre.className = 'btn btn-sm btn-primary';
+                btnGrid.className = 'btn btn-sm btn-secondary';
+            } else {
+                ws.className = 'mural-workspace modo-ordenado';
+                btnGrid.className = 'btn btn-sm btn-primary';
+                btnLivre.className = 'btn btn-sm btn-secondary';
+            }
+
+            window.renderizarPostIts();
+        };
+
+        window.renderizarPostIts = function() {
+            const ws = document.getElementById('mural-workspace');
+            ws.innerHTML = '';
+
+            window.anotacoes.forEach(nota => {
+                const div = document.createElement('div');
+                div.className = 'post-it';
+                div.id = `nota-${nota.id}`;
+                div.style.backgroundColor = nota.cor || coresPostIt.amarelo;
+                
+                // Aplica posições apenas no modo livre
+                if (window.modoMural === 'livre') {
+                    div.style.left = nota.x + 'px';
+                    div.style.top = nota.y + 'px';
+                    div.style.zIndex = nota.z || 1;
+                }
+
+                // Permite o drag and drop nativo no modo ordenado
+                if (window.modoMural === 'ordenado') {
+                    div.draggable = true;
+                    div.ondragstart = (e) => e.dataTransfer.setData('text/plain', nota.id);
+                    div.ondragover = (e) => e.preventDefault();
+                    div.ondrop = (e) => window.soltarPostItGrid(e, nota.id);
+                }
+
+                div.innerHTML = `
+                    <div class="post-it-header drag-handle">
+                        <div class="post-it-controls">
+                            <button class="btn-post-it" onclick="window.togglePaletaCores('${nota.id}')" title="Mudar Cor"><i class="ph-fill ph-palette"></i></button>
+                            <div id="paleta-${nota.id}" class="color-palette">
+                                ${Object.entries(coresPostIt).map(([nome, hex]) => `<div class="color-dot" style="background:${hex}" onclick="window.mudarCorPostIt('${nota.id}', '${hex}')"></div>`).join('')}
+                            </div>
+                        </div>
+                        <button class="btn-post-it" onclick="window.excluirPostIt('${nota.id}')" title="Excluir"><i class="ph-bold ph-x"></i></button>
+                    </div>
+                    <input type="text" class="post-it-title" placeholder="Título..." value="${nota.titulo}" oninput="window.atualizarTextoNota('${nota.id}', 'titulo', this.value)">
+                    <textarea class="post-it-body" placeholder="Escreva sua anotação aqui..." oninput="window.atualizarTextoNota('${nota.id}', 'texto', this.value)">${nota.texto}</textarea>
+                `;
+
+                ws.appendChild(div);
+
+                // Ativa o arrasto manual se estiver no modo livre
+                if (window.modoMural === 'livre') {
+                    window.ativarDragLivre(div, nota.id);
+                }
+            });
+        };
+
+        // ================= CRUD DAS NOTAS =================
+        window.criarPostIt = function() {
+            const ws = document.getElementById('mural-workspace');
+            
+            // Posição inicial centralizada para o modo livre
+            let startX = 50, startY = 50;
+            if (window.modoMural === 'livre') {
+                startX = (ws.offsetWidth / 2) - 120 + (Math.random() * 40 - 20); // Variação leve para não cair exatamente em cima
+                startY = (ws.offsetHeight / 2) - 120 + (Math.random() * 40 - 20);
+            }
+
+            const novaNota = {
+                id: Date.now().toString(),
+                titulo: '',
+                texto: '',
+                cor: coresPostIt.amarelo,
+                x: startX,
+                y: startY,
+                z: window.anotacoes.length + 1
+            };
+
+            window.anotacoes.push(novaNota);
+            window.salvarAnotacoes();
+            window.renderizarPostIts();
+        };
+
+        window.atualizarTextoNota = function(id, campo, valor) {
+            const nota = window.anotacoes.find(n => n.id === id);
+            if (nota) {
+                nota[campo] = valor;
+                window.salvarAnotacoes();
+            }
+        };
+
+        window.excluirPostIt = function(id) {
+            const div = document.getElementById(`nota-${id}`);
+            if (div) {
+                div.classList.add('deleting');
+                setTimeout(() => {
+                    window.anotacoes = window.anotacoes.filter(n => n.id !== id);
+                    window.salvarAnotacoes();
+                    window.renderizarPostIts();
+                }, 280); // Aguarda a animação terminar
+            }
+        };
+
+        // ================= CORES =================
+        window.togglePaletaCores = function(id) {
+            const paleta = document.getElementById(`paleta-${id}`);
+            paleta.style.display = paleta.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.mudarCorPostIt = function(id, corHex) {
+            const nota = window.anotacoes.find(n => n.id === id);
+            if (nota) {
+                nota.cor = corHex;
+                document.getElementById(`nota-${id}`).style.backgroundColor = corHex;
+                window.togglePaletaCores(id); // Fecha a paleta
+                window.salvarAnotacoes();
+            }
+        };
+
+        // ================= CONTROLE DE ANIMAÇÕES (MODO LITE) =================
+        window.toggleAnimacoesMural = function() {
+            const check = document.getElementById('toggle-anim-mural');
+            const modal = document.getElementById('modal-anotacoes');
+            if (check.checked) {
+                modal.classList.add('mural-sem-animacao');
+                localStorage.setItem('icaphi_mural_lite', 'true');
+            } else {
+                modal.classList.remove('mural-sem-animacao');
+                localStorage.setItem('icaphi_mural_lite', 'false');
+            }
+        };
+
+        // ================= DRAG AND DROP CORRIGIDO (ALTA PERFORMANCE) =================
+        window.ativarDragLivre = function(el, id) {
+            const handle = el.querySelector('.drag-handle');
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+            let reqAnimFrame = null; // 🟢 Controle de quadros de animação
+
+            handle.onmousedown = function(e) {
+                // Ignora cliques nos botões de cor e excluir
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'I' || e.target.closest('.post-it-controls')) return;
+
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                initialLeft = parseFloat(el.style.left) || 0;
+                initialTop = parseFloat(el.style.top) || 0;
+
+                // Traz o post-it para frente
+                const maxZ = Math.max(...window.anotacoes.map(n => n.z || 0), 0);
+                el.style.zIndex = maxZ + 1;
+                const nota = window.anotacoes.find(n => n.id === id);
+                if (nota) nota.z = maxZ + 1;
+
+                el.classList.add('dragging');
+
+                document.onmousemove = function(ev) {
+                    if (!isDragging) return;
+                    
+                    // 🟢 Cancela o recálculo anterior se o mouse se moveu rápido demais
+                    if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
+                    
+                    // 🟢 requestAnimationFrame sincroniza o arrasto com a taxa de Hz do seu monitor
+                    reqAnimFrame = requestAnimationFrame(() => {
+                        const dx = ev.clientX - startX;
+                        const dy = ev.clientY - startY;
+                        
+                        el.style.left = `${initialLeft + dx}px`;
+                        el.style.top = `${initialTop + dy}px`;
+                    });
+                };
+
+                document.onmouseup = function() {
+                    isDragging = false;
+                    el.classList.remove('dragging');
+                    
+                    // Limpeza de memória
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                    if (reqAnimFrame) cancelAnimationFrame(reqAnimFrame);
+
+                    // Salva a nova posição
+                    if (nota) {
+                        nota.x = parseFloat(el.style.left);
+                        nota.y = parseFloat(el.style.top);
+                        window.salvarAnotacoes();
+                    }
+                };
+            };
+        };
+
+        // ================= ATUALIZAR INICIALIZAÇÃO PARA LER O LITE =================
+        // Substitua o seu window.carregarAnotacoes atual por este:
+        window.carregarAnotacoes = function() {
+            const salvas = localStorage.getItem('icaphi_mural_pessoal');
+            if (salvas) {
+                try { window.anotacoes = JSON.parse(salvas); } catch (e) { window.anotacoes = []; }
+            }
+            
+            const modoSalvo = localStorage.getItem('icaphi_mural_modo');
+            if (modoSalvo) window.modoMural = modoSalvo;
+
+            // Carrega o switch do Modo Lite
+            const liteState = localStorage.getItem('icaphi_mural_lite') === 'true';
+            const checkLite = document.getElementById('toggle-anim-mural');
+            if (checkLite) checkLite.checked = liteState;
+            if (liteState) document.getElementById('modal-anotacoes').classList.add('mural-sem-animacao');
+
+            window.verificarPulsoAnotacoes();
+        };
+
+        // ================= DRAG AND DROP (ORDENADO/GRID) =================
+        window.soltarPostItGrid = function(e, idDestino) {
+            e.preventDefault();
+            const idOrigem = e.dataTransfer.getData('text/plain');
+            if (idOrigem === idDestino) return;
+
+            const idxOrigem = window.anotacoes.findIndex(n => n.id === idOrigem);
+            const idxDestino = window.anotacoes.findIndex(n => n.id === idDestino);
+
+            if (idxOrigem > -1 && idxDestino > -1) {
+                // Troca os itens de lugar no array
+                const temp = window.anotacoes[idxOrigem];
+                window.anotacoes.splice(idxOrigem, 1); // Remove
+                window.anotacoes.splice(idxDestino, 0, temp); // Insere na nova posição
+
+                window.salvarAnotacoes();
+                window.renderizarPostIts();
+            }
+        };
+
+        // Inicializa o sistema ao carregar a página
+        document.addEventListener('DOMContentLoaded', window.carregarAnotacoes);
 
         
 
