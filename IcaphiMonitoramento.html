@@ -3713,6 +3713,53 @@
         animation: none !important;
     }
 
+    /* ================= ESTILIZAÇÃO MODERNA DOS INPUTS DE TEMPO ================= */
+    .form-rotina input[type="time"] {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color, #cbd5e1);
+        border-radius: 8px;
+        background-color: #ffffff;
+        color: var(--text-main, #1e293b);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s ease;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .form-rotina input[type="time"]:focus {
+        border-color: var(--accent, #3b82f6);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    /* ================= CORES DINÂMICAS DO HORÁRIO (TAGS) ================= */
+    .etapa-time { 
+        font-weight: 700; 
+        padding: 4px 8px; 
+        border-radius: 6px; 
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.3s ease;
+    }
+    /* Azul: No prazo */
+    .time-pendente { 
+        color: #3b82f6; 
+        background: rgba(59, 130, 246, 0.1); 
+    }
+    /* Vermelho: Passou da hora */
+    .time-atrasado { 
+        color: #ef4444; 
+        background: rgba(239, 68, 68, 0.1); 
+    }
+    /* Verde: Concluído */
+    .time-concluida { 
+        color: #22c55e !important; 
+        background: rgba(34, 197, 94, 0.1) !important; 
+    }
+
     </style>
 </head>
 
@@ -3804,7 +3851,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.7</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.8</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -7020,6 +7067,18 @@
                         <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">FIM DA ROTINA</label>
                         <input type="time" id="rotina-fim" class="form-control" style="width: 100%; margin-top: 5px;" required>
                     </div>
+                </div>
+
+                <!-- DENTRO DE modal-editar-rotina, na div "form-rotina", adicione este bloco: -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-hover); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block;">DESMARCAR TAREFAS À MEIA-NOITE?</label>
+                        <span style="font-size: 10px; color: var(--text-muted);">As tarefas concluídas desta rotina voltam a ficar pendentes no dia seguinte.</span>
+                    </div>
+                    <label class="toggle-switch" style="margin: 0; flex-shrink: 0;">
+                        <input type="checkbox" id="rotina-reset-diario" checked>
+                        <span class="slider"></span>
+                    </label>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -21872,9 +21931,14 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
         // Abertura inicial do Mural
         window.abrirModalAnotacoes = function() {
+            const modalAnos = document.getElementById('modal-anotacoes');
             if (modalAnos) {
                 modalAnos.style.display = 'flex';
                 modalAnos.style.opacity = '0';
+                
+                // 🟢 AQUI ESTÁ A CORREÇÃO: Chama a função exata do seu sistema
+                window.renderizarPostIts();
+                
                 requestAnimationFrame(() => {
                     modalAnos.style.transition = 'opacity 0.3s ease';
                     modalAnos.style.opacity = '1';
@@ -22205,23 +22269,39 @@ document.querySelectorAll('tbody').forEach(tbody => {
             document.getElementById('modal-editar-rotina').classList.add('rotina-hidden');
         }
 
-        // ================= RENDERIZAÇÃO INTELIGENTE (COM RESET DE MEIA-NOITE) =================
+        // ================= RENDERIZAÇÃO INTELIGENTE (COM RESET INDIVIDUAL) =================
         function renderizarRotinas() {
-            // 🟢 Verifica e limpa as marcações se virou o dia (Meia-noite)
-            const hojeStr = new Date().toDateString();
-            const ultimaData = localStorage.getItem('icaphi_concluidas_data');
-            if (ultimaData !== hojeStr) {
-                localStorage.removeItem('icaphi_etapas_concluidas');
-                localStorage.setItem('icaphi_concluidas_data', hojeStr);
-            }
-
             const container = document.getElementById('lista-rotinas-container');
             if (!container) return;
             container.innerHTML = '';
             
+            let concluidasMap = JSON.parse(localStorage.getItem('icaphi_etapas_concluidas')) || {};
+            let concluidasDataMap = JSON.parse(localStorage.getItem('icaphi_etapas_data')) || {};
+            const hojeStr = new Date().toDateString();
+            let cacheAtualizado = false;
+
+            // 🟢 Verifica quais rotinas têm o "resetDiario" ativado e limpa as etapas antigas delas
+            window.rotinasUser.forEach(r => {
+                if (r.resetDiario !== false) { // Se o reset da rotina estiver LIGADO
+                    r.etapas.forEach(e => {
+                        if (concluidasMap[e.id] && concluidasDataMap[e.id] !== hojeStr) {
+                            delete concluidasMap[e.id];
+                            delete concluidasDataMap[e.id];
+                            cacheAtualizado = true;
+                        }
+                    });
+                }
+            });
+
+            // Se limpou algo, salva no navegador
+            if (cacheAtualizado) {
+                localStorage.setItem('icaphi_etapas_concluidas', JSON.stringify(concluidasMap));
+                localStorage.setItem('icaphi_etapas_data', JSON.stringify(concluidasDataMap));
+            }
+
+            // Filtragem visual da lista
             const toggleTodas = document.getElementById('toggle-todas-rotinas');
             const mostrarTodas = toggleTodas ? toggleTodas.checked : false;
-            
             const horaAtualStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
             let rotinasVisiveis = window.rotinasUser.filter(r => {
@@ -22237,18 +22317,31 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 return;
             }
 
-            let concluidasMap = JSON.parse(localStorage.getItem('icaphi_etapas_concluidas')) || {};
-
+            // Dentro da função renderizarRotinas(), substitua o bloco rotinasVisiveis.forEach por este:
             rotinasVisiveis.forEach(r => {
                 let etapasHtml = r.etapas.map(e => {
                     let isConcluida = concluidasMap[e.id] ? 'concluida' : '';
+                    
+                    // 🟢 Lógica de Cores da Tag de Horário
+                    let timeClass = '';
+                    if (e.limite) {
+                        if (isConcluida) {
+                            timeClass = 'time-concluida'; // Verde
+                        } else if (horaAtualStr > e.limite) {
+                            timeClass = 'time-atrasado';  // Vermelho
+                        } else {
+                            timeClass = 'time-pendente';  // Azul
+                        }
+                    }
+
+                    // Adicionado o ID e data-limite na tag de hora para controle em tempo real
                     return `
                         <div class="etapa-view ${isConcluida}" id="etapa-view-${e.id}">
                             <div style="display: flex; align-items: center; flex: 1;">
                                 <button class="btn-check-etapa" onclick="toggleConcluirEtapa('${e.id}')"><i class="ph-bold ph-check"></i></button>
                                 <span><strong>${e.nome}</strong> ${e.desc ? `<span style="color:var(--text-muted);"> - ${e.desc}</span>` : ''}</span>
                             </div>
-                            ${e.limite ? `<span class="etapa-time"><i class="ph ph-clock"></i> Até ${e.limite}</span>` : ''}
+                            ${e.limite ? `<span class="etapa-time ${timeClass}" id="time-badge-${e.id}" data-limite="${e.limite}"><i class="ph ph-clock"></i> Até ${e.limite}</span>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -22265,18 +22358,49 @@ document.querySelectorAll('tbody').forEach(tbody => {
             });
         }
 
-        // Função para marcar/desmarcar etapa concluída
+        // Função para marcar etapa e atualizar cores na mesma hora
         window.toggleConcluirEtapa = function(etapaId) {
             let concluidasMap = JSON.parse(localStorage.getItem('icaphi_etapas_concluidas')) || {};
-            concluidasMap[etapaId] = !concluidasMap[etapaId];
-            localStorage.setItem('icaphi_etapas_concluidas', JSON.stringify(concluidasMap));
+            let concluidasDataMap = JSON.parse(localStorage.getItem('icaphi_etapas_data')) || {};
+            const hojeStr = new Date().toDateString();
 
+            concluidasMap[etapaId] = !concluidasMap[etapaId];
+            
+            if (concluidasMap[etapaId]) {
+                concluidasDataMap[etapaId] = hojeStr;
+            } else {
+                delete concluidasDataMap[etapaId];
+            }
+
+            localStorage.setItem('icaphi_etapas_concluidas', JSON.stringify(concluidasMap));
+            localStorage.setItem('icaphi_etapas_data', JSON.stringify(concluidasDataMap));
+
+            // Elementos da Interface
             const el = document.getElementById(`etapa-view-${etapaId}`);
+            const badge = document.getElementById(`time-badge-${etapaId}`);
+            
             if (el) {
                 if (concluidasMap[etapaId]) {
                     el.classList.add('concluida');
+                    // Fica Verde ao concluir
+                    if (badge) {
+                        badge.classList.remove('time-pendente', 'time-atrasado');
+                        badge.classList.add('time-concluida');
+                    }
                 } else {
                     el.classList.remove('concluida');
+                    // Remove o Verde e recalcula se volta pra Azul ou Vermelho
+                    if (badge) {
+                        badge.classList.remove('time-concluida');
+                        const horaAtualStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        const limite = badge.getAttribute('data-limite');
+                        
+                        if (horaAtualStr > limite) {
+                            badge.classList.add('time-atrasado');
+                        } else {
+                            badge.classList.add('time-pendente');
+                        }
+                    }
                 }
             }
         }
@@ -22286,9 +22410,10 @@ document.querySelectorAll('tbody').forEach(tbody => {
             document.getElementById('rotina-id').value = '';
             document.getElementById('rotina-inicio').value = '';
             document.getElementById('rotina-fim').value = '';
+            document.getElementById('rotina-reset-diario').checked = true; // 🟢 Padrão: ativado
             document.getElementById('lista-etapas-drag').innerHTML = '';
             document.getElementById('titulo-modal-rotina').innerText = 'Nova Rotina';
-            adicionarEtapaDOM(); // Pelo menos 1 etapa em branco
+            adicionarEtapaDOM(); 
             
             const m = document.getElementById('modal-editar-rotina');
             m.classList.remove('rotina-hidden');
@@ -22302,6 +22427,10 @@ document.querySelectorAll('tbody').forEach(tbody => {
             document.getElementById('rotina-id').value = r.id;
             document.getElementById('rotina-inicio').value = r.inicio;
             document.getElementById('rotina-fim').value = r.fim;
+            
+            // 🟢 Carrega a preferência salva (se não existir, assume true por padrão)
+            document.getElementById('rotina-reset-diario').checked = r.resetDiario !== false; 
+            
             document.getElementById('titulo-modal-rotina').innerText = 'Editar Rotina';
             
             document.getElementById('lista-etapas-drag').innerHTML = '';
@@ -22335,6 +22464,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
             const id = document.getElementById('rotina-id').value || 'rotina_' + Date.now();
             const inicio = document.getElementById('rotina-inicio').value;
             const fim = document.getElementById('rotina-fim').value;
+            const resetDiario = document.getElementById('rotina-reset-diario').checked; // 🟢 Pega o valor do switch
 
             if (!inicio || !fim) return alert("Defina o horário de início e fim da rotina.");
 
@@ -22353,13 +22483,13 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
             if (etapas.length === 0) return alert("Adicione pelo menos uma etapa com nome para salvar.");
 
-            const novaRotina = { id, inicio, fim, etapas };
+            // 🟢 Salva a rotina com a configuração de reset
+            const novaRotina = { id, inicio, fim, resetDiario, etapas };
             const index = window.rotinasUser.findIndex(x => x.id === id);
             if (index >= 0) window.rotinasUser[index] = novaRotina;
             else window.rotinasUser.push(novaRotina);
 
             localStorage.setItem('icaphi_user_rotinas', JSON.stringify(window.rotinasUser));
-            
             fecharEditorRotina();
             renderizarRotinas();
         }
