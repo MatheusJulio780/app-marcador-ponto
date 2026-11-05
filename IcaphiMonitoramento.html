@@ -3786,12 +3786,128 @@
         display: block;
     }
 
+    /* =========================================================
+    MENU FLUTUANTE (COM ZONA DE SEGURANÇA PARA HOVER SUAVE)
+    ========================================================= */
+
+    /* Container fixo no canto inferior direito */
+    .floating-speed-dial {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 9999;
+        display: inline-block;
+    }
+
+    /* Botão Principal (Gatilho) */
+    .btn-floating-main {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #ffffff;
+        border: none;
+        box-shadow: var(--shadow-md);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+        position: relative;
+        z-index: 2;
+    }
+
+    .btn-floating-main:hover {
+        transform: scale(1.1);
+    }
+
+    /* Menu de Ações com "Zona de Segurança" (Padding invisível à direita para o mouse não perder o foco) */
+    .floating-actions-menu {
+        position: absolute;
+        right: 55px; /* Alinhado exatamente na largura do botão */
+        bottom: -10px; /* Expande a área sensível para cima e para baixo */
+        padding-right: 20px; /* 🟢 ZONA DE SEGURANÇA: Cria uma ponte invisível para o mouse transitar */
+        padding-top: 15px;
+        padding-bottom: 15px;
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(15px) scale(0.3);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    /* REVELA OS BOTÕES AO PASSAR O MOUSE NO CONTAINER OU NO PRÓPRIO MENU */
+    .floating-speed-dial:hover .floating-actions-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0) scale(1);
+        pointer-events: auto;
+    }
+
+    /* Mantém o botão principal rotacionado enquanto o mouse estiver dentro do menu flutuante */
+    .floating-speed-dial:hover .btn-floating-main {
+        transform: rotate(135deg) scale(1.05);
+    }
+
+    /* Estilo dos Botões Filhos */
+    .btn-floating-item {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: var(--bg-panel);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        position: relative;
+        opacity: 0;
+        transform: scale(0.3) translateX(15px);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Surgimento em cascata */
+    .floating-speed-dial:hover .btn-floating-item {
+        opacity: 1;
+        transform: scale(1) translateX(0);
+    }
+
+    .floating-speed-dial:hover .btn-floating-item:nth-child(1) { transition-delay: 0.12s; }
+    .floating-speed-dial:hover .btn-floating-item:nth-child(2) { transition-delay: 0.08s; }
+    .floating-speed-dial:hover .btn-floating-item:nth-child(3) { transition-delay: 0.04s; }
+
+    .btn-floating-item:hover {
+        background: var(--accent);
+        color: #ffffff;
+        border-color: var(--accent);
+        transform: scale(1.15) !important;
+    }
+
+    /* Badge de Notificações do Chat */
+    .btn-floating-item .chat-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: var(--danger);
+        color: white;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: bold;
+    }
+
     </style>
 </head>
 
 <body>
-
-    <button class="theme-toggle-btn" id="btn-theme-toggle"><i class="ph ph-moon"></i></button>
 
     <!-- UI de Autenticação e Presença no Header -->
     <div id="header-auth-container" style="display: none; align-items: center; gap: 15px;">
@@ -3877,7 +3993,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.11.9</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.0</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -4158,7 +4274,7 @@
                     </div>
                     <div class="header-controls" style="display: flex; align-items: center; gap: 10px;">
                         <button class="btn btn-secondary" onclick="window.abrirModalBuscaGlobal()" style="background: var(--accent); color: white; border: none; display: flex; align-items: center; gap: 6px;">
-                            <i class="ph-bold ph-magnifying-glass"></i> Rastreio Global
+                            <i class="ph-bold ph-magnifying-glass"></i> Rastreio de NFs
                         </button>
                         <button class="btn btn-success" onclick="window.abrirModalExportarCanhotos()" style="display: flex; align-items: center; gap: 6px;">
                             <i class="ph ph-file-xls"></i> Exportar Excel
@@ -4173,27 +4289,95 @@
             </header>
 
             <div class="content-container" style="padding: 20px;">
-                <!-- CARDS DE RESUMO SUPERIOR (COM FUNDO SÓLIDO) -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
-                        <div style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-calendar"></i></div>
+                <!-- CARDS DE RESUMO SUPERIOR (6 COLUNAS) -->
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <!-- 1. Período -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-calendar"></i></div>
                         <div>
-                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Período Selecionado</div>
-                            <div id="kpi-periodo" style="font-size: 16px; font-weight: 700; color: var(--text-main);">Selecione o mês</div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Período</div>
+                            <div id="kpi-periodo" style="font-size: 14px; font-weight: 700; color: var(--text-main);">Selecione</div>
                         </div>
                     </div>
-                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
-                        <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-package"></i></div>
+
+                    <!-- 2. Total de Entregas -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-package"></i></div>
                         <div>
-                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total de Entregas</div>
-                            <div id="kpi-entregas" style="font-size: 16px; font-weight: 700; color: var(--text-main);">0</div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Entregas</div>
+                            <div id="kpi-entregas" style="font-size: 14px; font-weight: 700; color: var(--text-main);">0</div>
                         </div>
                     </div>
-                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 15px;">
-                        <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="ph ph-warning-circle"></i></div>
+
+                    <!-- 3. Assinaturas -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(99, 102, 241, 0.1); color: #6366f1; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-signature"></i></div>
                         <div>
-                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pendentes de Anexo</div>
-                            <div id="kpi-pendentes" style="font-size: 16px; font-weight: 700; color: var(--danger);">0</div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Assinaturas</div>
+                            <div id="kpi-assinatura" style="font-size: 14px; font-weight: 700; color: var(--text-main);">0</div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Fotos -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-camera"></i></div>
+                        <div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Fotos</div>
+                            <div id="kpi-foto" style="font-size: 14px; font-weight: 700; color: var(--text-main);">0</div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Anexados -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(14, 165, 233, 0.1); color: #0ea5e9; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-file-text"></i></div>
+                        <div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Anexados</div>
+                            <div id="kpi-anexado" style="font-size: 14px; font-weight: 700; color: var(--text-main);">0</div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Pendentes de Anexo -->
+                    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-warning-circle"></i></div>
+                        <div>
+                            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pendentes</div>
+                            <div id="kpi-pendentes" style="font-size: 14px; font-weight: 700; color: var(--danger);">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🔴 BANNER DE ALERTA: CANHOTOS PENDENTES EM MESES ANTERIORES -->
+                <div id="alert-canhotos-anteriores" 
+                    onclick="window.abrirModalPendenciasCanhotosAnteriores()"
+                    style="display: none; margin-bottom: 15px; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger); font-weight: 700; font-size: 13px; cursor: pointer; align-items: center; justify-content: space-between; transition: 0.2s;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.18)'"
+                    onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="ph-bold ph-warning-octagon" style="font-size: 20px; flex-shrink: 0;"></i>
+                        <span id="alert-canhotos-texto">Existem canhotos pendentes de anexo em meses anteriores!</span>
+                    </div>
+                    <span style="background: var(--danger); color: white; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                        <i class="ph-bold ph-eye"></i> Ver Pendências
+                    </span>
+                </div>
+
+                <!-- 🔴 MODAL DE DETALHAMENTO DAS PENDÊNCIAS ANTERIORES -->
+                <div id="modal-pendencias-canhotos-anteriores" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                    <div style="background: var(--bg-panel, #1e293b); width: 90%; max-width: 600px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); overflow: hidden; font-family: inherit;">
+                        <div style="padding: 16px 20px; background: var(--bg-main, #0f172a); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px; color: var(--danger); font-weight: 800; font-size: 15px;">
+                                <i class="ph-bold ph-warning" style="font-size: 20px;"></i>
+                                <span>Canhotos Pendentes de Meses Anteriores</span>
+                            </div>
+                            <button onclick="document.getElementById('modal-pendencias-canhotos-anteriores').style.display='none'" style="background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; display: flex; align-items: center;">
+                                <i class="ph ph-x"></i>
+                            </button>
+                        </div>
+                        <div id="conteudo-modal-pendencias-canhotos-anteriores" style="padding: 20px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Conteúdo montado via JS -->
+                        </div>
+                        <div style="padding: 12px 20px; background: var(--bg-main, #0f172a); border-top: 1px solid var(--border-color); text-align: right;">
+                            <button onclick="document.getElementById('modal-pendencias-canhotos-anteriores').style.display='none'" class="btn" style="background: var(--border-color); color: var(--text-main); font-weight: 700; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;">Fechar</button>
                         </div>
                     </div>
                 </div>
@@ -6478,11 +6662,6 @@
                 <div>Contagem: <span id="stat-count-val" style="color: var(--accent);">0</span></div>
             </div>
         </div>
-
-        <button id="btn-floating-chat" class="btn-floating">
-            <i class="ph ph-chat-circle"></i>
-            <span id="chat-global-badge" class="chat-badge" style="display:none;">0</span>
-        </button>
     </div>
 
     <!-- Elemento de Áudio Oculto -->
@@ -7166,6 +7345,33 @@
                 <!-- Lista do Firebase entrará aqui -->
             </div>
         </div>
+    </div>
+
+    <!-- ================= MENU FLUTUANTE INTELIGENTE ================= -->
+    <div class="floating-speed-dial">
+        <!-- Botões Filhos (Eles começam escondidos e sobem/surgem ao passar o mouse) -->
+        <div class="floating-actions-menu">
+            <!-- 1. Botão de Rastreio Global -->
+            <button class="btn-floating-item" onclick="window.abrirModalBuscaGlobal()" title="Rastreio de NFs">
+                <i class="ph-bold ph-magnifying-glass"></i>
+            </button>
+
+            <!-- 2. Botão de Alternar Tema (Claro/Escuro) -->
+            <button class="btn-floating-item" id="btn-theme-toggle" title="Alternar Tema">
+                <i class="ph ph-moon"></i>
+            </button>
+
+            <!-- 3. Botão do Chat Global -->
+            <button class="btn-floating-item" id="btn-floating-chat" title="Chat da Equipe">
+                <i class="ph ph-chat-circle"></i>
+                <span id="chat-global-badge" class="chat-badge" style="display:none;">0</span>
+            </button>
+        </div>
+
+        <!-- Botão Principal (O "Gatilho" que fica fixo na tela com um ícone bonito) -->
+        <button class="btn-floating-main" title="Ações Rápidas">
+            <i class="ph-bold ph-dots-nine"></i>
+        </button>
     </div>
 
     <style>
@@ -9597,7 +9803,11 @@
 
                 let diasNoMes = []; 
                 let tEntregasMes = 0; 
+                let tAssinaturaMes = 0; // 🟢 Acumulador de Assinaturas
+                let tFotoMes = 0;       // 🟢 Acumulador de Fotos
+                let tAnexadoMes = 0;    // 🟢 Acumulador de Anexados
                 let tSemAnexoMes = 0;
+
                 const hojeStr = new Date().toISOString().split('T')[0]; 
                 const hojeTime = new Date(hojeStr).getTime();
 
@@ -9620,8 +9830,13 @@
                         let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                         if (diffDays < 0) diffDays = 0;
 
+                        // Soma aos totais gerais do mês
                         tEntregasMes += entregues.length; 
+                        tAssinaturaMes += cAssinatura;
+                        tFotoMes += cFoto;
+                        tAnexadoMes += cAnexado;
                         tSemAnexoMes += pendentes.length; 
+                        
                         window.canhotosCache[dataStr] = pendentes;
 
                         diasNoMes.push({ 
@@ -9637,13 +9852,20 @@
                 });
 
                 diasNoMes.sort((a, b) => a.data.localeCompare(b.data)); 
-                window._diasCanhotosCache = diasNoMes; // Guarda em cache para o botão de toggle
+                window._diasCanhotosCache = diasNoMes; 
 
                 renderizarTabelaCanhotos(diasNoMes);
 
+                // Atualiza todos os KPIs no topo da tela
                 document.getElementById('kpi-periodo').innerText = monthSel;
                 document.getElementById('kpi-entregas').innerText = tEntregasMes;
+                document.getElementById('kpi-assinatura').innerText = tAssinaturaMes; // 🟢 Injeta Assinaturas
+                document.getElementById('kpi-foto').innerText = tFotoMes;             // 🟢 Injeta Fotos
+                document.getElementById('kpi-anexado').innerText = tAnexadoMes;       // 🟢 Injeta Anexados
                 document.getElementById('kpi-pendentes').innerText = tSemAnexoMes;
+
+                // 🚀 DISPARA A VERIFICAÇÃO DE CANHOTOS PENDENTES EM MESES ANTERIORES
+                await window.verificarCanhotosAnteriores(monthSel);
 
             } catch (e) { 
                 console.error("Erro ao carregar canhotos:", e); 
@@ -9656,6 +9878,110 @@
             const pendentes = window.canhotosCache[dataStr] || []; document.getElementById('detalhes-titulo').innerText = `Auditoria Faltantes - ${formatarDataBR(dataStr)}`; document.getElementById('detalhes-resumo').innerHTML = `<span>❌ Notas Entregues sem Anexo: <span style="color:var(--danger);">${pendentes.length}</span></span>`;
             const thead = document.getElementById('detalhes-thead'); const tbody = document.getElementById('detalhes-tbody'); thead.innerHTML = `<tr><th>PLACA</th><th>MOTORISTA</th><th>NF</th><th>PESO</th><th>CLIENTE</th><th>STATUS</th><th>APP (ATUAL)</th></tr>`; let trHTML = "";
             pendentes.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${n.placa}</td><td style="color:var(--accent);">${n.motorista}</td><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td>${getStRotaPill(n.status)}</td><td style="color:var(--danger); font-weight:700;">${n.app || 'VAZIO'}</td></tr>`; }); tbody.innerHTML = trHTML || "<tr><td colspan='7' align='center'>Nenhuma pendência.</td></tr>"; document.getElementById('modal-detalhes').classList.add('active');
+        };
+
+        // ================= VERIFICAÇÃO DE CANHOTOS EM MESES ANTERIORES =================
+        window.verificarCanhotosAnteriores = async function(mesSelecionadoStr) {
+            const banner = document.getElementById('alert-canhotos-anteriores');
+            if (!banner) return;
+
+            try {
+                // Converte o mês selecionado (ex: "2026-11") para o primeiro dia do mês em formato ISO ("2026-11-01")
+                const limiteDataStr = `${mesSelecionadoStr}-01`;
+
+                // Busca no Firestore todas as auditorias diárias cuja data seja estritamente menor que o mês atual selecionado
+                const q = query(
+                    collection(db, "notas_fiscais_diario"), 
+                    where(documentId(), "<", limiteDataStr)
+                );
+                const snap = await getDocs(q);
+
+                let totalPendenciasAnteriores = 0;
+                window._pendenciasCanhotosAnterioresCache = {}; // Armazena para exibir no modal
+
+                snap.forEach(docSnap => {
+                    const dataStr = docSnap.id;
+                    const notas = docSnap.data().notas || [];
+                    
+                    // Filtra notas entregues sem anexo válido
+                    let pendentes = notas.filter(n => {
+                        const statusNF = trimUpper(n.status || '');
+                        const appVal = trimUpper(n.app || '');
+                        return statusNF === 'ENTREGUE' && !['ASSINATURA', 'FOTO', 'ANEXADO'].includes(appVal);
+                    });
+
+                    if (pendentes.length > 0) {
+                        totalPendenciasAnteriores += pendentes.length;
+                        window._pendenciasCanhotosAnterioresCache[dataStr] = pendentes;
+                    }
+                });
+
+                // Se houver pendências em meses anteriores, exibe o banner com o total
+                if (totalPendenciasAnteriores > 0) {
+                    document.getElementById('alert-canhotos-texto').innerText = `Existem ${totalPendenciasAnteriores} canhotos pendentes de anexo em meses anteriores!`;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
+
+            } catch (e) {
+                console.error("Erro ao verificar canhotos anteriores:", e);
+                banner.style.display = 'none';
+            }
+        };
+
+        // ================= MODAL DE PENDÊNCIAS ANTERIORES (AGRUPADO POR MÊS) =================
+        window.abrirModalPendenciasCanhotosAnteriores = function() {
+            const container = document.getElementById('conteudo-modal-pendencias-canhotos-anteriores');
+            const dados = window._pendenciasCanhotosAnterioresCache || {};
+            
+            // Objeto para acumular por mês (ex: { "2026-10": 12, "2026-09": 5 })
+            const resumoPorMes = {};
+
+            Object.keys(dados).forEach(dataStr => {
+                const mesAno = dataStr.substring(0, 7); // Pega apenas "AAAA-MM"
+                const qtdPendentes = dados[dataStr].length;
+
+                if (!resumoPorMes[mesAno]) {
+                    resumoPorMes[mesAno] = 0;
+                }
+                resumoPorMes[mesAno] += qtdPendentes;
+            });
+
+            const meses = Object.keys(resumoPorMes);
+
+            if (meses.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhuma pendência encontrada em meses anteriores.</div>`;
+            } else {
+                let html = '';
+                // Ordena os meses do mais recente para o mais antigo ou vice-versa
+                meses.sort().reverse().forEach(mesAno => {
+                    const quantidade = resumoPorMes[mesAno];
+                    
+                    // Formata visualmente o mês (ex: "2026-11" vira "Novembro de 2026" ou mantém o formato padrão limpo)
+                    html += `
+                        <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="background: rgba(239, 68, 68, 0.15); color: var(--danger); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">
+                                    <i class="ph-bold ph-calendar-blank"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 800; color: var(--text-main); font-size: 14px;">Mês Referência: ${mesAno}</div>
+                                    <div style="font-size: 12px; color: var(--danger); font-weight: 700; margin-top: 2px;">
+                                        ${quantidade} canhotos pendentes de anexo
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="document.getElementById('modal-pendencias-canhotos-anteriores').style.display='none'; document.getElementById('canhotos-month-select').value='${mesAno}'; document.getElementById('btn-carregar-canhotos').click();" style="font-weight: 700; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+                                <i class="ph-bold ph-arrow-right"></i> Ir para o Mês
+                            </button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            document.getElementById('modal-pendencias-canhotos-anteriores').style.display = 'flex';
         };
 
         // ================= FUNÇÕES DE MAPA (RESTAURADAS) =================
