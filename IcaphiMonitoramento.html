@@ -3954,6 +3954,11 @@
                     <i class="ph ph-phone menu-icon"></i><span class="menu-text">Smartphones</span>
                 </a>
 
+                <!-- 🟢 ADICIONADO AQUI: Aba de Pallets -->
+                <a class="menu-item" data-target="view-pallets">
+                    <i class="ph ph-stack menu-icon"></i><span class="menu-text">Pallets</span>
+                </a>
+
                 <a class="menu-item" data-target="view-dashboard">
                     <i class="ph ph-chart-line-up menu-icon"></i><span class="menu-text">Dashboard</span>
                 </a>
@@ -3993,7 +3998,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.0</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.1</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -7374,6 +7379,112 @@
         </button>
     </div>
 
+    <!-- ================= SEÇÃO DE PALLETS ================= -->
+    <section id="view-pallets" class="view-section" style="display: none;">
+        <header class="header">
+            <h2>
+                <i class="ph ph-stack" style="color:var(--accent);"></i> Gestão de Pallets 
+                <span style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 10px;">Controle e Movimentação de Pallets na Operação</span>
+            </h2>
+
+            <div style="display: flex; align-items: center; gap: 15px; margin-left: auto;">
+                <div id="online-users-stack-pallets" class="avatar-stack" title="Usuários Online"></div>
+                
+                <div class="header-controls" style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-pallets">
+                        <i class="ph ph-funnel-x"></i> Limpar Filtros
+                    </button>
+                    <div style="border-left: 1px solid var(--border-color); height: 24px; margin: 0 2px;"></div>
+                    <input type="month" id="pallets-month-select" class="form-control" style="padding: 6px 10px; font-size: 12px;">
+                    <button class="btn btn-primary" id="btn-carregar-pallets" style="display: flex; align-items: center; gap: 6px;">
+                        <i class="ph ph-funnel"></i> Filtrar Mês
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container" style="padding: 20px;">
+            <!-- CARDS DE RESUMO SUPERIOR (5 COLUNAS) -->
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-calendar"></i></div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Período</div>
+                        <div id="kpi-pallets-periodo" style="font-size: 14px; font-weight: 700; color: var(--text-main);">Selecione</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-truck"></i></div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Viagens</div>
+                        <div id="kpi-pallets-viagens" style="font-size: 14px; font-weight: 700; color: var(--text-main);">0</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-stack"></i></div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Pallets QTD</div>
+                        <div id="kpi-pallets-total" style="font-size: 14px; font-weight: 700; color: var(--accent);">0</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(14, 165, 233, 0.1); color: #0ea5e9; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-buildings"></i></div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Viagens no Galpão</div>
+                        <div id="kpi-pallets-viagens-galpao" style="font-size: 14px; font-weight: 700; color: #0ea5e9;">0</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;"><i class="ph ph-check-square"></i></div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pallets no Galpão</div>
+                        <div id="kpi-pallets-qtd-galpao" style="font-size: 14px; font-weight: 700; color: #10b981;">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELA DE PALLETS -->
+            <div class="table-wrapper" style="background: var(--bg-card, #ffffff); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: var(--shadow-sm);">
+                <table id="tabela-pallets" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: var(--bg-table-header, #f8fafc); border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">DATA <i class="ph-fill ph-caret-down filter-icon" data-col="0"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">PAL. <i class="ph-fill ph-caret-down filter-icon" data-col="1"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">QTD <i class="ph-fill ph-caret-down filter-icon" data-col="2"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">PLACA <i class="ph-fill ph-caret-down filter-icon" data-col="3"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">TROCA <i class="ph-fill ph-caret-down filter-icon" data-col="4"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">PERFIL <i class="ph-fill ph-caret-down filter-icon" data-col="5"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">TIPO <i class="ph-fill ph-caret-down filter-icon" data-col="6"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">O.C. <i class="ph-fill ph-caret-down filter-icon" data-col="7"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">TRANS. <i class="ph-fill ph-caret-down filter-icon" data-col="8"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">MOT. <i class="ph-fill ph-caret-down filter-icon" data-col="9"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">CONT. <i class="ph-fill ph-caret-down filter-icon" data-col="10"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">ST. PAINEL <i class="ph-fill ph-caret-down filter-icon" data-col="11"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">Q.NF <i class="ph-fill ph-caret-down filter-icon" data-col="12"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">PESO <i class="ph-fill ph-caret-down filter-icon" data-col="13"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">REGIÃO <i class="ph-fill ph-caret-down filter-icon" data-col="14"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">AJUDANTE <i class="ph-fill ph-caret-down filter-icon" data-col="15"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted);">ST. ROTA <i class="ph-fill ph-caret-down filter-icon" data-col="16"></i></th>
+                            <th style="padding: 12px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center;">NO GALPÃO <i class="ph-fill ph-caret-down filter-icon" data-col="17"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="18" align="center" style="padding: 40px; color: var(--text-muted); font-weight: 500;">
+                                <i class="ph ph-calendar-blank" style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                                Selecione o mês acima e clique em Filtrar Mês para carregar os pallets.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
     <style>
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .mob-dado-box { background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; }
@@ -10030,16 +10141,24 @@
             const thead = document.getElementById('detalhes-thead'); 
             const resumo = document.getElementById('detalhes-resumo'); 
             
-            // 🟢 Formatação inteligente do título do modal
+            // Formatação inteligente do título do modal
             let tituloDisplay = tipo;
             if (tipo === 'ENTREGUE') tituloDisplay = 'ENTREGUES / REALIZADAS';
             else if (tipo === 'SEM_APP') tituloDisplay = 'ENTREGUES MAS SEM ANEXO (APP)';
             
             document.getElementById('detalhes-titulo').innerText = `${tituloDisplay} - Veículo: ${placa}`;
 
+            // Cabeçalhos inteligentes com o ícone de filtro estilo Excel embutido em cada coluna
             if (tipo === 'PARCIAL') { 
                 notasFiltradas = notasDaPlaca.filter(n => n.parcial && n.parcial.trim() !== ""); 
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>INFORMAÇÃO PARCIAL</th></tr>`; 
+                notasFiltradas.sort((a, b) => parseInt(cleanNF(a.nf) || 0) - parseInt(cleanNF(b.nf) || 0));
+
+                theadHTML = `<tr>
+                    <th>NF <i class="ph ph-funnel filter-icon" data-col="0" title="Filtrar"></i></th>
+                    <th>PESO <i class="ph ph-funnel filter-icon" data-col="1" title="Filtrar"></i></th>
+                    <th>CLIENTE <i class="ph ph-funnel filter-icon" data-col="2" title="Filtrar"></i></th>
+                    <th>INFORMAÇÃO PARCIAL <i class="ph ph-funnel filter-icon" data-col="3" title="Filtrar"></i></th>
+                </tr>`; 
                 notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.cliente}</td><td style="color:var(--danger); font-weight:600;">${n.parcial}</td></tr>`; }); 
             }
             else if (tipo === 'PERNOITE' || tipo === 'DEVOLUÇÃO' || tipo === 'REENTREGA' || tipo === 'ENTREGUE') { 
@@ -10048,17 +10167,35 @@
                     if (tipo === 'ENTREGUE') return st === 'ENTREGUE' || st === 'REALIZADA';
                     return st === tipo;
                 });
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>QTD</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th></tr>`; 
+                notasFiltradas.sort((a, b) => parseInt(cleanNF(a.nf) || 0) - parseInt(cleanNF(b.nf) || 0));
+
+                theadHTML = `<tr>
+                    <th>NF <i class="ph ph-funnel filter-icon" data-col="0" title="Filtrar"></i></th>
+                    <th>PESO <i class="ph ph-funnel filter-icon" data-col="1" title="Filtrar"></i></th>
+                    <th>QTD <i class="ph ph-funnel filter-icon" data-col="2" title="Filtrar"></i></th>
+                    <th>CLIENTE <i class="ph ph-funnel filter-icon" data-col="3" title="Filtrar"></i></th>
+                    <th>CIDADE <i class="ph ph-funnel filter-icon" data-col="4" title="Filtrar"></i></th>
+                    <th>BAIRRO <i class="ph ph-funnel filter-icon" data-col="5" title="Filtrar"></i></th>
+                    <th>ENDEREÇO <i class="ph ph-funnel filter-icon" data-col="6" title="Filtrar"></i></th>
+                </tr>`; 
                 notasFiltradas.forEach(n => { trHTML += `<tr><td style="font-weight:700;">${cleanNF(n.nf)}</td><td>${formatNumber(n.peso)}</td><td>${n.qtde}</td><td>${n.cliente}</td><td>${n.cidade}</td><td>${n.bairro}</td><td title="${n.endereco}">${n.endereco}</td></tr>`; }); 
             }
-            // 🟢 AQUI: Nova lógica exigida - Entregues sem documento (APP) anexado
             else if (tipo === 'SEM_APP') {
                 notasFiltradas = notasDaPlaca.filter(n => {
                     const st = trimUpper(n.status);
                     const appInfo = String(n.app || "").trim();
                     return (st === 'ENTREGUE' || st === 'REALIZADA') && appInfo === "";
                 });
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CLIENTE</th><th>CIDADE</th><th>BAIRRO</th><th>FALHA APP</th></tr>`; 
+                notasFiltradas.sort((a, b) => parseInt(cleanNF(a.nf) || 0) - parseInt(cleanNF(b.nf) || 0));
+
+                theadHTML = `<tr>
+                    <th>NF <i class="ph ph-funnel filter-icon" data-col="0" title="Filtrar"></i></th>
+                    <th>PESO <i class="ph ph-funnel filter-icon" data-col="1" title="Filtrar"></i></th>
+                    <th>CLIENTE <i class="ph ph-funnel filter-icon" data-col="2" title="Filtrar"></i></th>
+                    <th>CIDADE <i class="ph ph-funnel filter-icon" data-col="3" title="Filtrar"></i></th>
+                    <th>BAIRRO <i class="ph ph-funnel filter-icon" data-col="4" title="Filtrar"></i></th>
+                    <th>FALHA APP <i class="ph ph-funnel filter-icon" data-col="5" title="Filtrar"></i></th>
+                </tr>`; 
                 notasFiltradas.forEach(n => { 
                     trHTML += `<tr>
                         <td style="font-weight:700;">${cleanNF(n.nf)}</td>
@@ -10073,7 +10210,16 @@
             else if (tipo === 'PENDENTE') {
                 const pendentesList = ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA']; 
                 notasFiltradas = notasDaPlaca.filter(n => trimUpper(n.status) === "" || pendentesList.includes(trimUpper(n.status))); 
-                theadHTML = `<tr><th>NF</th><th>PESO</th><th>CIDADE</th><th>BAIRRO</th><th>ENDEREÇO</th><th>ATUALIZAR STATUS</th></tr>`;
+                notasFiltradas.sort((a, b) => parseInt(cleanNF(a.nf) || 0) - parseInt(cleanNF(b.nf) || 0));
+
+                theadHTML = `<tr>
+                    <th>NF <i class="ph ph-funnel filter-icon" data-col="0" title="Filtrar"></i></th>
+                    <th>PESO <i class="ph ph-funnel filter-icon" data-col="1" title="Filtrar"></i></th>
+                    <th>CIDADE <i class="ph ph-funnel filter-icon" data-col="2" title="Filtrar"></i></th>
+                    <th>BAIRRO <i class="ph ph-funnel filter-icon" data-col="3" title="Filtrar"></i></th>
+                    <th>ENDEREÇO <i class="ph ph-funnel filter-icon" data-col="4" title="Filtrar"></i></th>
+                    <th>ATUALIZAR STATUS <i class="ph ph-funnel filter-icon" data-col="5" title="Filtrar"></i></th>
+                </tr>`;
                 notasFiltradas.forEach(n => { 
                     const statusAtual = trimUpper(n.status); 
                     const optHTML = LISTA_STATUS_NOTAS.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join(''); 
@@ -10085,7 +10231,6 @@
             resumo.innerHTML = `<span>📋 Total de Notas: <span style="color:var(--accent);">${notasFiltradas.length}</span></span> <span>⚖️ Peso Total: <span style="color:var(--accent);">${totalPeso} KG</span></span>`;
             thead.innerHTML = theadHTML; 
             
-            // Ajusta a mensagem de vazio para fazer sentido no contexto do APP
             let msgVazio = "Nenhuma nota encontrada.";
             if (tipo === 'SEM_APP') msgVazio = "✅ Todas as notas entregues possuem anexo!";
             tbody.innerHTML = trHTML || `<tr><td colspan='7' align='center' style='padding:20px; font-weight:600;'>${msgVazio}</td></tr>`; 
@@ -10130,7 +10275,9 @@
             'tabela-operacao-notas': {},
             'tabela-editor-painel': {},
             'tabela-editor-notas': {},
-            'tabela-smartphones': {}
+            'tabela-smartphones': {},
+            'tabela-detalhes': {},
+            'tabela-pallets': {}
         };
 
         const filterPopup = document.getElementById('excel-filter-popup');
@@ -10200,7 +10347,7 @@
         const btnSortDesc = document.getElementById('btn-filter-sort-desc');
         if (btnSortDesc) btnSortDesc.addEventListener('click', () => ordenarTabelaAtiva('desc'));
 
-        // Delegação oficial unificada para abrir o Filtro
+        // Delegação oficial unificada para abrir o Filtro em qualquer tabela (Incluindo Pallets)
         document.addEventListener('click', (e) => {
             const icon = e.target.closest('.filter-icon');
             if (!icon) return;
@@ -10208,12 +10355,23 @@
             e.preventDefault();
             e.stopImmediatePropagation();
 
+            const table = icon.closest('table');
+            if (!table || !table.id) {
+                console.error("Tabela do filtro não encontrada ou sem ID.");
+                return;
+            }
+
+            activeTableId = table.id;
             activeColIndex = parseInt(icon.getAttribute('data-col'));
-            activeTableId = icon.closest('table').id;
+
+            if (isNaN(activeColIndex)) {
+                console.error("Atributo data-col inválido no ícone.");
+                return;
+            }
 
             if (!activeFilters[activeTableId]) activeFilters[activeTableId] = {};
 
-            // Posicionamento
+            // Posicionamento na tela
             const rect = icon.getBoundingClientRect();
             let leftPos = rect.left;
             if (leftPos + 250 > window.innerWidth) leftPos = window.innerWidth - 260;
@@ -10226,14 +10384,15 @@
                 filterPopup.style.setProperty('top', `${topPos}px`, 'important');
                 filterPopup.style.setProperty('display', 'flex', 'important');
                 filterPopup.style.setProperty('z-index', '999999', 'important');
-            } else {
-                console.error("Elemento #excel-filter-popup não foi encontrado no HTML!");
-                return;
             }
 
+            // Coleta os valores únicos da coluna na tabela ativa (Ignorando linhas de colspan/vazias)
             const uniqueValues = new Set();
-            document.querySelectorAll(`#${activeTableId} tbody tr:not([style*="display: none"])`).forEach(tr => {
+            document.querySelectorAll(`#${activeTableId} tbody tr`).forEach(tr => {
+                // Ignora linhas de aviso ou colspan (como "Nenhum registro encontrado")
+                if (tr.children.length === 1 && tr.children[0].hasAttribute('colspan')) return;
                 if (!tr.children[activeColIndex]) return;
+                
                 const td = tr.children[activeColIndex];
                 let val = obterValorRealCelula(td, activeTableId);
                 uniqueValues.add(val);
@@ -10241,7 +10400,7 @@
 
             const valoresJaFiltrados = activeFilters[activeTableId][activeColIndex] || null;
             let checksHtml = '';
-            const sortedValues = [...uniqueValues].sort((a, b) => a.toString().localeCompare(b.toString()));
+            const sortedValues = [...uniqueValues].sort((a, b) => a.toString().localeCompare(b.toString(), 'pt-BR', { numeric: true }));
 
             sortedValues.forEach(val => {
                 const isChecked = valoresJaFiltrados ? valoresJaFiltrados.includes(val) : true;
@@ -23232,6 +23391,215 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 container.innerHTML = html;
             });
         }
+
+        // ================= MÓDULO DE GESTÃO DE PALLETS =================
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputMesPallets = document.getElementById('pallets-month-select');
+            if (inputMesPallets && !inputMesPallets.value) {
+                const hoje = new Date();
+                const ano = hoje.getFullYear();
+                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                inputMesPallets.value = `${ano}-${mes}`;
+            }
+        });
+
+        // Função para recalcular os KPIs de resumo do galpão baseados na tabela visível
+        function atualizarKPIsGalpao() {
+            const tbody = document.querySelector('#tabela-pallets tbody');
+            if (!tbody) return;
+
+            const linhas = tbody.querySelectorAll('tr');
+            let totalViagens = 0;
+            let somaQtdPallets = 0;
+            let viagensGalpao = 0;
+            let palletsGalpao = 0;
+
+            linhas.forEach(tr => {
+                if (tr.querySelector('td') && tr.querySelector('td').getAttribute('colspan')) return; // ignora linha de "nenhum registro"
+                
+                totalViagens++;
+                const qtdCell = tr.cells[2]; // Coluna QTD
+                const chk = tr.querySelector('.chk-galpao');
+
+                const qtdVal = parseFloat(qtdCell ? qtdCell.textContent.trim() : 0) || 0;
+                somaQtdPallets += qtdVal;
+
+                if (chk && chk.checked) {
+                    viagensGalpao++;
+                    palletsGalpao += qtdVal;
+                }
+            });
+
+            document.getElementById('kpi-pallets-viagens').innerText = totalViagens;
+            document.getElementById('kpi-pallets-total').innerText = somaQtdPallets;
+            document.getElementById('kpi-pallets-viagens-galpao').innerText = viagensGalpao;
+            document.getElementById('kpi-pallets-qtd-galpao').innerText = palletsGalpao;
+        }
+
+        document.getElementById('btn-carregar-pallets')?.addEventListener('click', async () => {
+            const mesSel = document.getElementById('pallets-month-select').value;
+            if (!mesSel) return alert("Selecione um mês válido.");
+
+            showLoader();
+            try {
+                const dataInicio = `${mesSel}-01`;
+                const dataFim = `${mesSel}-31`;
+
+                // Busca simultânea dos painéis e notas fiscais do mês
+                const qPainel = query(collection(db, "painel_diario"), where(documentId(), ">=", dataInicio), where(documentId(), "<=", dataFim));
+                const qNotas = query(collection(db, "notas_fiscais_diario"), where(documentId(), ">=", dataInicio), where(documentId(), "<=", dataFim));
+
+                const [snapPainel, snapNotas] = await Promise.all([getDocs(qPainel), getDocs(qNotas)]);
+
+                // Cria dicionários de notas por data para cruzamento rápido
+                const notasPorData = {};
+                snapNotas.forEach(docN => {
+                    notasPorData[docN.id] = docN.data().notas || [];
+                });
+
+                let htmlLinhas = "";
+
+                snapPainel.forEach(docSnap => {
+                    const dataStr = docSnap.id;
+                    const rotas = docSnap.data().rotas || [];
+                    const notasDoDia = notasPorData[dataStr] || [];
+
+                    rotas.forEach(r => {
+                        const valePalete = String(r.vale_palete || "").trim();
+                        const qtdPallet = String(r.qtde || "").trim();
+
+                        // Filtra estritamente as viagens que possuem pallet preenchido
+                        const temPalletValido = valePalete !== "" && valePalete !== "0" && trimUpper(valePalete) !== "NÃO";
+
+                        if (temPalletValido) {
+                            const placaRef = (r.troca && r.troca.trim() !== "") ? trimUpper(r.troca).replace(/[^A-Z0-9]/g, '') : trimUpper(r.placa).replace(/[^A-Z0-9]/g, '');
+                            const transpRotaStr = String(r.transporte || "").trim();
+                            const transpNumArray = transpRotaStr.match(/\d+/g) || [];
+
+                            // Cruzamento idêntico ao painel para calcular Notas, Peso, Motorista, Ajudante e St. Rota
+                            const notasPlaca = notasDoDia.filter(n => {
+                                if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                                const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
+                                if (!matchPlaca) return false;
+                                
+                                const viagemNota = String(n.viagem || "").trim();
+                                if (transpNumArray.length > 0 && viagemNota !== "") {
+                                    return transpNumArray.some(t => viagemNota.includes(t));
+                                }
+                                return true;
+                            });
+
+                            let motoristaFinal = r.motorista || "";
+                            let ajudanteFinal = r.ajudante || "";
+                            if (notasPlaca.length > 0) {
+                                const ref = notasPlaca.find(n => n.motorista || n.telefone) || notasPlaca[0];
+                                motoristaFinal = ref.motorista || motoristaFinal;
+                            }
+
+                            let qtd_nf = notasPlaca.length;
+                            let pesoTotal = notasPlaca.reduce((acc, curr) => acc + (parseFloat(curr.peso) || 0), 0);
+                            let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO').length;
+                            let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                            let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+                            let pendente = notasPlaca.filter(n => trimUpper(n.status) === "" || ['', 'PERNOITE', 'REENTREGA', 'DEVOLUÇÃO', 'SINISTRADA', 'AGUARDANDO', 'DESCARREGANDO', 'TRAFEGANDO', 'PARADA'].includes(trimUpper(n.status))).length;
+
+                            const isParada = trimUpper(r.status) === 'PARADA';
+                            const isSinistrado = trimUpper(r.status) === 'SINISTRADO' || trimUpper(r.status) === 'SINISTRADA';
+                            const hasPernoite = notasPlaca.some(n => trimUpper(n.status) === 'PERNOITE');
+                            const hasDescarregando = notasPlaca.some(n => trimUpper(n.status) === 'DESCARREGANDO');
+                            const hasAguardando = notasPlaca.some(n => trimUpper(n.status) === 'AGUARDANDO');
+                            const hasTrafegando = notasPlaca.some(n => trimUpper(n.status) === 'TRAFEGANDO');
+
+                            let stRotaCalc = "";
+                            if (qtd_nf === 0) { stRotaCalc = ""; } 
+                            else if (isParada) { stRotaCalc = "PARADA"; } 
+                            else if (isSinistrado) { stRotaCalc = "SINISTRADA"; } 
+                            else if (hasPernoite) { stRotaCalc = "PERNOITE"; } 
+                            else if (hasDescarregando) { stRotaCalc = "DESCARREGANDO"; } 
+                            else if (hasAguardando) { stRotaCalc = "AGUARDANDO NO CLIENTE"; } 
+                            else if (hasTrafegando) { stRotaCalc = "TRAFEGANDO"; } 
+                            else if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) { stRotaCalc = "VEÍCULO VAZIO"; } 
+                            else if ((realizada + devolucao + reentrega) === qtd_nf) { stRotaCalc = "FINALIZADO"; } 
+                            else if (pendente < 11) { stRotaCalc = "PRÓXIMO DE TERMINAR"; } 
+                            else { stRotaCalc = "EM ROTA"; }
+
+                            const dataFormatada = dataStr.split('-').reverse().join('/');
+                            const isCheckedGalpao = r.no_galpao === true ? 'checked' : '';
+                            const idViagemUnico = `${dataStr}_${r.placa}_${transpRotaStr}`;
+
+                            htmlLinhas += `
+                                <tr data-viagem-id="${idViagemUnico}" data-data="${dataStr}" data-placa="${r.placa}" data-transporte="${transpRotaStr}">
+                                    <td style="font-weight: 700;">${dataFormatada}</td>
+                                    <td style="font-weight: 700; color: var(--accent);">${r.vale_palete || '-'}</td>
+                                    <td style="font-weight: 800; color: var(--success);">${r.qtde || '0'}</td>
+                                    <td style="font-weight: 700;">${r.placa || '-'}</td>
+                                    <td>${r.troca || '-'}</td>
+                                    <td>${r.perfil || '-'}</td>
+                                    <td>${r.tipo || '-'}</td>
+                                    <td>${r.oc || '-'}</td>
+                                    <td>${r.transporte || '-'}</td>
+                                    <td style="color: var(--accent);">${motoristaFinal || 'NÃO INFORMADO'}</td>
+                                    <td>${r.contato || '-'}</td>
+                                    <td>${r.status || '-'}</td>
+                                    <td>${qtd_nf}</td>
+                                    <td>${typeof formatNumber === 'function' ? formatNumber(pesoTotal) : pesoTotal.toFixed(2)}</td>
+                                    <td>${r.regiao || '-'}</td>
+                                    <td>${ajudanteFinal || r.ajudante || '-'}</td>
+                                    <td>${stRotaCalc || '-'}</td>
+                                    <td align="center">
+                                        <input type="checkbox" class="chk-galpao" ${isCheckedGalpao} style="width: 18px; height: 18px; cursor: pointer;">
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                });
+
+                const tbody = document.querySelector('#tabela-pallets tbody');
+                if (tbody) {
+                    tbody.innerHTML = htmlLinhas || `<tr><td colspan='18' align='center' style='padding: 30px; color: var(--text-muted); font-weight: 600;'>Nenhum registro de pallet encontrado para o mês selecionado.</td></tr>`;
+                }
+
+                document.getElementById('kpi-pallets-periodo').innerText = mesSel;
+                atualizarKPIsGalpao();
+
+                // 🟢 Evento para salvar o estado do checkbox "No Galpão" no Firebase em tempo real
+                tbody.querySelectorAll('.chk-galpao').forEach(chk => {
+                    chk.addEventListener('change', async (e) => {
+                        const tr = e.target.closest('tr');
+                        const dataDoc = tr.getAttribute('data-data');
+                        const placaRow = tr.getAttribute('data-placa');
+                        const transpRow = tr.getAttribute('data-transporte');
+                        const novoEstado = e.target.checked;
+
+                        atualizarKPIsGalpao(); // Atualiza os blocos superiores instantaneamente
+
+                        try {
+                            const docRef = doc(db, "painel_diario", dataDoc);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                let rotas = docSnap.data().rotas || [];
+                                rotas = rotas.map(rt => {
+                                    if (rt.placa === placaRow && String(rt.transporte || "").trim() === transpRow) {
+                                        return { ...rt, no_galpao: novoEstado };
+                                    }
+                                    return rt;
+                                });
+                                await setDoc(docRef, { rotas }, { merge: true });
+                            }
+                        } catch (err) {
+                            console.error("Erro ao salvar status 'No Galpão' no Firebase:", err);
+                            alert("Falha ao salvar alteração.");
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error("Erro ao carregar dados de pallets:", e);
+                alert("Erro ao comunicar com o banco de dados.");
+            }
+            hideLoader();
+        });
 
     </script>
 </body>
