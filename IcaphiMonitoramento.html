@@ -3931,21 +3931,64 @@
         }
     }
 
-    /* 2. Impede que a pílula de ST. ROTA invada a coluna PEN em qualquer tela */
-    #tabela-monitoramento td:nth-child(19) {
-        overflow: hidden !important;
+    /* ================= DESIGN UNIFORME DO ST. ROTA E TOOLTIP INTELIGENTE ================= */
+    /* 1. Centraliza perfeitamente a coluna ST. ROTA no Desktop e Tablet */
+    @media (min-width: 769px) {
+        #tabela-monitoramento th:nth-child(19),
+        #tabela-monitoramento td:nth-child(19) {
+            text-align: center !important;
+            overflow: visible !important; /* Permite que o tooltip saia da célula */
+            padding: 3px 6px !important;
+        }
+
+        #tabela-monitoramento td:nth-child(19) .status-pill {
+            display: inline-flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+            max-width: 155px !important;
+            position: relative !important;
+        }
+
+        /* Deixa todas as pílulas com largura padronizada, simétricas e sem invadir a coluna PEN */
+        #tabela-monitoramento td:nth-child(19) .status-pill > span,
+        #tabela-monitoramento td:nth-child(19) .status-pill > div:not(.tooltip-box) {
+            width: 100% !important;
+            text-align: center !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            display: block !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important; /* Formato badge moderno em vez de pílula torta */
+            font-size: 9.5px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.3px !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+        }
     }
-    #tabela-monitoramento td:nth-child(19) .status-pill {
-        max-width: 100% !important;
-        display: flex !important;
+
+    /* 2. Garante que o Tooltip NUNCA fique atrás do cabeçalho (thead) */
+    thead th {
+        z-index: 30 !important;
     }
-    #tabela-monitoramento td:nth-child(19) .status-pill > span,
-    #tabela-monitoramento td:nth-child(19) .status-pill > div:not(.tooltip-box) {
-        max-width: 100% !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        display: block !important;
+    #tabela-monitoramento tbody tr:hover {
+        z-index: 45 !important; /* Faz a linha ativa e seu tooltip ficarem ACIMA do cabeçalho (30) */
+    }
+    #tabela-monitoramento td:nth-child(19) .status-pill .tooltip-box {
+        z-index: 99999 !important;
+    }
+
+    /* 3. BÔNUS INTELIGENTE: Na 1ª linha da tabela, abre o tooltip para BAIXO para não tampar o título ST. ROTA */
+    #tabela-monitoramento tbody tr:first-child td:nth-child(19) .status-pill .tooltip-box {
+        bottom: auto !important;
+        top: calc(100% + 8px) !important;
+        transform-origin: top center !important;
+    }
+    #tabela-monitoramento tbody tr:first-child td:nth-child(19) .status-pill .tooltip-box::after {
+        top: auto !important;
+        bottom: 100% !important;
+        border-color: transparent transparent var(--border-color, #334155) transparent !important;
     }
 
     /* 3. TABLETS E TELAS MÉDIAS (769px até 1150px) - Zero rolagem horizontal */
@@ -4016,7 +4059,7 @@
         }
     }
 
-    /* 4. CELULAR (<= 768px) - Travamento absoluto de largura (Zero arrasto lateral) */
+    /* 4. CELULAR (<= 768px) - Visual Compacto (Zoom Afastado) e Zero Arrasto Lateral */
     @media (max-width: 768px) {
         html, body {
             transform: none !important;
@@ -4024,20 +4067,40 @@
             max-width: 100% !important;
             height: 100% !important;
             overflow-x: hidden !important;
-            position: fixed !important; /* Impede o navegador mobile de criar área elástica lateral */
+            position: fixed !important;
             inset: 0 !important;
+            font-size: 11px !important;
         }
-        .sidebar-container {
-            width: 50px !important;
+        /* Barra lateral mais fina (42px) para ganhar área útil nos cards */
+        .sidebar-container, .sidebar {
+            width: 42px !important;
             height: 100% !important;
             flex-shrink: 0 !important;
         }
-        .sidebar {
-            width: 50px !important;
+        .sidebar-top, .sidebar-bottom {
+            padding: 10px 4px !important;
+            gap: 2px !important;
+        }
+        .menu-item {
+            padding: 8px 6px !important;
+            justify-content: center !important;
+        }
+        .menu-item .menu-icon {
+            font-size: 1.1rem !important;
+            margin-right: 0 !important;
+        }
+        .brand {
+            opacity: 1 !important;
+            padding: 0 0 10px 0 !important;
+            justify-content: center !important;
+        }
+        .brand-icon {
+            margin-right: 0 !important;
+            font-size: 1.15rem !important;
         }
         .main-content {
-            width: calc(100% - 50px) !important;
-            max-width: calc(100% - 50px) !important;
+            width: calc(100% - 42px) !important;
+            max-width: calc(100% - 42px) !important;
             height: 100% !important;
             overflow-x: hidden !important;
             overflow-y: hidden !important;
@@ -4048,33 +4111,27 @@
             height: 100% !important;
             overflow-x: hidden !important;
         }
-        /* Desliga o colgroup no celular (era ele que forçava a tabela a passar de 100% mesmo em modo card) */
         #tabela-monitoramento colgroup {
             display: none !important;
         }
+        /* Header mais compacto ("afastado") */
         .header {
             height: auto !important;
-            padding: 8px 10px !important;
+            padding: 6px 8px !important;
             flex-direction: column !important;
             align-items: flex-start !important;
-            gap: 6px !important;
+            gap: 4px !important;
             width: 100% !important;
-            box-sizing: border-box !important;
         }
         .header h2 {
-            font-size: 0.9rem !important;
+            font-size: 0.8rem !important;
             width: 100% !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
         }
         .header > div {
             width: 100% !important;
             margin-left: 0 !important;
             display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 6px !important;
-            justify-content: space-between !important;
+            gap: 4px !important;
         }
         .app-password-card,
         .user-profile-btn,
@@ -4087,55 +4144,254 @@
         .header-controls {
             width: 100% !important;
             display: flex !important;
-            gap: 6px !important;
+            gap: 5px !important;
             align-items: center !important;
+        }
+        .btn-sino {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 15px !important;
         }
         .header-controls input[type="date"] {
             flex: 1 !important;
             min-width: 0 !important;
-            padding: 5px 8px !important;
-            font-size: 12px !important;
+            height: 30px !important;
+            padding: 2px 6px !important;
+            font-size: 11px !important;
         }
+        .header-controls #btn-carregar-painel {
+            height: 30px !important;
+            padding: 0 10px !important;
+            font-size: 11px !important;
+        }
+        /* Área central e Resumo mais enxutos */
         .content-container {
-            padding: 8px !important;
-            gap: 8px !important;
+            padding: 6px !important;
+            gap: 6px !important;
             width: 100% !important;
-            max-width: 100% !important;
-            overflow-x: hidden !important;
-            box-sizing: border-box !important;
         }
         .progress-wrapper {
-            padding: 8px 12px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
+            padding: 6px 10px !important;
+            gap: 4px !important;
+        }
+        .progress-labels {
+            font-size: 9px !important;
         }
         #painel-summary {
-            width: 100% !important;
-            max-width: 100% !important;
-            overflow-x: auto !important;
-            padding-bottom: 4px !important;
+            gap: 4px !important;
+            padding-bottom: 2px !important;
         }
+        .summary-block, .summary-block-clickable {
+            padding: 4px 8px !important;
+            font-size: 9.5px !important;
+            border-radius: 6px !important;
+        }
+        /* Cards das Rotas mais proporcionais e afastados (Cabem o dobro na tela) */
         .table-wrapper {
             width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 0 80px 0 !important;
+            padding: 0 0 70px 0 !important;
             overflow-x: hidden !important;
             overflow-y: auto !important;
-            box-sizing: border-box !important;
-        }
-        #tabela-monitoramento,
-        #tabela-monitoramento tbody {
-            width: 100% !important;
-            max-width: 100% !important;
-            display: block !important;
-            box-sizing: border-box !important;
         }
         #tabela-monitoramento tbody tr {
             width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-            margin: 0 0 12px 0 !important;
+            margin: 0 0 8px 0 !important;
+            padding: 10px 12px !important;
+            gap: 4px 8px !important;
+            min-height: auto !important;
+            border-radius: 10px !important;
         }
+        #tabela-monitoramento td {
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+        }
+        /* Placa e Troca */
+        #tabela-monitoramento td:nth-child(1) { font-size: 13.5px !important; }
+        #tabela-monitoramento td:nth-child(2) { font-size: 12px !important; }
+        /* Região */
+        #tabela-monitoramento td:nth-child(13) {
+            padding: 4px 6px !important;
+            font-size: 10.5px !important;
+        }
+        /* Rodapé do Card (Status da Rota) */
+        #tabela-monitoramento td:nth-child(19) {
+            margin-top: 2px !important;
+            padding-top: 6px !important;
+        }
+        /* Botão flutuante menor no canto */
+        .floating-speed-dial {
+            bottom: 15px !important;
+            right: 15px !important;
+            transform: scale(0.85);
+            transform-origin: bottom right;
+        }
+    }
+
+    /* ================= ESTILO EXECUTIVO DA PÁGINA DE SMARTPHONES ================= */
+    .sp-kpi-box {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-color);
+        padding: 12px 14px;
+        border-radius: 10px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .sp-kpi-box:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .sp-kpi-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .sp-kpi-label {
+        font-size: 9.5px;
+        color: var(--text-muted);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .sp-kpi-val {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text-main);
+        line-height: 1.2;
+    }
+    /* Garante que .btn-cancel e .btn-confirm antigos tenham visual de botão caso existam em outro lugar */
+    .btn-cancel, .btn-confirm {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        border: none;
+        transition: 0.2s;
+    }
+    .btn-cancel { background: var(--text-muted); color: #fff; }
+    .btn-confirm { background: var(--accent); color: #fff; }
+
+    /* ================= REDESIGN PREMIUM DO DARK MODE (SEPARAÇÃO DE CAMADAS E ALTO CONTRASTE) ================= */
+    body.dark-mode {
+        /* Nível 0: Fundo Geral (Mais profundo para destacar os cards) */
+        --bg-main: #090d16 !important;
+        --bg-body: #090d16 !important;
+
+        /* Nível 1: Sidebar */
+        --bg-sidebar: linear-gradient(180deg, #0b1120 0%, #111827 100%) !important;
+
+        /* Nível 2: Painéis e Containers (Mais claros que o fundo para saltar aos olhos) */
+        --bg-panel: #151f32 !important;
+        --bg-card: #151f32 !important;
+        --bg-secondary: #1e293b !important;
+
+        /* Nível 3: Tabela (Cabeçalho destacado e Zebra mais clara que o painel) */
+        --bg-table-header: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+        --bg-table-row-alt: #1b273d !important; /* Corrige o bug da linha par sumir no fundo */
+        --drag-bg: #263552 !important;
+
+        /* Textos com contraste limpo */
+        --text-main: #f1f5f9 !important;
+        --text-muted: #94a3b8 !important;
+
+        /* Bordas Visíveis (Sobe de 6% para 14% de luz, definindo as caixas) */
+        --border-color: #293548 !important;
+
+        /* Destaques */
+        --accent: #3b82f6 !important;
+        --accent-hover: #60a5fa !important;
+
+        /* Sombras com borda de luz interna (Inner Glow) */
+        --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+
+        /* Pílulas de Status com mais vida e borda nítida no Dark Mode */
+        --st-vazio-bg: rgba(59, 130, 246, 0.22) !important; --st-vazio-txt: #93c5fd !important; --st-vazio-bd: rgba(96, 165, 250, 0.45) !important;
+        --st-pernoite-bg: rgba(217, 119, 6, 0.22) !important; --st-pernoite-txt: #fcd34d !important; --st-pernoite-bd: rgba(245, 158, 11, 0.45) !important;
+        --st-finalizado-bg: rgba(236, 72, 153, 0.22) !important; --st-finalizado-txt: #f9a8d4 !important; --st-finalizado-bd: rgba(244, 114, 182, 0.45) !important;
+        --st-prox-bg: rgba(234, 179, 8, 0.22) !important; --st-prox-txt: #fef08a !important; --st-prox-bd: rgba(250, 204, 21, 0.45) !important;
+        --st-emrota-bg: rgba(148, 163, 184, 0.16) !important; --st-emrota-txt: #cbd5e1 !important; --st-emrota-bd: rgba(148, 163, 184, 0.35) !important;
+        --st-aguardando-bg: rgba(6, 182, 212, 0.22) !important; --st-aguardando-txt: #67e8f9 !important; --st-aguardando-bd: rgba(34, 211, 238, 0.45) !important;
+        --st-trafegando-bg: rgba(249, 115, 22, 0.22) !important; --st-trafegando-txt: #fdba74 !important; --st-trafegando-bd: rgba(251, 146, 60, 0.45) !important;
+        --st-desc-bg: rgba(168, 85, 247, 0.22) !important; --st-desc-txt: #d8b4fe !important; --st-desc-bd: rgba(192, 132, 252, 0.45) !important;
+        --st-parada-bg: rgba(239, 68, 68, 0.25) !important; --st-parada-txt: #fca5a5 !important; --st-parada-bd: rgba(248, 113, 113, 0.5) !important;
+    }
+
+    /* 1. Separação clara entre Sidebar, Header e Conteúdo no Dark Mode */
+    body.dark-mode .sidebar {
+        border-right: 1px solid #293548 !important;
+    }
+
+    body.dark-mode .header {
+        background-color: #131c2e !important;
+        border-bottom: 1px solid #293548 !important;
+    }
+
+    /* 2. Destaque real nos Cards Superiores (Progresso, Blocos de Resumo e KPIs) */
+    body.dark-mode .progress-wrapper,
+    body.dark-mode .summary-block,
+    body.dark-mode .kpi-card,
+    body.dark-mode .sp-kpi-box,
+    body.dark-mode .page-header {
+        background-color: #151f32 !important;
+        border: 1px solid #2d3b52 !important;
+    }
+
+    body.dark-mode .progress-track {
+        background-color: #090d16 !important;
+        border: 1px solid #293548 !important;
+        height: 12px !important;
+    }
+
+    /* 3. Inputs, Datas e Botões do Topo com superfície própria (Não somem mais no Header) */
+    body.dark-mode input[type="date"],
+    body.dark-mode input[type="month"],
+    body.dark-mode input[type="text"],
+    body.dark-mode input[type="number"],
+    body.dark-mode select,
+    body.dark-mode textarea,
+    body.dark-mode .app-password-card,
+    body.dark-mode .btn-sino {
+        background-color: #0b1120 !important;
+        border: 1px solid #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator,
+    body.dark-mode input[type="month"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.85) brightness(1.2);
+        cursor: pointer;
+    }
+
+    /* 4. Tabela com Moldura, Cabeçalho Diferenciado e Linhas Bem Separadas */
+    body.dark-mode .table-wrapper {
+        background-color: #131c2e !important;
+        border: 1px solid #2d3b52 !important;
+    }
+
+    body.dark-mode thead th {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+        color: #e2e8f0 !important;
+        border-bottom: 2px solid #3b82f6 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    body.dark-mode tbody td {
+        border-bottom: 1px solid #222f43 !important;
+    }
+
+    body.dark-mode tbody tr:hover {
+        background-color: #24344d !important;
+        filter: none !important;
     }
 
     </style>
@@ -4232,7 +4488,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.2</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.3</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -5632,54 +5888,118 @@
             </div>
         </div>
 
-        <!-- ================= SECTION SMARTPHONES ================= -->
-        <section id="view-smartphones" class="view-section" style="display: none;">
-            <div class="smartphones-container">
-                <!-- Cabeçalho e Botões Principais -->
-                <div class="page-header">
-                    <h2><i class="ph ph-device-mobile" style="color: var(--accent);"></i> Controle de Frotas (Smartphones)</h2>
-                    <div class="header-actions">
-                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary" style="display:flex; align-items:center; gap:6px;">
-                            <i class="ph ph-plus-circle" style="font-size:1.1rem;"></i> Novo Smartphone
+        <!-- ================= SECTION SMARTPHONES (REFINADA E PADRONIZADA) ================= -->
+        <section id="view-smartphones" class="view-section">
+            <header class="header">
+                <h2>
+                    <i class="ph ph-device-mobile" style="color:var(--accent);"></i> Controle de Frotas (Smartphones & Chips)
+                </h2>
+                <div style="display: flex; align-items: center; gap: 15px; margin-left: auto;">
+                    <div class="online-users-stack avatar-stack" title="Usuários Online"></div>
+                    <div class="current-user-profile user-profile-btn">
+                        <img class="header-user-foto" src="" alt="Perfil">
+                        <span class="header-user-nome">Carregando...</span>
+                    </div>
+                    <div class="header-controls">
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; color: var(--text-muted); font-size: 13px;"></i>
+                            <input type="text" id="sp-busca-rapida" placeholder="Buscar patrimônio, motorista, placa, chip, IMEI..." oninput="window.filtrarSmartphonesBuscaRapida()" style="padding-left: 30px; width: 270px; font-size: 12px;">
+                        </div>
+                        <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-smartphones" onclick="document.getElementById('sp-busca-rapida').value=''; window.filtrarSmartphonesBuscaRapida();">
+                            <i class="ph ph-funnel-x"></i> Limpar Filtros
                         </button>
-                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary" style="display:flex; align-items:center; gap:6px;">
-                            <i class="ph ph-sim-card" style="font-size:1.1rem;"></i> Gerenciar Chips
+                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary">
+                            <i class="ph ph-sim-card" style="font-size:1rem;"></i> Gerenciar Chips
+                        </button>
+                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary">
+                            <i class="ph ph-plus-circle" style="font-size:1rem;"></i> Novo Smartphone
                         </button>
                     </div>
                 </div>
-                
-                <!-- KPIs -->
-                <div class="kpi-dashboard">
-                    <div class="kpi-card" onclick="window.abrirListaKPI('celulares')">
-                        <span class="kpi-title">QTD CELULARES</span><span class="kpi-value" id="kpi-celulares">0</span>
+            </header>
+
+            <div class="content-container" style="padding: 15px 20px; gap: 15px;">
+                <!-- 6 KPIs Executivos Clicáveis -->
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('celulares')" style="border-left: 4px solid var(--accent);">
+                        <div class="sp-kpi-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--accent);"><i class="ph-fill ph-device-mobile"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">TOTAL APARELHOS</div>
+                            <div class="sp-kpi-val" id="kpi-celulares">0</div>
+                        </div>
                     </div>
-                    <div class="kpi-card" onclick="window.abrirListaKPI('chips')">
-                        <span class="kpi-title">QTD CHIPS</span><span class="kpi-value" id="kpi-chips">0</span>
+
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('ativos')" style="border-left: 4px solid var(--success);">
+                        <div class="sp-kpi-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);"><i class="ph-fill ph-check-circle"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">APARELHOS ATIVOS</div>
+                            <div class="sp-kpi-val" id="kpi-celulares-ativos" style="color: var(--success);">0</div>
+                        </div>
                     </div>
-                    <div class="kpi-card kpi-success" onclick="window.abrirListaKPI('uso')">
-                        <span class="kpi-title">CHIPS EM USO</span><span class="kpi-value" id="kpi-chips-uso">0</span>
+
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('conserto')" style="border-left: 4px solid var(--warning);">
+                        <div class="sp-kpi-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);"><i class="ph-fill ph-wrench"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">EM CONSERTO / INAT.</div>
+                            <div class="sp-kpi-val" id="kpi-celulares-conserto" style="color: var(--warning);">0</div>
+                        </div>
                     </div>
-                    <div class="kpi-card kpi-warning" onclick="window.abrirListaKPI('livres')">
-                        <span class="kpi-title">CHIPS SEM USAR</span><span class="kpi-value" id="kpi-chips-livres">0</span>
+
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('chips')" style="border-left: 4px solid #6366f1;">
+                        <div class="sp-kpi-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;"><i class="ph-fill ph-sim-card"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">TOTAL DE CHIPS</div>
+                            <div class="sp-kpi-val" id="kpi-chips">0</div>
+                        </div>
+                    </div>
+
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('uso')" style="border-left: 4px solid #0ea5e9;">
+                        <div class="sp-kpi-icon" style="background: rgba(14, 165, 233, 0.1); color: #0ea5e9;"><i class="ph-fill ph-plugs-connected"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">CHIPS EM USO</div>
+                            <div class="sp-kpi-val" id="kpi-chips-uso" style="color: #0ea5e9;">0</div>
+                        </div>
+                    </div>
+
+                    <div class="sp-kpi-box" onclick="window.abrirListaKPI('livres')" style="border-left: 4px solid #10b981;">
+                        <div class="sp-kpi-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="ph-fill ph-stack"></i></div>
+                        <div>
+                            <div class="sp-kpi-label">CHIPS LIVRES</div>
+                            <div class="sp-kpi-val" id="kpi-chips-livres" style="color: #10b981;">0</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Tabela Principal de Smartphones -->
-                <div class="table-container" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <table class="custom-table" id="tabela-smartphones">
+                <!-- Tabela Principal Padronizada com o Sistema -->
+                <div class="table-wrapper">
+                    <table id="tabela-smartphones">
+                        <colgroup>
+                            <col style="width: 6%;">  <!-- PATRIMÔNIO -->
+                            <col style="width: 9%;">  <!-- NÚMERO CHIP -->
+                            <col style="width: 7%;">  <!-- MARCA -->
+                            <col style="width: 9%;">  <!-- MODELO -->
+                            <col style="width: 9%;">  <!-- IMEI 1 -->
+                            <col style="width: 9%;">  <!-- IMEI 2 -->
+                            <col style="width: 9%;">  <!-- Nº SÉRIE -->
+                            <col style="width: 6%;">  <!-- PLACA -->
+                            <col style="width: 11%;"> <!-- MOTORISTA -->
+                            <col style="width: 7%;">  <!-- STATUS -->
+                            <col style="width: 10%;"> <!-- OBS -->
+                            <col style="width: 8%;">  <!-- AÇÕES -->
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>PATRIMÔNIO <i class="ph ph-funnel filter-icon" data-col="0"></i></th>
-                                <th>NÚMERO <i class="ph ph-funnel filter-icon" data-col="1"></i></th>
-                                <th>MARCA <i class="ph ph-funnel filter-icon" data-col="2"></i></th>
-                                <th>MODELO <i class="ph ph-funnel filter-icon" data-col="3"></i></th>
-                                <th>IMEI 1 <i class="ph ph-funnel filter-icon" data-col="4"></i></th>
-                                <th>IMEI 2 <i class="ph ph-funnel filter-icon" data-col="5"></i></th>
-                                <th>Nº SÉRIE <i class="ph ph-funnel filter-icon" data-col="6"></i></th>
-                                <th>PLACA <i class="ph ph-funnel filter-icon" data-col="7"></i></th>
-                                <th>MOTORISTA <i class="ph ph-funnel filter-icon" data-col="8"></i></th>
-                                <th>STATUS <i class="ph ph-funnel filter-icon" data-col="9"></i></th>
-                                <th>OBS <i class="ph ph-funnel filter-icon" data-col="10"></i></th>
+                                <th>PAT. <i class="ph-fill ph-caret-down filter-icon" data-col="0"></i></th>
+                                <th>NÚMERO (CHIP) <i class="ph-fill ph-caret-down filter-icon" data-col="1"></i></th>
+                                <th>MARCA <i class="ph-fill ph-caret-down filter-icon" data-col="2"></i></th>
+                                <th>MODELO <i class="ph-fill ph-caret-down filter-icon" data-col="3"></i></th>
+                                <th>IMEI 1 <i class="ph-fill ph-caret-down filter-icon" data-col="4"></i></th>
+                                <th>IMEI 2 <i class="ph-fill ph-caret-down filter-icon" data-col="5"></i></th>
+                                <th>Nº SÉRIE <i class="ph-fill ph-caret-down filter-icon" data-col="6"></i></th>
+                                <th>PLACA <i class="ph-fill ph-caret-down filter-icon" data-col="7"></i></th>
+                                <th>MOTORISTA <i class="ph-fill ph-caret-down filter-icon" data-col="8"></i></th>
+                                <th style="text-align:center;">STATUS <i class="ph-fill ph-caret-down filter-icon" data-col="9"></i></th>
+                                <th>OBSERVAÇÃO <i class="ph-fill ph-caret-down filter-icon" data-col="10"></i></th>
                                 <th style="text-align: center;">AÇÕES</th>
                             </tr>
                         </thead>
@@ -5689,259 +6009,325 @@
             </div>
         </section>
 
-        <!-- ================= MODAIS (POP UPs) ================= -->
+        <!-- Datalist Global de Sugestões de Patrimônio para Vínculo de Chip -->
+        <datalist id="datalist-patrimonios-sp"></datalist>
+
+        <!-- ================= MODAIS DE SMARTPHONES E CHIPS ================= -->
 
         <!-- Pop-up: Cadastrar Smartphone -->
         <div id="modal-add-smartphone" class="modal-overlay">
-            <div class="modal-content" style="max-width: 600px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cadastrar Smartphone</h3>
-                
-                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div class="modal-content" style="max-width: 560px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-device-mobile" style="color: var(--accent);"></i> Cadastrar Novo Smartphone</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-add-smartphone')">×</button>
+                </div>
+                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">PATRIMÔNIO *</label>
+                        <input type="text" id="add-sp-patrimonio" placeholder="Ex: 01">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">PLACA INICIAL (OPCIONAL)</label>
+                        <input type="text" id="add-sp-placa" placeholder="Ex: LLY8J34" style="text-transform: uppercase;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">MARCA</label>
+                        <input type="text" id="add-sp-marca" placeholder="Ex: SAMSUNG">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">MODELO</label>
+                        <input type="text" id="add-sp-modelo" placeholder="Ex: GALAXY A14">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">IMEI 1</label>
+                        <input type="text" id="add-sp-imei1" placeholder="IMEI Principal">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">IMEI 2 (OPCIONAL)</label>
+                        <input type="text" id="add-sp-imei2" placeholder="IMEI Secundário">
+                    </div>
                     <div style="grid-column: span 2;">
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">PATRIMÔNIO *</label>
-                        <input type="text" id="add-sp-patrimonio" placeholder="Ex: 01" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">MARCA</label>
-                        <input type="text" id="add-sp-marca" placeholder="Ex: Samsung" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">MODELO</label>
-                        <input type="text" id="add-sp-modelo" placeholder="Ex: Galaxy A14" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">IMEI 1</label>
-                        <input type="text" id="add-sp-imei1" placeholder="IMEI Principal" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">IMEI 2 (OPCIONAL)</label>
-                        <input type="text" id="add-sp-imei2" placeholder="IMEI Secundário" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">NÚMERO DE SÉRIE</label>
-                        <input type="text" id="add-sp-serie" placeholder="Nº de Série do Aparelho" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">NÚMERO DE SÉRIE</label>
+                        <input type="text" id="add-sp-serie" placeholder="Nº de Série do Aparelho">
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button onclick="window.fecharModal('modal-add-smartphone')" class="btn-cancel">Cancelar</button>
-                    <button onclick="window.salvarNovoSmartphone()" class="btn-confirm">Salvar</button>
+                    <button onclick="window.fecharModal('modal-add-smartphone')" class="btn btn-secondary">Cancelar</button>
+                    <button onclick="window.salvarNovoSmartphone()" class="btn btn-primary"><i class="ph ph-check"></i> Salvar Aparelho</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Editar Smartphone -->
         <div id="modal-edit-smartphone" class="modal-overlay">
-            <div class="modal-content" style="max-width: 650px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Editar Smartphone <span id="edit-sp-pat-display" style="color: var(--accent);"></span></h3>
+            <div class="modal-content" style="max-width: 620px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-pencil-simple" style="color: var(--accent);"></i> Editar Smartphone <span id="edit-sp-pat-display" style="color: var(--accent);"></span></h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-edit-smartphone')">×</button>
+                </div>
                 <input type="hidden" id="edit-sp-id">
-                
-                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
                     <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">STATUS DO APARELHO</label>
-                        <select id="edit-sp-status" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                            <option value="ATIVO">Ativo</option>
-                            <option value="INATIVO">Inativo</option>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">STATUS DO APARELHO</label>
+                        <select id="edit-sp-status">
+                            <option value="ATIVO">ATIVO</option>
+                            <option value="CONSERTO">EM CONSERTO</option>
+                            <option value="INATIVO">INATIVO</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">PLACA VINCULADA</label>
-                        <input type="text" id="edit-sp-placa" placeholder="Digite a Placa" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">PLACA VINCULADA</label>
+                        <input type="text" id="edit-sp-placa" placeholder="Digite a Placa" style="text-transform: uppercase;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">MOTORISTA ATUAL</label>
+                        <input type="text" id="edit-sp-motorista" placeholder="Nome do Motorista" style="text-transform: uppercase;">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">CPF DO MOTORISTA</label>
+                        <input type="text" id="edit-sp-cpf" placeholder="000.000.000-00" maxlength="14" oninput="window.formatarInputCPF(this)">
+                    </div>
+
+                    <div style="grid-column: span 2; margin-top: 4px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                        <span style="font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase;">Especificações Técnicas</span>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">MARCA</label>
+                        <input type="text" id="edit-sp-marca">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">MODELO</label>
+                        <input type="text" id="edit-sp-modelo">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">IMEI 1</label>
+                        <input type="text" id="edit-sp-imei1">
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">IMEI 2</label>
+                        <input type="text" id="edit-sp-imei2">
                     </div>
                     <div style="grid-column: span 2;">
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">MOTORISTA ATUAL</label>
-                        <input type="text" id="edit-sp-motorista" placeholder="Nome do Motorista" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    
-                    <div style="grid-column: span 2; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
-                        <span style="font-size: 12px; font-weight: bold; color: var(--text-main);">Informações Técnicas</span>
-                    </div>
-                    
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">MARCA</label>
-                        <input type="text" id="edit-sp-marca" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">MODELO</label>
-                        <input type="text" id="edit-sp-modelo" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">IMEI 1</label>
-                        <input type="text" id="edit-sp-imei1" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">IMEI 2</label>
-                        <input type="text" id="edit-sp-imei2" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">NÚMERO DE SÉRIE</label>
+                        <input type="text" id="edit-sp-serie">
                     </div>
                     <div style="grid-column: span 2;">
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">NÚMERO DE SÉRIE</label>
-                        <input type="text" id="edit-sp-serie" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">OBSERVAÇÃO GERAL</label>
-                        <textarea id="edit-sp-obs" rows="2" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);"></textarea>
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">OBSERVAÇÃO GERAL / ACESSÓRIOS</label>
+                        <textarea id="edit-sp-obs" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button onclick="window.fecharModal('modal-edit-smartphone')" class="btn-cancel">Cancelar</button>
-                    <button onclick="window.salvarEdicaoSmartphone()" class="btn-confirm">Salvar Alterações</button>
+                    <button onclick="window.fecharModal('modal-edit-smartphone')" class="btn btn-secondary">Cancelar</button>
+                    <button onclick="window.salvarEdicaoSmartphone()" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Alterações</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Entrega / Devolução de Smartphone -->
         <div id="modal-entrega-devolucao" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                    <i class="ph ph-handshake" style="color: var(--accent);"></i> Entrega / Devolução
-                </h3>
+            <div class="modal-content" style="max-width: 520px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-handshake" style="color: var(--accent);"></i> Termo de Entrega / Devolução <span id="ent-dev-pat-title" style="color:var(--accent);"></span></h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-entrega-devolucao')">×</button>
+                </div>
                 <input type="hidden" id="ent-dev-sp-id">
-                
-                <!-- Seleção do Tipo -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
                     <label style="flex: 1; cursor: pointer;">
                         <input type="radio" name="ent-dev-tipo" value="ENTREGA" onchange="window.toggleFormEntDev()" style="display: none;" checked>
-                        <div class="radio-btn-custom" id="btn-radio-entrega" style="background: var(--accent); color: #fff; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; transition: 0.2s;">
-                            <i class="ph ph-arrow-circle-up"></i> ENTREGAR
+                        <div id="btn-radio-entrega" style="background: var(--accent); color: #fff; padding: 10px; border-radius: 8px; text-align: center; font-weight: 800; font-size: 12px; transition: 0.2s;">
+                            <i class="ph-bold ph-arrow-circle-up"></i> ENTREGAR APARELHO
                         </div>
                     </label>
                     <label style="flex: 1; cursor: pointer;">
                         <input type="radio" name="ent-dev-tipo" value="DEVOLUCAO" onchange="window.toggleFormEntDev()" style="display: none;">
-                        <div class="radio-btn-custom" id="btn-radio-devolucao" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; transition: 0.2s;">
-                            <i class="ph ph-arrow-circle-down"></i> DEVOLVER
+                        <div id="btn-radio-devolucao" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center; font-weight: 800; font-size: 12px; transition: 0.2s;">
+                            <i class="ph-bold ph-arrow-circle-down"></i> RECEBER DEVOLUÇÃO
                         </div>
                     </label>
                 </div>
 
-                <div id="form-entrega-campos">
-                    <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">NOME COMPLETO DO MOTORISTA *</label>
-                    <input type="text" id="ent-dev-nome" placeholder="Ex: Deivisson Batista" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
-                    
-                    <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CPF DO MOTORISTA *</label>
-                    <input type="text" id="ent-dev-cpf" placeholder="000.000.000-00" maxlength="14" oninput="this.value = this.value.replace(/[^0-9.-]/g, '')" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                <!-- Aviso de quem está devolvendo -->
+                <div id="box-info-devolucao" style="display: none; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 12px;">
+                    <strong>Responsável Atual:</strong> <span id="lbl-devolucao-motorista">-</span>
                 </div>
 
-                <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CONDIÇÃO ATUAL DO APARELHO / OBSERVAÇÕES *</label>
-                <input type="text" id="ent-dev-obs" placeholder="Ex: Tela intacta, acompanha capinha e carregador..." style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                <div id="form-entrega-campos">
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">NOME COMPLETO DO MOTORISTA *</label>
+                        <input type="text" id="ent-dev-nome" placeholder="Ex: DEIVISSON BATISTA" style="text-transform: uppercase;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">CPF DO MOTORISTA *</label>
+                            <input type="text" id="ent-dev-cpf" placeholder="000.000.000-00" maxlength="14" oninput="window.formatarInputCPF(this)">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">PLACA DO VEÍCULO (OPCIONAL)</label>
+                            <input type="text" id="ent-dev-placa" placeholder="Ex: LLY8J34" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                </div>
 
-                <!-- 🟢 BOTÕES MODERNIZADOS -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button onclick="window.fecharModal('modal-entrega-devolucao')" class="btn btn-secondary" style="flex: 1; justify-content: center;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display:block; margin-bottom:4px;">CONDIÇÃO ATUAL DO APARELHO / ACESSÓRIOS *</label>
+                    <input type="text" id="ent-dev-obs" placeholder="Ex: Tela intacta, acompanha capinha e carregador...">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <button onclick="window.fecharModal('modal-entrega-devolucao')" class="btn btn-secondary" style="flex: 1;">
                         <i class="ph ph-x"></i> Cancelar
                     </button>
-                    <button onclick="window.confirmarEntregaDevolucao()" class="btn btn-primary" style="flex: 2; justify-content: center; background: var(--accent); border: none;">
-                        <i class="ph ph-printer"></i> Confirmar e Imprimir
+                    <button onclick="window.confirmarEntregaDevolucao()" class="btn btn-primary" style="flex: 2;">
+                        <i class="ph ph-printer"></i> Confirmar e Gerar Termo PDF
                     </button>
                 </div>
 
-                <!-- Seção de Histórico Expansível -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 15px;">
-                    <button onclick="window.toggleHistoricoEntDev()" class="btn btn-secondary" style="width: 100%; justify-content: center; font-size: 12px; font-weight: bold;">
-                        <i class="ph ph-clock-counter-clockwise"></i> Ver Histórico deste Aparelho
+                <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button onclick="window.toggleHistoricoEntDev()" class="btn btn-secondary" style="width: 100%; font-size: 12px;">
+                        <i class="ph ph-clock-counter-clockwise"></i> Ver Histórico de Movimentações deste Aparelho
                     </button>
-                    
-                    <div id="container-historico-ent-dev" style="display: none; margin-top: 15px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--bg-main);">
+                    <div id="container-historico-ent-dev" style="display: none; margin-top: 12px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: var(--bg-main);">
                         <ul id="lista-historico-ent-dev" style="list-style: none; padding: 0; margin: 0; font-size: 12px;"></ul>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Pop-up: Cadastrar Chip -->
+        <!-- Pop-up: Gerenciar / Cadastrar Chip -->
         <div id="modal-cadastrar-chip" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cadastrar / Importar Chips</h3>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="file" id="file-import-chips" accept=".xls,.xlsx" style="display: none;" onchange="window.lerPlanilhaChips(event)">
-                    <button onclick="document.getElementById('file-import-chips').click()" class="btn btn-primary" style="flex: 1; justify-content: center;">📥 Importar Planilha</button>
-                    <button onclick="window.abrirModal('modal-verificar-chips')" class="btn btn-secondary" style="flex: 1; justify-content: center;">📋 Verificar Chips</button>
+            <div class="modal-content" style="max-width: 540px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-sim-card" style="color: var(--accent);"></i> Central de Chips</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-cadastrar-chip')">×</button>
                 </div>
+
+                <!-- Cadastro Manual Rápido de Chip -->
+                <div style="background: var(--bg-table-row-alt); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 800; color: var(--text-muted); display:block; margin-bottom: 6px;">ADICIONAR CHIP INDIVIDUAL</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="novo-chip-manual-num" placeholder="(21) 90000-0000" style="flex: 1.2;" oninput="window.formatarInputTelefoneChip(this)">
+                        <input type="text" id="novo-chip-manual-vinc" list="datalist-patrimonios-sp" placeholder="Vínculo (Ex: 01)" style="flex: 1;">
+                        <button onclick="window.adicionarChipManual()" class="btn btn-success"><i class="ph ph-plus"></i> Adicionar</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <input type="file" id="file-import-chips" accept=".xls,.xlsx" style="display: none;" onchange="window.lerPlanilhaChips(event)">
+                    <button onclick="document.getElementById('file-import-chips').click()" class="btn btn-primary" style="flex: 1;">
+                        <i class="ph ph-file-xls"></i> Auditar / Importar Planilha
+                    </button>
+                    <button onclick="window.fecharModal('modal-cadastrar-chip'); window.abrirModal('modal-verificar-chips');" class="btn btn-secondary" style="flex: 1;">
+                        <i class="ph ph-list-Bullets"></i> Lista Completa de Chips
+                    </button>
+                </div>
+
                 <div id="preview-chips" style="max-height: 200px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
                     <p style="font-size: 12px; color: var(--text-muted); text-align: center;">Nenhuma planilha importada no momento.</p>
                 </div>
-                <div class="modal-actions" style="margin-top: 15px;">
-                    <button onclick="window.fecharModal('modal-cadastrar-chip')" class="btn-cancel">Fechar</button>
-                    <button id="btn-salvar-chips" onclick="window.salvarChipsImportados()" class="btn-confirm" style="display: none;">Salvar Importados</button>
+
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-cadastrar-chip')" class="btn btn-secondary">Fechar</button>
+                    <button id="btn-salvar-chips" onclick="window.salvarChipsImportados()" class="btn btn-success" style="display: none;"><i class="ph ph-check"></i> Salvar Novos Chips</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Verificar Chips -->
         <div id="modal-verificar-chips" class="modal-overlay">
-            <div class="modal-content" style="max-width: 600px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;"><i class="ph ph-sim-card" style="color:var(--accent);"></i> Lista de Chips Cadastrados</h3>
-                <div style="margin-bottom: 15px;">
-                    <input type="text" id="input-busca-chips" placeholder="Pesquisar por número ou vínculo..." oninput="window.filtrarEDesenharChips()" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; font-size: 13px;">
+            <div class="modal-content" style="max-width: 620px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-sim-card" style="color:var(--accent);"></i> Lista de Chips Cadastrados</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-verificar-chips')">×</button>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <input type="text" id="input-busca-chips" placeholder="Pesquisar por número ou patrimônio vinculado..." oninput="window.filtrarEDesenharChips()">
                 </div>
                 <div style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
                     <table class="custom-table compact">
                         <thead>
                             <tr>
-                                <th onclick="window.ordenarChips('numero')" style="cursor: pointer;" title="Clique para ordenar">NÚMERO <i class="ph ph-arrows-down-up" style="font-size: 10px; opacity: 0.7;"></i></th>
-                                <th onclick="window.ordenarChips('patrimonio_vinculado')" style="cursor: pointer;" title="Clique para ordenar">VÍNCULO <i class="ph ph-arrows-down-up" style="font-size: 10px; opacity: 0.7;"></i></th>
-                                <th style="text-align: center;">AÇÕES</th>
+                                <th onclick="window.ordenarChips('numero')" style="cursor: pointer;">NÚMERO <i class="ph ph-arrows-down-up"></i></th>
+                                <th onclick="window.ordenarChips('patrimonio_vinculado')" style="cursor: pointer;">PATRIMÔNIO / VÍNCULO <i class="ph ph-arrows-down-up"></i></th>
+                                <th style="text-align: center; width: 90px;">AÇÕES</th>
                             </tr>
                         </thead>
                         <tbody id="lista-chips-banco"></tbody>
                     </table>
                 </div>
-                <div class="modal-actions" style="margin-top: 20px;">
-                    <button onclick="window.fecharModal('modal-verificar-chips')" class="btn-cancel">Fechar</button>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-verificar-chips')" class="btn btn-secondary">Fechar</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Editar Chip -->
         <div id="modal-edit-chip" class="modal-overlay">
-            <div class="modal-content" style="max-width: 400px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Editar / Vincular Chip</h3>
+            <div class="modal-content" style="max-width: 420px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-link" style="color:var(--accent);"></i> Editar / Vincular Chip</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-edit-chip')">×</button>
+                </div>
                 <input type="hidden" id="edit-chip-id">
-                <label style="display:block; margin-bottom:6px; font-size:11px; font-weight:bold; color:var(--text-muted);">NÚMERO DO CHIP</label>
-                <input type="text" id="edit-chip-numero" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
-                <label style="display:block; margin-bottom:6px; font-size:11px; font-weight:bold; color:var(--text-muted);">VINCULAR PATRIMÔNIO / NOME</label>
-                <input type="text" id="edit-chip-vinculo" placeholder="Ex: 26, João Silva..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
-                <div class="modal-actions" style="margin-top: 20px;">
-                    <button onclick="window.fecharModal('modal-edit-chip')" class="btn-cancel">Cancelar</button>
-                    <button onclick="window.salvarEdicaoChip()" class="btn-confirm">Salvar</button>
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-size:11px; font-weight:700; color:var(--text-muted);">NÚMERO DA LINHA</label>
+                    <input type="text" id="edit-chip-numero" oninput="window.formatarInputTelefoneChip(this)" style="margin-bottom: 12px;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-size:11px; font-weight:700; color:var(--text-muted);">VINCULAR AO PATRIMÔNIO (OU DEIXE VAZIO P/ LIVRE)</label>
+                    <input type="text" id="edit-chip-vinculo" list="datalist-patrimonios-sp" placeholder="Ex: 01, 02 ou Nome...">
+                </div>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-edit-chip'); window.abrirModal('modal-verificar-chips');" class="btn btn-secondary">Voltar</button>
+                    <button onclick="window.salvarEdicaoChip()" class="btn btn-primary"><i class="ph ph-check"></i> Salvar Vínculo</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Visualizar Motorista e CPF -->
         <div id="modal-ver-motorista" class="modal-overlay">
-            <div class="modal-content" style="max-width: 400px; width: 95%;">
-                <h3 style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                    <i class="ph ph-user" style="color: var(--accent);"></i> Dados do Motorista
-                </h3>
-                
-                <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+            <div class="modal-content" style="max-width: 420px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3><i class="ph-fill ph-identification-card" style="color: var(--accent);"></i> Dados do Responsável</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-ver-motorista')">×</button>
+                </div>
+                <div style="background: var(--bg-table-row-alt); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <div style="margin-bottom: 12px;">
-                        <span style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 2px;">NOME COMPLETO</span>
-                        <span id="ver-mot-nome" style="font-size: 14px; font-weight: bold; color: var(--text-main);">-</span>
+                        <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); display: block;">MOTORISTA RESPONSÁVEL</span>
+                        <span id="ver-mot-nome" style="font-size: 15px; font-weight: 800; color: var(--text-main);">-</span>
                     </div>
-                    <div>
-                        <span style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 2px;">CPF</span>
-                        <span id="ver-mot-cpf" style="font-size: 14px; font-weight: bold; color: var(--accent);">-</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); display: block;">CPF REGISTRADO</span>
+                            <span id="ver-mot-cpf" style="font-size: 14px; font-weight: 800; color: var(--accent); font-family: monospace;">-</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('ver-mot-cpf').innerText); alert('CPF copiado!');">
+                            <i class="ph ph-copy"></i> Copiar CPF
+                        </button>
                     </div>
                 </div>
-
                 <div class="modal-actions">
-                    <button onclick="window.fecharModal('modal-ver-motorista')" class="btn btn-secondary" style="width: 100%; justify-content: center;">Fechar</button>
+                    <button onclick="window.fecharModal('modal-ver-motorista')" class="btn btn-secondary" style="width: 100%;">Fechar</button>
                 </div>
             </div>
         </div>
 
         <!-- Pop-up: Lista Dinâmica de KPIs -->
         <div id="modal-kpi-lista" class="modal-overlay">
-            <div class="modal-content" style="max-width: 800px; width: 95%;">
-                <h3 id="titulo-modal-kpi" style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Lista</h3>
-                <div style="max-height: 400px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div class="modal-content" style="max-width: 820px; width: 95%;">
+                <div class="modal-header" style="padding: 0 0 12px 0; background: transparent;">
+                    <h3 id="titulo-modal-kpi">Detalhamento</h3>
+                    <button class="btn-close" onclick="window.fecharModal('modal-kpi-lista')">×</button>
+                </div>
+                <div style="max-height: 420px; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border-color);">
                     <table class="custom-table compact">
                         <thead id="thead-kpi"></thead>
                         <tbody id="tbody-kpi"></tbody>
                     </table>
                 </div>
-                <div class="modal-actions" style="margin-top: 20px;">
-                    <button onclick="window.fecharModal('modal-kpi-lista')" class="btn-cancel">Fechar</button>
+                <div class="modal-actions">
+                    <button onclick="window.fecharModal('modal-kpi-lista')" class="btn btn-secondary">Fechar</button>
                 </div>
             </div>
         </div>
@@ -20520,29 +20906,58 @@ document.querySelectorAll('tbody').forEach(tbody => {
             definirQuinzenaAtual();
         });
 
-        // ================= VARIÁVEIS GLOBAIS =================
+        // ================= GESTÃO DE SMARTPHONES E CHIPS (UNIFICADO E SEM BUGS) =================
         window.baseSmartphones = [];
         window.baseChips = [];
         window.chipsPreviewAguardando = [];
 
-        // ================= CONTROLE DE MODAIS CORRIGIDO =================
         window.abrirModal = function(id) { 
             const el = document.getElementById(id);
-            if(el) el.classList.add('active'); 
+            if (el) el.classList.add('active'); 
         };
 
         window.fecharModal = function(id) { 
             const el = document.getElementById(id);
-            if(el) el.classList.remove('active'); 
+            if (el) el.classList.remove('active'); 
         };
 
-        // ================= INICIALIZAÇÃO =================
+        // Formatadores automáticos de CPF e Telefone
+        window.formatarInputCPF = function(input) {
+            let v = input.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+            else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+            else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+            input.value = v;
+        };
+
+        window.formatarInputTelefoneChip = function(input) {
+            let v = input.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+            else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+            else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+            input.value = v;
+        };
+
+        // Normaliza patrimônio para comparar "1" com "01" sem falhar
+        function normalizarPatrimonio(val) {
+            const s = String(val || "").trim().toUpperCase();
+            if (/^\d+$/.test(s)) return s.padStart(2, '0');
+            return s;
+        }
+
+        // ================= CARREGAMENTO CENTRAL =================
         window.carregarDadosSmartphones = async function() {
             try {
-                const snapSp = await getDocs(collection(db, "smartphones"));
-                window.baseSmartphones = snapSp.docs.map(d => ({ id: d.id, ...d.data() }));
+                const [snapSp, snapChips] = await Promise.all([
+                    getDocs(collection(db, "smartphones")),
+                    getDocs(collection(db, "chips"))
+                ]);
 
-                const snapChips = await getDocs(collection(db, "chips"));
+                // Ordena os smartphones numericamente pelo patrimônio (01, 02, 03... 10, 11)
+                window.baseSmartphones = snapSp.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => String(a.patrimonio || "").localeCompare(String(b.patrimonio || ""), 'pt-BR', { numeric: true }));
+
                 window.baseChips = snapChips.docs.map(d => ({ id: d.id, ...d.data() }));
 
                 window.atualizarKPISmartphones();
@@ -20550,176 +20965,404 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 window.renderizarTabelaChips();
                 window.preencherSelectPatrimonios();
             } catch (e) {
-                console.error("Erro ao carregar dados:", e);
+                console.error("Erro ao carregar dados de smartphones:", e);
             }
         };
 
         window.atualizarKPISmartphones = function() {
-            document.getElementById('kpi-celulares').innerText = window.baseSmartphones.length;
-            document.getElementById('kpi-chips').innerText = window.baseChips.length;
-            const emUso = window.baseChips.filter(c => c.patrimonio_vinculado && c.patrimonio_vinculado !== "").length;
-            document.getElementById('kpi-chips-uso').innerText = emUso;
-            document.getElementById('kpi-chips-livres').innerText = window.baseChips.length - emUso;
+            const totalSp = window.baseSmartphones.length;
+            const spAtivos = window.baseSmartphones.filter(s => s.status === 'ATIVO').length;
+            const spConsertoInat = totalSp - spAtivos;
+
+            const totalChips = window.baseChips.length;
+            const chipsUso = window.baseChips.filter(c => c.patrimonio_vinculado && String(c.patrimonio_vinculado).trim() !== "").length;
+            const chipsLivres = totalChips - chipsUso;
+
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            setTxt('kpi-celulares', totalSp);
+            setTxt('kpi-celulares-ativos', spAtivos);
+            setTxt('kpi-celulares-conserto', spConsertoInat);
+            setTxt('kpi-chips', totalChips);
+            setTxt('kpi-chips-uso', chipsUso);
+            setTxt('kpi-chips-livres', chipsLivres);
         };
 
-        // ================= SMARTPHONES =================
-        window.salvarNovoSmartphone = async function() {
-            const pat = document.getElementById('add-sp-patrimonio').value.trim().toUpperCase();
-            if (!pat) return alert("O Patrimônio é obrigatório.");
-            if (window.baseSmartphones.find(s => s.patrimonio === pat)) return alert("Este Patrimônio já existe.");
-
-            const novoSp = {
-                patrimonio: pat,
-                marca: document.getElementById('add-sp-marca').value.trim().toUpperCase(),
-                modelo: document.getElementById('add-sp-modelo').value.trim().toUpperCase(),
-                imei1: document.getElementById('add-sp-imei1').value.trim(),
-                imei2: document.getElementById('add-sp-imei2').value.trim(),
-                num_serie: document.getElementById('add-sp-serie').value.trim(),
-                placa: "",
-                motorista: "",
-                status: "ATIVO", // Apenas ATIVO, INATIVO ou CONSERTO
-                obs: "",
-                historico_conserto: [] // Armazenar datas de ida e volta do conserto
-            };
-
-            await setDoc(doc(db, "smartphones", pat), novoSp);
-            window.fecharModal('modal-add-smartphone');
-            window.carregarDadosSmartphones();
+        // Preenche o <datalist> de sugestões de patrimônio sem dar erro caso não exista select antigo
+        window.preencherSelectPatrimonios = function() {
+            const dl = document.getElementById('datalist-patrimonios-sp');
+            if (!dl) return;
+            dl.innerHTML = window.baseSmartphones.map(sp => 
+                `<option value="${sp.patrimonio}">Patrimônio ${sp.patrimonio} - ${sp.motorista || sp.placa || 'Livre'}</option>`
+            ).join('');
         };
 
-        // ================= 1. RENDERIZAÇÃO DA TABELA (COM LINK NO MOTORISTA) =================
+        // ================= BUSCA RÁPIDA NA TABELA =================
+        window.filtrarSmartphonesBuscaRapida = function() {
+            const termo = (document.getElementById('sp-busca-rapida')?.value || "").toLowerCase().trim();
+            const linhas = document.querySelectorAll('#lista-smartphones tr');
+            linhas.forEach(tr => {
+                if (tr.children.length <= 1) return;
+                const textoLinha = tr.textContent.toLowerCase();
+                tr.style.display = (!termo || textoLinha.includes(termo)) ? '' : 'none';
+            });
+        };
+
+        // ================= RENDERIZAÇÃO DA TABELA PRINCIPAL =================
         window.renderizarTabelaSmartphones = function() {
             const tbody = document.getElementById('lista-smartphones');
-            tbody.innerHTML = "";
+            if (!tbody) return;
 
+            if (window.baseSmartphones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" align="center" style="padding: 30px; color: var(--text-muted);">Nenhum smartphone cadastrado.</td></tr>`;
+                return;
+            }
+
+            let html = "";
             window.baseSmartphones.forEach(sp => {
-                const chipVinc = window.baseChips.find(c => c.patrimonio_vinculado === sp.patrimonio);
-                const numeroChip = chipVinc ? chipVinc.numero : '<span style="color:var(--text-muted); font-size:11px;">Sem Chip</span>';
+                const patNorm = normalizarPatrimonio(sp.patrimonio);
+                const chipVinc = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === patNorm);
+                
+                // Clicar no número do chip permite editar o chip rapidamente
+                const numeroChipHTML = chipVinc 
+                    ? `<span class="clickable-cell" style="color:var(--accent); font-weight:700;" onclick="window.abrirEdicaoChip('${chipVinc.id}')" title="Clique para gerenciar este chip">${chipVinc.numero}</span>`
+                    : `<span style="color:var(--text-muted); font-size:11px; opacity:0.7;">Sem Chip</span>`;
 
                 const isConserto = sp.status === 'CONSERTO';
-                
                 const iconConserto = isConserto ? 'ph-arrow-u-up-left' : 'ph-wrench';
                 const colorClassConserto = isConserto ? 'success' : 'warning';
-                const tooltipConserto = isConserto ? 'Voltou do Conserto' : 'Enviar para Conserto';
                 
+                // Calcula há quantos dias está no conserto no tooltip
+                let tooltipConserto = 'Enviar para Conserto';
+                if (isConserto) {
+                    const ultConserto = (sp.historico_conserto || []).slice(-1)[0];
+                    const dataIda = ultConserto?.data_ida ? formatarDataBR(ultConserto.data_ida) : '';
+                    tooltipConserto = `Retornar do Conserto${dataIda ? ` (Enviado em ${dataIda})` : ''}`;
+                }
+
                 let statusClass = "ativo";
                 if (sp.status === 'INATIVO') statusClass = "inativo";
                 if (sp.status === 'CONSERTO') statusClass = "conserto";
 
-                // Formata o nome do motorista para ser clicável e abrir o pop-up com CPF
+                const motoristaEscapado = (sp.motorista || '').replace(/'/g, "\\'");
+                const cpfEscapado = (sp.cpf || '').replace(/'/g, "\\'");
                 const motoristaHTML = sp.motorista 
-                    ? `<span class="clickable-cell" style="color:var(--accent); font-weight:600; cursor:pointer; text-decoration:underline;" onclick="window.visualizarMotoristaCPF('${sp.motorista}', '${sp.cpf || ''}')" title="Clique para ver o CPF">${sp.motorista}</span>` 
-                    : '-';
+                    ? `<span class="clickable-cell" style="color:var(--accent); font-weight:700;" onclick="window.visualizarMotoristaCPF('${motoristaEscapado}', '${cpfEscapado}')" title="Clique para ver o CPF">${sp.motorista}</span>` 
+                    : '<span style="color:var(--text-muted);">-</span>';
 
-                tbody.innerHTML += `
+                html += `
                     <tr>
-                        <td data-valor="${sp.patrimonio}" style="font-weight:800; font-size:13px;">${sp.patrimonio}</td>
-                        <td data-valor="${chipVinc ? chipVinc.numero : ''}" style="color:var(--accent); font-weight:700;">${numeroChip}</td>
+                        <td data-valor="${sp.patrimonio}" style="font-weight:800; color:var(--text-main);">${sp.patrimonio}</td>
+                        <td data-valor="${chipVinc ? chipVinc.numero : 'SEM CHIP'}">${numeroChipHTML}</td>
                         <td data-valor="${sp.marca || ''}">${sp.marca || '-'}</td>
                         <td data-valor="${sp.modelo || ''}">${sp.modelo || '-'}</td>
-                        <td data-valor="${sp.imei1 || ''}">${sp.imei1 || '-'}</td>
-                        <td data-valor="${sp.imei2 || ''}">${sp.imei2 || '-'}</td>
-                        <td data-valor="${sp.num_serie || ''}">${sp.num_serie || '-'}</td>
-                        <td data-valor="${sp.placa || ''}" style="font-weight:600;">${sp.placa || '-'}</td>
+                        <td data-valor="${sp.imei1 || ''}" style="font-family:monospace; font-size:11px;">${sp.imei1 || '-'}</td>
+                        <td data-valor="${sp.imei2 || ''}" style="font-family:monospace; font-size:11px;">${sp.imei2 || '-'}</td>
+                        <td data-valor="${sp.num_serie || ''}" style="font-family:monospace; font-size:11px;">${sp.num_serie || '-'}</td>
+                        <td data-valor="${sp.placa || ''}" style="font-weight:800;">${sp.placa || '-'}</td>
                         <td data-valor="${sp.motorista || ''}">${motoristaHTML}</td>
-                        <td data-valor="${sp.status}"><span class="status-badge ${statusClass}">${sp.status}</span></td>
-                        <td data-valor="${sp.obs || ''}" style="color:var(--text-muted); font-size:11px; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sp.obs || ''}">${sp.obs || '-'}</td>
+                        <td data-valor="${sp.status}" style="text-align:center;"><span class="status-badge ${statusClass}">${sp.status}</span></td>
+                        <td data-valor="${sp.obs || ''}" style="color:var(--text-muted); font-size:11px;" title="${sp.obs || ''}">${sp.obs || '-'}</td>
                         <td>
-                            <div style="display:flex; gap:6px; justify-content:center;">
-                                <button onclick="window.abrirModalEntregaDevolucao('${sp.id}')" class="btn-action-icon" style="color: var(--accent); background: rgba(37, 99, 235, 0.1);" title="Entrega / Devolução">
-                                    <i class="ph ph-handshake"></i>
+                            <div style="display:flex; gap:5px; justify-content:center;">
+                                <button onclick="window.abrirModalEntregaDevolucao('${sp.id}')" class="btn-action-icon" style="color: var(--accent); background: rgba(37, 99, 235, 0.1);" title="Termo de Entrega / Devolução">
+                                    <i class="ph-bold ph-handshake"></i>
                                 </button>
                                 <button onclick="window.abrirEdicaoSmartphone('${sp.id}')" class="btn-action-icon" title="Editar Aparelho">
-                                    <i class="ph ph-pencil-simple"></i>
+                                    <i class="ph-bold ph-pencil-simple"></i>
                                 </button>
                                 <button onclick="window.toggleConserto('${sp.id}')" class="btn-action-icon ${colorClassConserto}" title="${tooltipConserto}">
-                                    <i class="ph ${iconConserto}"></i>
+                                    <i class="ph-bold ${iconConserto}"></i>
                                 </button>
-                                <button onclick="window.excluirSmartphone('${sp.id}')" class="btn-action-icon danger" title="Excluir Definitivamente">
-                                    <i class="ph ph-trash"></i>
+                                <button onclick="window.excluirSmartphone('${sp.id}')" class="btn-action-icon danger" title="Excluir Aparelho">
+                                    <i class="ph-bold ph-trash"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
                 `;
             });
+
+            tbody.innerHTML = html;
+            if (typeof applyFilters === 'function') applyFilters('tabela-smartphones', false);
+            window.filtrarSmartphonesBuscaRapida();
         };
 
-        // ================= 2. POP-UP DE DADOS DO MOTORISTA =================
+        // ================= ADICIONAR E EDITAR SMARTPHONE =================
+        window.salvarNovoSmartphone = async function() {
+            const patRaw = document.getElementById('add-sp-patrimonio').value.trim().toUpperCase();
+            if (!patRaw) return alert("O Patrimônio é obrigatório.");
+            const pat = normalizarPatrimonio(patRaw);
+
+            if (window.baseSmartphones.find(s => normalizarPatrimonio(s.patrimonio) === pat)) {
+                return alert(`O Patrimônio ${pat} já está cadastrado.`);
+            }
+
+            const novoSp = {
+                patrimonio: pat,
+                placa: (document.getElementById('add-sp-placa')?.value || "").trim().toUpperCase(),
+                marca: document.getElementById('add-sp-marca').value.trim().toUpperCase(),
+                modelo: document.getElementById('add-sp-modelo').value.trim().toUpperCase(),
+                imei1: document.getElementById('add-sp-imei1').value.trim(),
+                imei2: document.getElementById('add-sp-imei2').value.trim(),
+                num_serie: document.getElementById('add-sp-serie').value.trim().toUpperCase(),
+                motorista: "",
+                cpf: "",
+                status: "ATIVO",
+                obs: "",
+                historico_conserto: [],
+                historico_transacoes: []
+            };
+
+            showLoader();
+            try {
+                await setDoc(doc(db, "smartphones", pat), novoSp);
+                ['add-sp-patrimonio', 'add-sp-placa', 'add-sp-marca', 'add-sp-modelo', 'add-sp-imei1', 'add-sp-imei2', 'add-sp-serie'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = "";
+                });
+                window.fecharModal('modal-add-smartphone');
+                await window.carregarDadosSmartphones();
+            } catch (e) {
+                alert("Erro ao salvar aparelho: " + e.message);
+            }
+            hideLoader();
+        };
+
+        window.abrirEdicaoSmartphone = function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            if (!sp) return;
+
+            document.getElementById('edit-sp-id').value = sp.id;
+            document.getElementById('edit-sp-pat-display').innerText = `#${sp.patrimonio}`;
+            
+            // Agora preserva perfeitamente o status CONSERTO se ele estiver em conserto
+            document.getElementById('edit-sp-status').value = sp.status || 'ATIVO';
+            document.getElementById('edit-sp-placa').value = sp.placa || "";
+            document.getElementById('edit-sp-motorista').value = sp.motorista || "";
+            const cpfEl = document.getElementById('edit-sp-cpf');
+            if (cpfEl) cpfEl.value = sp.cpf || "";
+            document.getElementById('edit-sp-obs').value = sp.obs || "";
+            
+            document.getElementById('edit-sp-marca').value = sp.marca || "";
+            document.getElementById('edit-sp-modelo').value = sp.modelo || "";
+            document.getElementById('edit-sp-imei1').value = sp.imei1 || "";
+            document.getElementById('edit-sp-imei2').value = sp.imei2 || "";
+            document.getElementById('edit-sp-serie').value = sp.num_serie || "";
+
+            window.abrirModal('modal-edit-smartphone');
+        };
+
+        window.salvarEdicaoSmartphone = async function() {
+            const id = document.getElementById('edit-sp-id').value;
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            if (!sp) return;
+
+            const novoStatus = document.getElementById('edit-sp-status').value;
+            let histConserto = sp.historico_conserto || [];
+            const dataHoje = new Date().toISOString().split('T')[0];
+
+            // Se mudou manualmente para CONSERTO ou voltou dele pelo modal de edição, registra a data
+            if (sp.status !== 'CONSERTO' && novoStatus === 'CONSERTO') {
+                histConserto.push({ data_ida: dataHoje, data_volta: null });
+            } else if (sp.status === 'CONSERTO' && novoStatus !== 'CONSERTO') {
+                if (histConserto.length > 0 && !histConserto[histConserto.length - 1].data_volta) {
+                    histConserto[histConserto.length - 1].data_volta = dataHoje;
+                }
+            }
+
+            showLoader();
+            try {
+                await updateDoc(doc(db, "smartphones", id), {
+                    status: novoStatus,
+                    placa: document.getElementById('edit-sp-placa').value.trim().toUpperCase(),
+                    motorista: document.getElementById('edit-sp-motorista').value.trim().toUpperCase(),
+                    cpf: (document.getElementById('edit-sp-cpf')?.value || "").trim(),
+                    obs: document.getElementById('edit-sp-obs').value.trim(),
+                    marca: document.getElementById('edit-sp-marca').value.trim().toUpperCase(),
+                    modelo: document.getElementById('edit-sp-modelo').value.trim().toUpperCase(),
+                    imei1: document.getElementById('edit-sp-imei1').value.trim(),
+                    imei2: document.getElementById('edit-sp-imei2').value.trim(),
+                    num_serie: document.getElementById('edit-sp-serie').value.trim().toUpperCase(),
+                    historico_conserto: histConserto
+                });
+                window.fecharModal('modal-edit-smartphone');
+                await window.carregarDadosSmartphones();
+            } catch (e) {
+                alert("Erro ao atualizar: " + e.message);
+            }
+            hideLoader();
+        };
+
+        window.excluirSmartphone = async function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            if (!confirm(`Deseja realmente excluir o Smartphone Patrimônio ${sp ? sp.patrimonio : id}?`)) return;
+            showLoader();
+            try {
+                const patNorm = normalizarPatrimonio(sp ? sp.patrimonio : id);
+                const chipVinc = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === patNorm);
+                if (chipVinc) await updateDoc(doc(db, "chips", chipVinc.id), { patrimonio_vinculado: "" });
+                await deleteDoc(doc(db, "smartphones", id));
+                await window.carregarDadosSmartphones();
+            } catch (e) {
+                alert("Erro ao excluir: " + e.message);
+            }
+            hideLoader();
+        };
+
+        window.toggleConserto = async function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            if (!sp) return;
+
+            let hist = sp.historico_conserto || [];
+            const dataHoje = new Date().toISOString().split('T')[0];
+            let novoStatus = "";
+            let novaObs = sp.obs || "";
+
+            if (sp.status === 'CONSERTO') {
+                if (!confirm(`Confirmar o retorno do Patrimônio ${sp.patrimonio} do conserto para ATIVO?`)) return;
+                novoStatus = "ATIVO";
+                if (hist.length > 0 && !hist[hist.length - 1].data_volta) {
+                    hist[hist.length - 1].data_volta = dataHoje;
+                }
+            } else {
+                const motivo = prompt(`Enviar Patrimônio ${sp.patrimonio} para CONSERTO.\n\nQual o defeito / motivo?`, sp.obs || "");
+                if (motivo === null) return; // Cancelou
+                novoStatus = "CONSERTO";
+                if (motivo.trim() !== "") novaObs = motivo.trim();
+                hist.push({ data_ida: dataHoje, data_volta: null, motivo: novaObs });
+            }
+
+            showLoader();
+            await updateDoc(doc(db, "smartphones", id), { status: novoStatus, obs: novaObs, historico_conserto: hist });
+            await window.carregarDadosSmartphones();
+            hideLoader();
+        };
+
         window.visualizarMotoristaCPF = function(nome, cpf) {
             document.getElementById('ver-mot-nome').innerText = nome || "Não informado";
-            document.getElementById('ver-mot-cpf').innerText = cpf || "Não informado";
+            document.getElementById('ver-mot-cpf').innerText = cpf || "Não cadastrado";
             window.abrirModal('modal-ver-motorista');
         };
 
-        // ================= 3. CONFIRMAÇÃO DE ENTREGA / DEVOLUÇÃO =================
+        // ================= ENTREGA, DEVOLUÇÃO E HISTÓRICO (100% UNIFICADO) =================
+        window.abrirModalEntregaDevolucao = function(id) {
+            const sp = window.baseSmartphones.find(s => s.id === id);
+            if (!sp) return;
+
+            document.getElementById('ent-dev-sp-id').value = sp.id;
+            const titlePat = document.getElementById('ent-dev-pat-title');
+            if (titlePat) titlePat.innerText = `(Pat. ${sp.patrimonio})`;
+
+            document.getElementById('ent-dev-nome').value = "";
+            document.getElementById('ent-dev-cpf').value = "";
+            const placaInput = document.getElementById('ent-dev-placa');
+            if (placaInput) placaInput.value = sp.placa || "";
+            document.getElementById('ent-dev-obs').value = sp.obs || "";
+
+            const lblDevMot = document.getElementById('lbl-devolucao-motorista');
+            if (lblDevMot) {
+                lblDevMot.innerText = sp.motorista 
+                    ? `${sp.motorista} ${sp.cpf ? `(CPF: ${sp.cpf})` : ''}` 
+                    : 'Nenhum motorista vinculado atualmente';
+            }
+
+            // Se o aparelho já está com motorista, sugere DEVOLUÇÃO ou permite nova ENTREGA
+            document.querySelector('input[name="ent-dev-tipo"][value="ENTREGA"]').checked = true;
+            window.toggleFormEntDev();
+            document.getElementById('container-historico-ent-dev').style.display = 'none';
+            window.abrirModal('modal-entrega-devolucao');
+        };
+
+        window.toggleFormEntDev = function() {
+            const tipo = document.querySelector('input[name="ent-dev-tipo"]:checked').value;
+            const formCampos = document.getElementById('form-entrega-campos');
+            const boxInfoDev = document.getElementById('box-info-devolucao');
+            const btnEntrega = document.getElementById('btn-radio-entrega');
+            const btnDevolucao = document.getElementById('btn-radio-devolucao');
+
+            if (tipo === 'ENTREGA') {
+                formCampos.style.display = 'block';
+                if (boxInfoDev) boxInfoDev.style.display = 'none';
+                btnEntrega.style.background = 'var(--accent)';
+                btnEntrega.style.color = '#fff';
+                btnEntrega.style.border = 'none';
+                
+                btnDevolucao.style.background = 'var(--bg-main)';
+                btnDevolucao.style.color = 'var(--text-main)';
+                btnDevolucao.style.border = '1px solid var(--border-color)';
+            } else {
+                formCampos.style.display = 'none';
+                if (boxInfoDev) boxInfoDev.style.display = 'block';
+                btnDevolucao.style.background = 'var(--warning)';
+                btnDevolucao.style.color = '#fff';
+                btnDevolucao.style.border = 'none';
+                
+                btnEntrega.style.background = 'var(--bg-main)';
+                btnEntrega.style.color = 'var(--text-main)';
+                btnEntrega.style.border = '1px solid var(--border-color)';
+            }
+        };
+
         window.confirmarEntregaDevolucao = async function() {
             const id = document.getElementById('ent-dev-sp-id').value;
             const tipo = document.querySelector('input[name="ent-dev-tipo"]:checked').value;
             const nome = document.getElementById('ent-dev-nome').value.trim().toUpperCase();
             const cpf = document.getElementById('ent-dev-cpf').value.trim();
+            const placa = (document.getElementById('ent-dev-placa')?.value || "").trim().toUpperCase();
             const obs = document.getElementById('ent-dev-obs').value.trim();
 
-            if (tipo === 'ENTREGA') {
-                if (!nome || !cpf) return alert("Preencha o Nome e CPF do motorista.");
+            if (tipo === 'ENTREGA' && (!nome || !cpf)) {
+                return alert("Preencha o Nome Completo e o CPF do motorista para emitir o Termo de Entrega.");
             }
-            if (!obs) return alert("Preencha a observação / condição do aparelho.");
+            if (!obs) return alert("Preencha a condição atual do aparelho / acessórios.");
 
             const sp = window.baseSmartphones.find(s => s.id === id);
             if (!sp) return;
 
-            const motoristaRecibo = tipo === 'ENTREGA' ? nome : (sp.motorista || 'Motorista Não Informado');
+            // Preserva o nome e o CPF de quem estava com o aparelho ao emitir o Termo de Devolução!
+            const motoristaRecibo = tipo === 'ENTREGA' ? nome : (sp.motorista || 'MOTORISTA NÃO INFORMADO');
             const cpfRecibo = tipo === 'ENTREGA' ? cpf : (sp.cpf || '');
 
             const agora = new Date();
             const dataFormatada = agora.toLocaleDateString('pt-BR');
-            const horaFormatada = agora.toLocaleTimeString('pt-BR');
+            const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const dataHoraCompleta = `${dataFormatada} às ${horaFormatada}`;
 
-            // Guarda dataStr e horaStr diretamente para facilitar a reimpressão do PDF
             const novoHistorico = {
-                tipo: tipo,
+                tipo,
                 motorista: motoristaRecibo,
                 cpf: cpfRecibo,
-                obs: obs,
+                obs,
                 data_hora: dataHoraCompleta,
                 dataStr: dataFormatada,
                 horaStr: horaFormatada
             };
 
-            let historicoDB = sp.historico_transacoes || [];
-            historicoDB.push(novoHistorico);
+            const historicoDB = [...(sp.historico_transacoes || []), novoHistorico];
 
-            // Garante atualização exclusiva do motorista e CPF sem afetar a placa
-            let novosDados = {
-                obs: obs,
-                historico_transacoes: historicoDB
+            const novosDados = {
+                obs,
+                historico_transacoes: historicoDB,
+                motorista: tipo === 'ENTREGA' ? nome : "",
+                cpf: tipo === 'ENTREGA' ? cpf : ""
             };
-
-            if (tipo === 'ENTREGA') {
-                novosDados.motorista = nome;
-                novosDados.cpf = cpf;
-            } else {
-                novosDados.motorista = "";
-                novosDados.cpf = "";
+            if (tipo === 'ENTREGA' && placa) {
+                novosDados.placa = placa;
             }
 
             showLoader();
             try {
                 await updateDoc(doc(db, "smartphones", id), novosDados);
-                
-                window.gerarTermoPDF(sp, tipo, motoristaRecibo, cpfRecibo, obs, dataFormatada, horaFormatada);
-                
+                window.gerarTermoPDF({ ...sp, placa: novosDados.placa || sp.placa }, tipo, motoristaRecibo, cpfRecibo, obs, dataFormatada, horaFormatada);
                 window.fecharModal('modal-entrega-devolucao');
-                window.carregarDadosSmartphones();
+                await window.carregarDadosSmartphones();
             } catch (e) {
-                console.error("Erro ao salvar entrega/devolução: ", e);
-                alert("Falha ao salvar. Tente novamente.");
+                console.error("Erro ao salvar entrega/devolução:", e);
+                alert("Falha ao salvar transação.");
             }
             hideLoader();
         };
 
-        // ================= HISTÓRICO DE ENTREGA / DEVOLUÇÃO (DEFINITIVO) =================
         window.toggleHistoricoEntDev = function(forceOpen = false) {
             const container = document.getElementById('container-historico-ent-dev');
             const lista = document.getElementById('lista-historico-ent-dev');
@@ -20736,310 +21379,157 @@ document.querySelectorAll('tbody').forEach(tbody => {
             lista.innerHTML = "";
 
             if (historico.length === 0) {
-                lista.innerHTML = "<li style='text-align:center; color:var(--text-muted); padding:10px;'>Nenhum histórico registrado.</li>";
+                lista.innerHTML = "<li style='text-align:center; color:var(--text-muted); padding:10px;'>Nenhuma movimentação registrada.</li>";
             } else {
-                // Mapeia os índices originais para exclusão/reimpressão precisa e inverte para o mais recente ficar no topo
                 const histOrdenado = historico.map((h, index) => ({ ...h, originalIndex: index })).reverse();
-                
                 histOrdenado.forEach(h => {
                     const isEnt = h.tipo === 'ENTREGA';
-                    const icon = isEnt ? '<i class="ph ph-arrow-circle-up" style="color:var(--success); font-size:16px;"></i>' : '<i class="ph ph-arrow-circle-down" style="color:var(--warning); font-size:16px;"></i>';
+                    const icon = isEnt ? '<i class="ph-bold ph-arrow-circle-up" style="color:var(--success); font-size:15px;"></i>' : '<i class="ph-bold ph-arrow-circle-down" style="color:var(--warning); font-size:15px;"></i>';
                     const corBorda = isEnt ? 'var(--success)' : 'var(--warning)';
                     
                     lista.innerHTML += `
-                        <li style="border-left: 3px solid ${corBorda}; padding-left: 10px; margin-bottom: 12px; background: rgba(0,0,0,0.02); padding-right: 10px; padding-top: 8px; padding-bottom: 8px; border-radius: 0 6px 6px 0;">
+                        <li style="border-left: 3px solid ${corBorda}; padding: 8px 10px; margin-bottom: 8px; background: var(--bg-panel); border-radius: 0 6px 6px 0; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <span style="font-weight:bold; display:flex; align-items:center; gap:5px;">${icon} ${h.tipo}</span>
-                                
+                                <span style="font-weight:800; display:flex; align-items:center; gap:5px;">${icon} ${h.tipo}</span>
                                 <div style="display:flex; align-items:center; gap: 8px;">
-                                    <span style="color:var(--text-muted); font-size:10px;">${h.data_hora}</span>
-                                    
-                                    <!-- Botão de Reimpressão / Visualização do PDF -->
-                                    <button onclick="window.reimprimirPDFHistorico('${id}', ${h.originalIndex})" style="background:transparent; border:none; color:var(--accent); cursor:pointer; padding:2px; display:flex; align-items:center; justify-content:center;" title="Visualizar / Imprimir Termo PDF">
-                                        <i class="ph ph-file-pdf" style="font-size: 16px;"></i>
+                                    <span style="color:var(--text-muted); font-size:10px; font-weight:600;">${h.data_hora}</span>
+                                    <button onclick="window.reimprimirPDFHistorico('${id}', ${h.originalIndex})" style="background:transparent; border:none; color:var(--accent); cursor:pointer;" title="Reimprimir Termo PDF">
+                                        <i class="ph-bold ph-printer" style="font-size: 15px;"></i>
                                     </button>
-                                    
-                                    <!-- Botão de Exclusão do Registro -->
-                                    <button onclick="window.apagarHistoricoEntDev('${id}', ${h.originalIndex})" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:2px; display:flex; align-items:center; justify-content:center;" title="Apagar este registro">
-                                        <i class="ph ph-trash" style="font-size: 15px;"></i>
+                                    <button onclick="window.apagarHistoricoEntDev('${id}', ${h.originalIndex})" style="background:transparent; border:none; color:var(--danger); cursor:pointer;" title="Apagar este registro">
+                                        <i class="ph-bold ph-trash" style="font-size: 14px;"></i>
                                     </button>
                                 </div>
                             </div>
-                            ${h.motorista ? `<div style="color:var(--text-main); margin-bottom:2px;"><b>Motorista:</b> ${h.motorista}${h.cpf ? `(CPF: ${h.cpf})` : ''}</div>` : ''}
-                            <div style="color:var(--text-muted); font-style:italic;">" ${h.obs} "</div>
+                            ${h.motorista ? `<div style="color:var(--text-main); font-size:11.5px; margin-bottom:2px;"><b>Motorista:</b> ${h.motorista} ${h.cpf ? `<span style="color:var(--text-muted);">(${h.cpf})</span>` : ''}</div>` : ''}
+                            <div style="color:var(--text-muted); font-size:11px; font-style:italic;">"${h.obs}"</div>
                         </li>
                     `;
                 });
             }
-
             container.style.display = 'block';
         };
 
-        // ================= 5. REIMPRESSÃO DE PDF A PARTIR DO HISTÓRICO =================
+        window.apagarHistoricoEntDev = async function(spId, indexOriginal) {
+            if (!confirm("Tem certeza que deseja APAGAR este registro do histórico?")) return;
+            const sp = window.baseSmartphones.find(s => s.id === spId);
+            if (!sp) return;
+
+            const historicoDB = [...(sp.historico_transacoes || [])];
+            historicoDB.splice(indexOriginal, 1);
+
+            showLoader();
+            try {
+                await updateDoc(doc(db, "smartphones", spId), { historico_transacoes: historicoDB });
+                sp.historico_transacoes = historicoDB;
+                window.toggleHistoricoEntDev(true);
+            } catch (e) {
+                alert("Falha ao apagar histórico.");
+            }
+            hideLoader();
+        };
+
         window.reimprimirPDFHistorico = function(spId, originalIndex) {
             const sp = window.baseSmartphones.find(s => s.id === spId);
             if (!sp || !sp.historico_transacoes || !sp.historico_transacoes[originalIndex]) return;
-
             const h = sp.historico_transacoes[originalIndex];
 
             let dataStr = h.dataStr;
             let horaStr = h.horaStr;
-
-            // Trata históricos antigos que não possuem data/hora separadas
             if (!dataStr || !horaStr) {
                 const partes = (h.data_hora || "").split('às');
-                dataStr = partes[0] ? partes[0].trim() : "";
+                dataStr = partes[0] ? partes[0].trim() : h.data_hora || "";
                 horaStr = partes[1] ? partes[1].trim() : "";
             }
-
             window.gerarTermoPDF(sp, h.tipo, h.motorista || '', h.cpf || '', h.obs || '', dataStr, horaStr);
         };
 
-        window.abrirEdicaoSmartphone = function(id) {
-            const sp = window.baseSmartphones.find(s => s.id === id);
-            document.getElementById('edit-sp-id').value = sp.id;
-            document.getElementById('edit-sp-pat-display').innerText = sp.patrimonio;
-            
-            // Status e Uso 
-            document.getElementById('edit-sp-status').value = sp.status === 'CONSERTO' ? 'ATIVO' : sp.status;
-            document.getElementById('edit-sp-placa').value = sp.placa || "";
-            document.getElementById('edit-sp-motorista').value = sp.motorista || "";
-            document.getElementById('edit-sp-obs').value = sp.obs || "";
-            
-            // Informações Técnicas
-            document.getElementById('edit-sp-marca').value = sp.marca || "";
-            document.getElementById('edit-sp-modelo').value = sp.modelo || "";
-            document.getElementById('edit-sp-imei1').value = sp.imei1 || "";
-            document.getElementById('edit-sp-imei2').value = sp.imei2 || "";
-            document.getElementById('edit-sp-serie').value = sp.num_serie || "";
+        // ================= GESTÃO DE CHIPS (MANUAL E PLANILHA) =================
+        window.adicionarChipManual = async function() {
+            const num = document.getElementById('novo-chip-manual-num').value.trim();
+            const vincRaw = document.getElementById('novo-chip-manual-vinc').value.trim().toUpperCase();
+            const vinc = vincRaw ? normalizarPatrimonio(vincRaw) : "";
 
-            window.abrirModal('modal-edit-smartphone');
-        };
-
-        window.salvarEdicaoSmartphone = async function() {
-            const id = document.getElementById('edit-sp-id').value;
-            await updateDoc(doc(db, "smartphones", id), {
-                status: document.getElementById('edit-sp-status').value,
-                placa: document.getElementById('edit-sp-placa').value.trim().toUpperCase(),
-                motorista: document.getElementById('edit-sp-motorista').value.trim().toUpperCase(),
-                obs: document.getElementById('edit-sp-obs').value.trim(),
-                
-                marca: document.getElementById('edit-sp-marca').value.trim().toUpperCase(),
-                modelo: document.getElementById('edit-sp-modelo').value.trim().toUpperCase(),
-                imei1: document.getElementById('edit-sp-imei1').value.trim(),
-                imei2: document.getElementById('edit-sp-imei2').value.trim(),
-                num_serie: document.getElementById('edit-sp-serie').value.trim().toUpperCase()
-            });
-            window.fecharModal('modal-edit-smartphone');
-            window.carregarDadosSmartphones();
-        };
-
-        window.salvarNovoSmartphone = async function() {
-            const pat = document.getElementById('add-sp-patrimonio').value.trim().toUpperCase();
-            if (!pat) return alert("O Patrimônio é obrigatório.");
-            if (window.baseSmartphones.find(s => s.patrimonio === pat)) return alert("Este Patrimônio já existe.");
-
-            const novoSp = {
-                patrimonio: pat,
-                marca: document.getElementById('add-sp-marca').value.trim().toUpperCase(),
-                modelo: document.getElementById('add-sp-modelo').value.trim().toUpperCase(),
-                imei1: document.getElementById('add-sp-imei1').value.trim(),
-                imei2: document.getElementById('add-sp-imei2').value.trim(),
-                num_serie: document.getElementById('add-sp-serie').value.trim().toUpperCase(),
-                placa: "",
-                motorista: "",
-                status: "ATIVO", 
-                obs: "",
-                historico_conserto: [] 
-            };
-
-            await setDoc(doc(db, "smartphones", pat), novoSp);
-            
-            // Limpa campos depois de adicionar
-            document.getElementById('add-sp-patrimonio').value = "";
-            document.getElementById('add-sp-marca').value = "";
-            document.getElementById('add-sp-modelo').value = "";
-            document.getElementById('add-sp-imei1').value = "";
-            document.getElementById('add-sp-imei2').value = "";
-            document.getElementById('add-sp-serie').value = "";
-
-            window.fecharModal('modal-add-smartphone');
-            window.carregarDadosSmartphones();
-        };
-
-        // ================= LISTAS DINÂMICAS DE KPIS =================
-        window.abrirListaKPI = function(tipo) {
-            const tbody = document.getElementById('tbody-kpi');
-            const thead = document.getElementById('thead-kpi');
-            const titulo = document.getElementById('titulo-modal-kpi');
-            tbody.innerHTML = "";
-            thead.innerHTML = "";
-
-            if (tipo === 'celulares') {
-                titulo.innerHTML = '<i class="ph ph-device-mobile" style="color:var(--accent);"></i> Total de Celulares';
-                thead.innerHTML = `<tr><th>PATRIMÔNIO</th><th>MARCA</th><th>MODELO</th><th>IMEI</th><th>MOTORISTA</th><th>STATUS</th></tr>`;
-                window.baseSmartphones.forEach(sp => {
-                    let corStatus = sp.status === 'ATIVO' ? 'var(--success)' : (sp.status === 'INATIVO' ? 'var(--danger)' : 'var(--warning)');
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${sp.patrimonio}</td><td>${sp.marca || '-'}</td><td>${sp.modelo || '-'}</td><td>${sp.imei1 || '-'}</td><td>${sp.motorista || '-'}</td><td style="color:${corStatus}; font-weight:bold;">${sp.status}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'chips') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--accent);"></i> Total de Chips Cadastrados';
-                thead.innerHTML = `<tr><th>NÚMERO</th><th>VÍNCULO</th></tr>`;
-                window.baseChips.forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td>${c.patrimonio_vinculado || '<span style="color:var(--success);">Livre</span>'}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'uso') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--success);"></i> Chips em Uso';
-                thead.innerHTML = `<tr><th>NÚMERO</th><th>PATRIMÔNIO ATRELADO</th></tr>`;
-                window.baseChips.filter(c => c.patrimonio_vinculado).forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td style="color:var(--accent); font-weight:bold;">${c.patrimonio_vinculado}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'livres') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--warning);"></i> Chips Sem Uso';
-                thead.innerHTML = `<tr><th>NÚMERO DO CHIP</th></tr>`;
-                window.baseChips.filter(c => !c.patrimonio_vinculado).forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td></tr>`;
-                });
+            if (!num) return alert("Digite o número da linha do chip.");
+            const numLimpo = num.replace(/\D/g, '');
+            if (window.baseChips.some(c => c.numero.replace(/\D/g, '') === numLimpo)) {
+                return alert("Este número de chip já está cadastrado no sistema.");
             }
-            
-            window.abrirModal('modal-kpi-lista');
-        };
 
-        window.excluirSmartphone = async function(id) {
-            if(!confirm("Deletar smartphone permanentemente?")) return;
-            const chipVinc = window.baseChips.find(c => c.patrimonio_vinculado === id);
-            if(chipVinc) await updateDoc(doc(db, "chips", chipVinc.id), { patrimonio_vinculado: "" });
-            await deleteDoc(doc(db, "smartphones", id));
-            window.carregarDadosSmartphones();
-        };
-
-        // Lógica de Conserto (Registrando Datas)
-        window.toggleConserto = async function(id) {
-            const sp = window.baseSmartphones.find(s => s.id === id);
-            let hist = sp.historico_conserto || [];
-            let novoStatus = "";
-            const dataHoje = new Date().toISOString().split('T')[0];
-
-            if (sp.status === 'CONSERTO') {
-                novoStatus = "ATIVO";
-                if (hist.length > 0 && !hist[hist.length - 1].data_volta) {
-                    hist[hist.length - 1].data_volta = dataHoje; // Registra a data de volta
+            showLoader();
+            try {
+                if (vinc !== "") {
+                    const chipAntigo = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === vinc);
+                    if (chipAntigo) await updateDoc(doc(db, "chips", chipAntigo.id), { patrimonio_vinculado: "" });
                 }
-            } else {
-                novoStatus = "CONSERTO";
-                hist.push({ data_ida: dataHoje, data_volta: null }); // Registra a ida
+                await setDoc(doc(collection(db, "chips")), { numero: num, patrimonio_vinculado: vinc });
+                document.getElementById('novo-chip-manual-num').value = "";
+                document.getElementById('novo-chip-manual-vinc').value = "";
+                await window.carregarDadosSmartphones();
+                alert("Chip adicionado com sucesso!");
+            } catch (e) {
+                alert("Erro ao adicionar chip: " + e.message);
             }
-
-            await updateDoc(doc(db, "smartphones", id), { status: novoStatus, historico_conserto: hist });
-            window.carregarDadosSmartphones();
+            hideLoader();
         };
 
-        // ================= INTELIGÊNCIA DA PLANILHA DE CHIPS =================
         window.lerPlanilhaChips = function(e) {
             const file = e.target.files[0];
-            if(!file) return;
+            if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+            reader.onload = function(ev) {
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
                 
-                let numerosDbSet = new Set(window.baseChips.map(c => c.numero.replace(/[^0-9]/g, '')));
+                let numerosDbSet = new Set(window.baseChips.map(c => String(c.numero || "").replace(/\D/g, '')));
                 let numerosPlanilhaSet = new Set();
                 window.chipsPreviewAguardando = [];
                 let htmlPreview = "";
 
-                // 1. Vasculha a planilha para achar os números
                 rows.forEach(row => {
                     if (row[0]) {
                         let num = String(row[0]).trim();
-                        let numClean = num.replace(/[^0-9]/g, '');
-                        
+                        let numClean = num.replace(/\D/g, '');
                         if (numClean.length >= 8) {
                             numerosPlanilhaSet.add(numClean);
-                            // Se o número não está no banco, ele é NOVO (Verde)
                             if (!numerosDbSet.has(numClean)) {
                                 window.chipsPreviewAguardando.push(num);
-                                numerosDbSet.add(numClean); // Adiciona pra não repetir
+                                numerosDbSet.add(numClean);
                                 htmlPreview += `<span class="badge-import-new"><i class="ph ph-plus"></i> ${num}</span>`;
                             }
                         }
                     }
                 });
 
-                // 2. Faz o caminho inverso: Verifica se tem alguém no BD que sumiu da planilha
                 let chipsFaltantes = [];
                 window.baseChips.forEach(c => {
-                    let numCleanDb = c.numero.replace(/[^0-9]/g, '');
+                    let numCleanDb = String(c.numero || "").replace(/\D/g, '');
                     if (!numerosPlanilhaSet.has(numCleanDb)) {
                         chipsFaltantes.push(c.numero);
-                        htmlPreview += `<span class="badge-import-missing"><i class="ph ph-warning"></i> ${c.numero} (Não está na planilha)</span>`;
+                        htmlPreview += `<span class="badge-import-missing"><i class="ph ph-warning"></i> ${c.numero} (Ausente na planilha)</span>`;
                     }
                 });
 
-                // 3. Monta o visual
-                if(htmlPreview === "") {
-                    htmlPreview = "<p style='color:var(--text-muted); text-align:center; padding: 20px;'>Nenhuma alteração detectada.<br>A planilha é idêntica ao sistema.</p>";
+                if (htmlPreview === "") {
+                    htmlPreview = "<p style='color:var(--text-muted); text-align:center; padding: 20px;'>Nenhuma divergência detectada.<br>A planilha está 100% sincronizada com o sistema.</p>";
                 } else {
-                    let txtResumo = `<div style="display: flex; gap: 15px; margin-bottom: 15px; font-weight: bold; font-size: 12px; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px;">
-                        <span style="color:var(--success);">Novos para salvar: ${window.chipsPreviewAguardando.length}</span>
+                    let txtResumo = `<div style="display: flex; gap: 15px; margin-bottom: 12px; font-weight: 800; font-size: 12px; background: var(--bg-panel); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <span style="color:var(--success);">Novos p/ importar: ${window.chipsPreviewAguardando.length}</span>
                         <span style="color:var(--danger);">Ausentes na planilha: ${chipsFaltantes.length}</span>
                     </div>`;
                     htmlPreview = txtResumo + htmlPreview;
                 }
 
                 document.getElementById('preview-chips').innerHTML = htmlPreview;
-                document.getElementById('btn-salvar-chips').style.display = window.chipsPreviewAguardando.length > 0 ? 'block' : 'none';
+                document.getElementById('btn-salvar-chips').style.display = window.chipsPreviewAguardando.length > 0 ? 'inline-flex' : 'none';
             };
             reader.readAsArrayBuffer(file);
         };
 
-        // ================= LÓGICA DE CLIQUE NOS KPIs =================
-        window.abrirListaKPI = function(tipo) {
-            const tbody = document.getElementById('tbody-kpi');
-            const thead = document.getElementById('thead-kpi');
-            const titulo = document.getElementById('titulo-modal-kpi');
-            tbody.innerHTML = "";
-            thead.innerHTML = "";
-
-            if (tipo === 'celulares') {
-                titulo.innerHTML = '<i class="ph ph-device-mobile" style="color:var(--accent);"></i> Total de Celulares';
-                thead.innerHTML = `<tr><th>PATRIMÔNIO</th><th>MOTORISTA</th><th>STATUS</th></tr>`;
-                window.baseSmartphones.forEach(sp => {
-                    let corStatus = sp.status === 'ATIVO' ? 'var(--success)' : (sp.status === 'INATIVO' ? 'var(--danger)' : 'var(--warning)');
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${sp.patrimonio}</td><td>${sp.motorista || '-'}</td><td style="color:${corStatus}; font-weight:bold;">${sp.status}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'chips') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--accent);"></i> Total de Chips Cadastrados';
-                thead.innerHTML = `<tr><th>NÚMERO</th><th>VÍNCULO</th></tr>`;
-                window.baseChips.forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td>${c.patrimonio_vinculado || '<span style="color:var(--success);">Livre</span>'}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'uso') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--success);"></i> Chips em Uso';
-                thead.innerHTML = `<tr><th>NÚMERO</th><th>PATRIMÔNIO ATRELADO</th></tr>`;
-                window.baseChips.filter(c => c.patrimonio_vinculado).forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td><td style="color:var(--accent); font-weight:bold;">${c.patrimonio_vinculado}</td></tr>`;
-                });
-            } 
-            else if (tipo === 'livres') {
-                titulo.innerHTML = '<i class="ph ph-sim-card" style="color:var(--warning);"></i> Chips Sem Uso';
-                thead.innerHTML = `<tr><th>NÚMERO DO CHIP</th></tr>`;
-                window.baseChips.filter(c => !c.patrimonio_vinculado).forEach(c => {
-                    tbody.innerHTML += `<tr><td style="font-weight:bold;">${c.numero}</td></tr>`;
-                });
-            }
-            
-            window.abrirModal('modal-kpi-lista');
-        };
-
         window.salvarChipsImportados = async function() {
+            showLoader();
             try {
                 const batch = writeBatch(db);
                 window.chipsPreviewAguardando.forEach(num => {
@@ -21048,26 +21538,16 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 });
                 await batch.commit();
                 
-                document.getElementById('preview-chips').innerHTML = "<p>Chips importados!</p>";
+                document.getElementById('preview-chips').innerHTML = "<p style='color:var(--success); text-align:center; font-weight:700; padding:15px;'>✅ Chips importados com sucesso!</p>";
                 document.getElementById('btn-salvar-chips').style.display = "none";
                 document.getElementById('file-import-chips').value = "";
-                
-                window.carregarDadosSmartphones();
+                await window.carregarDadosSmartphones();
             } catch (e) {
-                console.error(e);
                 alert("Erro ao salvar chips.");
             }
+            hideLoader();
         };
 
-        window.preencherSelectPatrimonios = function() {
-            const sel = document.getElementById('edit-chip-patrimonio');
-            sel.innerHTML = `<option value="">Nenhum (Sem Uso)</option>`;
-            window.baseSmartphones.forEach(sp => {
-                sel.innerHTML += `<option value="${sp.patrimonio}">${sp.patrimonio} (${sp.motorista || 'Sem motorista'})</option>`;
-            });
-        };
-
-        // Variáveis de controle de ordenação e estado da lista
         let chipSortColumn = 'numero';
         let chipSortAsc = true;
 
@@ -21075,293 +21555,201 @@ document.querySelectorAll('tbody').forEach(tbody => {
             window.filtrarEDesenharChips();
         };
 
-        // Função que filtra por texto e ordena dinamicamente
         window.filtrarEDesenharChips = function() {
-            const termoBusca = document.getElementById('input-busca-chips') ? document.getElementById('input-busca-chips').value.toLowerCase().trim() : "";
+            const termoBusca = (document.getElementById('input-busca-chips')?.value || "").toLowerCase().trim();
             const tbody = document.getElementById('lista-chips-banco');
             if (!tbody) return;
-            tbody.innerHTML = "";
 
-            // 1. Filtragem
             let chipsFiltrados = window.baseChips.filter(chip => {
                 const num = String(chip.numero || "").toLowerCase();
                 const vinc = String(chip.patrimonio_vinculado || "").toLowerCase();
                 return num.includes(termoBusca) || vinc.includes(termoBusca);
             });
 
-            // 2. Ordenação
             chipsFiltrados.sort((a, b) => {
-                let valA = String(a[chipSortColumn] || "").toLowerCase();
-                let valB = String(b[chipSortColumn] || "").toLowerCase();
-
-                if (valA < valB) return chipSortAsc ? -1 : 1;
-                if (valA > valB) return chipSortAsc ? 1 : -1;
-                return 0;
+                let valA = String(a[chipSortColumn] || "");
+                let valB = String(b[chipSortColumn] || "");
+                const comp = valA.localeCompare(valB, 'pt-BR', { numeric: true, sensitivity: 'base' });
+                return chipSortAsc ? comp : -comp;
             });
 
-            // 3. Renderização na tela
             if (chipsFiltrados.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" align="center" style="padding: 20px; color: var(--text-muted);">Nenhum chip encontrado.</td></tr>`;
                 return;
             }
 
-            chipsFiltrados.forEach(chip => {
-                const vinculoText = chip.patrimonio_vinculado ? 
-                                   `<span style="color:var(--accent); font-weight:bold;">${chip.patrimonio_vinculado}</span>` : 
-                                   `<span style="color:var(--success); font-weight:bold; font-size:11px; text-transform:uppercase;">Livre</span>`;
+            tbody.innerHTML = chipsFiltrados.map(chip => {
+                const spAtrelado = chip.patrimonio_vinculado 
+                    ? window.baseSmartphones.find(s => normalizarPatrimonio(s.patrimonio) === normalizarPatrimonio(chip.patrimonio_vinculado))
+                    : null;
+                const infoExtra = spAtrelado && spAtrelado.motorista ? ` <span style="color:var(--text-muted); font-size:11px;">(${spAtrelado.motorista})</span>` : '';
+
+                const vinculoText = chip.patrimonio_vinculado 
+                    ? `<span style="color:var(--accent); font-weight:800;">Pat. ${chip.patrimonio_vinculado}</span>${infoExtra}` 
+                    : `<span class="status-badge ativo">LIVRE</span>`;
                 
-                tbody.innerHTML += `
+                return `
                     <tr>
                         <td style="font-weight:800;">${chip.numero}</td>
                         <td>${vinculoText}</td>
                         <td>
                             <div style="display:flex; justify-content:center; gap:6px;">
-                                <button onclick="window.abrirEdicaoChip('${chip.id}')" class="btn-action-icon" title="Vincular/Editar">
-                                    <i class="ph ph-pencil-simple"></i>
+                                <button onclick="window.abrirEdicaoChip('${chip.id}')" class="btn-action-icon" title="Vincular / Editar">
+                                    <i class="ph-bold ph-pencil-simple"></i>
                                 </button>
                                 <button onclick="window.excluirChip('${chip.id}')" class="btn-action-icon danger" title="Excluir Chip">
-                                    <i class="ph ph-trash"></i>
+                                    <i class="ph-bold ph-trash"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
                 `;
-            });
+            }).join('');
         };
 
-        // Função de clique no cabeçalho para alternar a ordenação
         window.ordenarChips = function(coluna) {
-            if (chipSortColumn === coluna) {
-                chipSortAsc = !chipSortAsc; // Inverte a direção se clicar na mesma coluna
-            } else {
-                chipSortColumn = coluna;
-                chipSortAsc = true; // Começa ascendente por padrão na nova coluna
-            }
+            if (chipSortColumn === coluna) chipSortAsc = !chipSortAsc;
+            else { chipSortColumn = coluna; chipSortAsc = true; }
             window.filtrarEDesenharChips();
         };
 
-        // Limpa a busca toda vez que o modal for aberto (Opcional, mas util)
-        const observerModalChips = new MutationObserver((mutations) => {
-            const modal = document.getElementById('modal-verificar-chips');
-            if (modal && modal.classList.contains('active')) {
-                const input = document.getElementById('input-busca-chips');
-                if (input && input.value !== "") {
-                    // Mantém a busca se desejar, ou limpa limpando a linha abaixo:
-                    // input.value = "";
-                    // window.filtrarEDesenharChips();
-                }
-            }
-        });
-        document.addEventListener('DOMContentLoaded', () => {
-            const m = document.getElementById('modal-verificar-chips');
-            if (m) observerModalChips.observe(m, { attributes: true, attributeFilter: ['class'] });
-        });
-
         window.abrirEdicaoChip = function(id) {
             const chip = window.baseChips.find(c => c.id === id);
+            if (!chip) return;
             document.getElementById('edit-chip-id').value = chip.id;
             document.getElementById('edit-chip-numero').value = chip.numero;
-            
-            // Suporta o campo antigo (patrimonio_vinculado) e o novo formato livre
             document.getElementById('edit-chip-vinculo').value = chip.patrimonio_vinculado || "";
             
-            window.fecharModal('modal-verificar-chips'); // Fecha a lista antes de abrir edição
+            window.fecharModal('modal-verificar-chips');
             window.abrirModal('modal-edit-chip');
         };
 
         window.salvarEdicaoChip = async function() {
             const id = document.getElementById('edit-chip-id').value;
-            // Pega o que foi digitado e converte para maiúsculo para manter o padrão
-            const novoVinculo = document.getElementById('edit-chip-vinculo').value.trim().toUpperCase();
+            const novoVinculoRaw = document.getElementById('edit-chip-vinculo').value.trim().toUpperCase();
+            const novoVinculo = novoVinculoRaw ? normalizarPatrimonio(novoVinculoRaw) : "";
             const novoNumero = document.getElementById('edit-chip-numero').value.trim();
             
-            if (!novoNumero) {
-                alert("O número do chip é obrigatório.");
-                return;
-            }
+            if (!novoNumero) return alert("O número do chip é obrigatório.");
 
-            // Regra opcional de unicidade: se atrelou a um patrimônio que já pertencia a outro chip, limpa o anterior
-            if(novoVinculo !== "") {
-                const chipAnterior = window.baseChips.find(c => c.patrimonio_vinculado === novoVinculo && c.id !== id);
-                if(chipAnterior) {
-                    await updateDoc(doc(db, "chips", chipAnterior.id), { patrimonio_vinculado: "" });
+            showLoader();
+            try {
+                if (novoVinculo !== "") {
+                    const chipAnterior = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === novoVinculo && c.id !== id);
+                    if (chipAnterior) {
+                        await updateDoc(doc(db, "chips", chipAnterior.id), { patrimonio_vinculado: "" });
+                    }
                 }
+                await updateDoc(doc(db, "chips", id), {
+                    numero: novoNumero,
+                    patrimonio_vinculado: novoVinculo
+                });
+                window.fecharModal('modal-edit-chip');
+                await window.carregarDadosSmartphones();
+            } catch (e) {
+                alert("Erro ao salvar vínculo do chip.");
             }
-
-            // Grava no Firebase utilizando a mesma propriedade `patrimonio_vinculado` para não quebrar a estrutura dos KPIs
-            await updateDoc(doc(db, "chips", id), {
-                numero: novoNumero,
-                patrimonio_vinculado: novoVinculo
-            });
-
-            window.fecharModal('modal-edit-chip');
-            await window.carregarDadosSmartphones();
-            window.abrirModal('modal-verificar-chips'); // Retorna para a listagem atualizada
+            hideLoader();
         };
 
         window.excluirChip = async function(id) {
-            if(!confirm("Deletar este chip?")) return;
+            if (!confirm("Deletar este chip permanentemente?")) return;
+            showLoader();
             await deleteDoc(doc(db, "chips", id));
-            window.carregarDadosSmartphones();
-        };
-
-        // ================= LOGICA: ENTREGA E DEVOLUÇÃO DE SMARTPHONES =================
-
-        window.abrirModalEntregaDevolucao = function(id) {
-            const sp = window.baseSmartphones.find(s => s.id === id);
-            if (!sp) return;
-
-            document.getElementById('ent-dev-sp-id').value = sp.id;
-            
-            // Reseta campos
-            document.getElementById('ent-dev-nome').value = "";
-            document.getElementById('ent-dev-cpf').value = "";
-            document.getElementById('ent-dev-obs').value = sp.obs || "";
-            
-            // Define Entrega como padrão
-            document.querySelector('input[name="ent-dev-tipo"][value="ENTREGA"]').checked = true;
-            window.toggleFormEntDev();
-            
-            // Oculta histórico ao abrir
-            document.getElementById('container-historico-ent-dev').style.display = 'none';
-            
-            window.abrirModal('modal-entrega-devolucao');
-        };
-
-        window.toggleFormEntDev = function() {
-            const tipo = document.querySelector('input[name="ent-dev-tipo"]:checked').value;
-            const formCampos = document.getElementById('form-entrega-campos');
-            const btnEntrega = document.getElementById('btn-radio-entrega');
-            const btnDevolucao = document.getElementById('btn-radio-devolucao');
-
-            if (tipo === 'ENTREGA') {
-                formCampos.style.display = 'block';
-                btnEntrega.style.background = 'var(--accent)';
-                btnEntrega.style.color = '#fff';
-                btnEntrega.style.border = 'none';
-                
-                btnDevolucao.style.background = 'var(--bg-main)';
-                btnDevolucao.style.color = 'var(--text-main)';
-                btnDevolucao.style.border = '1px solid var(--border-color)';
-            } else {
-                formCampos.style.display = 'none';
-                btnDevolucao.style.background = 'var(--accent)';
-                btnDevolucao.style.color = '#fff';
-                btnDevolucao.style.border = 'none';
-                
-                btnEntrega.style.background = 'var(--bg-main)';
-                btnEntrega.style.color = 'var(--text-main)';
-                btnEntrega.style.border = '1px solid var(--border-color)';
-            }
-        };
-
-        // 🟢 Nova Função para Excluir um item do Histórico
-        window.apagarHistoricoEntDev = async function(spId, indexOriginal) {
-            if (!confirm("Tem certeza que deseja APAGAR este registro do histórico?")) return;
-            
-            const sp = window.baseSmartphones.find(s => s.id === spId);
-            if (!sp) return;
-
-            let historicoDB = sp.historico_transacoes || [];
-            
-            // Remove exatamente o item da posição original no banco
-            historicoDB.splice(indexOriginal, 1);
-
-            showLoader();
-            try {
-                await updateDoc(doc(db, "smartphones", spId), { historico_transacoes: historicoDB });
-                
-                // Atualiza memória local
-                sp.historico_transacoes = historicoDB;
-                
-                // Re-renderiza a lista mantendo o pop-up expandido
-                window.toggleHistoricoEntDev(true);
-            } catch (e) {
-                console.error("Erro ao apagar histórico: ", e);
-                alert("Falha ao apagar. Tente novamente.");
-            }
+            await window.carregarDadosSmartphones();
             hideLoader();
         };
 
-        window.confirmarEntregaDevolucao = async function() {
-            const id = document.getElementById('ent-dev-sp-id').value;
-            const tipo = document.querySelector('input[name="ent-dev-tipo"]:checked').value;
-            const nome = document.getElementById('ent-dev-nome').value.trim().toUpperCase();
-            const cpf = document.getElementById('ent-dev-cpf').value.trim();
-            const obs = document.getElementById('ent-dev-obs').value.trim();
+        // ================= DETALHAMENTO COMPLETO DOS 6 KPIs =================
+        window.abrirListaKPI = function(tipo) {
+            const tbody = document.getElementById('tbody-kpi');
+            const thead = document.getElementById('thead-kpi');
+            const titulo = document.getElementById('titulo-modal-kpi');
+            tbody.innerHTML = "";
+            thead.innerHTML = "";
 
-            if (tipo === 'ENTREGA') {
-                if (!nome || !cpf) return alert("Preencha o Nome e CPF do motorista.");
-            }
-            if (!obs) return alert("Preencha a observação / condição do aparelho.");
-
-            const sp = window.baseSmartphones.find(s => s.id === id);
-            if (!sp) return;
-
-            // Se for devolução, captura o motorista que estava com o telefone para imprimir no recibo
-            const motoristaRecibo = tipo === 'ENTREGA' ? nome : (sp.motorista || 'Motorista Não Informado');
-            const cpfRecibo = tipo === 'ENTREGA' ? cpf : '';
-
-            // Obtém data e hora formatada no padrão brasileiro
-            const agora = new Date();
-            const dataFormatada = agora.toLocaleDateString('pt-BR');
-            const horaFormatada = agora.toLocaleTimeString('pt-BR');
-            const dataHoraCompleta = `${dataFormatada} ${horaFormatada}`;
-
-            const novoHistorico = {
-                tipo: tipo,
-                motorista: motoristaRecibo,
-                cpf: cpfRecibo,
-                obs: obs,
-                data_hora: dataHoraCompleta
+            const renderizarLinhasAparelhos = (lista) => {
+                thead.innerHTML = `<tr><th>PAT.</th><th>CHIP</th><th>MARCA / MODELO</th><th>IMEI 1</th><th>PLACA</th><th>MOTORISTA</th><th>STATUS</th></tr>`;
+                if (lista.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" align="center" style="padding:20px; color:var(--text-muted);">Nenhum aparelho nesta categoria.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = lista.map(sp => {
+                    const chip = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === normalizarPatrimonio(sp.patrimonio));
+                    let stClass = sp.status === 'ATIVO' ? 'ativo' : (sp.status === 'INATIVO' ? 'inativo' : 'conserto');
+                    return `<tr>
+                        <td style="font-weight:800;">${sp.patrimonio}</td>
+                        <td style="color:var(--accent); font-weight:700;">${chip ? chip.numero : '-'}</td>
+                        <td>${sp.marca || ''} ${sp.modelo || '-'}</td>
+                        <td style="font-family:monospace; font-size:11px;">${sp.imei1 || '-'}</td>
+                        <td style="font-weight:700;">${sp.placa || '-'}</td>
+                        <td>${sp.motorista || '-'}</td>
+                        <td><span class="status-badge ${stClass}">${sp.status}</span></td>
+                    </tr>`;
+                }).join('');
             };
 
-            let historicoDB = sp.historico_transacoes || [];
-            historicoDB.push(novoHistorico);
-
-            let novosDados = {
-                obs: obs,
-                historico_transacoes: historicoDB
-            };
-
-            // Atualiza campo do motorista
-            if (tipo === 'ENTREGA') {
-                novosDados.motorista = nome;
-            } else {
-                novosDados.motorista = ""; // Limpa se for devolução
+            if (tipo === 'celulares') {
+                titulo.innerHTML = '<i class="ph-fill ph-device-mobile" style="color:var(--accent);"></i> Todos os Aparelhos Cadastrados';
+                renderizarLinhasAparelhos(window.baseSmartphones);
+            } else if (tipo === 'ativos') {
+                titulo.innerHTML = '<i class="ph-fill ph-check-circle" style="color:var(--success);"></i> Aparelhos Ativos em Operação';
+                renderizarLinhasAparelhos(window.baseSmartphones.filter(s => s.status === 'ATIVO'));
+            } else if (tipo === 'conserto') {
+                titulo.innerHTML = '<i class="ph-fill ph-wrench" style="color:var(--warning);"></i> Aparelhos em Conserto ou Inativos';
+                renderizarLinhasAparelhos(window.baseSmartphones.filter(s => s.status !== 'ATIVO'));
+            } else if (tipo === 'chips') {
+                titulo.innerHTML = '<i class="ph-fill ph-sim-card" style="color:#6366f1;"></i> Todos os Chips Cadastrados';
+                thead.innerHTML = `<tr><th>NÚMERO DA LINHA</th><th>PATRIMÔNIO VINCULADO</th><th>MOTORISTA ATUAL</th></tr>`;
+                tbody.innerHTML = window.baseChips.map(c => {
+                    const sp = window.baseSmartphones.find(s => normalizarPatrimonio(s.patrimonio) === normalizarPatrimonio(c.patrimonio_vinculado));
+                    return `<tr>
+                        <td style="font-weight:800;">${c.numero}</td>
+                        <td>${c.patrimonio_vinculado ? `<b style="color:var(--accent);">Pat. ${c.patrimonio_vinculado}</b>` : '<span class="status-badge ativo">LIVRE</span>'}</td>
+                        <td>${sp?.motorista || '-'}</td>
+                    </tr>`;
+                }).join('');
+            } else if (tipo === 'uso') {
+                titulo.innerHTML = '<i class="ph-fill ph-plugs-connected" style="color:#0ea5e9;"></i> Chips em Uso';
+                thead.innerHTML = `<tr><th>NÚMERO DA LINHA</th><th>PATRIMÔNIO ATRELADO</th><th>MOTORISTA / PLACA</th></tr>`;
+                tbody.innerHTML = window.baseChips.filter(c => c.patrimonio_vinculado).map(c => {
+                    const sp = window.baseSmartphones.find(s => normalizarPatrimonio(s.patrimonio) === normalizarPatrimonio(c.patrimonio_vinculado));
+                    return `<tr>
+                        <td style="font-weight:800;">${c.numero}</td>
+                        <td style="color:var(--accent); font-weight:800;">Pat. ${c.patrimonio_vinculado}</td>
+                        <td>${sp ? `${sp.motorista || 'Sem motorista'} ${sp.placa ? `(${sp.placa})` : ''}` : '-'}</td>
+                    </tr>`;
+                }).join('');
+            } else if (tipo === 'livres') {
+                titulo.innerHTML = '<i class="ph-fill ph-stack" style="color:var(--success);"></i> Chips Livres Disponíveis';
+                thead.innerHTML = `<tr><th>NÚMERO DO CHIP</th><th>STATUS</th><th>AÇÃO RÁPIDA</th></tr>`;
+                tbody.innerHTML = window.baseChips.filter(c => !c.patrimonio_vinculado).map(c => `
+                    <tr>
+                        <td style="font-weight:800;">${c.numero}</td>
+                        <td><span class="status-badge ativo">DISPONÍVEL NO GALPÃO</span></td>
+                        <td><button class="btn btn-sm btn-primary" onclick="window.fecharModal('modal-kpi-lista'); window.abrirEdicaoChip('${c.id}');">Vincular Agora</button></td>
+                    </tr>
+                `).join('');
             }
 
-            showLoader();
-            try {
-                await updateDoc(doc(db, "smartphones", id), novosDados);
-                
-                // Dispara a geração do PDF
-                window.gerarTermoPDF(sp, tipo, motoristaRecibo, cpfRecibo, obs, dataFormatada, horaFormatada);
-                
-                window.fecharModal('modal-entrega-devolucao');
-                window.carregarDadosSmartphones();
-            } catch (e) {
-                console.error("Erro ao salvar entrega/devolução: ", e);
-                alert("Falha ao salvar. Tente novamente.");
-            }
-            hideLoader();
+            window.abrirModal('modal-kpi-lista');
         };
 
+        // ================= GERAÇÃO DO TERMO PDF (COM CHIP E PLACA INCLUSOS) =================
         window.gerarTermoPDF = function(sp, tipo, motorista, cpf, obs, dataStr, horaStr) {
             const isEntrega = tipo === 'ENTREGA';
-            
-            // Textos Dinâmicos
+            const chipVinc = window.baseChips.find(c => normalizarPatrimonio(c.patrimonio_vinculado) === normalizarPatrimonio(sp.patrimonio));
+            const numChipStr = chipVinc ? chipVinc.numero : 'Sem Chip Vinculado';
+
             const tituloDoc = isEntrega ? "COMPROVANTE DE RECEBIMENTO DE SMARTPHONE" : "COMPROVANTE DE DEVOLUÇÃO DE SMARTPHONE";
-            
             const textoPrincipal = isEntrega 
-                ? `Eu, <strong>${motorista}</strong>, declaro para os devidos fins que recebi da empresa o seguinte equipamento em regime de comodato:` 
-                : `A empresa declara que recebeu do colaborador <strong>${motorista}</strong> o seguinte equipamento em devolução:`;
+                ? `Eu, <strong>${motorista}</strong>${cpf ? `, inscrito no CPF sob o nº <strong>${cpf}</strong>` : ''}, declaro para os devidos fins que recebi da empresa o seguinte equipamento corporativo em regime de comodato:` 
+                : `A empresa declara que recebeu do colaborador <strong>${motorista}</strong>${cpf ? ` (CPF: <strong>${cpf}</strong>)` : ''} o seguinte equipamento corporativo em devolução:`;
 
             const textoCompromisso = isEntrega
-                ? `Declaro que me comprometo a cuidar adequadamente do referido item, mantendo-o em condições adequadas de uso e conservação. Caso ocorra algum dano ao produto (como quebra de tela, perda, oxidação ou mau uso), comprometo-me a informar imediatamente à empresa responsável e estou ciente de que arcarei com os custos necessários para reparação ou substituição do item danificado.`
-                : `Declaro que o item foi devolvido e seu estado aparente foi conferido conforme as condições descritas acima. O motorista fica isento de responsabilidades sobre o item a partir desta data, exceto caso seja constatado posteriormente mau uso interno/oculto referente ao período de sua posse.`;
+                ? `Declaro que me comprometo a zelar pelo referido equipamento e seus acessórios, utilizando-o exclusivamente para fins profissionais da operação logística. Em caso de dano por mau uso (quebra de tela, oxidação, perda ou extravio), comprometo-me a comunicar imediatamente ao setor de monitoramento/frota, ciente da responsabilidade sobre os custos de reparo ou reposição.`
+                : `Declaro que o equipamento acima identificado foi devolvido à base operacional e seu estado físico aparente foi conferido conforme registrado nas observações deste documento.`;
 
-            // Garante que a logo será carregada (usa o Base64 se existir, ou o caminho da imagem como fallback)
             const logoSrc = window.logoIcaphiBase64 || 'logo_icaphi.png';
 
             const htmlImpressao = `
@@ -21369,183 +21757,78 @@ document.querySelectorAll('tbody').forEach(tbody => {
             <html lang="pt-BR">
             <head>
                 <meta charset="UTF-8">
-                <title>Termo - Patrimônio ${sp.patrimonio}</title>
+                <title>Termo_${tipo}_Patrimonio_${sp.patrimonio}</title>
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-                    
-                    * {
-                        box-sizing: border-box;
-                    }
-                    body { 
-                        font-family: 'Inter', Arial, sans-serif; 
-                        margin: 0; 
-                        padding: 40px; 
-                        color: #1e293b; 
-                        background: #fff;
-                        line-height: 1.5;
-                    }
-                    .header {
-                        text-align: center;
-                        margin-bottom: 30px;
-                        padding-bottom: 20px;
-                        border-bottom: 2px solid #e2e8f0;
-                    }
-                    .header img {
-                        max-height: 65px;
-                        object-fit: contain;
-                    }
-                    .titulo-termo {
-                        text-align: center; 
-                        font-size: 18px; 
-                        font-weight: 700;
-                        margin-bottom: 35px; 
-                        text-transform: uppercase; 
-                        letter-spacing: 0.5px;
-                        color: #0f172a;
-                    }
-                    .texto-declaracao {
-                        font-size: 15px; 
-                        margin-bottom: 20px; 
-                        text-align: justify;
-                    }
-                    .detalhes-box {
-                        background-color: #f8fafc;
-                        border: 1px solid #cbd5e1;
-                        border-radius: 8px;
-                        padding: 20px;
-                        margin-bottom: 30px;
-                    }
-                    .detalhes-titulo {
-                        font-size: 12px;
-                        font-weight: 700;
-                        color: #64748b;
-                        text-transform: uppercase;
-                        margin-bottom: 15px;
-                        border-bottom: 1px solid #e2e8f0;
-                        padding-bottom: 5px;
-                    }
-                    .grid-dados {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 12px 20px;
-                    }
-                    .item-dado {
-                        font-size: 14px;
-                    }
-                    .item-dado strong {
-                        color: #475569;
-                        font-weight: 600;
-                    }
-                    .item-full {
-                        grid-column: span 2;
-                    }
-                    .compromisso-box {
-                        font-size: 13px; 
-                        line-height: 1.6; 
-                        text-align: justify; 
-                        margin-bottom: 60px;
-                        padding: 15px 20px; 
-                        font-style: italic;
-                        background-color: #eff6ff;
-                        border-left: 4px solid #3b82f6;
-                        color: #1e3a8a;
-                        border-radius: 0 8px 8px 0;
-                    }
-                    .area-assinaturas {
-                        display: flex; 
-                        justify-content: space-between;
-                        gap: 40px;
-                        margin-top: 60px;
-                    }
-                    .bloco-assinatura {
-                        flex: 1;
-                        text-align: center;
-                    }
-                    .linha-assinatura {
-                        border-top: 1px solid #000; 
-                        padding-top: 8px;
-                        font-weight: 600; 
-                        font-size: 14px;
-                    }
-                    .sub-assinatura {
-                        font-size: 13px; 
-                        color: #475569;
-                        margin-top: 2px;
-                    }
-                    .rodape {
-                        margin-top: 60px; 
-                        text-align: center; 
-                        font-size: 12px; 
-                        color: #94a3b8;
-                        border-top: 1px solid #e2e8f0;
-                        padding-top: 15px;
-                    }
-                    @media print {
-                        body { padding: 15px; }
-                    }
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+                    * { box-sizing: border-box; }
+                    body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 35px; color: #0f172a; background: #fff; line-height: 1.5; }
+                    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #0f172a; }
+                    .header img { max-height: 55px; object-fit: contain; }
+                    .header-doc-info { text-align: right; font-size: 11px; color: #475569; }
+                    .titulo-termo { text-align: center; font-size: 17px; font-weight: 800; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 0.5px; background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; }
+                    .texto-declaracao { font-size: 14px; margin-bottom: 20px; text-align: justify; }
+                    .detalhes-box { background-color: #f8fafc; border: 1.5px solid #94a3b8; border-radius: 8px; padding: 18px; margin-bottom: 25px; }
+                    .detalhes-titulo { font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; }
+                    .grid-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+                    .item-dado { font-size: 13px; }
+                    .item-dado strong { color: #334155; font-weight: 700; }
+                    .item-full { grid-column: span 2; }
+                    .compromisso-box { font-size: 12.5px; line-height: 1.6; text-align: justify; margin-bottom: 55px; padding: 14px 18px; background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; border-radius: 0 6px 6px 0; }
+                    .area-assinaturas { display: flex; justify-content: space-between; gap: 40px; margin-top: 50px; }
+                    .bloco-assinatura { flex: 1; text-align: center; }
+                    .linha-assinatura { border-top: 1.5px solid #000; padding-top: 8px; font-weight: 700; font-size: 13px; }
+                    .sub-assinatura { font-size: 12px; color: #475569; margin-top: 2px; }
+                    .rodape { margin-top: 50px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 12px; }
+                    @media print { body { padding: 10px; } }
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <img src="${logoSrc}" alt="Logo da Empresa">
+                    <img src="${logoSrc}" alt="Icaphi Logística" onerror="this.style.display='none'">
+                    <div class="header-doc-info">
+                        <strong>CONTROLE PATRIMONIAL DE FROTA</strong><br>
+                        Patrimônio: <b>#${sp.patrimonio}</b> | Data: ${dataStr} às ${horaStr}
+                    </div>
                 </div>
-
                 <div class="titulo-termo">${tituloDoc}</div>
-
                 <div class="texto-declaracao">${textoPrincipal}</div>
-
                 <div class="detalhes-box">
-                    <div class="detalhes-titulo">Especificações do Equipamento</div>
+                    <div class="detalhes-titulo">Identificação Técnica do Aparelho e Linha</div>
                     <div class="grid-dados">
-                        <div class="item-dado"><strong>Patrimônio:</strong> ${sp.patrimonio}</div>
-                        <div class="item-dado"><strong>Tipo:</strong> Smartphone</div>
-                        
-                        <div class="item-dado"><strong>Marca:</strong> ${sp.marca || 'Não informada'}</div>
-                        <div class="item-dado"><strong>Modelo:</strong> ${sp.modelo || 'Não informado'}</div>
-                        
+                        <div class="item-dado"><strong>Patrimônio:</strong> #${sp.patrimonio}</div>
+                        <div class="item-dado"><strong>Linha / Chip:</strong> ${numChipStr}</div>
+                        <div class="item-dado"><strong>Marca / Modelo:</strong> ${sp.marca || '-'} / ${sp.modelo || '-'}</div>
+                        <div class="item-dado"><strong>Veículo (Placa):</strong> ${sp.placa || 'Não vinculado'}</div>
                         <div class="item-dado"><strong>IMEI 1:</strong> ${sp.imei1 || 'Não informado'}</div>
                         <div class="item-dado"><strong>IMEI 2:</strong> ${sp.imei2 || 'Não informado'}</div>
-                        
                         <div class="item-dado item-full"><strong>Nº de Série:</strong> ${sp.num_serie || 'Não informado'}</div>
-                        
-                        <div class="item-dado item-full" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
-                            <strong>Condição Observada / Acessórios:</strong><br>
-                            <span style="color: #b91c1c; font-weight: 500;">${obs}</span>
+                        <div class="item-dado item-full" style="margin-top: 6px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                            <strong>Estado de Conservação e Acessórios Entregues/Recebidos:</strong><br>
+                            <span style="color: #b91c1c; font-weight: 700;">${obs}</span>
                         </div>
                     </div>
                 </div>
-
                 <div class="compromisso-box">${textoCompromisso}</div>
-
                 <div class="area-assinaturas">
                     <div class="bloco-assinatura">
-                        <div class="linha-assinatura">Assinatura do Motorista</div>
-                        <div class="sub-assinatura">${motorista}</div>
-                        ${isEntrega ? `<div class="sub-assinatura">CPF: ${cpf}</div>` : ''}
+                        <div class="linha-assinatura">${motorista}</div>
+                        <div class="sub-assinatura">Assinatura do Motorista ${cpf ? `| CPF: ${cpf}` : ''}</div>
                     </div>
-                    
                     <div class="bloco-assinatura">
-                        <div class="linha-assinatura">Assinatura do Responsável (Base)</div>
-                        <div class="sub-assinatura">Setor de Logística / Frota</div>
+                        <div class="linha-assinatura">Responsável Operacional (Base)</div>
+                        <div class="sub-assinatura">Setor de Monitoramento / Frota</div>
                     </div>
                 </div>
-
                 <div class="rodape">
-                    Data e Hora da Transação: ${dataStr} às ${horaStr}<br><br>
-                    Documento gerado eletronicamente pelo Sistema de Controle de Frotas. Guarde este comprovante para futuras consultas.
+                    Termo emitido eletronicamente em ${dataStr} às ${horaStr} — Sistema Integrado Icaphi Monitoramento.
                 </div>
-
                 <script>
                     window.onload = function() {
-                        setTimeout(function() {
-                            window.print();
-                            window.close();
-                        }, 400);
+                        setTimeout(function() { window.print(); window.close(); }, 350);
                     };
                 <` + `/script>
             </body>
-            </html>
-            `;
+            </html>`;
 
             const printWindow = window.open('', '_blank');
             printWindow.document.write(htmlImpressao);
