@@ -4488,7 +4488,7 @@
 
         <section id="view-monitoramento" class="view-section active">
             <header class="header">
-                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.3</span></h2>
+                <h2><i class="ph ph-chart-bar" style="color:var(--accent);"></i> Painel de Monitoramento <span id="app-version-title">V1.12.4</span></h2>
                 <!-- Resto do seu header... -->
 
                 <!-- CONTAINER DIREITO: Agrupa avatares, perfil e os controles e joga tudo para a direita -->
@@ -10706,65 +10706,226 @@
             document.getElementById('modal-mapa').classList.add('active'); 
         };
 
-        // 2. Geocodificador Inteligente com Cache Local (Evita lentidão e bloqueios)
+        // ================= MOTOR DE MAPA LOGÍSTICO V3 (ALTA VELOCIDADE + TOLERÂNCIA A BAIRROS DUPLOS) =================
+
+        // Limpa automaticamente caches antigos que salvaram falso "endereço não reconhecido" por bloqueio de rede
+        (function limparCacheGeoCorrompido() {
+            try {
+                Object.keys(localStorage).forEach(k => {
+                    if (k.startsWith('geo_v2_')) localStorage.removeItem(k);
+                });
+            } catch (e) {}
+        })();
+
+        const COORDENADAS_CIDADES_RJ = {
+            "RIO DE JANEIRO": { lat: -22.9068, lon: -43.1729 },
+            "DUQUE DE CAXIAS": { lat: -22.7856, lon: -43.3117 },
+            "NOVA IGUACU": { lat: -22.7592, lon: -43.4511 },
+            "SAO GONCALO": { lat: -22.8268, lon: -43.0539 },
+            "NITEROI": { lat: -22.8832, lon: -43.1034 },
+            "BELFORD ROXO": { lat: -22.7642, lon: -43.3997 },
+            "SAO JOAO DE MERITI": { lat: -22.8036, lon: -43.3722 },
+            "MAGE": { lat: -22.6528, lon: -43.0406 },
+            "GUAPIMIRIM": { lat: -22.5372, lon: -42.9819 },
+            "ITABORAI": { lat: -22.7444, lon: -42.8594 },
+            "MARICA": { lat: -22.9194, lon: -42.8186 },
+            "PETROPOLIS": { lat: -22.5049, lon: -43.1789 },
+            "TERESOPOLIS": { lat: -22.4122, lon: -42.9656 },
+            "NOVA FRIBURGO": { lat: -22.2819, lon: -42.5311 },
+            "CACHOEIRAS DE MACACU": { lat: -22.4625, lon: -42.6528 },
+            "RIO BONITO": { lat: -22.7086, lon: -42.6269 },
+            "TANGUA": { lat: -22.7303, lon: -42.7142 },
+            "SEROPEDICA": { lat: -22.7439, lon: -43.7078 },
+            "ITAGUAI": { lat: -22.8522, lon: -43.7753 },
+            "QUEIMADOS": { lat: -22.7161, lon: -43.5553 },
+            "JAPERI": { lat: -22.6431, lon: -43.6533 },
+            "PARACAMBI": { lat: -22.6075, lon: -43.7089 },
+            "VASSOURAS": { lat: -22.4039, lon: -43.6625 },
+            "MENDES": { lat: -22.5267, lon: -43.7328 },
+            "ENGENHEIRO PAULO DE FRONTIN": { lat: -22.5497, lon: -43.6783 },
+            "MIGUEL PEREIRA": { lat: -22.4539, lon: -43.4689 },
+            "PATY DO ALFERES": { lat: -22.4286, lon: -43.4186 },
+            "TRES RIOS": { lat: -22.1167, lon: -43.2092 },
+            "PARAIBA DO SUL": { lat: -22.1619, lon: -43.2925 },
+            "COMENDADOR LEVY GASPARIAN": { lat: -22.0289, lon: -43.2047 },
+            "BARRA DO PIRAI": { lat: -22.4700, lon: -43.8256 },
+            "VALENCA": { lat: -22.2456, lon: -43.7003 },
+            "VOLTA REDONDA": { lat: -22.5231, lon: -44.1044 },
+            "BARRA MANSA": { lat: -22.5442, lon: -44.1714 },
+            "RESENDE": { lat: -22.4689, lon: -44.4467 },
+            "PORTO REAL": { lat: -22.4197, lon: -44.2903 },
+            "QUATIS": { lat: -22.4072, lon: -44.2581 },
+            "RIO CLARO": { lat: -22.7231, lon: -44.1356 },
+            "ANGRA DOS REIS": { lat: -23.0067, lon: -44.3181 },
+            "MANGARATIBA": { lat: -22.9597, lon: -44.0406 },
+            "ARARUAMA": { lat: -22.8728, lon: -42.3431 },
+            "SAQUAREMA": { lat: -22.9200, lon: -42.5103 },
+            "CABO FRIO": { lat: -22.8789, lon: -42.0186 },
+            "ARRAIAL DO CABO": { lat: -22.9661, lon: -42.0278 },
+            "SAO PEDRO DA ALDEIA": { lat: -22.8392, lon: -42.1028 },
+            "IGUABA GRANDE": { lat: -22.8392, lon: -42.2289 },
+            "MACAE": { lat: -22.3708, lon: -41.7869 },
+            "RIO DAS OSTRAS": { lat: -22.5269, lon: -41.9450 },
+            "CAMPOS DOS GOYTACAZES": { lat: -21.7522, lon: -41.3303 }
+        };
+
+        function limparTextoGeo(str) {
+            return String(str || "")
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .toUpperCase()
+                .trim();
+        }
+
+        function limparLogradouroParaBusca(endStr) {
+            if (!endStr) return "";
+            return String(endStr)
+                .replace(/^R\.\s*|^R\s+/i, 'Rua ')
+                .replace(/^AV\.\s*|^AV\s+/i, 'Avenida ')
+                .replace(/^ESTR\.\s*|^EST\.\s*|^ESTR\s+/i, 'Estrada ')
+                .replace(/^ROD\.\s*|^ROD\s+/i, 'Rodovia ')
+                .replace(/^PCA\.\s*|^PCA\s+|^PC\s+/i, 'Praça ')
+                .replace(/^TV\.\s*|^TRAV\s+/i, 'Travessa ')
+                .replace(/^AL\.\s*|^AL\s+/i, 'Alameda ')
+                .replace(/\b(LT|LOTE|QD|QUADRA|LJ|LOJA|SL|SALA|BL|BLOCO|AP|APTO|GALPAO|GP|BOX|KM|S\/N|SN)\b.*$/i, '')
+                .split('-')[0]
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
         async function obterCoordenadasComCache(enderecoStr, bairroStr, cidadeStr) {
-            const chaveBusca = `${enderecoStr}, ${bairroStr}, ${cidadeStr}, RJ, Brasil`.replace(/\s+/g, ' ').trim();
-            const cacheKey = `geo_cache_${chaveBusca.toUpperCase()}`;
-            
+            const endLimpo = limparLogradouroParaBusca(enderecoStr);
+            const bairroLimpo = String(bairroStr || "").trim();
+            const cidadeLimpa = String(cidadeStr || "").trim() || "Rio de Janeiro";
+            const cidadeNorm = limparTextoGeo(cidadeLimpa);
+
+            const temEnderecoValido = endLimpo.length >= 3 && !['S/N', 'SN', 'N/I', 'NAO INFORMADO', '-'].includes(endLimpo.toUpperCase());
+            const temBairroValido = bairroLimpo.length >= 2 && bairroLimpo !== '-';
+
+            const chaveBusca = `${temEnderecoValido ? endLimpo.toUpperCase() : 'SEM_RUA'}|${temBairroValido ? bairroLimpo.toUpperCase() : 'SEM_BAIRRO'}|${cidadeNorm}`;
+            const cacheKey = `geo_v3_${chaveBusca}`;
+
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 try { return JSON.parse(cached); } catch (e) {}
             }
 
-            // Tentativa 1: Endereço completo (Rua + Bairro + Cidade)
-            const tentarFetch = async (queryText) => {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1&countrycodes=br`;
-                const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), precisao: 'exata' };
+            // Motor 1: Photon Komoot (Base OpenStreetMap de alta velocidade, sem bloqueio 429, focado no Estado do RJ)
+            const buscarPhoton = async (texto) => {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 3000);
+                try {
+                    // bbox aproximado do Estado do Rio de Janeiro para priorizar resultados locais
+                    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(texto)}&limit=1&lat=-22.78&lon=-43.31`;
+                    const res = await fetch(url, { signal: ctrl.signal });
+                    clearTimeout(tid);
+                    const data = await res.json();
+                    if (data && data.features && data.features.length > 0) {
+                        const [lon, lat] = data.features[0].geometry.coordinates;
+                        // Valida se caiu dentro da região Sudeste (evita resultados em outros países)
+                        if (lat < -18 && lat > -25 && lon < -39 && lon > -46) {
+                            return { lat, lon };
+                        }
+                    }
+                } catch (e) {
+                    clearTimeout(tid);
                 }
                 return null;
             };
 
-            try {
-                // Remove abreviações que confundem o buscador (Ex: "R " vira "Rua ", remove números de lote estranhos)
-                let endLimpo = enderecoStr.replace(/^R\s+/i, 'Rua ').replace(/^AV\s+/i, 'Avenida ').split('-')[0].trim();
-                
-                let coords = await tentarFetch(`${endLimpo}, ${bairroStr}, ${cidadeStr}, Rio de Janeiro, Brasil`);
-                
-                // Fallback: Se a rua estiver escrita errada na NF, garante o ponto no Bairro + Cidade para o cliente não sumir do mapa
-                if (!coords && bairroStr) {
-                    coords = await tentarFetch(`${bairroStr}, ${cidadeStr}, Rio de Janeiro, Brasil`);
-                    if (coords) coords.precisao = 'bairro';
+            // Motor 2: Nominatim (Fallback secundário)
+            const buscarNominatim = async (texto) => {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 3200);
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&limit=1&countrycodes=br`;
+                    const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' }, signal: ctrl.signal });
+                    clearTimeout(tid);
+                    if (!res.ok) return null;
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                    }
+                } catch (e) {
+                    clearTimeout(tid);
                 }
-                if (!coords) {
-                    coords = await tentarFetch(`${cidadeStr}, Rio de Janeiro, Brasil`);
-                    if (coords) coords.precisao = 'cidade';
-                }
+                return null;
+            };
 
-                if (coords) {
-                    localStorage.setItem(cacheKey, JSON.stringify(coords));
-                    return coords;
+            let coords = null;
+            let precisao = 'exata';
+            let motivoAprox = '';
+
+            // 1. Tenta localizar a RUA + CIDADE (Ignorando bairros compostos sujos do ERP como "CENTRO MANILHA")
+            if (temEnderecoValido) {
+                coords = await buscarPhoton(`${endLimpo}, ${cidadeLimpa}, RJ, Brasil`);
+                if (!coords) {
+                    coords = await buscarNominatim(`${endLimpo}, ${cidadeLimpa}, Rio de Janeiro, Brasil`);
                 }
-            } catch (err) {
-                console.warn("Erro ao geocodificar:", chaveBusca, err);
             }
-            return null;
+
+            // 2. Se a nota NÃO tinha rua (ou a rua não consta na base), tenta posicionar pelo BAIRRO + CIDADE
+            if (!coords && temBairroValido) {
+                // Se o bairro for composto (ex: "CENTRO MANILHA"), pega a palavra mais específica ("MANILHA")
+                const partesBairro = bairroLimpo.split(/\s+/).filter(p => p.toUpperCase() !== 'CENTRO');
+                const bairroAlvo = partesBairro.length > 0 ? partesBairro.join(' ') : bairroLimpo;
+
+                coords = await buscarPhoton(`${bairroAlvo}, ${cidadeLimpa}, RJ, Brasil`);
+                if (!coords) {
+                    coords = await buscarNominatim(`${bairroAlvo}, ${cidadeLimpa}, Rio de Janeiro, Brasil`);
+                }
+                if (coords) {
+                    precisao = 'bairro';
+                    motivoAprox = !temEnderecoValido 
+                        ? `NF sem rua cadastrada (Posicionado no bairro ${bairroLimpo})` 
+                        : `Número/Rua aproximado no bairro ${bairroLimpo}`;
+                }
+            }
+
+            // 3. Fallback imediato pelo Dicionário Oficial de Cidades do RJ (Instantâneo, sem gastar rede)
+            if (!coords) {
+                const coordFixa = COORDENADAS_CIDADES_RJ[cidadeNorm];
+                if (coordFixa) {
+                    coords = { ...coordFixa };
+                } else {
+                    coords = (await buscarPhoton(`${cidadeLimpa}, Rio de Janeiro, Brasil`)) || { lat: -22.7856, lon: -43.3117 };
+                }
+                precisao = 'cidade';
+                motivoAprox = !temEnderecoValido 
+                    ? 'NF sem endereço cadastrado (Ponto aproximado na Cidade)' 
+                    : 'Logradouro específico não tabelado (Ponto aproximado na Cidade)';
+            }
+
+            const resultado = {
+                lat: coords.lat,
+                lon: coords.lon,
+                precisao,
+                motivoAprox,
+                semEnderecoNaNF: !temEnderecoValido
+            };
+
+            // Só salva no cache definitivo se achou com precisão de rua/bairro ou se a NF realmente veio sem rua
+            if (precisao !== 'cidade' || !temEnderecoValido) {
+                localStorage.setItem(cacheKey, JSON.stringify(resultado));
+            }
+
+            return resultado;
         }
 
-        // 3. Mapa do Painel de Monitoramento (Plota TODOS os clientes sem traçar rota)
+        window._mapRenderToken = 0;
+
         window.abrirMapaLogisticoPainelPorViagem = async (placa, transporteStr, event) => {
             if (event) event.stopPropagation();
 
-            const transpNumArray = String(transporteStr || "").match(/\d+/g) || [];
-            const placaRef = String(placa || "").replace(/[^A-Z0-9]/g, '');
+            // Cancela qualquer loop de mapa anterior que ainda estivesse rodando em segundo plano
+            const meuToken = ++window._mapRenderToken;
 
-            // Filtra todas as notas ativas da viagem
+            const transpNumArray = String(transporteStr || "").match(/\d+/g) || [];
+            const placaRef = String(placa || "").replace(/[^A-Z0-9]/g, '').toUpperCase();
+
             const notasDaViagem = (window.notasOperacaoAtiva || []).filter(n => {
                 if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
-                const matchPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '') === placaRef;
-                if (!matchPlaca) return false;
+                const nPlaca = trimUpper(n.placa).replace(/[^A-Z0-9]/g, '');
+                if (nPlaca !== placaRef) return false;
                 
                 const viagemNota = String(n.viagem || "").trim();
                 if (transpNumArray.length > 0 && viagemNota !== "") {
@@ -10773,11 +10934,35 @@
                 return true;
             });
 
-            document.getElementById('map-placa-title').innerText = `(Veículo: ${placa} | Transp: ${transporteStr || 'Geral'})`;
+            // Header Loader Centralizado
+            const modalHeader = document.querySelector('#modal-mapa .modal-header');
+            let centerLoader = document.getElementById('map-header-center-loader');
+            if (!centerLoader && modalHeader) {
+                modalHeader.style.position = 'relative';
+                centerLoader = document.createElement('div');
+                centerLoader.id = 'map-header-center-loader';
+                centerLoader.style.cssText = `
+                    position: absolute;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 5px 14px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 800;
+                    z-index: 10;
+                    white-space: nowrap;
+                    pointer-events: none;
+                `;
+                modalHeader.appendChild(centerLoader);
+            }
+
+            document.getElementById('map-placa-title').innerText = `(Veículo: ${placa}${transporteStr ? ` | Transp: ${transporteStr}` : ''})`;
             const container = document.getElementById('map-cities-container');
             container.innerHTML = "";
 
-            // Alterna a visualização para o motor de múltiplos pontos
             const iframe = document.getElementById('iframe-mapa');
             const divMulti = document.getElementById('leaflet-mapa-multi');
             if (iframe) iframe.style.display = 'none';
@@ -10786,11 +10971,16 @@
             document.getElementById('modal-mapa').classList.add('active');
 
             if (notasDaViagem.length === 0) {
-                container.innerHTML = `<span style="color:var(--danger); font-size:12px; font-weight:700;">Nenhuma nota fiscal vinculada a esta viagem no painel ativo.</span>`;
+                if (centerLoader) {
+                    centerLoader.style.background = 'rgba(239, 68, 68, 0.15)';
+                    centerLoader.style.border = '1.5px solid var(--danger)';
+                    centerLoader.style.color = 'var(--danger)';
+                    centerLoader.innerHTML = `<i class="ph-bold ph-warning-circle"></i> Nenhuma nota vinculada a ${placa}`;
+                }
+                container.innerHTML = `<span style="color:var(--danger); font-size:12px; font-weight:700;">Nenhuma nota fiscal encontrada para esta viagem.</span>`;
                 return;
             }
 
-            // Inicializa o mapa com visual idêntico ao Google Maps (Google Hybrid/Streets)
             if (!window._leafletMapInstance) {
                 window._leafletMapInstance = L.map('leaflet-mapa-multi').setView([-22.785, -43.311], 10);
                 L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
@@ -10799,19 +10989,25 @@
                     attribution: '© Google Maps'
                 }).addTo(window._leafletMapInstance);
                 window._leafletMarkersLayer = L.featureGroup().addTo(window._leafletMapInstance);
+            } else {
+                window._leafletMarkersLayer.clearLayers();
             }
 
-            setTimeout(() => { window._leafletMapInstance.invalidateSize(); }, 150);
+            setTimeout(() => { window._leafletMapInstance.invalidateSize(); }, 100);
 
-            // Agrupa notas por endereço único para não sobrepor pinos do mesmo cliente
+            // Agrupa notas por endereço (ou por cliente caso a nota não tenha endereço)
             const clientesAgrupados = [];
             const mapaChaves = new Map();
 
             notasDaViagem.forEach(n => {
-                const cidade = (n.cidade || "SEM CIDADE").trim().toUpperCase();
+                const cidade = (n.cidade || "RIO DE JANEIRO").trim().toUpperCase();
                 const bairro = (n.bairro || "").trim().toUpperCase();
                 const endereco = (n.endereco || "").trim().toUpperCase();
-                const chave = `${endereco}|${bairro}|${cidade}`;
+                const clienteNome = (n.cliente || "CLIENTE").trim().toUpperCase();
+
+                const chave = endereco !== "" 
+                    ? `${endereco}|${bairro}|${cidade}` 
+                    : `SEM_END_${clienteNome}|${bairro}|${cidade}`;
 
                 if (!mapaChaves.has(chave)) {
                     const obj = {
@@ -10832,15 +11028,9 @@
             });
 
             const cidadesUnicas = [...new Set(clientesAgrupados.map(c => c.cidade))];
+            let cidadeAtiva = 'TODAS';
 
-            // Indicador de progresso enquanto busca coordenadas novas
-            const statusLoad = document.createElement('span');
-            statusLoad.style.cssText = "margin-left: auto; font-size: 12px; font-weight: 700; color: var(--warning);";
-            statusLoad.innerHTML = `<i class="ph ph-spinner ph-spin"></i> Mapeando ${clientesAgrupados.length} locais...`;
-            container.appendChild(statusLoad);
-
-            // Função que plota os marcadores filtrados na tela
-            const renderizarPontosNoMapa = (filtroCidade = 'TODAS') => {
+            const renderizarPontosNoMapa = (filtroCidade = 'TODAS', aplicarZoom = false) => {
                 window._leafletMarkersLayer.clearLayers();
                 const listaFiltrada = filtroCidade === 'TODAS' 
                     ? clientesAgrupados 
@@ -10852,47 +11042,69 @@
                     if (!item.coords) return;
                     plotados++;
 
-                    // Se cair na mesma coordenada de bairro, aplica um micro-deslocamento espiral para nenhum pino esconder o outro
-                    const offsetLat = item.coords.precisao !== 'exata' ? (Math.sin(idx * 1.5) * 0.0018) : 0;
-                    const offsetLon = item.coords.precisao !== 'exata' ? (Math.cos(idx * 1.5) * 0.0018) : 0;
+                    const isExato = item.coords.precisao === 'exata';
+                    const raioOffset = item.coords.precisao === 'cidade' ? 0.0038 : (item.coords.precisao === 'bairro' ? 0.0018 : 0);
+                    const offsetLat = !isExato ? (Math.sin(idx * 1.7) * raioOffset) : 0;
+                    const offsetLon = !isExato ? (Math.cos(idx * 1.7) * raioOffset) : 0;
 
                     const isEntregue = item.status === 'ENTREGUE' || item.status === 'REALIZADA';
-                    const corPin = isEntregue ? '#10b981' : (item.status === 'DEVOLUÇÃO' || item.status === 'REENTREGA' ? '#ef4444' : '#3b82f6');
+                    const isProblema = item.status === 'DEVOLUÇÃO' || item.status === 'REENTREGA';
 
-                    // Pin customizado numerado e moderno
+                    let corPin = isEntregue ? '#10b981' : (isProblema ? '#ef4444' : '#2563eb');
+                    if (item.coords.semEnderecoNaNF && !isEntregue && !isProblema) {
+                        corPin = '#f59e0b';
+                    }
+
+                    const bordaEstilo = isExato ? '2px solid #ffffff' : '2px dashed #ffffff';
+                    const badgeAlertaPin = !isExato 
+                        ? `<span style="position:absolute; top:-6px; right:-8px; background:#f59e0b; color:#fff; border-radius:50%; width:14px; height:14px; font-size:9px; font-weight:900; display:flex; align-items:center; justify-content:center; transform:rotate(45deg); border:1px solid #fff;" title="Localização aproximada">!</span>` 
+                        : '';
+
                     const iconeHtml = L.divIcon({
                         className: 'custom-map-pin',
-                        html: `<div style="background:${corPin}; color:#fff; width:28px; height:28px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; border:2px solid #fff; box-shadow:0 3px 6px rgba(0,0,0,0.4); font-weight:800; font-size:11px;">
+                        html: `<div style="position:relative; background:${corPin}; color:#fff; width:30px; height:30px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; border:${bordaEstilo}; box-shadow:0 3px 8px rgba(0,0,0,0.45); font-weight:800; font-size:11px;">
                                 <span style="transform:rotate(45deg);">${idx + 1}</span>
+                                ${badgeAlertaPin}
                             </div>`,
-                        iconSize: [28, 28],
-                        iconAnchor: [14, 28],
-                        popupAnchor: [0, -28]
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30],
+                        popupAnchor: [0, -30]
                     });
 
                     const marker = L.marker([item.coords.lat + offsetLat, item.coords.lon + offsetLon], { icon: iconeHtml });
-                    
+
+                    const alertaHtmlPopup = !isExato 
+                        ? `<div style="background:#fef3c7; border-left:3px solid #f59e0b; color:#92400e; padding:5px 8px; border-radius:4px; font-size:10.5px; font-weight:700; margin-bottom:6px;">
+                            ⚠️ ${item.coords.motivoAprox}
+                        </div>`
+                        : `<div style="background:#dcfce7; border-left:3px solid #10b981; color:#166534; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:700; margin-bottom:6px;">
+                            ✅ Endereço localizado com precisão
+                        </div>`;
+
+                    const textoEnderecoPopup = item.endereco 
+                        ? `${item.endereco}${item.bairro ? `, ${item.bairro}` : ''}` 
+                        : `<span style="color:#dc2626; font-weight:700;">[SEM ENDEREÇO NA NF]</span>${item.bairro ? ` - Bairro: ${item.bairro}` : ''}`;
+
                     marker.bindPopup(`
-                        <div style="font-family: sans-serif; min-width: 210px; line-height: 1.4;">
-                            <div style="font-weight: 800; font-size: 13px; color: #1e293b; margin-bottom: 4px;">${item.cliente}</div>
-                            <div style="font-size: 11px; color: #475569;">📍 <b>End:</b> ${item.endereco}, ${item.bairro}</div>
-                            <div style="font-size: 11px; color: #475569;">🏙️ <b>Cidade:</b> ${item.cidade}</div>
+                        <div style="font-family: 'Inter', sans-serif; min-width: 230px; line-height: 1.45;">
+                            <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">#${idx + 1} - ${item.cliente}</div>
+                            ${alertaHtmlPopup}
+                            <div style="font-size: 11px; color: #334155;">📍 <b>End:</b> ${textoEnderecoPopup}</div>
+                            <div style="font-size: 11px; color: #334155;">🏙️ <b>Cidade:</b> ${item.cidade}</div>
                             <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;">
-                            <div style="font-size: 11px;">📦 <b>NFs (${item.nfs.length}):</b> ${item.nfs.join(', ')}</div>
-                            <div style="font-size: 11px;">⚖️ <b>Peso:</b> ${item.pesoTotal.toFixed(2)} kg | <b>Status:</b> <span style="color:${corPin}; font-weight:700;">${item.status || 'EM ROTA'}</span></div>
+                            <div style="font-size: 11px; color: #1e293b;">📦 <b>NFs (${item.nfs.length}):</b> ${item.nfs.join(', ')}</div>
+                            <div style="font-size: 11px; color: #1e293b;">⚖️ <b>Peso:</b> ${item.pesoTotal.toFixed(2)} kg | <b>Status:</b> <span style="color:${corPin}; font-weight:800;">${item.status || 'EM ROTA'}</span></div>
                         </div>
                     `);
 
                     window._leafletMarkersLayer.addLayer(marker);
                 });
 
-                if (plotados > 0) {
+                if (plotados > 0 && aplicarZoom) {
                     window._leafletMapInstance.fitBounds(window._leafletMarkersLayer.getBounds(), { padding: [45, 45], maxZoom: 15 });
                 }
             };
 
-            // Cria botão "Todas"
-            let cidadeAtiva = 'TODAS';
             const criarBotaoFiltro = (texto, valor, isAtivo) => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-city' + (isAtivo ? ' active' : '');
@@ -10908,45 +11120,61 @@
                     this.classList.add('active');
                     this.style.background = 'var(--accent)';
                     this.style.color = '#fff';
-                    renderizarPontosNoMapa(cidadeAtiva);
+                    renderizarPontosNoMapa(cidadeAtiva, true);
                 };
                 return btn;
             };
 
-            container.insertBefore(criarBotaoFiltro(`🌐 Todas (${clientesAgrupados.length} clientes)`, 'TODAS', true), statusLoad);
-
+            container.appendChild(criarBotaoFiltro(`🌐 Todas (${clientesAgrupados.length} clientes)`, 'TODAS', true));
             cidadesUnicas.forEach(cid => {
                 const qtdCid = clientesAgrupados.filter(c => c.cidade === cid).length;
-                container.insertBefore(criarBotaoFiltro(`${cid} (${qtdCid})`, cid, false), statusLoad);
+                container.appendChild(criarBotaoFiltro(`${cid} (${qtdCid})`, cid, false));
             });
 
-            // Busca as coordenadas (instantâneo se estiver em cache, ou respeitando rate-limit se for novo)
+            // Busca coordenadas de forma limpa e sem travar a câmera
+            let qtdAproximados = 0;
             for (let i = 0; i < clientesAgrupados.length; i++) {
+                if (meuToken !== window._mapRenderToken) return; // Cancela se o usuário abriu outro mapa
+
                 const item = clientesAgrupados[i];
-                const chaveCache = `geo_cache_${`${item.endereco}, ${item.bairro}, ${item.cidade}, RJ, Brasil`.replace(/\s+/g, ' ').trim().toUpperCase()}`;
-                const jaTemCache = !!localStorage.getItem(chaveCache);
+                const pct = Math.round(((i + 1) / clientesAgrupados.length) * 100);
+
+                if (centerLoader) {
+                    centerLoader.style.display = 'flex';
+                    centerLoader.style.background = 'rgba(245, 158, 11, 0.15)';
+                    centerLoader.style.border = '1.5px solid var(--warning)';
+                    centerLoader.style.color = 'var(--warning)';
+                    centerLoader.innerHTML = `<i class="ph-bold ph-spinner ph-spin" style="font-size:15px;"></i> Mapeando clientes: ${i + 1} de ${clientesAgrupados.length} (${pct}%)`;
+                }
 
                 item.coords = await obterCoordenadasComCache(item.endereco, item.bairro, item.cidade);
-                renderizarPontosNoMapa(cidadeAtiva);
+                if (item.coords && item.coords.precisao !== 'exata') qtdAproximados++;
 
-                // Só aguarda 350ms se precisou consultar a internet (para não tomar bloqueio de IP)
-                if (!jaTemCache && i < clientesAgrupados.length - 1) {
-                    await new Promise(r => setTimeout(r, 350));
-                }
+                // Plota o marcador mas só move a câmera (zoom) no 1º pino e no último pino!
+                const deveAjustarCamera = (i === 0 || i === clientesAgrupados.length - 1);
+                renderizarPontosNoMapa(cidadeAtiva, deveAjustarCamera);
             }
 
-            statusLoad.innerHTML = `<span style="color: var(--success);">✅ ${clientesAgrupados.length} clientes mapeados</span>`;
+            if (meuToken !== window._mapRenderToken) return;
+
+            if (centerLoader) {
+                if (qtdAproximados > 0) {
+                    centerLoader.style.background = 'rgba(245, 158, 11, 0.18)';
+                    centerLoader.style.border = '1.5px solid #f59e0b';
+                    centerLoader.style.color = '#fbbf24';
+                    centerLoader.innerHTML = `✅ ${clientesAgrupados.length} clientes mapeados (${qtdAproximados} aproximado(s) ⚠️)`;
+                } else {
+                    centerLoader.style.background = 'rgba(16, 185, 129, 0.18)';
+                    centerLoader.style.border = '1.5px solid var(--success)';
+                    centerLoader.style.color = 'var(--success)';
+                    centerLoader.innerHTML = `✅ Todos os ${clientesAgrupados.length} clientes localizados com precisão!`;
+                }
+            }
         };
 
-        // 🟢 Mantém a função original viva e redireciona automaticamente para o mapa de clientes da viagem
         window.abrirModalRegiao = (regioesStr, placa, transporteOpcional, event) => {
             if (event) event.stopPropagation();
-
-            // Se o transporte não veio no clique antigo, descobre automaticamente ou passa vazio para puxar todas as notas da placa no dia
-            let transp = transporteOpcional || "";
-            
-            // Redireciona para o motor Multi-Pins passando a placa
-            window.abrirMapaLogisticoPainelPorViagem(placa, transp, event);
+            window.abrirMapaLogisticoPainelPorViagem(placa, transporteOpcional || "", event);
         };
 
         // ================= FUNÇÕES DRILL DOWN & MAPAS =================
@@ -20946,6 +21174,8 @@ document.querySelectorAll('tbody').forEach(tbody => {
         }
 
         // ================= CARREGAMENTO CENTRAL =================
+        window. _spFiltroInicialAplicado = false;
+
         window.carregarDadosSmartphones = async function() {
             try {
                 const [snapSp, snapChips] = await Promise.all([
@@ -20953,12 +21183,17 @@ document.querySelectorAll('tbody').forEach(tbody => {
                     getDocs(collection(db, "chips"))
                 ]);
 
-                // Ordena os smartphones numericamente pelo patrimônio (01, 02, 03... 10, 11)
                 window.baseSmartphones = snapSp.docs
                     .map(d => ({ id: d.id, ...d.data() }))
                     .sort((a, b) => String(a.patrimonio || "").localeCompare(String(b.patrimonio || ""), 'pt-BR', { numeric: true }));
 
                 window.baseChips = snapChips.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // 🟢 Garante que na primeira carga da página o filtro da coluna 9 (STATUS) nasça cravado em ['ATIVO']
+                if (!window._spFiltroInicialAplicado && typeof activeFilters !== 'undefined') {
+                    activeFilters['tabela-smartphones'] = { 9: ['ATIVO'] };
+                    window._spFiltroInicialAplicado = true;
+                }
 
                 window.atualizarKPISmartphones();
                 window.renderizarTabelaSmartphones();
@@ -20967,6 +21202,48 @@ document.querySelectorAll('tbody').forEach(tbody => {
             } catch (e) {
                 console.error("Erro ao carregar dados de smartphones:", e);
             }
+        };
+
+        // ================= FILTRO INTEGRADO (COLUNAS EXCEL + BUSCA RÁPIDA) =================
+        window.aplicarFiltrosCombinadosSmartphones = function() {
+            const termo = (document.getElementById('sp-busca-rapida')?.value || "").toLowerCase().trim();
+            const filtrosCol = (typeof activeFilters !== 'undefined' && activeFilters['tabela-smartphones']) ? activeFilters['tabela-smartphones'] : {};
+
+            // Atualiza o destaque azul nos ícones de funil das colunas filtradas
+            document.querySelectorAll('#tabela-smartphones thead th .filter-icon').forEach(icon => {
+                const colIdx = icon.getAttribute('data-col');
+                const temFiltro = Array.isArray(filtrosCol[colIdx]) && filtrosCol[colIdx].length > 0;
+                icon.classList.toggle('filter-active', temFiltro);
+            });
+
+            const linhas = document.querySelectorAll('#lista-smartphones tr');
+            linhas.forEach(tr => {
+                if (tr.children.length <= 1) return;
+
+                // 1. Verifica os filtros de todas as colunas ativas (incluindo Coluna 9 = STATUS)
+                let passaColunas = true;
+                for (const colIndex in filtrosCol) {
+                    const permitidos = filtrosCol[colIndex];
+                    if (Array.isArray(permitidos) && permitidos.length > 0) {
+                        const td = tr.children[colIndex];
+                        const valorCelula = td ? (td.getAttribute('data-valor') ?? td.textContent.trim()) : "";
+                        if (!permitidos.includes(valorCelula)) {
+                            passaColunas = false;
+                            break;
+                        }
+                    }
+                }
+
+                // 2. Verifica o texto da barra de busca rápida
+                const passaBusca = !termo || tr.textContent.toLowerCase().includes(termo);
+
+                // Só exibe a linha se passar nos DOIS filtros simultaneamente
+                tr.style.display = (passaColunas && passaBusca) ? '' : 'none';
+            });
+        };
+
+        window.filtrarSmartphonesBuscaRapida = function() {
+            window.aplicarFiltrosCombinadosSmartphones();
         };
 
         window.atualizarKPISmartphones = function() {
@@ -20994,17 +21271,6 @@ document.querySelectorAll('tbody').forEach(tbody => {
             dl.innerHTML = window.baseSmartphones.map(sp => 
                 `<option value="${sp.patrimonio}">Patrimônio ${sp.patrimonio} - ${sp.motorista || sp.placa || 'Livre'}</option>`
             ).join('');
-        };
-
-        // ================= BUSCA RÁPIDA NA TABELA =================
-        window.filtrarSmartphonesBuscaRapida = function() {
-            const termo = (document.getElementById('sp-busca-rapida')?.value || "").toLowerCase().trim();
-            const linhas = document.querySelectorAll('#lista-smartphones tr');
-            linhas.forEach(tr => {
-                if (tr.children.length <= 1) return;
-                const textoLinha = tr.textContent.toLowerCase();
-                tr.style.display = (!termo || textoLinha.includes(termo)) ? '' : 'none';
-            });
         };
 
         // ================= RENDERIZAÇÃO DA TABELA PRINCIPAL =================
@@ -21083,8 +21349,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
             });
 
             tbody.innerHTML = html;
-            if (typeof applyFilters === 'function') applyFilters('tabela-smartphones', false);
-            window.filtrarSmartphonesBuscaRapida();
+            window.aplicarFiltrosCombinadosSmartphones();
         };
 
         // ================= ADICIONAR E EDITAR SMARTPHONE =================
