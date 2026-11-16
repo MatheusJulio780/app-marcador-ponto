@@ -669,12 +669,7 @@
             cursor: not-allowed;
             box-shadow: none;
         }
-    </style>
-</head>
 
-<body id="body-root">
-
-    <style>
         .celestial-body {
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -682,7 +677,12 @@
         .anim-cloud {
             transition: all 0.8s ease-in-out;
         }
+
     </style>
+</head>
+
+<body id="body-root">
+
     <div id="theme-transition-overlay"
         class="fixed inset-0 z-[9999] pointer-events-none hidden items-center justify-center backdrop-blur-xl bg-white/40 dark:bg-black/60 transition-opacity duration-500 opacity-0 flex">
         <div class="relative w-64 h-64 flex items-center justify-center overflow-hidden">
@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V10.9</span>
+                        Matheus Julio V11</span>
                 </div>
             </div>
 
@@ -1877,6 +1877,24 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <div id="modal-camera-interna" class="fixed inset-0 z-[99999] hidden bg-black flex-col items-center justify-center">
+        <video id="video-camera" autoplay playsinline class="w-full h-[75vh] object-cover bg-gray-900"></video>
+
+        <div class="flex w-full h-[25vh] items-center justify-around pb-8 px-4">
+            <button onclick="fecharCameraInterna()" class="bg-gray-800 text-white p-4 rounded-full shadow-lg">
+                <i data-lucide="x" class="w-8 h-8"></i>
+            </button>
+            <button onclick="capturarFotoInterna()"
+                class="bg-cyan-500 text-white p-6 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)] active:scale-95 transition-transform border-4 border-cyan-200">
+                <i data-lucide="camera" class="w-10 h-10"></i>
+            </button>
+            <button onclick="inverterCameraInterna()" class="bg-gray-800 text-white p-4 rounded-full shadow-lg">
+                <i data-lucide="switch-camera" class="w-8 h-8"></i>
+            </button>
+        </div>
+        <canvas id="canvas-camera" class="hidden"></canvas>
     </div>
 
     <script>
@@ -6597,35 +6615,647 @@
             }
         };
 
-    </script>
-
-    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js');
             });
         }
+
+        // =========================================================================
+        // PATCH DE ESTABILIDADE, SINCRONIZAÇÃO OFFLINE E PONTE ANDROID NATIVA (V11)
+        // =========================================================================
+
+        // 1. HABILITA CACHE OFFLINE NATIVO DO FIRESTORE
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        } catch (e) {}
+
+        // 2. PADRONIZAÇÃO DO AUTOSAVE E LIMPEZA DE FORMULÁRIO
+        window.autoSave = function () {
+            localStorage.setItem('temp_servico', el('tipo-servico').value);
+            localStorage.setItem('temp_motorista', el('motorista').value);
+            localStorage.setItem('temp_placa', el('placa').value);
+            localStorage.setItem('temp_km_ini', el('km-inicio').value);
+        };
+
+        window.resetarFormularios = function () {
+            ['motorista', 'placa', 'km-inicio', 'km-fim'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
+            window.fotoInicioBase64 = null;
+            window.fotoFimBase64 = null;
+
+            ['container-foto-ini', 'container-foto-fim'].forEach(id => {
+                const cont = document.getElementById(id);
+                if (cont) {
+                    cont.style.opacity = '1';
+                    cont.classList.remove('has-file');
+                    const ov = cont.querySelector('.file-success-overlay');
+                    if (ov) { ov.classList.add('hidden'); ov.classList.remove('flex'); }
+                }
+            });
+
+            // Limpa tanto chaves novas quanto legadas
+            ['temp_servico', 'temp_motorista', 'temp_placa', 'temp_km_ini', 'temp_km_fim',
+             'auto_tipo_servico', 'auto_motorista', 'auto_placa', 'auto_km_inicio',
+             'temp_foto_ini_b64', 'temp_foto_fim_b64'].forEach(k => localStorage.removeItem(k));
+        };
+
+        // 3. MONITORAMENTO DE VIAGEM ÚNICA (IMPEDE QUE A VIAGEM SUMA SE ESTIVER OFFLINE)
+        window.monitorarViagemUnicaDb = function (id) {
+            if (!id) return;
+            if (unsubViagemAtual) unsubViagemAtual();
+
+            unsubViagemAtual = db.collection('viagens').doc(id).onSnapshot(doc => {
+                if (ignorarSnapshot) return;
+
+                if (!doc.exists) {
+                    // PROTEÇÃO CRÍTICA: Se ainda não subiu para o servidor, usa o backup local e NÃO apaga a viagem!
+                    const backupLocal = localStorage.getItem('dados_viagem_ativa');
+                    if (backupLocal) {
+                        window.reconstruirTelaEmCurso(JSON.parse(backupLocal), id);
+                    }
+                    return;
+                }
+
+                const v = doc.data();
+                if (v.status === 'em_curso') {
+                    localStorage.setItem('dados_viagem_ativa', JSON.stringify(v));
+                    window.reconstruirTelaEmCurso(v, id);
+                } else {
+                    // Só encerra na tela do motorista se o status no banco mudou de fato para 'finalizada' ou 'cancelada'
+                    if (el('tela-sucesso').classList.contains('hidden')) {
+                        window.pararRastreioContinuo();
+                        localStorage.removeItem('v_id');
+                        localStorage.removeItem('dados_viagem_ativa');
+                        localStorage.removeItem('hora_inicio_viagem');
+                        viagemAtualId = null;
+                        mudarTelaMotorista('inicio');
+                    }
+                }
+            }, err => {
+                console.warn("Monitoramento operando em modo local:", err);
+            });
+        };
+
+        // 4. VERIFICADOR DE SESSÃO BLINDADO (NUNCA APAGA VIAGEM EM CURSO POR TIMEOUT)
+        window.verificarSessaoMotorista = async function () {
+            let idViagemAtiva = localStorage.getItem('v_id') || localStorage.getItem('viagemId');
+
+            // Resgata do Serviço Nativo Android caso o WebView tenha limpado cache
+            if (!idViagemAtiva && window.AndroidInterface && window.AndroidInterface.verificarViagemAtiva) {
+                try {
+                    const idAndroid = window.AndroidInterface.verificarViagemAtiva();
+                    if (idAndroid && idAndroid.trim() !== "") {
+                        idViagemAtiva = idAndroid.trim();
+                        localStorage.setItem('v_id', idViagemAtiva);
+                    }
+                } catch (e) {}
+            }
+
+            if (!idViagemAtiva) {
+                mudarTelaMotorista('inicio');
+                return;
+            }
+
+            viagemAtualId = idViagemAtiva;
+            const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
+
+            // Reconstrói a tela imediatamente com o cache local para o motorista não esperar rede
+            if (dadosLocais) {
+                window.reconstruirTelaEmCurso(dadosLocais, idViagemAtiva);
+                window.iniciarRastreioContinuo(idViagemAtiva);
+            }
+
+            // Sincroniza pendências em background se houver rede
+            if (navigator.onLine && window.sincronizarPendencias) {
+                window.sincronizarPendencias(true);
+            }
+
+            window.monitorarViagemUnicaDb(idViagemAtiva);
+        };
+
+        // 5. RECONSTRUTOR DE TELA SEM MATAR OS TIMERS DO GPS
+        window.reconstruirTelaEmCurso = function (dados, idViagem) {
+            if (!dados) return;
+
+            // Limpa APENAS o intervalo do cronômetro (sem destruir o heartbeat do GPS!)
+            if (window.cronometroInterval) {
+                clearInterval(window.cronometroInterval);
+                window.cronometroInterval = null;
+            }
+
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
+            const headerText = document.querySelector('header')?.innerText || "";
+            const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11";
+            const origemDisplay = dados.origem || (isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`);
+            const kmInicioTratado = (dados.kmInicio !== undefined && dados.kmInicio !== null && dados.kmInicio !== '') ? dados.kmInicio : 'N/D';
+
+            const infoEl = document.getElementById('info-viagem-corrente');
+            if (infoEl) {
+                infoEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 text-left">
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Placa</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.placa || 'N/D'}</b>
+                    </div>
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">KM Início</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${kmInicioTratado}</b>
+                    </div>
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Motorista</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.nome || 'N/D'}</b>
+                    </div>
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Rota</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase truncate block">${dados.rotaCidades || 'N/D'}</b>
+                    </div>
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Perfil</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.perfilVeiculo || 'PADRÃO'}</b>
+                    </div>
+                    <div class="bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Meta KM</span>
+                        <b class="text-gray-800 dark:text-zinc-100 text-[11px] uppercase">${dados.metaKm || 0}</b>
+                    </div>
+                    <div class="col-span-2 bg-gray-50/50 dark:bg-black/20 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                        <span class="block text-[8px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Dispositivo / Versão</span>
+                        <b class="text-cyan-600 dark:text-cyan-400 text-[11px] font-black uppercase truncate block">${origemDisplay}</b>
+                    </div>
+                </div>`;
+            }
+
+            let tsInicio = parseInt(localStorage.getItem('hora_inicio_viagem') || '0');
+            if (!tsInicio && dados.dataInicioCelular) {
+                tsInicio = new Date(dados.dataInicioCelular).getTime();
+            }
+            if (!tsInicio || isNaN(tsInicio)) tsInicio = Date.now();
+            window.dataInicioViagemAtual = tsInicio;
+
+            const cronoEl = document.getElementById('cronometro-motorista');
+            window.cronometroInterval = setInterval(() => {
+                const diff = Math.max(0, Date.now() - window.dataInicioViagemAtual);
+                const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                if (cronoEl) cronoEl.innerText = `${h}:${m}:${s}`;
+            }, 1000);
+
+            if (window.mudarTelaMotorista) window.mudarTelaMotorista('em-curso');
+        };
+
+        // 6. RASTREIO CONTÍNUO INTEGRADO AO SERVIÇO NATIVO ANDROID (TrackingService.kt)
+        const _iniciarRastreioOriginal = window.iniciarRastreioContinuo;
+        window.iniciarRastreioContinuo = function (idViagem) {
+            if (!idViagem) return;
+            // Aciona o Foreground Service do Android para funcionar com tela bloqueada!
+            if (window.AndroidInterface && typeof window.AndroidInterface.startTracking === 'function') {
+                try { window.AndroidInterface.startTracking(idViagem); } catch (e) { console.error(e); }
+            }
+            if (typeof _iniciarRastreioOriginal === 'function') {
+                _iniciarRastreioOriginal(idViagem);
+            }
+        };
+
+        const _pararRastreioOriginal = window.pararRastreioContinuo;
+        window.pararRastreioContinuo = function () {
+            if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
+                try { window.AndroidInterface.stopTracking(); } catch (e) { console.error(e); }
+            }
+            if (typeof _pararRastreioOriginal === 'function') {
+                _pararRastreioOriginal();
+            }
+        };
+
+        // 7. INICIAR VIAGEM COM ID OFICIAL FIRESTORE (ZERO ID 'local_ini_' QUEBRADO)
+        window.iniciarViagem = async function () {
+            const servico = document.getElementById('tipo-servico').value;
+            const motor = document.getElementById('motorista').value.trim();
+            const plac = document.getElementById('placa').value.trim();
+            const kmIni = document.getElementById('km-inicio').value;
+            const fotoIniStr = window.fotoInicioBase64 || localStorage.getItem('temp_foto_ini_b64');
+
+            if (!motor || !plac || !kmIni || !fotoIniStr) {
+                alert("Preencha todos os campos obrigatórios e tire a foto!");
+                return;
+            }
+
+            const placaFormatada = plac.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placaFormatada)) {
+                alert("Placa inválida! Digite no formato correto (Ex: ABC1234 ou ABC1D23).");
+                return;
+            }
+
+            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
+            const headerText = document.querySelector('header')?.innerText || "";
+            const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11";
+            const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
+
+            const loader = document.getElementById('main-loader');
+            const textoLoader = document.getElementById('texto-loader');
+            if (loader) {
+                loader.classList.remove('hidden');
+                loader.style.display = 'flex';
+                if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
+            }
+
+            try {
+                let locIni = "";
+                try {
+                    locIni = await Promise.race([
+                        window.obterGpsSeguro(),
+                        new Promise(r => setTimeout(() => r(""), 6000))
+                    ]);
+                } catch (e) {}
+
+                if (textoLoader) textoLoader.innerText = "Sincronizando escala de hoje...";
+                let metaExtraida = 0, perfilExtraido = "PADRÃO", servicoExtraido = servico, rotaExtraida = "N/D";
+
+                // Busca escala com Timeout rigoroso de 4 segundos para não travar no Wi-Fi do pátio
+                if (navigator.onLine && typeof window.obterDadosEscalaAutomática === 'function') {
+                    try {
+                        const dadosAuto = await Promise.race([
+                            window.obterDadosEscalaAutomática(placaFormatada),
+                            new Promise(r => setTimeout(() => r(null), 4000))
+                        ]);
+                        if (dadosAuto) {
+                            metaExtraida = dadosAuto.metaKm || 0;
+                            perfilExtraido = dadosAuto.perfilVeiculo || "PADRÃO";
+                            rotaExtraida = dadosAuto.rotaCidades || "N/D";
+                            if (dadosAuto.tipoServico && dadosAuto.tipoServico !== 'N/D') servicoExtraido = dadosAuto.tipoServico;
+                        }
+                    } catch (e) {}
+                }
+
+                if (rotaExtraida === "N/D" && navigator.onLine) {
+                    const dataHojeStr = getLocalYMD(new Date());
+                    try {
+                        const escalaDoc = await Promise.race([
+                            db.collection('escala_standby').doc(`${placaFormatada}_${dataHojeStr}`).get(),
+                            new Promise(r => setTimeout(() => r(null), 3500))
+                        ]);
+                        if (escalaDoc && escalaDoc.exists) {
+                            const dEsc = escalaDoc.data();
+                            metaExtraida = dEsc.metaKm || metaExtraida;
+                            perfilExtraido = dEsc.perfilVeiculo || perfilExtraido;
+                            rotaExtraida = dEsc.rotaCidades || rotaExtraida;
+                        }
+                    } catch (e) {}
+                }
+
+                if (textoLoader) textoLoader.innerText = "Registrando viagem...";
+
+                // GERA O ID OFICIAL DO FIRESTORE LOCALMENTE (Funciona 100% Offline e Online)
+                const docRef = db.collection('viagens').doc();
+                const idViagemGerado = docRef.id;
+                const agoraIso = new Date().toISOString();
+
+                const novaViagem = {
+                    id: idViagemGerado,
+                    tipoServico: servicoExtraido,
+                    nome: motor.toUpperCase(),
+                    placa: placaFormatada,
+                    kmInicio: Number(kmIni),
+                    fotoInicio: fotoIniStr,
+                    locInicio: locIni || "",
+                    status: 'em_curso',
+                    origem: origemIdentificada,
+                    metaKm: metaExtraida,
+                    perfilVeiculo: perfilExtraido,
+                    rotaCidades: rotaExtraida,
+                    dataInicioCelular: agoraIso,
+                    dataInicio: agoraIso
+                };
+
+                try {
+                    if (!navigator.onLine) throw new Error("Offline");
+                    await Promise.race([
+                        docRef.set({
+                            ...novaViagem,
+                            dataInicio: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
+                    ]);
+                } catch (erroRede) {
+                    // Salva na fila unificada com o ID oficial do Firestore
+                    let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
+                    filaIni = filaIni.filter(item => (item.id || item.idLocal) !== idViagemGerado);
+                    filaIni.push(novaViagem);
+                    localStorage.setItem('icaphi_pendencias_ini', JSON.stringify(filaIni));
+                    window.verificarPendenciasOffline();
+                }
+
+                localStorage.setItem('v_id', idViagemGerado);
+                window.viagemAtualId = idViagemGerado;
+                localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
+                localStorage.setItem('hora_inicio_viagem', Date.now().toString());
+
+                window.resetarFormularios();
+                window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
+                window.iniciarRastreioContinuo(idViagemGerado);
+                window.monitorarViagemUnicaDb(idViagemGerado);
+
+            } catch (erro) {
+                console.error("Erro ao iniciar viagem:", erro);
+                alert("Erro ao iniciar viagem. Tente novamente.");
+            } finally {
+                if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+            }
+        };
+
+        // 8. ENCERRAR VIAGEM USANDO .set({ merge: true }) (NUNCA FALHA COM 'not-found')
+        window.encerrarViagem = async function () {
+            const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
+            if (!idViagem) {
+                alert("Erro: Nenhuma viagem ativa encontrada.");
+                return;
+            }
+
+            const kmFim = document.getElementById('km-fim').value;
+            const fotoFimStr = window.fotoFimBase64 || localStorage.getItem('temp_foto_fim_b64');
+            if (!kmFim || !fotoFimStr) {
+                alert("Preencha o KM Final e tire a foto do painel final!");
+                return;
+            }
+
+            const loader = document.getElementById('main-loader');
+            const textoLoader = document.getElementById('texto-loader');
+            if (loader) {
+                loader.classList.remove('hidden');
+                loader.style.display = 'flex';
+                if (textoLoader) textoLoader.innerText = "Validando encerramento...";
+            }
+
+            try {
+                let locFim = "";
+                try {
+                    locFim = await Promise.race([
+                        window.obterGpsSeguro(),
+                        new Promise(r => setTimeout(() => r(""), 6000))
+                    ]);
+                } catch (e) {}
+
+                // Usa os dados locais como fallback imediato caso o banco esteja offline
+                let vData = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
+                try {
+                    const docSnap = await Promise.race([
+                        db.collection('viagens').doc(idViagem).get(),
+                        new Promise((_, r) => setTimeout(() => r(null), 4000))
+                    ]);
+                    if (docSnap && docSnap.exists) vData = docSnap.data();
+                } catch (e) {}
+
+                const baseRaw = localStorage.getItem('icaphi_base_coords') || "-22.6688044, -43.2772497";
+                const [bLat, bLng] = baseRaw.split(',').map(Number);
+                const raioMax = parseFloat(localStorage.getItem('icaphi_raio_max') || "0.5");
+                let foraDoRaio = false, momentoFora = '', isApoio = false;
+
+                if (vData) {
+                    isApoio = (vData.tipoServico && vData.tipoServico.toLowerCase() === 'apoio');
+                    const kmIniReal = Number(vData.kmInicio || 0);
+                    const kmFimDigitado = Number(kmFim);
+                    const metaKm = Number(vData.metaKm || 0);
+                    const rodadoReal = kmFimDigitado - kmIniReal;
+
+                    if (kmFimDigitado <= kmIniReal) {
+                        if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+                        alert(`❌ ERRO DE DIGITAÇÃO:\n\nKM Inicial: ${kmIniReal}\nKM Final digitado: ${kmFimDigitado}\n\nO KM final deve ser maior que o inicial.`);
+                        return;
+                    }
+
+                    if (metaKm > 0 && rodadoReal > (metaKm * 1.5)) {
+                        if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+                        if (!confirm(`⚠️ ALERTA DE DISTÂNCIA:\n\nA meta era ${metaKm}km, mas você informou ${rodadoReal}km rodados.\n\nConfirma que o painel marca ${kmFimDigitado}?`)) return;
+                        if (loader) { loader.classList.remove('hidden'); loader.style.display = 'flex'; }
+                    }
+
+                    if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+                    if (!confirm(`CONFIRMAÇÃO:\n\nTotal rodado: ${rodadoReal} KM.\nConfirma o KM Final ${kmFimDigitado}?`)) return;
+                    if (loader) { loader.classList.remove('hidden'); loader.style.display = 'flex'; }
+
+                    if (vData.locInicio && !isApoio) {
+                        const [iLat, iLng] = vData.locInicio.split(',').map(Number);
+                        if (window.calcularDistanciaKM(bLat, bLng, iLat, iLng) > raioMax) {
+                            foraDoRaio = true;
+                            momentoFora = 'INÍCIO';
+                        }
+                    }
+                }
+
+                if (locFim && !isApoio) {
+                    const [fLat, fLng] = locFim.split(',').map(Number);
+                    if (window.calcularDistanciaKM(bLat, bLng, fLat, fLng) > raioMax) {
+                        foraDoRaio = true;
+                        momentoFora = momentoFora ? 'INÍCIO e FIM' : 'FIM';
+                    }
+                }
+
+                let statusFinal = 'finalizada';
+                let motivoCanc = '';
+
+                if (foraDoRaio) {
+                    if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+                    if (!confirm(`⚠️ FORA DO RAIO PERMITIDO (${momentoFora}) ⚠️\n\nSe prosseguir fora da base, a viagem será CANCELADA.\n\n• [Cancelar] para voltar\n• [OK] para encerrar assim mesmo.`)) return;
+                    statusFinal = 'cancelada';
+                    motivoCanc = `Invalidada: Executada fora do raio no ${momentoFora}.`;
+                    if (loader) { loader.classList.remove('hidden'); loader.style.display = 'flex'; }
+                }
+
+                const agoraIso = new Date().toISOString();
+                // Garante que mesmo se o início ainda não subiu, o documento final terá todos os dados da viagem!
+                const payloadCompleto = {
+                    ...(vData || {}),
+                    kmFim: Number(kmFim),
+                    fotoFim: fotoFimStr,
+                    locFim: locFim || "",
+                    status: statusFinal,
+                    motivoCancelamento: motivoCanc,
+                    dataFimCelular: agoraIso
+                };
+
+                localStorage.setItem('ultimo_id_zap', idViagem);
+                localStorage.setItem('zap_temp_' + idViagem, JSON.stringify(payloadCompleto));
+
+                try {
+                    if (!navigator.onLine) throw new Error("Sem rede");
+                    // USO DE .set(..., { merge: true }) -> Nunca dá erro 'not-found'!
+                    await Promise.race([
+                        db.collection('viagens').doc(idViagem).set({
+                            ...payloadCompleto,
+                            dataFim: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
+                    ]);
+                } catch (erroRede) {
+                    let filaFim = JSON.parse(localStorage.getItem('icaphi_pendencias_fim') || '[]');
+                    filaFim = filaFim.filter(item => item.id !== idViagem);
+                    filaFim.push({ id: idViagem, dados: payloadCompleto });
+                    localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(filaFim));
+                }
+
+                window.pararRastreioContinuo();
+                if (unsubViagemAtual) { unsubViagemAtual(); unsubViagemAtual = null; }
+                if (window.cronometroInterval) clearInterval(window.cronometroInterval);
+
+                localStorage.removeItem('v_id');
+                localStorage.removeItem('dados_viagem_ativa');
+                localStorage.removeItem('hora_inicio_viagem');
+                localStorage.removeItem('temp_foto_fim_b64');
+                localStorage.removeItem('temp_km_fim');
+                window.viagemAtualId = null;
+                window.fotoFimBase64 = null;
+
+                window.verificarPendenciasOffline();
+                mudarTelaMotorista('sucesso');
+
+            } catch (erro) {
+                console.error("Erro ao finalizar:", erro);
+                alert("Ocorreu um erro inesperado. Tente novamente.");
+            } finally {
+                if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
+            }
+        };
+
+        // 9. SINCRONIZADOR UNIFICADO (LIMPA FILAS ANTIGAS E ATUAIS COM .set MERGE)
+        window.verificarPendenciasOffline = function () {
+            const f1 = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
+            const f2 = JSON.parse(localStorage.getItem('icaphi_pendencias') || '[]');
+            const f3 = JSON.parse(localStorage.getItem('icaphi_pendencias_fim') || '[]');
+            const total = f1.length + f2.length + f3.length;
+
+            const btn = document.getElementById('btn-sync-offline');
+            const contador = document.getElementById('contador-offline');
+            if (btn && contador) {
+                if (total > 0) {
+                    btn.classList.remove('hidden');
+                    btn.style.display = 'flex';
+                    contador.innerText = total;
+                } else {
+                    btn.classList.add('hidden');
+                    btn.style.display = 'none';
+                }
+            }
+        };
+
+        window.sincronizarPendencias = async function (silencioso = false) {
+            if (window.isSyncing) return;
+            if (!navigator.onLine) {
+                if (!silencioso) alert("Sem conexão no momento. Conecte ao Wi-Fi ou 4G.");
+                return;
+            }
+
+            window.isSyncing = true;
+            let enviadasTotal = 0;
+            const icon = document.getElementById('icon-sync-offline');
+            if (icon) icon.classList.add('animate-spin');
+
+            try {
+                // 1. Limpa fila de inícios ('icaphi_pendencias_ini')
+                let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
+                let falhasIni = [];
+                for (let item of filaIni) {
+                    try {
+                        const docId = item.id || item.idLocal || db.collection('viagens').doc().id;
+                        const copia = { ...item };
+                        delete copia.id; delete copia.idLocal;
+                        await db.collection('viagens').doc(docId).set({
+                            ...copia,
+                            dataInicio: copia.dataInicioCelular ? new Date(copia.dataInicioCelular) : firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        enviadasTotal++;
+                    } catch (e) {
+                        falhasIni.push(item);
+                    }
+                }
+                localStorage.setItem('icaphi_pendencias_ini', JSON.stringify(falhasIni));
+
+                // 2. Limpa fila legada ('icaphi_pendencias')
+                let filaLegada = JSON.parse(localStorage.getItem('icaphi_pendencias') || '[]');
+                let falhasLegada = [];
+                for (let item of filaLegada) {
+                    try {
+                        const dados = { ...(item.dados || item) };
+                        const docId = dados._idLocal || dados.id || db.collection('viagens').doc().id;
+                        delete dados._idLocal; delete dados.id;
+                        await db.collection(item.colecao || 'viagens').doc(docId).set(dados, { merge: true });
+                        enviadasTotal++;
+                    } catch (e) {
+                        falhasLegada.push(item);
+                    }
+                }
+                localStorage.setItem('icaphi_pendencias', JSON.stringify(falhasLegada));
+
+                // 3. Limpa fila de encerramentos ('icaphi_pendencias_fim') usando .set({ merge: true })
+                let filaFim = JSON.parse(localStorage.getItem('icaphi_pendencias_fim') || '[]');
+                let falhasFim = [];
+                for (let item of filaFim) {
+                    try {
+                        const docId = item.id || db.collection('viagens').doc().id;
+                        await db.collection('viagens').doc(docId).set({
+                            ...item.dados,
+                            dataFim: item.dados?.dataFimCelular ? new Date(item.dados.dataFimCelular) : firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        enviadasTotal++;
+                    } catch (e) {
+                        falhasFim.push(item);
+                    }
+                }
+                localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(falhasFim));
+
+            } finally {
+                window.verificarPendenciasOffline();
+                if (icon) icon.classList.remove('animate-spin');
+                window.isSyncing = false;
+                if (enviadasTotal > 0 && !silencioso) {
+                    alert(`✅ ${enviadasTotal} pendência(s) sincronizada(s) com sucesso!`);
+                }
+            }
+        };
+
+        // Sincroniza sozinho assim que o celular reconectar no Wi-Fi ou 4G
+        window.addEventListener('online', () => {
+            window.sincronizarPendencias(true);
+        });
+
+        // 10. RESTAURA OS DOIS BOTÕES (KM + RAIO) NO PAINEL DE AUDITORIA DO ADMIN
+        window.abrirPainelAuditoriaVisual = function () {
+            const container = document.getElementById('lista-suporte');
+            const hoje = new Date();
+            const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+
+            container.innerHTML = `
+                <div class="p-2">
+                    <div class="flex flex-col sm:flex-row items-end gap-2 bg-white dark:bg-[#0a0a0c] p-3 rounded-xl border border-gray-200 dark:border-zinc-800 mb-4">
+                        <div class="flex-1 w-full">
+                            <label class="block text-[9px] font-black text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Mês de Auditoria</label>
+                            <input type="month" id="vis-mes" value="${mesAtual}" class="w-full bg-transparent border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-black text-gray-800 dark:text-zinc-100 outline-none">
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button id="btn-run-vis" onclick="executarAuditoriaVisual()" class="flex-1 sm:flex-none px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg text-xs tracking-widest flex items-center justify-center gap-1 h-[32px]">
+                                <i data-lucide="search" class="w-3 h-3"></i> KM
+                            </button>
+                            <button onclick="executarAuditoriaRaio()" class="flex-1 sm:flex-none px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-lg text-xs tracking-widest flex items-center justify-center gap-1 h-[32px]">
+                                <i data-lucide="navigation" class="w-3 h-3"></i> RAIO
+                            </button>
+                        </div>
+                    </div>
+                    <div id="vis-status-container" class="text-center mb-4">
+                        <span id="vis-status-text" class="text-xs font-bold text-gray-500">Pronto para auditar...</span>
+                    </div>
+                    <div id="vis-resultados" class="flex flex-col gap-3"></div>
+                </div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+            window.executarAuditoriaVisual();
+        };
+
     </script>
 
-
 </body>
-
-<div id="modal-camera-interna" class="fixed inset-0 z-[99999] hidden bg-black flex-col items-center justify-center">
-    <video id="video-camera" autoplay playsinline class="w-full h-[75vh] object-cover bg-gray-900"></video>
-
-    <div class="flex w-full h-[25vh] items-center justify-around pb-8 px-4">
-        <button onclick="fecharCameraInterna()" class="bg-gray-800 text-white p-4 rounded-full shadow-lg">
-            <i data-lucide="x" class="w-8 h-8"></i>
-        </button>
-        <button onclick="capturarFotoInterna()"
-            class="bg-cyan-500 text-white p-6 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)] active:scale-95 transition-transform border-4 border-cyan-200">
-            <i data-lucide="camera" class="w-10 h-10"></i>
-        </button>
-        <button onclick="inverterCameraInterna()" class="bg-gray-800 text-white p-4 rounded-full shadow-lg">
-            <i data-lucide="switch-camera" class="w-8 h-8"></i>
-        </button>
-    </div>
-    <canvas id="canvas-camera" class="hidden"></canvas>
-</div>
 
 </html>
