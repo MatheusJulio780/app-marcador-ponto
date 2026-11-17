@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V11.1</span>
+                        Matheus Julio V11.2</span>
                 </div>
             </div>
 
@@ -1993,6 +1993,9 @@
 
         // Exemplo de como deve ficar na inicialização:
         const db = firebase.firestore();
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        } catch (e) {}
 
         // FUNÇÃO NOVA: Gira o card 3D
         window.flipCard = function (id) {
@@ -6621,22 +6624,18 @@
             }
         };
 
+        // =========================================================================
+        // BLOCO CONSOLIDADO FINAL (OFFLINE + ANDROID SERVICE + MAPAS GOOGLE + ESCALA)
+        // =========================================================================
+
+        // 0. MATA QUALQUER SERVICE WORKER ANTIGO (IMPEDE CACHE CONGELADO)
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js');
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (let reg of regs) reg.unregister();
             });
         }
 
-        // =========================================================================
-        // PATCH DE ESTABILIDADE, SINCRONIZAÇÃO OFFLINE E PONTE ANDROID NATIVA (V11)
-        // =========================================================================
-
-        // 1. HABILITA CACHE OFFLINE NATIVO DO FIRESTORE
-        try {
-            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-        } catch (e) {}
-
-        // 2. PADRONIZAÇÃO DO AUTOSAVE E LIMPEZA DE FORMULÁRIO
+        // 1. PADRONIZAÇÃO DO AUTOSAVE E LIMPEZA DE FORMULÁRIO
         window.autoSave = function () {
             localStorage.setItem('temp_servico', el('tipo-servico').value);
             localStorage.setItem('temp_motorista', el('motorista').value);
@@ -6662,37 +6661,110 @@
                 }
             });
 
-            // Limpa tanto chaves novas quanto legadas
             ['temp_servico', 'temp_motorista', 'temp_placa', 'temp_km_ini', 'temp_km_fim',
              'auto_tipo_servico', 'auto_motorista', 'auto_placa', 'auto_km_inicio',
              'temp_foto_ini_b64', 'temp_foto_fim_b64'].forEach(k => localStorage.removeItem(k));
         };
 
-        // 3. MONITORAMENTO DE VIAGEM ÚNICA (IMPEDE QUE A VIAGEM SUMA SE ESTIVER OFFLINE)
+        // 2. RASTREIO CONTÍNUO EM TEMPO REAL (8s + HEARTBEAT 10s + PONTE ANDROID NATIVA)
+        window.iniciarRastreioContinuo = function (idViagem) {
+            const idAtivo = idViagem || window.viagemAtualId || localStorage.getItem('v_id');
+            if (!idAtivo) return;
+
+            window.pararRastreioContinuo(false);
+
+            // Aciona o Foreground Service Nativo do APK Android (Sobe a notificação fixa!)
+            if (window.AndroidInterface && typeof window.AndroidInterface.startTracking === 'function') {
+                try {
+                    window.AndroidInterface.startTracking(idAtivo);
+                } catch (e) {
+                    console.error("Erro ao iniciar TrackingService Android:", e);
+                }
+            }
+
+            if (!navigator.geolocation) return;
+
+            const enviarPontoTempoReal = (lat, lng) => {
+                const agora = Date.now();
+                if (window.ultimoTempoEnviado && (agora - window.ultimoTempoEnviado < 7500)) return;
+
+                const loc = `${lat},${lng}`;
+                const locComTempo = `${lat},${lng},${agora}`;
+
+                window.ultimaLocEnviada = loc;
+                window.ultimoTempoEnviado = agora;
+                localStorage.setItem('icaphi_last_loc', loc);
+
+                db.collection('viagens').doc(idAtivo).set({
+                    locAtual: loc,
+                    latitude: lat,
+                    longitude: lng,
+                    ultimaAtualizacaoMs: agora,
+                    ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp(),
+                    rotaReal: firebase.firestore.FieldValue.arrayUnion(locComTempo)
+                }, { merge: true }).catch(() => {});
+            };
+
+            watchIdRastreio = navigator.geolocation.watchPosition(
+                (pos) => enviarPontoTempoReal(pos.coords.latitude, pos.coords.longitude),
+                (err) => console.warn("Aviso GPS:", err.message),
+                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+            );
+
+            heartbeatInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => enviarPontoTempoReal(pos.coords.latitude, pos.coords.longitude),
+                    () => {},
+                    { enableHighAccuracy: true, maximumAge: 3000, timeout: 8000 }
+                );
+            }, 10000);
+        };
+
+        window.pararRastreioContinuo = function (pararAndroid = true) {
+            if (watchIdRastreio !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(watchIdRastreio);
+                watchIdRastreio = null;
+            }
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            if (pararAndroid && window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
+                try { window.AndroidInterface.stopTracking(); } catch (e) {}
+            }
+            window.ultimaLocEnviada = null;
+            window.ultimoTempoEnviado = null;
+        };
+
+        window.atualizarPosicaoReal = function (lat, lng) {
+            const idAtivo = window.viagemAtualId || localStorage.getItem('v_id');
+            if (!idAtivo || !lat || !lng) return;
+            const agora = Date.now();
+            const loc = `${lat},${lng}`;
+            window.ultimaLocEnviada = loc;
+            window.ultimoTempoEnviado = agora;
+            localStorage.setItem('icaphi_last_loc', loc);
+        };
+
+        // 3. MONITORAMENTO DE SESSÃO E TELA EM CURSO (BLINDADO CONTRA QUEDA DE REDE)
         window.monitorarViagemUnicaDb = function (id) {
             if (!id) return;
             if (unsubViagemAtual) unsubViagemAtual();
 
             unsubViagemAtual = db.collection('viagens').doc(id).onSnapshot(doc => {
                 if (ignorarSnapshot) return;
-
                 if (!doc.exists) {
-                    // PROTEÇÃO CRÍTICA: Se ainda não subiu para o servidor, usa o backup local e NÃO apaga a viagem!
                     const backupLocal = localStorage.getItem('dados_viagem_ativa');
-                    if (backupLocal) {
-                        window.reconstruirTelaEmCurso(JSON.parse(backupLocal), id);
-                    }
+                    if (backupLocal) window.reconstruirTelaEmCurso(JSON.parse(backupLocal), id);
                     return;
                 }
-
                 const v = doc.data();
                 if (v.status === 'em_curso') {
                     localStorage.setItem('dados_viagem_ativa', JSON.stringify(v));
                     window.reconstruirTelaEmCurso(v, id);
                 } else {
-                    // Só encerra na tela do motorista se o status no banco mudou de fato para 'finalizada' ou 'cancelada'
                     if (el('tela-sucesso').classList.contains('hidden')) {
-                        window.pararRastreioContinuo();
+                        window.pararRastreioContinuo(true);
                         localStorage.removeItem('v_id');
                         localStorage.removeItem('dados_viagem_ativa');
                         localStorage.removeItem('hora_inicio_viagem');
@@ -6700,16 +6772,12 @@
                         mudarTelaMotorista('inicio');
                     }
                 }
-            }, err => {
-                console.warn("Monitoramento operando em modo local:", err);
-            });
+            }, () => {});
         };
 
-        // 4. VERIFICADOR DE SESSÃO BLINDADO (NUNCA APAGA VIAGEM EM CURSO POR TIMEOUT)
         window.verificarSessaoMotorista = async function () {
             let idViagemAtiva = localStorage.getItem('v_id') || localStorage.getItem('viagemId');
 
-            // Resgata do Serviço Nativo Android caso o WebView tenha limpado cache
             if (!idViagemAtiva && window.AndroidInterface && window.AndroidInterface.verificarViagemAtiva) {
                 try {
                     const idAndroid = window.AndroidInterface.verificarViagemAtiva();
@@ -6728,35 +6796,30 @@
             viagemAtualId = idViagemAtiva;
             const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
 
-            // Reconstrói a tela imediatamente com o cache local para o motorista não esperar rede
             if (dadosLocais) {
                 window.reconstruirTelaEmCurso(dadosLocais, idViagemAtiva);
-                window.iniciarRastreioContinuo(idViagemAtiva);
             }
 
-            // Sincroniza pendências em background se houver rede
+            window.iniciarRastreioContinuo(idViagemAtiva);
+            window.monitorarViagemUnicaDb(idViagemAtiva);
+
             if (navigator.onLine && window.sincronizarPendencias) {
                 window.sincronizarPendencias(true);
             }
-
-            window.monitorarViagemUnicaDb(idViagemAtiva);
         };
 
-        // 5. RECONSTRUTOR DE TELA SEM MATAR OS TIMERS DO GPS
         window.reconstruirTelaEmCurso = function (dados, idViagem) {
             if (!dados) return;
 
-            // Limpa APENAS o intervalo do cronômetro (sem destruir o heartbeat do GPS!)
             if (window.cronometroInterval) {
                 clearInterval(window.cronometroInterval);
                 window.cronometroInterval = null;
             }
 
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(userAgent);
+            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
             const headerText = document.querySelector('header')?.innerText || "";
             const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
-            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11.1";
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V10.9";
             const origemDisplay = dados.origem || (isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`);
             const kmInicioTratado = (dados.kmInicio !== undefined && dados.kmInicio !== null && dados.kmInicio !== '') ? dados.kmInicio : 'N/D';
 
@@ -6796,9 +6859,7 @@
             }
 
             let tsInicio = parseInt(localStorage.getItem('hora_inicio_viagem') || '0');
-            if (!tsInicio && dados.dataInicioCelular) {
-                tsInicio = new Date(dados.dataInicioCelular).getTime();
-            }
+            if (!tsInicio && dados.dataInicioCelular) tsInicio = new Date(dados.dataInicioCelular).getTime();
             if (!tsInicio || isNaN(tsInicio)) tsInicio = Date.now();
             window.dataInicioViagemAtual = tsInicio;
 
@@ -6814,32 +6875,131 @@
             if (window.mudarTelaMotorista) window.mudarTelaMotorista('em-curso');
         };
 
-        // 6. RASTREIO CONTÍNUO INTEGRADO AO SERVIÇO NATIVO ANDROID (TrackingService.kt)
-        const _iniciarRastreioOriginal = window.iniciarRastreioContinuo;
-        window.iniciarRastreioContinuo = function (idViagem) {
-            if (!idViagem) return;
-            // Aciona o Foreground Service do Android para funcionar com tela bloqueada!
-            if (window.AndroidInterface && typeof window.AndroidInterface.startTracking === 'function') {
-                try { window.AndroidInterface.startTracking(idViagem); } catch (e) { console.error(e); }
-            }
-            if (typeof _iniciarRastreioOriginal === 'function') {
-                _iniciarRastreioOriginal(idViagem);
+        // 4. ESCALA INTELIGENTE (SEPARA 1ª VIAGEM, 2ª VIAGEM E APOIO)
+        window.obterDadosEscalaAutomática = async function (placaInformada, tipoServicoEscolhido = 'Saida dia') {
+            if (!window.dbMonitoramento || !placaInformada) return null;
+            try {
+                const placaClean = formatarPlaca(placaInformada);
+                const dataHoje = getLocalYMD(new Date());
+                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataHoje).get();
+                if (!docSnap.exists) return null;
+
+                const rotas = docSnap.data().rotas || [];
+                let rotasDaPlaca = rotas.filter(r => formatarPlaca(r.troca || '') === placaClean && formatarPlaca(r.troca || '') !== '');
+                if (rotasDaPlaca.length === 0) {
+                    rotasDaPlaca = rotas.filter(r => formatarPlaca(r.placa || '') === placaClean && (r.troca || '').trim() === '');
+                }
+                if (rotasDaPlaca.length === 0) return null;
+
+                const perfilDoCaminhao = (rotasDaPlaca[0].perfil || 'PADRÃO').toUpperCase();
+                const servicoNorm = (tipoServicoEscolhido || '').toLowerCase();
+
+                if (servicoNorm === 'apoio') {
+                    const rotaApoio = rotasDaPlaca.find(r => (r.tipo || '').toLowerCase().includes('apoio'));
+                    return {
+                        perfilVeiculo: (rotaApoio?.perfil || perfilDoCaminhao).toUpperCase(),
+                        rotaCidades: rotaApoio?.regiao || 'APOIO OPERACIONAL',
+                        metaKm: Number(rotaApoio?.km) || 0,
+                        tipoServico: 'Apoio'
+                    };
+                }
+
+                if (servicoNorm.includes('segunda')) {
+                    const segundaRota = rotasDaPlaca.find(r => (r.tipo || '').toLowerCase().includes('segunda') || (r.tipo || '').toLowerCase().includes('2')) || rotasDaPlaca[1];
+                    return {
+                        perfilVeiculo: (segundaRota?.perfil || perfilDoCaminhao).toUpperCase(),
+                        rotaCidades: segundaRota?.regiao || 'SEGUNDA VIAGEM (EXTRA)',
+                        metaKm: Number(segundaRota?.km) || 0,
+                        tipoServico: 'Segunda viagem'
+                    };
+                }
+
+                const primeiraRota = rotasDaPlaca[0];
+                return {
+                    perfilVeiculo: perfilDoCaminhao,
+                    rotaCidades: primeiraRota.regiao || 'N/D',
+                    metaKm: Number(primeiraRota.km) || 0,
+                    tipoServico: tipoServicoEscolhido
+                };
+            } catch (e) {
+                return null;
             }
         };
 
-        const _pararRastreioOriginal = window.pararRastreioContinuo;
-        window.pararRastreioContinuo = function () {
-            if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
-                try { window.AndroidInterface.stopTracking(); } catch (e) { console.error(e); }
-            }
-            if (typeof _pararRastreioOriginal === 'function') {
-                _pararRastreioOriginal();
+        // Protege 2ª Viagem e Apoio quando o Admin clica em "Buscar Escala Firebase"
+        window.sincronizarEscalaDoFirebase = async function () {
+            const inputFiltro = document.getElementById('filtro-data-ini');
+            const dataAlvo = inputFiltro ? inputFiltro.value : '';
+            if (!dataAlvo) return alert("Selecione a Data Inicial no filtro do painel Admin.");
+            if (!window.dbMonitoramento) return alert("Banco de Monitoramento offline.");
+
+            try {
+                document.body.style.cursor = 'wait';
+                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataAlvo).get();
+                if (!docSnap.exists) return alert(`Nenhuma escala encontrada para ${dataAlvo}.`);
+
+                const listaRotas = docSnap.data().rotas || [];
+                if (listaRotas.length === 0) return alert(`Escala vazia para ${dataAlvo}.`);
+
+                const batch = db.batch();
+                let totalImportados = 0;
+
+                listaRotas.forEach(item => {
+                    const trocaStr = (item.troca || '').trim();
+                    const placaEfetiva = trocaStr !== '' ? trocaStr : item.placa;
+                    if (!placaEfetiva) return;
+
+                    const placaClean = formatarPlaca(placaEfetiva);
+                    const idStandby = `${placaClean}_${dataAlvo}`;
+
+                    const objetoEscala = {
+                        placa: placaClean,
+                        perfilVeiculo: (item.perfil || 'PADRÃO').toUpperCase(),
+                        rotaCidades: item.regiao || '',
+                        metaKm: Number(item.km) || 0,
+                        nome: item.motorista || '',
+                        tipoServico: item.tipo || 'Saida dia',
+                        atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    batch.set(db.collection('escala_standby').doc(idStandby), objetoEscala, { merge: true });
+
+                    const viagensDaPlacaNoDia = todasViagens.filter(v => {
+                        if (v.placa !== placaClean) return false;
+                        const dObj = safeDate(v.dataInicio);
+                        return dObj && getLocalYMD(dObj) === dataAlvo;
+                    });
+
+                    viagensDaPlacaNoDia.forEach(viagem => {
+                        const tp = (viagem.tipoServico || '').toLowerCase();
+                        const refViagem = db.collection('viagens').doc(viagem.id);
+                        if (tp.includes('segunda') || tp.includes('apoio')) {
+                            batch.update(refViagem, { perfilVeiculo: objetoEscala.perfilVeiculo });
+                        } else {
+                            batch.update(refViagem, {
+                                perfilVeiculo: objetoEscala.perfilVeiculo,
+                                rotaCidades: objetoEscala.rotaCidades,
+                                metaKm: objetoEscala.metaKm
+                            });
+                        }
+                    });
+
+                    totalImportados++;
+                });
+
+                await batch.commit();
+                alert(`Sucesso! ${totalImportados} escalas sincronizadas (preservando Segundas Viagens e Apoios).`);
+                renderizarAdmin();
+            } catch (e) {
+                alert("Erro ao sincronizar escala: " + e.message);
+            } finally {
+                document.body.style.cursor = 'default';
             }
         };
 
-        // 7. INICIAR VIAGEM COM ID OFICIAL FIRESTORE (ZERO ID 'local_ini_' QUEBRADO)
+        // 5. INICIAR E ENCERRAR VIAGEM (COM ID OFICIAL FIRESTORE E .set MERGE)
         window.iniciarViagem = async function () {
-            const servico = document.getElementById('tipo-servico').value;
+            const servicoEscolhido = document.getElementById('tipo-servico').value;
             const motor = document.getElementById('motorista').value.trim();
             const plac = document.getElementById('placa').value.trim();
             const kmIni = document.getElementById('km-inicio').value;
@@ -6859,7 +7019,7 @@
             const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
             const headerText = document.querySelector('header')?.innerText || "";
             const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
-            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11.1";
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V10.9";
             const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
 
             const loader = document.getElementById('main-loader');
@@ -6867,7 +7027,7 @@
             if (loader) {
                 loader.classList.remove('hidden');
                 loader.style.display = 'flex';
-                if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
+                if (textoLoader) textoLoader.innerText = "Ativando GPS...";
             }
 
             try {
@@ -6879,21 +7039,19 @@
                     ]);
                 } catch (e) {}
 
-                if (textoLoader) textoLoader.innerText = "Sincronizando escala de hoje...";
-                let metaExtraida = 0, perfilExtraido = "PADRÃO", servicoExtraido = servico, rotaExtraida = "N/D";
+                let metaExtraida = 0, perfilExtraido = "PADRÃO", rotaExtraida = "N/D";
+                const isPrimeiraViagem = (servicoEscolhido === 'Saida dia');
 
-                // Busca escala com Timeout rigoroso de 4 segundos para não travar no Wi-Fi do pátio
                 if (navigator.onLine && typeof window.obterDadosEscalaAutomática === 'function') {
                     try {
                         const dadosAuto = await Promise.race([
-                            window.obterDadosEscalaAutomática(placaFormatada),
+                            window.obterDadosEscalaAutomática(placaFormatada, servicoEscolhido),
                             new Promise(r => setTimeout(() => r(null), 4000))
                         ]);
                         if (dadosAuto) {
                             metaExtraida = dadosAuto.metaKm || 0;
                             perfilExtraido = dadosAuto.perfilVeiculo || "PADRÃO";
                             rotaExtraida = dadosAuto.rotaCidades || "N/D";
-                            if (dadosAuto.tipoServico && dadosAuto.tipoServico !== 'N/D') servicoExtraido = dadosAuto.tipoServico;
                         }
                     } catch (e) {}
                 }
@@ -6907,28 +7065,34 @@
                         ]);
                         if (escalaDoc && escalaDoc.exists) {
                             const dEsc = escalaDoc.data();
-                            metaExtraida = dEsc.metaKm || metaExtraida;
                             perfilExtraido = dEsc.perfilVeiculo || perfilExtraido;
-                            rotaExtraida = dEsc.rotaCidades || rotaExtraida;
+                            if (isPrimeiraViagem) {
+                                metaExtraida = dEsc.metaKm || metaExtraida;
+                                rotaExtraida = dEsc.rotaCidades || rotaExtraida;
+                            } else {
+                                metaExtraida = 0;
+                                rotaExtraida = servicoEscolhido.toUpperCase();
+                            }
                         }
                     } catch (e) {}
                 }
 
-                if (textoLoader) textoLoader.innerText = "Registrando viagem...";
-
-                // GERA O ID OFICIAL DO FIRESTORE LOCALMENTE (Funciona 100% Offline e Online)
                 const docRef = db.collection('viagens').doc();
                 const idViagemGerado = docRef.id;
                 const agoraIso = new Date().toISOString();
+                const agoraMs = Date.now();
 
                 const novaViagem = {
                     id: idViagemGerado,
-                    tipoServico: servicoExtraido,
+                    tipoServico: servicoEscolhido,
                     nome: motor.toUpperCase(),
                     placa: placaFormatada,
                     kmInicio: Number(kmIni),
                     fotoInicio: fotoIniStr,
                     locInicio: locIni || "",
+                    locAtual: locIni || "",
+                    rotaReal: locIni ? [`${locIni},${agoraMs}`] : [],
+                    ultimaAtualizacaoMs: agoraMs,
                     status: 'em_curso',
                     origem: origemIdentificada,
                     metaKm: metaExtraida,
@@ -6948,7 +7112,6 @@
                         new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
                     ]);
                 } catch (erroRede) {
-                    // Salva na fila unificada com o ID oficial do Firestore
                     let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
                     filaIni = filaIni.filter(item => (item.id || item.idLocal) !== idViagemGerado);
                     filaIni.push(novaViagem);
@@ -6959,7 +7122,7 @@
                 localStorage.setItem('v_id', idViagemGerado);
                 window.viagemAtualId = idViagemGerado;
                 localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
-                localStorage.setItem('hora_inicio_viagem', Date.now().toString());
+                localStorage.setItem('hora_inicio_viagem', agoraMs.toString());
 
                 window.resetarFormularios();
                 window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
@@ -6974,7 +7137,6 @@
             }
         };
 
-        // 8. ENCERRAR VIAGEM USANDO .set({ merge: true }) (NUNCA FALHA COM 'not-found')
         window.encerrarViagem = async function () {
             const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
             if (!idViagem) {
@@ -7006,7 +7168,6 @@
                     ]);
                 } catch (e) {}
 
-                // Usa os dados locais como fallback imediato caso o banco esteja offline
                 let vData = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
                 try {
                     const docSnap = await Promise.race([
@@ -7073,7 +7234,6 @@
                 }
 
                 const agoraIso = new Date().toISOString();
-                // Garante que mesmo se o início ainda não subiu, o documento final terá todos os dados da viagem!
                 const payloadCompleto = {
                     ...(vData || {}),
                     kmFim: Number(kmFim),
@@ -7089,7 +7249,6 @@
 
                 try {
                     if (!navigator.onLine) throw new Error("Sem rede");
-                    // USO DE .set(..., { merge: true }) -> Nunca dá erro 'not-found'!
                     await Promise.race([
                         db.collection('viagens').doc(idViagem).set({
                             ...payloadCompleto,
@@ -7104,7 +7263,7 @@
                     localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(filaFim));
                 }
 
-                window.pararRastreioContinuo();
+                window.pararRastreioContinuo(true);
                 if (unsubViagemAtual) { unsubViagemAtual(); unsubViagemAtual = null; }
                 if (window.cronometroInterval) clearInterval(window.cronometroInterval);
 
@@ -7127,7 +7286,7 @@
             }
         };
 
-        // 9. SINCRONIZADOR UNIFICADO (LIMPA FILAS ANTIGAS E ATUAIS COM .set MERGE)
+        // 6. SINCRONIZADOR OFFLINE UNIFICADO (SOBRESCREVE OS LISTENERS ANTIGOS)
         window.verificarPendenciasOffline = function () {
             const f1 = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
             const f2 = JSON.parse(localStorage.getItem('icaphi_pendencias') || '[]');
@@ -7148,6 +7307,11 @@
             }
         };
 
+        // Garante que a versão nova rode após as antigas no carregamento da página
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => window.verificarPendenciasOffline(), 150);
+        });
+
         window.sincronizarPendencias = async function (silencioso = false) {
             if (window.isSyncing) return;
             if (!navigator.onLine) {
@@ -7161,7 +7325,6 @@
             if (icon) icon.classList.add('animate-spin');
 
             try {
-                // 1. Limpa fila de inícios ('icaphi_pendencias_ini')
                 let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
                 let falhasIni = [];
                 for (let item of filaIni) {
@@ -7174,13 +7337,10 @@
                             dataInicio: copia.dataInicioCelular ? new Date(copia.dataInicioCelular) : firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
                         enviadasTotal++;
-                    } catch (e) {
-                        falhasIni.push(item);
-                    }
+                    } catch (e) { falhasIni.push(item); }
                 }
                 localStorage.setItem('icaphi_pendencias_ini', JSON.stringify(falhasIni));
 
-                // 2. Limpa fila legada ('icaphi_pendencias')
                 let filaLegada = JSON.parse(localStorage.getItem('icaphi_pendencias') || '[]');
                 let falhasLegada = [];
                 for (let item of filaLegada) {
@@ -7190,13 +7350,10 @@
                         delete dados._idLocal; delete dados.id;
                         await db.collection(item.colecao || 'viagens').doc(docId).set(dados, { merge: true });
                         enviadasTotal++;
-                    } catch (e) {
-                        falhasLegada.push(item);
-                    }
+                    } catch (e) { falhasLegada.push(item); }
                 }
                 localStorage.setItem('icaphi_pendencias', JSON.stringify(falhasLegada));
 
-                // 3. Limpa fila de encerramentos ('icaphi_pendencias_fim') usando .set({ merge: true })
                 let filaFim = JSON.parse(localStorage.getItem('icaphi_pendencias_fim') || '[]');
                 let falhasFim = [];
                 for (let item of filaFim) {
@@ -7207,9 +7364,7 @@
                             dataFim: item.dados?.dataFimCelular ? new Date(item.dados.dataFimCelular) : firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
                         enviadasTotal++;
-                    } catch (e) {
-                        falhasFim.push(item);
-                    }
+                    } catch (e) { falhasFim.push(item); }
                 }
                 localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(falhasFim));
 
@@ -7223,12 +7378,9 @@
             }
         };
 
-        // Sincroniza sozinho assim que o celular reconectar no Wi-Fi ou 4G
-        window.addEventListener('online', () => {
-            window.sincronizarPendencias(true);
-        });
+        window.addEventListener('online', () => window.sincronizarPendencias(true));
 
-        // 10. RESTAURA OS DOIS BOTÕES (KM + RAIO) NO PAINEL DE AUDITORIA DO ADMIN
+        // 7. RESTAURA OS DOIS BOTÕES (KM + RAIO) NO PAINEL DE AUDITORIA
         window.abrirPainelAuditoriaVisual = function () {
             const container = document.getElementById('lista-suporte');
             const hoje = new Date();
@@ -7260,38 +7412,44 @@
             window.executarAuditoriaVisual();
         };
 
-        // =========================================================================
-        // PATCH V12: MAPA GOOGLE, DETECTOR DE SINAL GPS E SEPARAÇÃO DE 2ª VIAGEM
-        // =========================================================================
+        // 8. MAPAS GOOGLE MAPS (LIVE + FROTA GERAL) + DETECTOR DE SINAL GPS EM TEMPO REAL
+        let intervaloDiagnosticoGps = null;
 
-        // 1. FUNÇÃO AUXILIAR: EXTRAI O TIMESTAMP DO ÚLTIMO SINAL GPS RECEBIDO
         window.obterUltimoTimestampGps = function (v) {
             if (!v) return null;
             let candidatos = [];
-
             if (v.ultimaAtualizacaoMs) candidatos.push(Number(v.ultimaAtualizacaoMs));
-            if (v.ultimaAtualizacao) {
-                const d = safeDate(v.ultimaAtualizacao);
-                if (d) candidatos.push(d.getTime());
-            }
-            if (v.ultimaAtualizacaoLoc) {
-                const d = safeDate(v.ultimaAtualizacaoLoc);
-                if (d) candidatos.push(d.getTime());
-            }
+            if (v.ultimaAtualizacao) { const d = safeDate(v.ultimaAtualizacao); if (d) candidatos.push(d.getTime()); }
+            if (v.ultimaAtualizacaoLoc) { const d = safeDate(v.ultimaAtualizacaoLoc); if (d) candidatos.push(d.getTime()); }
             if (Array.isArray(v.rotaReal) && v.rotaReal.length > 0) {
-                const ultimoPonto = v.rotaReal[v.rotaReal.length - 1];
-                const partes = String(ultimoPonto).split(',');
-                if (partes[2] && !isNaN(Number(partes[2]))) {
-                    candidatos.push(Number(partes[2]));
-                }
+                const partes = String(v.rotaReal[v.rotaReal.length - 1]).split(',');
+                if (partes[2] && !isNaN(Number(partes[2]))) candidatos.push(Number(partes[2]));
             }
-
-            if (candidatos.length === 0) return null;
-            return Math.max(...candidatos);
+            return candidatos.length ? Math.max(...candidatos) : null;
         };
 
-        // 2. MAPA INDIVIDUAL (LIVE) COM GOOGLE MAPS E DIAGNÓSTICO DE SINAL GPS EM TEMPO REAL
-        let intervaloDiagnosticoGps = null;
+        window.atualizarBadgeStatusGps = function (v) {
+            const statusEl = el('rastreio-status');
+            if (!statusEl || !v) return;
+            if (v.status !== 'em_curso') {
+                statusEl.innerHTML = '<span class="text-emerald-500 font-black">✅ VIAGEM FINALIZADA</span>';
+                return;
+            }
+            const ultimoTs = window.obterUltimoTimestampGps(v);
+            if (!ultimoTs) {
+                statusEl.innerHTML = '<span class="text-red-500 font-black">🔴 SEM TEMPO REAL ATIVO</span>';
+                return;
+            }
+            const diffSeg = Math.max(0, Math.floor((Date.now() - ultimoTs) / 1000));
+            const horaUltimo = new Date(ultimoTs).toLocaleTimeString('pt-BR');
+            if (diffSeg <= 60) {
+                statusEl.innerHTML = `<span class="text-emerald-500 font-black">🟢 AO VIVO • Atualizado há ${diffSeg}s (${horaUltimo})</span>`;
+            } else if (diffSeg <= 180) {
+                statusEl.innerHTML = `<span class="text-amber-500 font-black">🟡 SINAL LENTO • Há ${Math.floor(diffSeg / 60)} min (${horaUltimo})</span>`;
+            } else {
+                statusEl.innerHTML = `<span class="text-red-500 font-black">🔴 SINAL PERDIDO • Parou às ${horaUltimo}</span>`;
+            }
+        };
 
         window.abrirRastreioAdmin = function (idViagem, isAutoUpdate = false) {
             currentRastreioId = idViagem;
@@ -7300,7 +7458,7 @@
 
             if (!isAutoUpdate) {
                 el('modal-rastreio').classList.add('active');
-                el('rastreio-placa').innerText = `${v.placa} - ${v.nome || 'Sem Nome'}`;
+                el('rastreio-placa').innerText = `${v.placa} - ${v.nome || ''}`;
                 rastreioFocado = false;
 
                 if (intervaloDiagnosticoGps) clearInterval(intervaloDiagnosticoGps);
@@ -7310,22 +7468,16 @@
                     } else {
                         clearInterval(intervaloDiagnosticoGps);
                     }
-                }, 5000);
+                }, 3000);
             }
-
             window.atualizarBadgeStatusGps(v);
 
-            // Inicializa o mapa com Google Maps Streets (Sem erro de API KEY REQUIRED)
             if (!mapaRastreio) {
-                mapaRastreio = L.map('mapa-rastreio').setView([-22.67, -43.28], 12);
-                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                    maxZoom: 20,
-                    attribution: '© Google Maps'
-                }).addTo(mapaRastreio);
+                mapaRastreio = L.map('mapa-rastreio').setView([-22.67, -43.28], 13);
+                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaRastreio);
                 mapaRastreio.on('movestart', () => { rastreioFocado = true; });
                 mapaRastreio.on('zoomstart', () => { rastreioFocado = true; });
             } else {
-                // Remove camadas antigas quebradas da CartoDB caso existam
                 mapaRastreio.eachLayer(layer => {
                     if (layer instanceof L.TileLayer && layer._url && layer._url.includes('cartocdn')) {
                         mapaRastreio.removeLayer(layer);
@@ -7336,9 +7488,7 @@
 
             if (!isAutoUpdate) {
                 mapaRastreio.eachLayer(layer => {
-                    if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
-                        mapaRastreio.removeLayer(layer);
-                    }
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) mapaRastreio.removeLayer(layer);
                 });
                 markerRastreio = null; polylineRastreio = null; markerIni = null; markerFim = null;
                 setTimeout(() => mapaRastreio.invalidateSize(), 300);
@@ -7346,33 +7496,24 @@
 
             const pontosFiltrados = filtrarRotaGps(v.rotaReal || []);
             const latlngs = pontosFiltrados.map(p => [p.lat, p.lng]).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
-
-            // Compatibilidade com coordenadas vindas direto do TrackingService.kt (latitude/longitude)
             const coordAtualStr = v.locAtual || (v.latitude && v.longitude ? `${v.latitude},${v.longitude}` : null) || v.locInicio;
+
             if (coordAtualStr) {
                 const [cLat, cLng] = coordAtualStr.split(',').map(Number);
                 if (!isNaN(cLat) && !isNaN(cLng)) {
-                    const ultimoDaRota = latlngs[latlngs.length - 1];
-                    if (!ultimoDaRota || (ultimoDaRota[0] !== cLat || ultimoDaRota[1] !== cLng)) {
-                        latlngs.push([cLat, cLng]);
-                    }
+                    const ultimo = latlngs[latlngs.length - 1];
+                    if (!ultimo || ultimo[0] !== cLat || ultimo[1] !== cLng) latlngs.push([cLat, cLng]);
                 }
             }
 
             if (latlngs.length > 0) {
-                if (!polylineRastreio) {
-                    polylineRastreio = L.polyline(latlngs, { color: '#10b981', weight: 4 }).addTo(mapaRastreio);
-                } else {
-                    polylineRastreio.setLatLngs(latlngs);
-                }
-
-                if (!rastreioFocado && !isAutoUpdate) {
-                    setTimeout(() => mapaRastreio.fitBounds(polylineRastreio.getBounds(), { padding: [50, 50], maxZoom: 16 }), 350);
-                }
+                if (!polylineRastreio) polylineRastreio = L.polyline(latlngs, { color: '#10b981', weight: 4 }).addTo(mapaRastreio);
+                else polylineRastreio.setLatLngs(latlngs);
+                if (!rastreioFocado && !isAutoUpdate) setTimeout(() => mapaRastreio.fitBounds(polylineRastreio.getBounds(), { padding: [50, 50], maxZoom: 16 }), 350);
 
                 mapaRastreio.eachLayer(l => { if (l instanceof L.CircleMarker) mapaRastreio.removeLayer(l); });
                 pontosFiltrados.forEach(p => {
-                    if (p.ts) {
+                    if (p.ts && !isNaN(p.lat) && !isNaN(p.lng)) {
                         const dataHora = new Date(p.ts).toLocaleTimeString('pt-BR');
                         L.circleMarker([p.lat, p.lng], { radius: 6, color: 'transparent', fillColor: '#10b981', fillOpacity: 0.4 })
                             .addTo(mapaRastreio)
@@ -7385,20 +7526,11 @@
                 const [lat, lng] = coordAtualStr.split(',').map(Number);
                 if (!isNaN(lat) && !isNaN(lng)) {
                     const ultimoTs = window.obterUltimoTimestampGps(v);
-                    const atrasoSeg = ultimoTs ? Math.floor((Date.now() - ultimoTs) / 1000) : 9999;
-                    const corPino = atrasoSeg <= 120 ? '#10b981' : (atrasoSeg <= 300 ? '#f59e0b' : '#ef4444');
-
-                    const iconCar = L.divIcon({
-                        className: 'custom',
-                        html: `<div style="background:${corPino};width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 12px ${corPino};"></div>`
-                    });
-
-                    if (!markerRastreio) {
-                        markerRastreio = L.marker([lat, lng], { icon: iconCar }).addTo(mapaRastreio);
-                    } else {
-                        markerRastreio.setLatLng([lat, lng]);
-                        markerRastreio.setIcon(iconCar);
-                    }
+                    const atrasoSeg = ultimoTs ? Math.floor((Date.now() - ultimoTs) / 1000) : 999;
+                    const corPino = atrasoSeg <= 60 ? '#10b981' : (atrasoSeg <= 180 ? '#f59e0b' : '#ef4444');
+                    const iconCar = L.divIcon({ className: 'custom', html: `<div style="background:${corPino};width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 12px ${corPino};"></div>` });
+                    if (!markerRastreio) markerRastreio = L.marker([lat, lng], { icon: iconCar }).addTo(mapaRastreio);
+                    else { markerRastreio.setLatLng([lat, lng]); markerRastreio.setIcon(iconCar); }
                 }
             } else if (v.status === 'finalizada' && latlngs.length > 0) {
                 const pIni = latlngs[0];
@@ -7408,47 +7540,6 @@
             }
         };
 
-        // 3. DIAGNÓSTICO VISUAL DE SINAL GPS NO TOPO DO MAPA LIVE
-        window.atualizarBadgeStatusGps = function (v) {
-            const statusEl = el('rastreio-status');
-            if (!statusEl || !v) return;
-
-            if (v.status !== 'em_curso') {
-                statusEl.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i> <span class="text-emerald-500">VIAGEM FINALIZADA</span>';
-                if (window.lucide) lucide.createIcons();
-                return;
-            }
-
-            const coordAtual = v.locAtual || (v.latitude && v.longitude ? `${v.latitude},${v.longitude}` : null);
-            const ultimoTs = window.obterUltimoTimestampGps(v);
-
-            if (!coordAtual && !v.locInicio) {
-                statusEl.innerHTML = `<span class="text-red-500 font-black">🔴 SEM GPS (Aparelho não enviou posição)</span>`;
-                return;
-            }
-
-            if (!ultimoTs) {
-                statusEl.innerHTML = `<span class="text-red-500 font-black">🔴 PARADO NA SAÍDA (Sem tempo real ativo)</span>`;
-                return;
-            }
-
-            const diffSeg = Math.max(0, Math.floor((Date.now() - ultimoTs) / 1000));
-            const horaUltimo = new Date(ultimoTs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-            if (diffSeg <= 120) {
-                const txtTempo = diffSeg < 60 ? `${diffSeg}s atrás` : `1 min atrás`;
-                statusEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-black">🟢 AO VIVO • Sinal recebido há ${txtTempo} (${horaUltimo})</span>`;
-            } else if (diffSeg <= 300) {
-                const min = Math.floor(diffSeg / 60);
-                statusEl.innerHTML = `<span class="text-amber-500 font-black">🟡 SINAL LENTO • Sem atualizar há ${min} min (Último: ${horaUltimo})</span>`;
-            } else {
-                const min = Math.floor(diffSeg / 60);
-                const tempoParado = min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min} min`;
-                statusEl.innerHTML = `<span class="text-red-600 dark:text-red-400 font-black">🔴 SEM TEMPO REAL • Perdido há ${tempoParado} (Último: ${horaUltimo})</span>`;
-            }
-        };
-
-        // 4. CORRIGE TAMBÉM O MAPA GERAL DA FROTA (REMOVE ERRO CARTO DB)
         window.abrirModalMapa = function () {
             el('modal-mapa').classList.add('active');
             const h = getLocalYMD(new Date());
@@ -7456,10 +7547,7 @@
 
             if (!mapaLeaflet) {
                 mapaLeaflet = L.map('mapa-container').setView([-22.67, -43.28], 9);
-                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                    maxZoom: 20,
-                    attribution: '© Google Maps'
-                }).addTo(mapaLeaflet);
+                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaLeaflet);
                 mapaLeaflet.on('movestart', () => { mapaFocado = true; });
                 mapaLeaflet.on('zoomstart', () => { mapaFocado = true; });
             } else {
@@ -7473,315 +7561,6 @@
             mapaFocado = false;
             setTimeout(() => { mapaLeaflet.invalidateSize(); window.carregarMapa(); }, 300);
         };
-
-        // 5. CORREÇÃO DA ESCALA AUTOMÁTICA (SEPARA 1ª VIAGEM, 2ª VIAGEM E APOIO)
-        window.obterDadosEscalaAutomática = async function (placaInformada, tipoServicoEscolhido = 'Saida dia') {
-            if (!window.dbMonitoramento || !placaInformada) return null;
-
-            try {
-                const placaClean = formatarPlaca(placaInformada);
-                const dataHoje = getLocalYMD(new Date());
-
-                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataHoje).get();
-                if (!docSnap.exists) return null;
-
-                const rotas = docSnap.data().rotas || [];
-
-                // Filtra TODAS as rotas dessa placa no dia (em vez de .find() que só pegava a primeira!)
-                let rotasDaPlaca = rotas.filter(r => {
-                    const trocaClean = formatarPlaca(r.troca || '');
-                    return trocaClean === placaClean && trocaClean !== '';
-                });
-
-                if (rotasDaPlaca.length === 0) {
-                    rotasDaPlaca = rotas.filter(r => {
-                        const pClean = formatarPlaca(r.placa || '');
-                        const trocaClean = (r.troca || '').trim();
-                        return pClean === placaClean && trocaClean === '';
-                    });
-                }
-
-                if (rotasDaPlaca.length === 0) return null;
-
-                const perfilDoCaminhao = (rotasDaPlaca[0].perfil || 'PADRÃO').toUpperCase();
-                const servicoNorm = (tipoServicoEscolhido || '').toLowerCase();
-
-                // REGRA 1: Se o motorista escolheu APOIO, mantém o perfil do veículo, mas NÃO clona a meta/rota da 1ª viagem
-                if (servicoNorm === 'apoio') {
-                    const rotaApoioEspecifica = rotasDaPlaca.find(r => (r.tipo || '').toLowerCase().includes('apoio'));
-                    if (rotaApoioEspecifica) {
-                        return {
-                            perfilVeiculo: (rotaApoioEspecifica.perfil || perfilDoCaminhao).toUpperCase(),
-                            rotaCidades: rotaApoioEspecifica.regiao || 'APOIO',
-                            metaKm: Number(rotaApoioEspecifica.km) || 0,
-                            tipoServico: 'Apoio'
-                        };
-                    }
-                    return {
-                        perfilVeiculo: perfilDoCaminhao,
-                        rotaCidades: 'APOIO OPERACIONAL',
-                        metaKm: 0,
-                        tipoServico: 'Apoio'
-                    };
-                }
-
-                // REGRA 2: Se o motorista escolheu SEGUNDA VIAGEM
-                if (servicoNorm.includes('segunda')) {
-                    // Procura se o planejador cadastrou uma 2ª linha para essa placa no painel_diario
-                    const segundaRotaEscala = rotasDaPlaca.find(r => (r.tipo || '').toLowerCase().includes('segunda') || (r.tipo || '').toLowerCase().includes('2')) || rotasDaPlaca[1];
-
-                    if (segundaRotaEscala) {
-                        return {
-                            perfilVeiculo: (segundaRotaEscala.perfil || perfilDoCaminhao).toUpperCase(),
-                            rotaCidades: segundaRotaEscala.regiao || 'SEGUNDA VIAGEM',
-                            metaKm: Number(segundaRotaEscala.km) || 0,
-                            tipoServico: 'Segunda viagem'
-                        };
-                    }
-
-                    // Se NÃO existe 2ª viagem cadastrada na escala, NÃO duplica a meta nem a rota da 1ª viagem!
-                    return {
-                        perfilVeiculo: perfilDoCaminhao,
-                        rotaCidades: 'SEGUNDA VIAGEM (EXTRA)',
-                        metaKm: 0,
-                        tipoServico: 'Segunda viagem'
-                    };
-                }
-
-                // REGRA 3: Primeira Viagem normal ("Saida dia") -> Pega a 1ª rota da escala
-                const primeiraRota = rotasDaPlaca[0];
-                return {
-                    perfilVeiculo: perfilDoCaminhao,
-                    rotaCidades: primeiraRota.regiao || 'N/D',
-                    metaKm: Number(primeiraRota.km) || 0,
-                    tipoServico: tipoServicoEscolhido // Respeita o select do motorista
-                };
-
-            } catch (e) {
-                console.warn("Erro ao buscar escala:", e);
-                return null;
-            }
-        };
-
-        // 6. ATUALIZA O INICIAR VIAGEM PARA PASSAR O TIPO DE SERVIÇO E NÃO SOBRESCREVER A 2ª VIAGEM
-        window.iniciarViagem = async function () {
-            const servicoEscolhido = document.getElementById('tipo-servico').value;
-            const motor = document.getElementById('motorista').value.trim();
-            const plac = document.getElementById('placa').value.trim();
-            const kmIni = document.getElementById('km-inicio').value;
-            const fotoIniStr = window.fotoInicioBase64 || localStorage.getItem('temp_foto_ini_b64');
-
-            if (!motor || !plac || !kmIni || !fotoIniStr) {
-                alert("Preencha todos os campos obrigatórios e tire a foto!");
-                return;
-            }
-
-            const placaFormatada = plac.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-            if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placaFormatada)) {
-                alert("Placa inválida! Digite no formato correto (Ex: ABC1234 ou ABC1D23).");
-                return;
-            }
-
-            const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
-            const headerText = document.querySelector('header')?.innerText || "";
-            const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
-            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V10.9";
-            const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
-
-            const loader = document.getElementById('main-loader');
-            const textoLoader = document.getElementById('texto-loader');
-            if (loader) {
-                loader.classList.remove('hidden');
-                loader.style.display = 'flex';
-                if (textoLoader) textoLoader.innerText = "Buscando satélite GPS...";
-            }
-
-            try {
-                let locIni = "";
-                try {
-                    locIni = await Promise.race([
-                        window.obterGpsSeguro(),
-                        new Promise(r => setTimeout(() => r(""), 6000))
-                    ]);
-                } catch (e) {}
-
-                if (textoLoader) textoLoader.innerText = "Sincronizando escala de hoje...";
-                let metaExtraida = 0, perfilExtraido = "PADRÃO", rotaExtraida = "N/D";
-                const isPrimeiraViagem = (servicoEscolhido === 'Saida dia');
-
-                if (navigator.onLine && typeof window.obterDadosEscalaAutomática === 'function') {
-                    try {
-                        const dadosAuto = await Promise.race([
-                            window.obterDadosEscalaAutomática(placaFormatada, servicoEscolhido),
-                            new Promise(r => setTimeout(() => r(null), 4000))
-                        ]);
-                        if (dadosAuto) {
-                            metaExtraida = dadosAuto.metaKm || 0;
-                            perfilExtraido = dadosAuto.perfilVeiculo || "PADRÃO";
-                            rotaExtraida = dadosAuto.rotaCidades || "N/D";
-                        }
-                    } catch (e) {}
-                }
-
-                // Fallback do escala_standby: Só puxa a meta/rota do standby se for a 1ª viagem ("Saida dia")!
-                // Se for 2ª viagem ou Apoio, puxa APENAS o perfil do caminhão para não clonar a 1ª viagem.
-                if (rotaExtraida === "N/D" && navigator.onLine) {
-                    const dataHojeStr = getLocalYMD(new Date());
-                    try {
-                        const escalaDoc = await Promise.race([
-                            db.collection('escala_standby').doc(`${placaFormatada}_${dataHojeStr}`).get(),
-                            new Promise(r => setTimeout(() => r(null), 3500))
-                        ]);
-                        if (escalaDoc && escalaDoc.exists) {
-                            const dEsc = escalaDoc.data();
-                            perfilExtraido = dEsc.perfilVeiculo || perfilExtraido;
-                            if (isPrimeiraViagem) {
-                                metaExtraida = dEsc.metaKm || metaExtraida;
-                                rotaExtraida = dEsc.rotaCidades || rotaExtraida;
-                            } else {
-                                metaExtraida = 0;
-                                rotaExtraida = servicoEscolhido.toUpperCase();
-                            }
-                        }
-                    } catch (e) {}
-                }
-
-                if (textoLoader) textoLoader.innerText = "Registrando viagem...";
-
-                const docRef = db.collection('viagens').doc();
-                const idViagemGerado = docRef.id;
-                const agoraIso = new Date().toISOString();
-                const agoraMs = Date.now();
-
-                const novaViagem = {
-                    id: idViagemGerado,
-                    tipoServico: servicoEscolhido, // Mantém fielmente o que o motorista selecionou!
-                    nome: motor.toUpperCase(),
-                    placa: placaFormatada,
-                    kmInicio: Number(kmIni),
-                    fotoInicio: fotoIniStr,
-                    locInicio: locIni || "",
-                    locAtual: locIni || "",
-                    rotaReal: locIni ? [`${locIni},${agoraMs}`] : [],
-                    ultimaAtualizacaoMs: locIni ? agoraMs : null,
-                    status: 'em_curso',
-                    origem: origemIdentificada,
-                    metaKm: metaExtraida,
-                    perfilVeiculo: perfilExtraido,
-                    rotaCidades: rotaExtraida,
-                    dataInicioCelular: agoraIso,
-                    dataInicio: agoraIso
-                };
-
-                try {
-                    if (!navigator.onLine) throw new Error("Offline");
-                    await Promise.race([
-                        docRef.set({
-                            ...novaViagem,
-                            dataInicio: firebase.firestore.FieldValue.serverTimestamp()
-                        }, { merge: true }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
-                    ]);
-                } catch (erroRede) {
-                    let filaIni = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
-                    filaIni = filaIni.filter(item => (item.id || item.idLocal) !== idViagemGerado);
-                    filaIni.push(novaViagem);
-                    localStorage.setItem('icaphi_pendencias_ini', JSON.stringify(filaIni));
-                    window.verificarPendenciasOffline();
-                }
-
-                localStorage.setItem('v_id', idViagemGerado);
-                window.viagemAtualId = idViagemGerado;
-                localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
-                localStorage.setItem('hora_inicio_viagem', agoraMs.toString());
-
-                window.resetarFormularios();
-                window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
-                window.iniciarRastreioContinuo(idViagemGerado);
-                window.monitorarViagemUnicaDb(idViagemGerado);
-
-            } catch (erro) {
-                console.error("Erro ao iniciar viagem:", erro);
-                alert("Erro ao iniciar viagem. Tente novamente.");
-            } finally {
-                if (loader) { loader.classList.add('hidden'); loader.style.display = ''; }
-            }
-        };
-
-        // 7. PROTEGE SEGUNDAS VIAGENS QUANDO O ADMIN CLICA EM "BUSCAR ESCALA FIREBASE"
-        const _sincronizarEscalaOriginal = window.sincronizarEscalaDoFirebase;
-        window.sincronizarEscalaDoFirebase = async function () {
-            const inputFiltro = document.getElementById('filtro-data-ini');
-            const dataAlvo = inputFiltro ? inputFiltro.value : '';
-            if (!dataAlvo || !window.dbMonitoramento) return _sincronizarEscalaOriginal();
-
-            try {
-                document.body.style.cursor = 'wait';
-                const docSnap = await window.dbMonitoramento.collection('painel_diario').doc(dataAlvo).get();
-                if (!docSnap.exists) return alert(`Nenhuma escala encontrada para ${dataAlvo}.`);
-
-                const listaRotas = docSnap.data().rotas || [];
-                if (listaRotas.length === 0) return alert(`Escala vazia para ${dataAlvo}.`);
-
-                const batch = db.batch();
-                let totalImportados = 0;
-
-                listaRotas.forEach(item => {
-                    const trocaStr = (item.troca || '').trim();
-                    const placaEfetiva = trocaStr !== '' ? trocaStr : item.placa;
-                    if (!placaEfetiva) return;
-
-                    const placaClean = formatarPlaca(placaEfetiva);
-                    const idStandby = `${placaClean}_${dataAlvo}`;
-
-                    const objetoEscala = {
-                        placa: placaClean,
-                        perfilVeiculo: (item.perfil || 'PADRÃO').toUpperCase(),
-                        rotaCidades: item.regiao || '',
-                        metaKm: Number(item.km) || 0,
-                        nome: item.motorista || '',
-                        tipoServico: item.tipo || 'Saida dia',
-                        atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    batch.set(db.collection('escala_standby').doc(idStandby), objetoEscala, { merge: true });
-
-                    // ATUALIZA APENAS A 1ª VIAGEM ("Saida dia") DA PLACA, SEM ESTRAGAR "Segunda viagem" OU "Apoio"!
-                    const viagensDaPlacaNoDia = todasViagens.filter(v => {
-                        if (v.placa !== placaClean) return false;
-                        const dObj = safeDate(v.dataInicio);
-                        return dObj && getLocalYMD(dObj) === dataAlvo;
-                    });
-
-                    viagensDaPlacaNoDia.forEach(viagem => {
-                        const tp = (viagem.tipoServico || '').toLowerCase();
-                        const refViagem = db.collection('viagens').doc(viagem.id);
-                        if (tp.includes('segunda') || tp.includes('apoio')) {
-                            // Em 2ª viagem ou apoio, sincroniza apenas o perfil do caminhão
-                            batch.update(refViagem, { perfilVeiculo: objetoEscala.perfilVeiculo });
-                        } else {
-                            // Na 1ª viagem ("Saida dia"), sincroniza rota e meta completas
-                            batch.update(refViagem, {
-                                perfilVeiculo: objetoEscala.perfilVeiculo,
-                                rotaCidades: objetoEscala.rotaCidades,
-                                metaKm: objetoEscala.metaKm
-                            });
-                        }
-                    });
-
-                    totalImportados++;
-                });
-
-                await batch.commit();
-                alert(`Sucesso! ${totalImportados} escalas sincronizadas (preservando Segundas Viagens e Apoios).`);
-                renderizarAdmin();
-            } catch (e) {
-                alert("Erro ao sincronizar escala: " + e.message);
-            } finally {
-                document.body.style.cursor = 'default';
-            }
-        };
-
     </script>
 
 </body>
