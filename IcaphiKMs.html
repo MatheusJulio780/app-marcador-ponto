@@ -765,31 +765,25 @@
             </div>
 
             <div class="flex gap-1.5">
-                <button onclick="toggleTheme()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 
-           hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95
-           transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
+                <button onclick="toggleTheme()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95 transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
                     <i data-lucide="moon" class="dark:hidden w-4 h-4 transition-transform group-hover:rotate-12"></i>
                     <i data-lucide="sun"
                         class="hidden dark:block w-4 h-4 text-yellow-400 transition-transform group-hover:rotate-45"></i>
                 </button>
 
-                <button onclick="abrirLoginExtrato()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 
-           hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95
-           transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
+                <button onclick="abrirLoginExtrato()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95 transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
                     <i data-lucide="receipt" class="w-4 h-4 transition-transform group-hover:-translate-y-0.5"></i>
                 </button>
 
-                <button onclick="verNotificacoesDriver()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 
-           hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95
-           transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
+                <button onclick="verNotificacoesDriver()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95 transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
                     <i data-lucide="bell" class="w-4 h-4 transition-transform group-hover:animate-bounce"></i>
                     <span id="bell-dot-driver"
                         class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#121214] rounded-full hidden"></span>
                 </button>
 
                 <button onclick="acessoAdmin()" class="p-3 rounded-xl bg-white/50 dark:bg-black/20 text-gray-600 dark:text-zinc-300 
-           hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95
-           transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
+                    hover:bg-teal-500 hover:text-white hover:scale-110 hover:shadow-lg active:scale-95
+                    transition-all duration-300 border border-white/50 dark:border-white/5 relative group">
                     <i data-lucide="settings" class="w-4 h-4 transition-transform group-hover:rotate-90"></i>
                 </button>
             </div>
@@ -7561,6 +7555,262 @@
             mapaFocado = false;
             setTimeout(() => { mapaLeaflet.invalidateSize(); window.carregarMapa(); }, 300);
         };
+
+        // =========================================================================
+        // PATCH V13: CORTE DE ESCRITA DUPLICADA NO APK + EXTRATO HISTÓRICO COMPLETO
+        // =========================================================================
+
+        // 1. CORTA GRAVAÇÕES DUPLICADAS DO WEBVIEW QUANDO ESTIVER RODANDO NO APK
+        // (Deixa a gravação no Firestore exclusivamente para o TrackingService.java)
+        window.iniciarRastreioContinuo = function (idViagem) {
+            const idAtivo = idViagem || window.viagemAtualId || localStorage.getItem('v_id');
+            if (!idAtivo) return;
+
+            window.pararRastreioContinuo(false);
+
+            const estaNoApk = (window.AndroidInterface && typeof window.AndroidInterface.startTracking === 'function');
+
+            // Se está no APK, o TrackingService.java já grava direto no Firestore.
+            // Não inicia watchPosition/setInterval duplicados no JS para economizar cota.
+            if (estaNoApk) {
+                try {
+                    window.AndroidInterface.startTracking(idAtivo);
+                } catch (e) {
+                    console.error("Erro ao iniciar TrackingService Android:", e);
+                }
+                return;
+            }
+
+            // Fallback apenas para motoristas usando navegador Web (fora do APK)
+            if (!navigator.geolocation) return;
+
+            const enviarPontoWeb = (lat, lng) => {
+                const agora = Date.now();
+                // Envia a cada 30 segundos na Web (reduz consumo de cota sem perder trajeto)
+                if (window.ultimoTempoEnviado && (agora - window.ultimoTempoEnviado < 30000)) return;
+
+                const loc = `${lat},${lng}`;
+                const locComTempo = `${lat},${lng},${agora}`;
+                window.ultimaLocEnviada = loc;
+                window.ultimoTempoEnviado = agora;
+                localStorage.setItem('icaphi_last_loc', loc);
+
+                db.collection('viagens').doc(idAtivo).set({
+                    locAtual: loc,
+                    latitude: lat,
+                    longitude: lng,
+                    ultimaAtualizacaoMs: agora,
+                    ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp(),
+                    rotaReal: firebase.firestore.FieldValue.arrayUnion(locComTempo)
+                }, { merge: true }).catch(() => {});
+            };
+
+            watchIdRastreio = navigator.geolocation.watchPosition(
+                (pos) => enviarPontoWeb(pos.coords.latitude, pos.coords.longitude),
+                (err) => console.warn("Aviso GPS Web:", err.message),
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+            );
+        };
+
+        // 2. EXTRATO DO MOTORISTA COM BUSCA DE HISTÓRICO COMPLETO NO FIREBASE
+        window.placaExtratoAtual = '';
+        window.extratoHistoricoCarregado = false;
+        window.buscandoExtratoServidor = false;
+
+        window.acessarExtrato = async function () {
+            const p = formatarPlaca(el('login-placa').value);
+            const s = el('login-senha').value;
+            if (!p || !s) return alert("Preencha todos os campos.");
+
+            el('main-loader').classList.remove('hidden');
+            el('main-loader').style.display = 'flex';
+
+            try {
+                const docSenha = await db.collection('senhas').doc(p).get();
+
+                if (!docSenha.exists || docSenha.data().senha !== s) {
+                    el('main-loader').classList.add('hidden');
+                    el('main-loader').style.display = '';
+                    return alert("Senha incorreta ou não cadastrada para esta placa!");
+                }
+
+                // Se trocou de placa, reseta a trava de histórico completo
+                if (window.placaExtratoAtual !== p) {
+                    window.extratoHistoricoCarregado = false;
+                }
+                window.placaExtratoAtual = p;
+
+                // Carrega instantaneamente os últimos 30 dias já presentes em memória
+                dadosExtrato = todasViagens.filter(v => v.placa === p).sort((a, b) => {
+                    const timeA = (safeDate(a.dataInicio) || safeDate(a.dataInicioCelular))?.getTime() || 0;
+                    const timeB = (safeDate(b.dataInicio) || safeDate(b.dataInicioCelular))?.getTime() || 0;
+                    return timeB - timeA;
+                });
+
+                el('extrato-ini').value = '';
+                el('extrato-fim').value = '';
+                el('modal-login-extrato').classList.remove('active');
+                el('modal-view-extrato').classList.add('active');
+
+                window.renderizarExtrato();
+            } catch (e) {
+                console.error("Erro no login do extrato:", e);
+                alert("Erro ao validar senha no servidor.");
+            } finally {
+                el('main-loader').classList.add('hidden');
+                el('main-loader').style.display = '';
+            }
+        };
+
+        // Busca TODO o histórico da placa logada direto no Firestore (sem precisar de índice composto)
+        window.buscarHistoricoExtratoServidor = async function () {
+            if (!window.placaExtratoAtual || window.buscandoExtratoServidor) return;
+
+            window.buscandoExtratoServidor = true;
+            const cont = el('conteudo-extrato');
+            if (cont) {
+                cont.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-teal-600"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2"></i><p class="text-xs font-black uppercase tracking-widest">Buscando histórico completo da placa ${window.placaExtratoAtual}...</p></div>`;
+                if (window.lucide) lucide.createIcons();
+            }
+
+            try {
+                // Consulta simples por 'placa' usa índice automático do Firestore e traz até viagens muito antigas
+                const snapshot = await db.collection('viagens')
+                    .where('placa', '==', window.placaExtratoAtual)
+                    .get();
+
+                const mapaUnico = new Map();
+                dadosExtrato.forEach(v => mapaUnico.set(v.id, v));
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    d.id = doc.id;
+                    mapaUnico.set(doc.id, d);
+                });
+
+                dadosExtrato = Array.from(mapaUnico.values()).sort((a, b) => {
+                    const timeA = (safeDate(a.dataInicio) || safeDate(a.dataInicioCelular))?.getTime() || 0;
+                    const timeB = (safeDate(b.dataInicio) || safeDate(b.dataInicioCelular))?.getTime() || 0;
+                    return timeB - timeA;
+                });
+
+                window.extratoHistoricoCarregado = true;
+            } catch (e) {
+                console.error("Erro ao buscar histórico completo do extrato:", e);
+                alert("Não foi possível carregar viagens mais antigas. Verifique sua internet.");
+            } finally {
+                window.buscandoExtratoServidor = false;
+                window.renderizarExtrato(true);
+            }
+        };
+
+        window.renderizarExtrato = function (evitarAutoBusca = false) {
+            const cont = el('conteudo-extrato');
+            if (!cont) return;
+
+            const ini = el('extrato-ini').value;
+            const fim = el('extrato-fim').value;
+
+            // Se o motorista digitou uma data anterior aos últimos 30 dias e ainda não puxamos do servidor, busca automaticamente!
+            if (!evitarAutoBusca && ini && !window.extratoHistoricoCarregado && !window.buscandoExtratoServidor) {
+                const limite30 = new Date();
+                limite30.setDate(limite30.getDate() - 29);
+                const limiteStr = getLocalYMD(limite30);
+                if (ini < limiteStr) {
+                    window.buscarHistoricoExtratoServidor();
+                    return;
+                }
+            }
+
+            const filtrados = dadosExtrato.filter(v => {
+                const d = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                if (!d) return false;
+                const dStr = getLocalYMD(d);
+                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
+            });
+
+            const botaoMaisAntigas = !window.extratoHistoricoCarregado
+                ? `<button onclick="window.buscarHistoricoExtratoServidor()" class="w-full mt-4 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-md transition">
+                        <i data-lucide="history" class="w-4 h-4"></i> CARREGAR VIAGENS MAIS ANTIGAS (+30 DIAS)
+                   </button>`
+                : `<p class="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-4 pb-2">Todo o histórico desta placa foi carregado (${dadosExtrato.length} viagens)</p>`;
+
+            if (filtrados.length === 0) {
+                cont.innerHTML = `<div class="text-center py-10 px-4">
+                    <p class="text-gray-500 font-bold mb-4">Nenhum registro encontrado neste período.</p>
+                    ${botaoMaisAntigas}
+                </div>`;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            cont.innerHTML = '<div class="extrato-list flex flex-col gap-4">' + filtrados.map(v => {
+                const kmT = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
+                const meta = Math.round(v.metaKm || 0);
+                const diff = kmT - meta;
+                const dIni = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                const isE = v.status === 'em_curso';
+                const stColor = isE ? '#f59e0b' : (v.status === 'cancelada' ? '#ef4444' : '#10b981');
+
+                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="flex-1 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-teal-200 transition"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`;
+                const btnFotoI = v.fotoInicio ? `<button onclick="window.verFoto('${v.fotoInicio}')" class="flex-1 py-2 bg-gray-100 dark:bg-[#2d2d36] text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-teal-500"></i> FOTO INI</button>` : '';
+                const btnFotoF = v.fotoFim ? `<button onclick="window.verFoto('${v.fotoFim}')" class="flex-1 py-2 bg-gray-100 dark:bg-[#2d2d36] text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-teal-500"></i> FOTO FIM</button>` : '';
+                const btnRecuperar = isE ? `<button onclick="window.recuperarViagemCard('${v.id}')" class="w-full mt-3 py-3 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-orange-500/30 tracking-widest uppercase"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> RECUPERAR ESTA VIAGEM</button>` : '';
+
+                return `
+                <div class="extrato-item bg-white dark:bg-[#1e1e24] border border-gray-200 dark:border-[#2d2d36] rounded-2xl p-5 shadow-sm border-l-[6px]" style="border-left-color: ${stColor}">
+                    <div class="flex justify-between items-start mb-3">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">DATA / HORA</span><br><span class="text-sm font-black dark:text-zinc-100">${fmtData(dIni)} às ${fmtHora(dIni)}</span></div>
+                        <span class="text-[10px] font-black px-2.5 py-1 rounded-lg text-white tracking-widest" style="background:${stColor};">${(v.status || 'N/D').toUpperCase()}</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">ROTA</span><br>
+                        <span class="text-xs text-gray-700 dark:text-zinc-300 font-bold">${v.rotaCidades || 'N/D'}</span>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2 bg-gray-50 dark:bg-[#121214] p-3 rounded-xl border border-gray-100 dark:border-[#2d2d36] text-center">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">META</span><span class="text-xs font-black text-teal-600">${meta}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM INI</span><span class="text-xs font-black dark:text-zinc-100">${Math.round(v.kmInicio || 0)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM FIM</span><span class="text-xs font-black dark:text-zinc-100">${isE ? '-' : Math.round(v.kmFim || 0)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">TOTAL</span><span class="text-xs font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : kmT}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">DISP</span><span class="text-xs font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : (diff > 0 ? '+' + diff : diff)}</span></div>
+                    </div>
+                    <div class="flex gap-2 justify-between mt-3">
+                        ${btnShare}
+                        ${btnFotoI}
+                        ${btnFotoF}
+                    </div>
+                    ${btnRecuperar}
+                </div>`;
+            }).join('') + '</div>' + botaoMaisAntigas;
+
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.exportarExtratoPessoal = function () {
+            const ini = el('extrato-ini').value;
+            const fim = el('extrato-fim').value;
+            const filtrados = dadosExtrato.filter(v => {
+                const d = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                if (!d) return false;
+                const dStr = getLocalYMD(d);
+                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
+            });
+            if (filtrados.length === 0) return alert("Nenhuma viagem carregada neste filtro para exportar.");
+
+            const dadosExcel = filtrados.map(v => ({
+                "Data": fmtData(safeDate(v.dataInicio) || safeDate(v.dataInicioCelular)),
+                "Placa": v.placa,
+                "KM Inicio": Math.round(v.kmInicio || 0),
+                "KM Fim": Math.round(v.kmFim || 0),
+                "Total KM": Math.round((v.kmFim || 0) - (v.kmInicio || 0)),
+                "Meta": Math.round(v.metaKm || 0)
+            }));
+            const ws = XLSX.utils.json_to_sheet(dadosExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Extrato");
+            const nomeArquivo = `Extrato_${filtrados[0].placa}_${ini || 'todos'}_${fim || 'hoje'}.xlsx`;
+            XLSX.writeFile(wb, nomeArquivo);
+        };
+        
     </script>
 
 </body>
