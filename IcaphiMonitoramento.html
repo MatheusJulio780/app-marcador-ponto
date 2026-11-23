@@ -4679,7 +4679,7 @@
                 <div class="header-left">
                     <div class="header-icon-box"><i class="ph-bold ph-chart-bar"></i></div>
                     <div class="header-title-wrap">
-                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.5</span></h2>
+                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.6</span></h2>
                         <span class="header-subtitle">Acompanhamento de rotas e entregas em tempo real</span>
                     </div>
                 </div>
@@ -5319,6 +5319,11 @@
                             style="flex:1; padding:12px; min-width: 200px;">
                             <i class="ph ph-file-xls"></i> Exportar Dados (Excel)
                         </button>
+                        <button class="btn btn-danger" id="btn-gerar-canhoto-faltando"
+                            onclick="window.abrirModalCanhotoFaltando()"
+                            style="flex:1; padding:12px; min-width: 200px;">
+                            <i class="ph ph-file-x"></i> Canhoto Faltando
+                        </button>
                     </div>
                     <!-- ================= TABELA DE RESUMO DA VIAGEM SELECIONADA ================= -->
                     <div id="resumo-rota-container" style="display: none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-color);">
@@ -5755,20 +5760,33 @@
             <div id="comp-main-content" style="display: none; height: 100%; overflow-y: auto;">
                 <header class="header">
                     <div class="header-left">
-                        <div class="header-icon-box"><i class="ph-bold ph-wrench"></i></div>
+                        <div class="header-icon-box warning"><i class="ph-bold ph-receipt"></i></div>
                         <div class="header-title-wrap">
-                            <h2>Montar Painel Diário</h2>
-                            <span class="header-subtitle">Importação, conferência e edição de rotas</span>
+                            <h2>Gestão de Complementos</h2>
+                            <span class="header-subtitle">Controle de pedágios, descargas, ajudantes e depósitos</span>
                         </div>
                     </div>
                     <div class="header-right">
+                        <div class="header-pill-info" style="gap: 8px;">
+                            <span style="color: var(--text-muted); font-size: 10px;">SALDO:</span>
+                            <span id="comp-saldo-display" style="font-size: 14px; font-weight: 900; color: var(--text-main);">R$ 0.00</span>
+                        </div>
                         <div class="header-controls">
-                            <input type="text" id="filtro-editor-painel" placeholder="Filtrar placa, motorista..." style="width: 190px;">
-                            <button onclick="abrirModalConferencia()" class="btn btn-warning" style="font-weight: 700;">
-                                <i class="ph ph-check-square-offset"></i> Conferir
+                            <div class="header-date-group">
+                                <input type="month" id="comp-month-select">
+                                <button class="btn btn-primary" id="btn-carregar-complementos"><i class="ph-bold ph-funnel"></i> Filtrar</button>
+                            </div>
+                            <button onclick="window.abrirModalExtrato()" class="btn btn-secondary" title="Gerar Extrato PDF">
+                                <i class="ph-bold ph-file-pdf" style="color: var(--danger);"></i> Extrato
                             </button>
-                            <button class="btn btn-danger" onclick="window.abrirModalExcluirPeriodo('painel')">
-                                <i class="ph ph-trash"></i> Excluir Período
+                            <button class="btn btn-secondary" onclick="window.abrirModalLixeira()" title="Lixeira">
+                                <i class="ph-bold ph-trash"></i> Lixeira
+                            </button>
+                            <button class="btn btn-warning" onclick="window.abrirModalDeposito()" style="font-weight: 800;">
+                                <i class="ph-bold ph-bank"></i> + Depósito
+                            </button>
+                            <button class="btn btn-success" onclick="window.abrirModalNovoComplemento()" style="font-weight: 800;">
+                                <i class="ph-bold ph-plus"></i> Novo
                             </button>
                         </div>
                         <div class="header-divider"></div>
@@ -5781,7 +5799,6 @@
                         </div>
                     </div>
                 </header>
-
                 <div class="content-container" style="padding: 20px;">
                     <div id="complementos-kpis" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
                         <!-- KPIs gerados via JS -->
@@ -6164,36 +6181,28 @@
 
         <!-- ================= SECTION SMARTPHONES (REFINADA E PADRONIZADA) ================= -->
         <section id="view-smartphones" class="view-section">
-            <!-- GESTÃO DE COMPLEMENTOS -->
             <header class="header">
                 <div class="header-left">
-                    <div class="header-icon-box warning"><i class="ph-bold ph-receipt"></i></div>
+                    <div class="header-icon-box"><i class="ph-bold ph-device-mobile"></i></div>
                     <div class="header-title-wrap">
-                        <h2>Gestão de Complementos</h2>
-                        <span class="header-subtitle">Controle de pedágios, descargas, ajudantes e depósitos</span>
+                        <h2>Smartphones & Chips</h2>
+                        <span class="header-subtitle">Controle patrimonial, linhas e termos de comodato</span>
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="header-pill-info" style="gap: 8px;">
-                        <span style="color: var(--text-muted); font-size: 10px;">SALDO:</span>
-                        <span id="comp-saldo-display" style="font-size: 14px; font-weight: 900; color: var(--text-main);">R$ 0.00</span>
-                    </div>
                     <div class="header-controls">
-                        <div class="header-date-group">
-                            <input type="month" id="comp-month-select">
-                            <button class="btn btn-primary" id="btn-carregar-complementos"><i class="ph-bold ph-funnel"></i> Filtrar</button>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; color: var(--text-muted); font-size: 13px;"></i>
+                            <input type="text" id="sp-busca-rapida" placeholder="Buscar patrimônio, motorista, chip..." oninput="window.filtrarSmartphonesBuscaRapida()" style="padding-left: 30px !important; width: 230px;">
                         </div>
-                        <button onclick="window.abrirModalExtrato()" class="btn btn-secondary" title="Gerar Extrato PDF">
-                            <i class="ph-bold ph-file-pdf" style="color: var(--danger);"></i> Extrato
+                        <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-smartphones" onclick="document.getElementById('sp-busca-rapida').value=''; window.filtrarSmartphonesBuscaRapida();">
+                            <i class="ph ph-funnel-x"></i> Limpar
                         </button>
-                        <button class="btn btn-secondary" onclick="window.abrirModalLixeira()" title="Lixeira">
-                            <i class="ph-bold ph-trash"></i> Lixeira
+                        <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary">
+                            <i class="ph ph-sim-card"></i> Chips
                         </button>
-                        <button class="btn btn-warning" onclick="window.abrirModalDeposito()" style="font-weight: 800;">
-                            <i class="ph-bold ph-bank"></i> + Depósito
-                        </button>
-                        <button class="btn btn-success" onclick="window.abrirModalNovoComplemento()" style="font-weight: 800;">
-                            <i class="ph-bold ph-plus"></i> Novo
+                        <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary">
+                            <i class="ph ph-plus-circle"></i> Novo Aparelho
                         </button>
                     </div>
                     <div class="header-divider"></div>
@@ -8306,36 +8315,82 @@
         </button>
     </div>
 
+    <!-- ================= MODAL: SELEÇÃO DE CANHOTOS FALTANTES (FOR-COR-0116) ================= -->
+    <div class="modal-overlay" id="modal-canhoto-faltando">
+        <div class="modal-content" style="width: 620px; max-width: 95%;">
+            <div class="modal-header">
+                <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
+                    <i class="ph-bold ph-file-x" style="color: var(--danger);"></i>
+                    Selecionar Canhotos Faltantes
+                    <span id="cf-placa-badge" style="font-size: 12px; color: var(--accent); font-weight: 800;"></span>
+                </h3>
+                <button class="btn-close" onclick="document.getElementById('modal-canhoto-faltando').classList.remove('active')">×</button>
+            </div>
+
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Barra de busca e ações rápidas -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div style="position: relative; flex: 1;">
+                        <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+                        <input type="text" id="cf-busca-nf" placeholder="Filtrar por NF, cliente ou transporte..."
+                            oninput="window.filtrarListaCanhotoFaltando()"
+                            style="width: 100%; padding: 8px 10px 8px 30px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 12px;">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="window.toggleTodosCanhotosFaltantes(true)" style="font-size: 11px; padding: 7px 10px;">
+                        Marcar Todas
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="window.toggleTodosCanhotosFaltantes(false)" style="font-size: 11px; padding: 7px 10px;">
+                        Desmarcar
+                    </button>
+                </div>
+
+                <!-- Lista de NFs da viagem selecionada -->
+                <div id="lista-selecao-canhotos"
+                    style="max-height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main); padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <!-- Renderizado via JS -->
+                </div>
+
+                <!-- Rodapé com contador e botão de gerar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                    <span id="cf-contador-selecionadas" style="font-size: 12px; font-weight: 800; color: var(--text-muted);">
+                        0 nota(s) selecionada(s)
+                    </span>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="document.getElementById('modal-canhoto-faltando').classList.remove('active')">Cancelar</button>
+                        <button class="btn btn-danger" onclick="window.gerarPDFCanhotosFaltantes()">
+                            <i class="ph-bold ph-file-pdf"></i> Gerar Termos PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= SEÇÃO DE PALLETS ================= -->
     <section id="view-pallets" class="view-section" style="display: none;">
-        <!-- SMARTPHONES -->
         <header class="header">
             <div class="header-left">
-                <div class="header-icon-box"><i class="ph-bold ph-device-mobile"></i></div>
+                <div class="header-icon-box"><i class="ph-bold ph-stack"></i></div>
                 <div class="header-title-wrap">
-                    <h2>Smartphones & Chips</h2>
-                    <span class="header-subtitle">Controle patrimonial, linhas e termos de comodato</span>
+                    <h2>Gestão de Pallets</h2>
+                    <span class="header-subtitle">Controle de vales e movimentação na operação</span>
                 </div>
             </div>
             <div class="header-right">
                 <div class="header-controls">
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; color: var(--text-muted); font-size: 13px;"></i>
-                        <input type="text" id="sp-busca-rapida" placeholder="Buscar patrimônio, motorista, chip..." oninput="window.filtrarSmartphonesBuscaRapida()" style="padding-left: 30px !important; width: 230px;">
+                    <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-pallets">
+                        <i class="ph ph-funnel-x"></i> Limpar Filtros
+                    </button>
+                    <div class="header-date-group">
+                        <input type="month" id="pallets-month-select">
+                        <button class="btn btn-primary" id="btn-carregar-pallets">
+                            <i class="ph ph-funnel"></i> Filtrar
+                        </button>
                     </div>
-                    <button class="btn btn-danger btn-limpar-filtros" data-tabela="tabela-smartphones" onclick="document.getElementById('sp-busca-rapida').value=''; window.filtrarSmartphonesBuscaRapida();">
-                        <i class="ph ph-funnel-x"></i> Limpar
-                    </button>
-                    <button onclick="window.abrirModal('modal-cadastrar-chip')" class="btn btn-secondary">
-                        <i class="ph ph-sim-card"></i> Chips
-                    </button>
-                    <button onclick="window.abrirModal('modal-add-smartphone')" class="btn btn-primary">
-                        <i class="ph ph-plus-circle"></i> Novo Aparelho
-                    </button>
                 </div>
                 <div class="header-divider"></div>
                 <div class="header-user-zone">
-                    <div class="online-users-stack avatar-stack" title="Usuários Online"></div>
+                    <div id="online-users-stack-pallets" class="online-users-stack avatar-stack" title="Usuários Online"></div>
                     <div class="current-user-profile user-profile-btn">
                         <img class="header-user-foto" src="" alt="Perfil">
                         <span class="header-user-nome">Carregando...</span>
@@ -8343,7 +8398,6 @@
                 </div>
             </div>
         </header>
-
         <div class="content-container" style="padding: 20px;">
             <!-- CARDS DE RESUMO SUPERIOR (5 COLUNAS) -->
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
@@ -25636,6 +25690,241 @@ document.querySelectorAll('tbody').forEach(tbody => {
             }
 
             XLSX.writeFile(wb, `Prestacao_Contas_${inputMes}_${labelQ}.xlsx`);
+        };
+
+        // ================= 3. TERMO DE RESPONSABILIDADE - CANHOTO FALTANDO (SELEÇÃO POR VIAGEM) =================
+        window._notasDisponiveisCanhotoFaltando = [];
+
+        window.abrirModalCanhotoFaltando = () => {
+            const placaSel = document.getElementById('pc-placa')?.value || '';
+            if (!placaSel) {
+                return alert("Selecione a Data e o Veículo na Prestação de Contas primeiro.");
+            }
+
+            const placaSelLimpa = placaSel.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const selectViagemElem = document.querySelector('#container-seletor-viagem select');
+            const viagemSelecionada = (selectViagemElem && document.getElementById('container-seletor-viagem')?.style.display !== 'none')
+                ? selectViagemElem.value
+                : '';
+
+            const todasNotas = window.pcNotasCache || [];
+            if (todasNotas.length === 0) {
+                return alert("Clique em 'Carregar Veículos' para carregar as notas desta data primeiro.");
+            }
+
+            // Filtra exatamente as notas da placa e viagem selecionadas na tela
+            let notasViagem = todasNotas.filter(n => {
+                if (trimUpper(n.status) === 'NÃO EMBARCADA') return false;
+                const pNota = String(n.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (pNota !== placaSelLimpa) return false;
+
+                if (viagemSelecionada && viagemSelecionada !== '' && viagemSelecionada !== 'Geral') {
+                    const transpArray = viagemSelecionada.match(/\d+/g) || [];
+                    const viagemNota = String(n.viagem || n.transporte || '').trim();
+                    if (transpArray.length > 0 && viagemNota !== '') {
+                        return transpArray.some(t => viagemNota.includes(t));
+                    }
+                }
+                return true;
+            });
+
+            if (notasViagem.length === 0) {
+                return alert("Nenhuma nota fiscal encontrada para este veículo/viagem.");
+            }
+
+            // Ordena por número da NF
+            notasViagem.sort((a, b) => parseInt(cleanNF(a.nf) || 0) - parseInt(cleanNF(b.nf) || 0));
+            window._notasDisponiveisCanhotoFaltando = notasViagem;
+
+            const badge = document.getElementById('cf-placa-badge');
+            if (badge) badge.innerText = `(${placaSel}${viagemSelecionada ? ` • Transp: ${viagemSelecionada}` : ''})`;
+
+            const inputBusca = document.getElementById('cf-busca-nf');
+            if (inputBusca) inputBusca.value = '';
+
+            const containerLista = document.getElementById('lista-selecao-canhotos');
+            containerLista.innerHTML = notasViagem.map((n, idx) => {
+                const nfStr = cleanNF(n.nf);
+                const transpStr = String(n.viagem || n.transporte || '').trim();
+                const clienteStr = n.cliente || 'CLIENTE NÃO INFORMADO';
+                const appStr = trimUpper(n.app || '');
+                const semAnexo = appStr === '';
+
+                const badgeApp = semAnexo
+                    ? `<span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(239,68,68,0.15); color:var(--danger);">SEM ANEXO</span>`
+                    : `<span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.15); color:var(--success);">${appStr}</span>`;
+
+                return `
+                    <label class="cf-item-row" data-search="${nfStr} ${transpStr} ${clienteStr}".toLowerCase()
+                        style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-panel); cursor:pointer; transition:0.15s;">
+                        <input type="checkbox" class="chk-canhoto-faltante" value="${idx}" onchange="window.atualizarContadorCanhotos()" style="width:16px; height:16px; cursor:pointer; accent-color:var(--danger);">
+                        <div style="min-width:75px; font-weight:800; font-size:12.5px; color:var(--accent); font-family:monospace;">${nfStr}</div>
+                        <div style="min-width:85px; font-size:11px; font-weight:700; color:var(--text-muted);">
+                            <i class="ph-fill ph-truck"></i> ${transpStr || 'S/ Transp.'}
+                        </div>
+                        <div style="flex:1; font-size:11.5px; font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${clienteStr}">
+                            ${clienteStr}
+                        </div>
+                        ${badgeApp}
+                    </label>
+                `;
+            }).join('');
+
+            window.atualizarContadorCanhotos();
+            document.getElementById('modal-canhoto-faltando')?.classList.add('active');
+        };
+
+        window.filtrarListaCanhotoFaltando = () => {
+            const termo = (document.getElementById('cf-busca-nf')?.value || '').toLowerCase().trim();
+            document.querySelectorAll('#lista-selecao-canhotos .cf-item-row').forEach(row => {
+                const texto = row.textContent.toLowerCase();
+                row.style.display = (!termo || texto.includes(termo)) ? 'flex' : 'none';
+            });
+        };
+
+        window.toggleTodosCanhotosFaltantes = (marcar) => {
+            document.querySelectorAll('#lista-selecao-canhotos .cf-item-row').forEach(row => {
+                if (row.style.display === 'none') return; // Respeita o filtro digitado
+                const chk = row.querySelector('.chk-canhoto-faltante');
+                if (chk) chk.checked = marcar;
+            });
+            window.atualizarContadorCanhotos();
+        };
+
+        window.atualizarContadorCanhotos = () => {
+            const qtd = document.querySelectorAll('#lista-selecao-canhotos .chk-canhoto-faltante:checked').length;
+            const lbl = document.getElementById('cf-contador-selecionadas');
+            if (lbl) {
+                lbl.innerText = `${qtd} nota(s) selecionada(s)`;
+                lbl.style.color = qtd > 0 ? 'var(--danger)' : 'var(--text-muted)';
+            }
+        };
+
+        window.gerarPDFCanhotosFaltantes = () => {
+            const checkboxesMarcados = Array.from(document.querySelectorAll('#lista-selecao-canhotos .chk-canhoto-faltante:checked'));
+            if (checkboxesMarcados.length === 0) {
+                return alert("Selecione pelo menos uma Nota Fiscal na lista.");
+            }
+
+            const notasSelecionadas = checkboxesMarcados
+                .map(chk => window._notasDisponiveisCanhotoFaltando[parseInt(chk.value, 10)])
+                .filter(Boolean);
+
+            // Logo vetorial Pif Paf Alimentos (idêntica ao FOR-COR-0116)
+            const svgLogoPifPaf = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 56" width="88" height="41">
+                    <rect x="10" y="3" width="100" height="36" rx="14" ry="14" fill="#d91e26"/>
+                    <path d="M 16 32 Q 60 44 104 32 Q 60 39 16 32 Z" fill="#facc15"/>
+                    <text x="60" y="26" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5">Pif Paf</text>
+                    <text x="60" y="51" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#d91e26" text-anchor="middle" letter-spacing="1.4">ALIMENTOS</text>
+                </svg>
+            `;
+
+            const blocosConteudo = notasSelecionadas.map((nota, index) => {
+                const nfNum = cleanNF(nota.nf);
+                // Puxa o transporte individual gravado na própria Nota Fiscal
+                const transpNF = String(nota.viagem || nota.transporte || '').trim();
+
+                const textoTransporte = transpNF
+                    ? { text: `  ${transpNF}  `, bold: true, decoration: 'underline' }
+                    : { text: ' ___________________ ', bold: false };
+
+                const textoNF = { text: `  ${nfNum}  `, bold: true, decoration: 'underline' };
+
+                return {
+                    unbreakable: true,
+                    margin: [0, 0, 0, 6],
+                    stack: [
+                        {
+                            columns: [
+                                {
+                                    width: 102,
+                                    stack: [
+                                        {
+                                            canvas: [
+                                                { type: 'rect', x: 0, y: 0, w: 98, h: 46, r: 8, lineWidth: 1, lineColor: '#000000' }
+                                            ]
+                                        },
+                                        {
+                                            svg: svgLogoPifPaf,
+                                            width: 86,
+                                            alignment: 'center',
+                                            margin: [0, -43, 4, 0]
+                                        }
+                                    ]
+                                },
+                                {
+                                    width: '*',
+                                    stack: [
+                                        {
+                                            canvas: [
+                                                { type: 'rect', x: 0, y: 0, w: 453, h: 46, r: 8, lineWidth: 1, lineColor: '#000000' }
+                                            ]
+                                        },
+                                        {
+                                            stack: [
+                                                { text: 'SISTEMA DE GESTÃO DA QUALIDADE', fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
+                                                { text: 'FOR-COR-0116- TERMO DE RESPONSABILIDADE', fontSize: 13.5, bold: true, alignment: 'center' }
+                                            ],
+                                            margin: [0, -37, 0, 0]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            columns: [
+                                { text: 'Revisão: 00', fontSize: 8.5, alignment: 'left' },
+                                { text: `${index + 1}`, fontSize: 8.5, alignment: 'right', margin: [0, 0, 12, 0] }
+                            ],
+                            margin: [2, 3, 2, 5]
+                        },
+                        {
+                            text: [
+                                'Declaro que estamos cientes que o transporte ',
+                                textoTransporte,
+                                ' nota fiscal Nº ',
+                                textoNF,
+                                '\nesta sob nossa responsabilidade, pois, não apresentamos o respectivo canhoto devidamente assinado pelo cliente.'
+                            ],
+                            fontSize: 9.2,
+                            lineHeight: 1.35,
+                            margin: [2, 0, 2, 4]
+                        },
+                        {
+                            text: 'Ass: _____________________________________',
+                            fontSize: 9.2,
+                            margin: [2, 2, 2, 10]
+                        },
+                        {
+                            canvas: [
+                                {
+                                    type: 'line',
+                                    x1: 0, y1: 0, x2: 555, y2: 0,
+                                    lineWidth: 0.8,
+                                    dash: { length: 5, space: 3 },
+                                    lineColor: '#334155'
+                                }
+                            ],
+                            margin: [0, 2, 0, 4]
+                        }
+                    ]
+                };
+            });
+
+            const docDefinition = {
+                pageSize: 'A4',
+                pageMargins: [20, 18, 20, 18],
+                defaultStyle: { font: 'Roboto', fontSize: 9, color: '#000000' },
+                content: blocosConteudo
+            };
+
+            const placaSel = document.getElementById('pc-placa')?.value || 'VEICULO';
+            const dataSel = document.getElementById('pc-data')?.value || new Date().toISOString().split('T')[0];
+            const nomeArquivo = `Termo_Canhotos_${placaSel}_${dataSel}.pdf`;
+
+            document.getElementById('modal-canhoto-faltando')?.classList.remove('active');
+            abrirPreviewPDF(docDefinition, nomeArquivo);
         };
 
     </script>
