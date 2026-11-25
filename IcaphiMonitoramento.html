@@ -4679,7 +4679,7 @@
                 <div class="header-left">
                     <div class="header-icon-box"><i class="ph-bold ph-chart-bar"></i></div>
                     <div class="header-title-wrap">
-                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.8</span></h2>
+                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.9</span></h2>
                         <span class="header-subtitle">Acompanhamento de rotas e entregas em tempo real</span>
                     </div>
                 </div>
@@ -5186,12 +5186,45 @@
                             style="width:100%; border: 1px solid var(--border-color); border-radius: 6px;"></select>
                     </div>
 
+                    <!-- 🟢 CAIXA DE SELEÇÃO DE COMPLEMENTO -->
+                    <div style="margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main);">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; font-weight: 800; color: var(--text-main); margin: 0;">
+                            <input type="checkbox" id="oco-check-complemento" onchange="window.toggleTipoComplementoOco()" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent);">
+                            <span>É Complemento? (Descarga / Pedágio / Segundo Ajudante)</span>
+                        </label>
+
+                        <div id="oco-container-tipo-complemento" style="display: none; margin-top: 10px;">
+                            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                                TIPO DE COMPLEMENTO:
+                            </label>
+                            <select id="oco-tipo-complemento" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); font-weight: 700;">
+                                <option value="DESCARGA">Descarga</option>
+                                <option value="PEDAGIO">Pedágio</option>
+                                <option value="SEGUNDO_AJUDANTE">Segundo Ajudante</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div style="margin-bottom: 15px;">
                         <label
                             style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Motivo
                             da Ocorrência:</label>
                         <input type="text" id="oco-motivo" placeholder="Ex: Produto Descongelado, Cliente ausente..."
                             style="width:100%;">
+                    </div>
+
+                    <!-- 🟢 BLOCO DE ASSUNTO PARA COPIAR -->
+                    <div id="oco-container-assunto" style="display: none; margin-bottom: 10px;">
+                        <label style="font-size: 11px; font-weight: 800; color: var(--accent); display: block; margin-bottom: 4px;">
+                            ASSUNTO DO E-MAIL:
+                        </label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="oco-assunto-gerado" readonly
+                                style="flex: 1; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-weight: 700; font-size: 12px;">
+                            <button type="button" class="btn btn-primary" onclick="window.copiarAssuntoOco(this)" style="padding: 0 14px; font-size: 12px; white-space: nowrap;">
+                                <i class="ph-bold ph-copy"></i> Copiar Assunto
+                            </button>
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 15px;">
@@ -10103,32 +10136,64 @@
             }).join('');
         });
 
-        // Função integrada de geração de texto
+        // ================= CONTROLE DO COMPLEMENTO E ASSUNTO NAS OCORRÊNCIAS =================
+        window.toggleTipoComplementoOco = () => {
+            const checked = document.getElementById('oco-check-complemento')?.checked;
+            const container = document.getElementById('oco-container-tipo-complemento');
+            if (container) container.style.display = checked ? 'block' : 'none';
+        };
+
+        window.copiarAssuntoOco = async (btn) => {
+            const input = document.getElementById('oco-assunto-gerado');
+            if (!input || !input.value) return;
+            try {
+                await navigator.clipboard.writeText(input.value);
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="ph-bold ph-check"></i> Copiado!';
+                setTimeout(() => { btn.innerHTML = original; }, 1800);
+            } catch (e) {
+                input.select();
+                document.execCommand('copy');
+            }
+        };
+
+        // Função integrada de geração de texto e assunto
         document.getElementById('btn-gerar-texto-oco').addEventListener('click', () => {
             const obsAtual = document.getElementById('oco-obs').value;
             if (obsAtual.includes("PARA CIÊNCIA DE TODOS")) {
                 document.getElementById('oco-obs').value = "";
             }
+
+            const isComplemento = document.getElementById('oco-check-complemento')?.checked || false;
+            const tipoComp = document.getElementById('oco-tipo-complemento')?.value || 'DESCARGA';
+            const placaSelecionada = document.getElementById('oco-placa')?.value || '';
             const notasSelecionadas = Array.from(document.getElementById('oco-nota').selectedOptions).map(opt => opt.value);
 
-            if (notasSelecionadas.length === 0) return alert("Selecione ao menos uma nota.");
+            // Para Pedágio, aceita gerar mesmo se o usuário só escolheu a Placa (sem precisar selecionar NF)
+            if (notasSelecionadas.length === 0 && !(isComplemento && tipoComp === 'PEDAGIO' && placaSelecionada)) {
+                return alert("Selecione ao menos uma nota.");
+            }
 
-            const notasArray = window.ocoNotasDataCache.filter(n => notasSelecionadas.includes(n.nf));
-            const notaBase = notasArray[0];
+            const notasArray = notasSelecionadas.length > 0
+                ? window.ocoNotasDataCache.filter(n => notasSelecionadas.includes(n.nf))
+                : window.ocoNotasDataCache.filter(n => n.placa === placaSelecionada);
 
-            let arrayNFs = []; 
-            let somaPeso = 0; 
+            const notaBase = notasArray[0] || {};
+            const placaFinal = (notaBase.placa || placaSelecionada || "").toUpperCase();
+
+            let arrayNFs = [];
+            let somaPeso = 0;
             let somaQtde = 0;
-            let somaValor = 0; 
+            let somaValor = 0;
 
             notasArray.forEach(n => {
                 arrayNFs.push(cleanNF(n.nf));
                 somaPeso += parseFloat(n.peso) || 0;
                 somaQtde += parseInt(n.qtde) || 0;
-                somaValor += parseFloat(n.valor) || 0; 
+                somaValor += parseFloat(n.valor) || 0;
             });
 
-            const motivo = document.getElementById('oco-motivo').value.trim() || "Não informado";
+            const motivo = document.getElementById('oco-motivo').value.trim();
             const obsManual = document.getElementById('oco-obs').value.trim();
 
             const hora = new Date().getHours();
@@ -10136,11 +10201,14 @@
             if (hora >= 12 && hora < 18) saudacao = "Boa Tarde!";
             else if (hora >= 18) saudacao = "Boa Noite!";
 
-            const dataFormatada = (typeof formataDataParaEmail === 'function') ? formataDataParaEmail(notaBase.data_nf || document.getElementById('oco-data').value) : (notaBase.data_nf || document.getElementById('oco-data').value);
+            const dataOpIso = document.getElementById('oco-data').value || "";
+            const dataOpBR = dataOpIso ? dataOpIso.split('-').reverse().join('/') : "";
+            const dataFormatada = (typeof formataDataParaEmail === 'function')
+                ? formataDataParaEmail(notaBase.data_nf || dataOpIso)
+                : (notaBase.data_nf || dataOpBR);
 
-            // 🟢 Combina Código + Nome para Cliente, RCA e Coordenador
             const codClienteBase = notaBase.codcli ? `${notaBase.codcli} - ` : '';
-            const clienteComCodigoFormatado = `${codClienteBase}${notaBase.cliente}`;
+            const clienteComCodigoFormatado = `${codClienteBase}${notaBase.cliente || ''}`;
 
             const codRepBase = notaBase.codrep ? `${notaBase.codrep} - ` : '';
             const repFormatado = `${codRepBase}${notaBase.repres || "0"}`;
@@ -10148,20 +10216,82 @@
             const codSupBase = notaBase.codsup ? `${notaBase.codsup} - ` : '';
             const supFormatado = `${codSupBase}@${notaBase.sup || ""}`;
 
-            const emailText = `${saudacao}
-            CLIENTE: ${clienteComCodigoFormatado}
-            CIDADE: ${notaBase.cidade}
-            NF: ${arrayNFs.join(', ')}
-            PESO: ${(typeof formatNumber === 'function') ? formatNumber(somaPeso) : somaPeso.toFixed(2)}
-            VOLUME: ${somaQtde}
-            DATA NF: ${dataFormatada}
-            ENTREGRES: ${somaQtde}
-            RCA: ${repFormatado}
-            COORDENADOR: ${supFormatado}
-            OCORRÊNCIA: ${motivo} - ${obsManual}`.replace(/^\s+/gm, '');
+            const pesoFormatado = (typeof formatNumber === 'function') ? formatNumber(somaPeso) : somaPeso.toFixed(2);
+            const nfsTexto = arrayNFs.join(', ');
+
+            const containerAssunto = document.getElementById('oco-container-assunto');
+            const inputAssunto = document.getElementById('oco-assunto-gerado');
+
+            let assuntoGerado = "";
+            let emailText = "";
+
+            if (isComplemento) {
+                if (tipoComp === 'DESCARGA') {
+                    assuntoGerado = `SOLICITAÇÃO DE DESCARGA - ${placaFinal} NF: ${nfsTexto} -CLIENTE: ${clienteComCodigoFormatado}`;
+                    emailText = `${saudacao}
+                    CLIENTE: ${clienteComCodigoFormatado}
+                    CIDADE: ${notaBase.cidade || ''}
+                    NF: ${nfsTexto}
+                    PESO: ${pesoFormatado}
+                    VOLUME: ${somaQtde}
+                    DATA NF: ${dataFormatada}
+                    ENTREGRES: ${somaQtde}
+                    RCA: ${repFormatado}
+                    COORDENADOR: ${supFormatado}
+                    OCORRÊNCIA: solicitação de descarga.`;
+                } else if (tipoComp === 'SEGUNDO_AJUDANTE') {
+                    assuntoGerado = `SOLICTANDO SEGUNDO AJUDANTE ${placaFinal}- CLIENTE: ${clienteComCodigoFormatado} NF: ${nfsTexto}`;
+                    emailText = `${saudacao}
+                    CLIENTE: ${clienteComCodigoFormatado}
+                    CIDADE: ${notaBase.cidade || ''}
+                    NF: ${nfsTexto}
+                    PESO: ${pesoFormatado}
+                    VOLUME: ${somaQtde}
+                    DATA NF: ${dataFormatada}
+                    ENTREGRES: ${somaQtde}
+                    RCA: ${repFormatado}
+                    COORDENADOR: ${supFormatado}
+                    OCORRÊNCIA: Solicitando segundo ajudante.`;
+                } else if (tipoComp === 'PEDAGIO') {
+                    // Coleta cidades e transportes únicos das notas da viagem
+                    const cidadesUnicas = [...new Set(notasArray.map(n => (n.cidade || '').trim().toUpperCase()).filter(Boolean))];
+                    const transportesUnicos = [...new Set(notasArray.map(n => String(n.viagem || n.transporte || '').trim()).filter(Boolean))];
+
+                    const rotaStr = cidadesUnicas.join(' - ') || (notaBase.cidade || '');
+                    const transpStr = transportesUnicos.join(', ') || '';
+                    const textoMotivoPedagio = motivo || "Devido à falta de crédito na tag, foi necessário realizar o pagamento em dinheiro.";
+
+                    assuntoGerado = `SOLICTANDO REEMBOLSO DE PEDÁGIO ${dataOpBR}- ${placaFinal}`;
+                    emailText = `${saudacao}
+
+                    ${textoMotivoPedagio}
+
+                    PLACA: ${placaFinal}
+                    ROTA: ${rotaStr}
+                    TRANSPORTES: ${transpStr}
+                    VALOR: R$ `;
+                }
+
+                if (inputAssunto) inputAssunto.value = assuntoGerado;
+                if (containerAssunto) containerAssunto.style.display = 'block';
+            } else {
+                // Modo Padrão (Sem Complemento)
+                if (containerAssunto) containerAssunto.style.display = 'none';
+                emailText = `${saudacao}
+                CLIENTE: ${clienteComCodigoFormatado}
+                CIDADE: ${notaBase.cidade || ''}
+                NF: ${nfsTexto}
+                PESO: ${pesoFormatado}
+                VOLUME: ${somaQtde}
+                DATA NF: ${dataFormatada}
+                ENTREGRES: ${somaQtde}
+                RCA: ${repFormatado}
+                COORDENADOR: ${supFormatado}
+                OCORRÊNCIA: ${motivo || "Não informado"} - ${obsManual}`;
+                            }
 
             const resultadoBox = document.getElementById('oco-obs');
-            resultadoBox.value = emailText;
+            resultadoBox.value = emailText.replace(/^[ \t]+/gm, '');
             resultadoBox.style.display = 'block';
         });
 
@@ -13312,8 +13442,10 @@
                 motorista = window.motoristasHistoricoCache[placa].motorista; 
                 telefone = window.motoristasHistoricoCache[placa].telefone; 
             }
-            tr.dataset.codcli = dados.codcli || ""; 
-            tr.dataset.repres = dados.repres || ""; 
+            tr.dataset.codcli = dados.codcli || "";
+            tr.dataset.codrep = dados.codrep || "";
+            tr.dataset.repres = dados.repres || "";
+            tr.dataset.codsup = dados.codsup || "";
             tr.dataset.sup = dados.sup || "";
 
             // 🟢 MOTOR DE ETIQUETAS DE ORIGEM
@@ -13425,7 +13557,6 @@
                         const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
 
-                        // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
                         const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
@@ -13461,14 +13592,16 @@
                     nf: h.indexOf("NºNFE"), viagem: h.indexOf("NºTRANSP."), ordem: h.indexOf("SEQ.PREV"),
                     data: h.indexOf("DT.SAÍDA"), peso: h.indexOf("PESO B."), qtde: h.indexOf("QTDE"),
                     cliente: h.indexOf("NOME"), cidade: h.indexOf("CIDADE"), bairro: h.indexOf("BAIRRO"),
-                    endereco: h.indexOf("RUA"), codcli: h.indexOf("COD.CLI."), repres: h.indexOf("REPRES."),
+                    endereco: h.indexOf("RUA"), codcli: h.indexOf("COD.CLI."),
+                    codrep: h.findIndex(c => c === "COD.REP" || c === "COD.REP."),
+                    repres: h.indexOf("REPRES."),
+                    codsup: h.findIndex(c => c === "COD.SUP" || c === "COD.SUP."),
                     sup: h.indexOf("SUPERVISOR"), placa: h.indexOf("PLACA"), parcial: h.indexOf("NºPARC.")
                 };
 
                 let qtdAdicionada = 0;
                 let qtdAtualizada = 0;
 
-                // 🟢 ÍNDICE EM MEMÓRIA (Evita varrer o DOM inteiro a cada linha do Excel)
                 const mapaLinhasExistentes = new Map();
                 document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
                     const elNf = tr.querySelector('[data-col="nf"]');
@@ -13516,9 +13649,11 @@
                             updateIfEmpty('bairro', cols.bairro !== -1 ? row[cols.bairro] : "");
                             updateIfEmpty('endereco', cols.endereco !== -1 ? row[cols.endereco] : "");
 
-                            if (cols.codcli !== -1 && row[cols.codcli] && !trExistente.dataset.codcli) trExistente.dataset.codcli = row[cols.codcli];
-                            if (cols.repres !== -1 && row[cols.repres] && !trExistente.dataset.repres) trExistente.dataset.repres = row[cols.repres];
-                            if (cols.sup !== -1 && row[cols.sup] && !trExistente.dataset.sup) trExistente.dataset.sup = row[cols.sup];
+                            if (cols.codcli !== -1 && row[cols.codcli] && !trExistente.dataset.codcli) trExistente.dataset.codcli = String(row[cols.codcli]).trim();
+                            if (cols.codrep !== -1 && row[cols.codrep] && !trExistente.dataset.codrep) trExistente.dataset.codrep = String(row[cols.codrep]).trim();
+                            if (cols.repres !== -1 && row[cols.repres] && !trExistente.dataset.repres) trExistente.dataset.repres = String(row[cols.repres]).trim();
+                            if (cols.codsup !== -1 && row[cols.codsup] && !trExistente.dataset.codsup) trExistente.dataset.codsup = String(row[cols.codsup]).trim();
+                            if (cols.sup !== -1 && row[cols.sup] && !trExistente.dataset.sup) trExistente.dataset.sup = String(row[cols.sup]).trim();
 
                             const tdOrigem = trExistente.querySelector('[data-col="origem"]');
                             if (tdOrigem && tdOrigem.textContent.includes('EDI') && !tdOrigem.textContent.includes('PLANILHA')) {
@@ -13531,8 +13666,12 @@
                                 data: dSaida, peso: cols.peso !== -1 ? row[cols.peso] : "", qtde: cols.qtde !== -1 ? row[cols.qtde] : "",
                                 cliente: cols.cliente !== -1 ? row[cols.cliente] : "", cidade: cols.cidade !== -1 ? row[cols.cidade] : "",
                                 bairro: cols.bairro !== -1 ? row[cols.bairro] : "", endereco: cols.endereco !== -1 ? row[cols.endereco] : "",
-                                placa: filtroViagem.placaFinal, codcli: cols.codcli !== -1 ? row[cols.codcli] : "",
-                                repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : "",
+                                placa: filtroViagem.placaFinal,
+                                codcli: cols.codcli !== -1 ? String(row[cols.codcli] || "").trim() : "",
+                                codrep: cols.codrep !== -1 ? String(row[cols.codrep] || "").trim() : "",
+                                repres: cols.repres !== -1 ? String(row[cols.repres] || "").trim() : "",
+                                codsup: cols.codsup !== -1 ? String(row[cols.codsup] || "").trim() : "",
+                                sup: cols.sup !== -1 ? String(row[cols.sup] || "").trim() : "",
                                 parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : "",
                                 tipo_viagem: filtroViagem.statusRota || "",
                                 origem: 'PLANILHA'
