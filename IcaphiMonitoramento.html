@@ -4679,7 +4679,7 @@
                 <div class="header-left">
                     <div class="header-icon-box"><i class="ph-bold ph-chart-bar"></i></div>
                     <div class="header-title-wrap">
-                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.6</span></h2>
+                        <h2>Painel de Monitoramento <span id="app-version-title" class="header-version-badge">V1.12.8</span></h2>
                         <span class="header-subtitle">Acompanhamento de rotas e entregas em tempo real</span>
                     </div>
                 </div>
@@ -7963,25 +7963,39 @@
     </div>
 
     <div id="modal-imprimir-periodo" class="modal-overlay">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 420px; width: 95%;">
             <div class="modal-header">
-                <h3><i class="ph-bold ph-microsoft-excel-logo" style="color: var(--success);"></i> Exportar Planilha de Prestações</h3>
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i class="ph-bold ph-microsoft-excel-logo" style="color: var(--success);"></i> Exportar Planilha de Prestações
+                </h3>
                 <button class="btn-close" onclick="document.getElementById('modal-imprimir-periodo').classList.remove('active')">&times;</button>
             </div>
-            <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
                 <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Data Inicial:</label>
-                    <input type="date" id="imp-data-inicio" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                        O que deseja exportar?
+                    </label>
+                    <select id="imp-tipo-exportacao" class="input-control" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main); font-weight: 700;">
+                        <option value="pendentes">⚠️ Apenas Pendentes (Tema Laranja)</option>
+                        <option value="concluidos">✅ Apenas Concluídos (Tema Verde)</option>
+                        <option value="todos">📊 Consolidado — Pendentes e Concluídos (Tema Azul)</option>
+                    </select>
                 </div>
-                <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Data Final:</label>
-                    <input type="date" id="imp-data-fim" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Data Inicial:</label>
+                        <input type="date" id="imp-data-inicio" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Data Final:</label>
+                        <input type="date" id="imp-data-fim" class="input-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main);">
+                    </div>
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="document.getElementById('modal-imprimir-periodo').classList.remove('active')">Cancelar</button>
                 <button class="btn btn-success" onclick="window.gerarImpressaoPeriodo()" style="display: flex; align-items: center; gap: 6px;">
-                    <i class="ph-bold ph-download-simple"></i> Exportar Excel (.xlsx)
+                    <i class="ph-bold ph-download-simple"></i> Baixar Planilha
                 </button>
             </div>
         </div>
@@ -10123,12 +10137,16 @@
             else if (hora >= 18) saudacao = "Boa Noite!";
 
             const dataFormatada = (typeof formataDataParaEmail === 'function') ? formataDataParaEmail(notaBase.data_nf || document.getElementById('oco-data').value) : (notaBase.data_nf || document.getElementById('oco-data').value);
-            const repFormatado = notaBase.repres || "0";
-            const supFormatado = notaBase.sup || "";
 
-            // 🟢 Formata o cliente combinando Código + Nome (Ex: 645454 - NOVO LAR DISTRIBUIDORA...)
+            // 🟢 Combina Código + Nome para Cliente, RCA e Coordenador
             const codClienteBase = notaBase.codcli ? `${notaBase.codcli} - ` : '';
             const clienteComCodigoFormatado = `${codClienteBase}${notaBase.cliente}`;
+
+            const codRepBase = notaBase.codrep ? `${notaBase.codrep} - ` : '';
+            const repFormatado = `${codRepBase}${notaBase.repres || "0"}`;
+
+            const codSupBase = notaBase.codsup ? `${notaBase.codsup} - ` : '';
+            const supFormatado = `${codSupBase}@${notaBase.sup || ""}`;
 
             const emailText = `${saudacao}
             CLIENTE: ${clienteComCodigoFormatado}
@@ -10139,7 +10157,7 @@
             DATA NF: ${dataFormatada}
             ENTREGRES: ${somaQtde}
             RCA: ${repFormatado}
-            COORDENADOR: @${supFormatado}
+            COORDENADOR: ${supFormatado}
             OCORRÊNCIA: ${motivo} - ${obsManual}`.replace(/^\s+/gm, '');
 
             const resultadoBox = document.getElementById('oco-obs');
@@ -10540,6 +10558,12 @@
                     let colCodCli = headers.indexOf("COD.CLI.");
                     if (colCodCli === -1) colCodCli = 9;
 
+                    // 🟢 Localiza as colunas O (Cod.Rep = 14) e Q (Cod.Sup = 16)
+                    let colCodRep = headers.findIndex(h => h === "COD.REP" || h === "COD.REP.");
+                    if (colCodRep === -1) colCodRep = 14;
+                    let colCodSup = headers.findIndex(h => h === "COD.SUP" || h === "COD.SUP.");
+                    if (colCodSup === -1) colCodSup = 16;
+
                     if (colAssin === -1) { alert("Coluna de Assinatura (ASSIN.) não encontrada."); hideLoader(); return; }
 
                     // 1. INDEXAÇÃO DO EXCEL NA MEMÓRIA COM PROTEÇÃO CONTRA DUPLICADAS VAZIAS
@@ -10550,21 +10574,25 @@
                         
                         const nfVal = cleanNF(row[colNf]); 
                         const assinVal = row[colAssin] ? String(row[colAssin]).trim() : "";
+                        const codrepVal = row[colCodRep] ? String(row[colCodRep]).trim() : "";
                         const represVal = row[15] ? String(row[15]).trim() : "";
+                        const codsupVal = row[colCodSup] ? String(row[colCodSup]).trim() : "";
                         const supVal = row[17] ? String(row[17]).trim() : "";
                         const codcliVal = row[colCodCli] ? String(row[colCodCli]).trim() : "";
 
-                        // Se a NF já existe no map, só atualiza os campos se a nova linha tiver algo melhor/preenchido
                         if (nfsExcelMap[nfVal]) {
                             if (!nfsExcelMap[nfVal].assin && assinVal) nfsExcelMap[nfVal].assin = assinVal;
+                            if (!nfsExcelMap[nfVal].codrep && codrepVal) nfsExcelMap[nfVal].codrep = codrepVal;
                             if (!nfsExcelMap[nfVal].repres && represVal) nfsExcelMap[nfVal].repres = represVal;
+                            if (!nfsExcelMap[nfVal].codsup && codsupVal) nfsExcelMap[nfVal].codsup = codsupVal;
                             if (!nfsExcelMap[nfVal].sup && supVal) nfsExcelMap[nfVal].sup = supVal;
                             if (!nfsExcelMap[nfVal].codcli && codcliVal) nfsExcelMap[nfVal].codcli = codcliVal;
                         } else {
-                            // Primeira vez que vê essa NF, salva normal
                             nfsExcelMap[nfVal] = {
                                 assin: assinVal,
+                                codrep: codrepVal,
                                 repres: represVal,
+                                codsup: codsupVal,
                                 sup: supVal,
                                 codcli: codcliVal
                             };
@@ -10600,7 +10628,9 @@
                                 let mudouNota = false;
 
                                 // Atualiza sempre os metadados
+                                if (excelData.codrep && notaTarget.codrep !== excelData.codrep) { notaTarget.codrep = excelData.codrep; mudouNota = true; }
                                 if (excelData.repres && notaTarget.repres !== excelData.repres) { notaTarget.repres = excelData.repres; mudouNota = true; }
+                                if (excelData.codsup && notaTarget.codsup !== excelData.codsup) { notaTarget.codsup = excelData.codsup; mudouNota = true; }
                                 if (excelData.sup && notaTarget.sup !== excelData.sup) { notaTarget.sup = excelData.sup; mudouNota = true; }
                                 if (excelData.codcli && notaTarget.codcli !== excelData.codcli) { notaTarget.codcli = excelData.codcli; mudouNota = true; }
 
@@ -12928,31 +12958,49 @@
 
         const indSaveNotas = document.getElementById('save-indicator-notas');
         
+        // ================= 1. AUTOSAVE BLINDADO (NUNCA ZERA O DIA E PRESERVA CODREP/CODSUP) =================
         async function autoSaveNotasSilencioso() {
-            const dataSel = document.getElementById('notas-data-select').value; if (!dataSel) return;
-            indSaveNotas.innerText = "Salvando..."; indSaveNotas.style.display = "inline"; 
+            const dataSel = document.getElementById('notas-data-select').value;
+            if (!dataSel) return;
+
+            const linhasDOM = document.querySelectorAll('#tabela-operacao-notas tbody tr');
+            const notas = [];
+
+            // 🛑 TRAVA 1: Se não há linhas válidas renderizadas na tela, ABORTA imediatamente (nunca grava vazio)
+            let qtdLinhasValidas = 0;
+            linhasDOM.forEach(tr => { if (tr.querySelector('[data-live="nf"]')) qtdLinhasValidas++; });
+            if (qtdLinhasValidas === 0) return;
+
+            indSaveNotas.innerText = "Salvando...";
+            indSaveNotas.style.color = "";
+            indSaveNotas.style.display = "inline";
 
             try {
-                // 🛑 BLINDAGEM CRÍTICA DE AUTOSAVE: Busca o banco antes para NÃO APAGAR anexos, BOs, valor e origem!
                 const docSnap = await getDoc(doc(db, "notas_fiscais_diario", dataSel));
                 let notasAntigasMap = {};
-                if (docSnap.exists() && docSnap.data().notas) {
+                let totalNoBanco = 0;
+
+                if (docSnap.exists() && Array.isArray(docSnap.data().notas)) {
+                    totalNoBanco = docSnap.data().notas.length;
                     docSnap.data().notas.forEach(n => { notasAntigasMap[cleanNF(n.nf)] = n; });
                 }
 
-                const notas = [];
-                const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                // 🛑 TRAVA 2: Se o DOM tem menos linhas do que o banco (ex: bug de renderização parcial), aborta o autosave
+                if (totalNoBanco > 0 && qtdLinhasValidas < totalNoBanco) {
+                    console.warn(`[AUTOSAVE BLOQUEADO] DOM (${qtdLinhasValidas}) < Banco (${totalNoBanco}). Proteção anti-perda ativada.`);
+                    indSaveNotas.innerText = "Recarregue a tela!";
+                    indSaveNotas.style.color = "var(--warning)";
+                    return;
+                }
 
-                document.querySelectorAll('#tabela-operacao-notas tbody tr').forEach(tr => {
+                linhasDOM.forEach(tr => {
                     const nfEl = tr.querySelector('[data-live="nf"]');
                     if (!nfEl) return;
 
                     const nfLimpa = cleanNF(nfEl.textContent);
                     const statusSelect = tr.querySelector('.live-status-select');
-                    const novoStatus = statusSelect.value.toUpperCase();
-                    let horaRegistrada = tr.dataset.horaStatus || "";
-                    
-                    // Recupera os dados críticos antigos desta NF
+                    const novoStatus = statusSelect ? statusSelect.value.toUpperCase() : "";
+                    const horaRegistrada = tr.dataset.horaStatus || "";
                     const notaAntiga = notasAntigasMap[nfLimpa] || {};
 
                     notas.push({
@@ -12975,24 +13023,25 @@
                         obs: tr.querySelector('[data-live="obs"]').textContent.trim(),
                         parcial: tr.querySelector('[data-live="parcial"]').textContent.trim(),
                         app: tr.querySelector('[data-live="app"]').textContent.trim(),
-                        
-                        // PRESERVA DADOS INVISÍVEIS DA TELA DE OPERAÇÃO
+
+                        // Preserva metadados invisíveis (incluindo codrep e codsup)
                         codcli: tr.dataset.codcli || notaAntiga.codcli || "",
+                        codrep: tr.dataset.codrep || notaAntiga.codrep || "",
                         repres: tr.dataset.repres || notaAntiga.repres || "",
+                        codsup: tr.dataset.codsup || notaAntiga.codsup || "",
                         sup: tr.dataset.sup || notaAntiga.sup || "",
                         valor: tr.dataset.valor || notaAntiga.valor || "",
-                        origem: notaAntiga.origem || "", 
+                        origem: notaAntiga.origem || "",
 
                         statusHora: horaRegistrada,
-                        anexos: notaAntiga.anexos || [],       // MANTÉM FOTOS
-                        ocorrencias: notaAntiga.ocorrencias || [] // MANTÉM BOS
+                        anexos: notaAntiga.anexos || [],
+                        ocorrencias: notaAntiga.ocorrencias || []
                     });
                 });
 
                 await setDoc(doc(db, "notas_fiscais_diario", dataSel), { notas });
                 indSaveNotas.innerText = "Salvo ✓";
                 setTimeout(() => { indSaveNotas.style.display = "none"; }, 2000);
-
             } catch (e) {
                 console.error("FALHA CRÍTICA NO AUTOSAVE:", e);
                 indSaveNotas.innerText = "Erro ao Salvar!";
@@ -13039,6 +13088,24 @@
                 // 2. BUSCAR DADOS ATUAIS NO BANCO (CRUCIAL PARA NÃO PERDER ANEXOS E STATUS)
                 const notasDocRef = doc(db, "notas_fiscais_diario", d);
                 const docSnap = await getDoc(notasDocRef);
+
+                const qtdNoBanco = (docSnap.exists() && Array.isArray(docSnap.data().notas)) ? docSnap.data().notas.length : 0;
+                const qtdNaTela = Array.from(document.querySelectorAll('#tabela-editor-notas tbody tr')).filter(tr => tr.querySelector('[data-col="nf"]')).length;
+
+                // 🛑 TRAVA CONTRA PERDA ACIDENTAL DE NOTAS
+                if (qtdNoBanco > 0 && qtdNaTela < qtdNoBanco) {
+                    hideLoader();
+                    const dBR = d.split('-').reverse().join('/');
+                    const confirmaReducao = confirm(
+                        `⚠️ ATENÇÃO — PROTEÇÃO CONTRA PERDA DE NOTAS!\n\n` +
+                        `O dia ${dBR} já possui ${qtdNoBanco} nota(s) no sistema.\n` +
+                        `Você está prestes a salvar apenas ${qtdNaTela} nota(s) (${qtdNoBanco - qtdNaTela} notas serão APAGADAS).\n\n` +
+                        `Deseja realmente sobrescrever?`
+                    );
+                    if (!confirmaReducao) return;
+                    showLoader();
+                }
+
                 let notasExistentesMap = {};
 
                 if (docSnap.exists() && docSnap.data().notas) {
@@ -13082,9 +13149,12 @@
                         motorista: tr.querySelector('[data-col="motorista"]').textContent.trim(),
                         telefone: tr.querySelector('[data-col="telefone"]').textContent.trim(),
                         codcli: tr.dataset.codcli || notaAntiga.codcli || "",
+                        codrep: tr.dataset.codrep || notaAntiga.codrep || "",
                         repres: tr.dataset.repres || notaAntiga.repres || "",
+                        codsup: tr.dataset.codsup || notaAntiga.codsup || "",
                         sup: tr.dataset.sup || notaAntiga.sup || "",
-                        valor: tr.dataset.valor || "",
+                        valor: tr.dataset.valor || notaAntiga.valor || "",
+                        origem: tr.querySelector('[data-col="origem"]')?.textContent.trim() || notaAntiga.origem || "MANUAL",
 
                         // MÁGICA DO MERGE: Mantém o valor do banco se existir, ou fica vazio se for nota nova
                         status: notaAntiga.status || "",
@@ -13144,11 +13214,29 @@
         const tbodyEditorNotas = document.querySelector('#tabela-editor-notas tbody');
 
         window.abrirSuperEditorNotas = async (modo) => {
-            tbodyEditorNotas.innerHTML = ""; const btnBuscar = document.getElementById('btn-buscar-editor-notas'); const boxImport = document.getElementById('controles-importacao-notas');
+            tbodyEditorNotas.innerHTML = "";
+            const btnBuscar = document.getElementById('btn-buscar-editor-notas');
+            const boxImport = document.getElementById('controles-importacao-notas');
             document.getElementById('modal-editor-notas').classList.add('active');
-            if (modo === 'manual') { btnBuscar.style.display = "none"; boxImport.style.display = "none"; window.adicionarLinhaNotas(); }
-            else if (modo === 'importar') { btnBuscar.style.display = "none"; boxImport.style.display = "block"; const d = document.getElementById('editor-notas-data').value; if (d) await carregarNotasParaEdicao(d); }
-            else { btnBuscar.style.display = "block"; boxImport.style.display = "none"; tbodyEditorNotas.innerHTML = `<tr><td colspan="15" align="center" style="padding: 20px;">Busque a data.</td></tr>`; }
+
+            if (modo === 'manual') {
+                btnBuscar.style.display = "none";
+                boxImport.style.display = "none";
+                const d = document.getElementById('editor-notas-data').value;
+                if (d) await carregarNotasParaEdicao(d);
+                window.adicionarLinhaNotas();
+            } else if (modo === 'importar') {
+                btnBuscar.style.display = "none";
+                boxImport.style.display = "block";
+                const d = document.getElementById('editor-notas-data').value;
+                if (d) await carregarNotasParaEdicao(d);
+            } else {
+                btnBuscar.style.display = "block";
+                boxImport.style.display = "none";
+                const d = document.getElementById('editor-notas-data').value;
+                if (d) await carregarNotasParaEdicao(d);
+                else tbodyEditorNotas.innerHTML = `<tr><td colspan="15" align="center" style="padding: 20px;">Selecione a data no topo para editar.</td></tr>`;
+            }
         };
 
         async function carregarNotasParaEdicao(dataSel) {
@@ -13336,17 +13424,12 @@
                         const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
-                        
+
                         // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
                         const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
-                        // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
-                            
-                            // 🟢 TRAVA CONTRA SOBRESCRITA (PREVINE O BLOQUEIO POR APOIO)
-                            // Se o transporte já foi lido e liberado como "Saída Dia", 
-                            // a gente dá um "return" e impede que a linha de Apoio estrague a liberação.
                             if (mapFiltroTransporte[t] && mapFiltroTransporte[t].permitido === true) {
                                 return;
                             }
@@ -13361,11 +13444,16 @@
                 }
             } catch (err) { console.error("Erro ao mapear painel para importação:", err); }
 
-            const reader = new FileReader(); reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array', raw: false });
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array', raw: false });
                 const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
 
-                let hIdx = -1; for (let i = 0; i < raw.length; i++) { if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºTransp."))) { hIdx = i; break; } }
+                let hIdx = -1;
+                for (let i = 0; i < raw.length; i++) {
+                    if (raw[i] && (raw[i].includes("NºNFe") || raw[i].includes("NºTransp."))) { hIdx = i; break; }
+                }
                 if (hIdx === -1) { alert("Cabeçalho não encontrado."); hideLoader(); return; }
 
                 const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
@@ -13380,9 +13468,16 @@
                 let qtdAdicionada = 0;
                 let qtdAtualizada = 0;
 
+                // 🟢 ÍNDICE EM MEMÓRIA (Evita varrer o DOM inteiro a cada linha do Excel)
+                const mapaLinhasExistentes = new Map();
+                document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
+                    const elNf = tr.querySelector('[data-col="nf"]');
+                    if (elNf) mapaLinhasExistentes.set(cleanNF(elNf.textContent), tr);
+                });
+
                 for (let i = hIdx + 1; i < raw.length; i++) {
                     const row = raw[i]; if (!row || !row[cols.nf]) continue;
-                    
+
                     const viagensExcel = String(row[cols.viagem] || "").match(/\d+/g) || [];
                     let filtroViagem = null;
 
@@ -13394,17 +13489,10 @@
                     }
 
                     if (filtroViagem) {
-                        // 🟢 TRAVA DE PROTEÇÃO: Se não for SAIDA DIA, pula a linha ignorando-a (Evita duplicar pernoites)
-                        if (!filtroViagem.permitido) continue; 
+                        if (!filtroViagem.permitido) continue;
 
                         const nfTratada = cleanNF(row[cols.nf]);
-                        let trExistente = null;
-                        
-                        document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                            if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) {
-                                trExistente = tr;
-                            }
-                        });
+                        const trExistente = mapaLinhasExistentes.get(nfTratada) || null;
 
                         let dSaida = cols.data !== -1 ? row[cols.data] : "";
                         if (!isNaN(dSaida) && dSaida.toString().trim() !== "") dSaida = excelToDateStr(parseFloat(dSaida));
@@ -13427,7 +13515,7 @@
                             updateIfEmpty('cidade', cols.cidade !== -1 ? row[cols.cidade] : "");
                             updateIfEmpty('bairro', cols.bairro !== -1 ? row[cols.bairro] : "");
                             updateIfEmpty('endereco', cols.endereco !== -1 ? row[cols.endereco] : "");
-                            
+
                             if (cols.codcli !== -1 && row[cols.codcli] && !trExistente.dataset.codcli) trExistente.dataset.codcli = row[cols.codcli];
                             if (cols.repres !== -1 && row[cols.repres] && !trExistente.dataset.repres) trExistente.dataset.repres = row[cols.repres];
                             if (cols.sup !== -1 && row[cols.sup] && !trExistente.dataset.sup) trExistente.dataset.sup = row[cols.sup];
@@ -13447,15 +13535,18 @@
                                 repres: cols.repres !== -1 ? row[cols.repres] : "", sup: cols.sup !== -1 ? row[cols.sup] : "",
                                 parcial: cols.parcial !== -1 && row[cols.parcial] ? String(row[cols.parcial]).trim() : "",
                                 tipo_viagem: filtroViagem.statusRota || "",
-                                origem: 'PLANILHA' 
+                                origem: 'PLANILHA'
                             });
+                            mapaLinhasExistentes.set(nfTratada, tbodyEditorNotas.lastElementChild);
                             qtdAdicionada++;
                         }
                     }
                 }
-                alert(`Importação da Planilha (Grid) concluída!\n\n🔹 Novas notas inseridas: ${qtdAdicionada}\n🔹 Notas existentes atualizadas (Mescladas): ${qtdAtualizada}`); 
+                alert(`Importação da Planilha (Grid) concluída!\n\n🔹 Novas notas inseridas: ${qtdAdicionada}\n🔹 Notas existentes atualizadas (Mescladas): ${qtdAtualizada}`);
                 hideLoader();
-            }; reader.readAsArrayBuffer(file); e.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
         });
 
         // ================= IMPORTAÇÃO DE EDIS (COM FILTRO DO PAINEL, BLINDAGEM E LEITURA DE VALOR NA COLUNA Y) =================
@@ -13474,17 +13565,11 @@
                         const placaNormal = String(r.placa || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         const placaFinal = r.troca ? String(r.troca || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : placaNormal;
                         const statusRota = r.status ? r.status.trim().toUpperCase() : "";
-                        
-                        // 🟢 REGRA DE OURO: Só permite importação se o ST. PAINEL for estritamente SAIDA DIA
+
                         const isSaidaDia = statusRota === 'SAIDA DIA' || statusRota === 'SAÍDA DIA';
 
-                        // Mapeia todos os números de transporte (viagem) desta rota
                         const transpsValidos = String(r.transporte || "").match(/\d+/g) || [];
                         transpsValidos.forEach(t => {
-                            
-                            // 🟢 TRAVA CONTRA SOBRESCRITA (PREVINE O BLOQUEIO POR APOIO)
-                            // Se o transporte já foi lido e liberado como "Saída Dia", 
-                            // a gente dá um "return" e impede que a linha de Apoio estrague a liberação.
                             if (mapFiltroTransporte[t] && mapFiltroTransporte[t].permitido === true) {
                                 return;
                             }
@@ -13499,40 +13584,47 @@
                 }
             } catch (err) { console.error("Erro ao mapear painel para importação de EDI:", err); }
 
-            const reader = new FileReader(); 
+            const reader = new FileReader();
             reader.onload = async function (e) {
                 try {
-                    const data = new Uint8Array(e.target.result); 
+                    const data = new Uint8Array(e.target.result);
                     const wb = XLSX.read(data, { type: 'array', raw: false });
                     const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
 
-                    let hIdx = -1; 
-                    for (let i = 0; i < raw.length; i++) { 
-                        if (raw[i] && (raw[i].includes("NNF") || raw[i].includes("Nº Transporte"))) { hIdx = i; break; } 
+                    let hIdx = -1;
+                    for (let i = 0; i < raw.length; i++) {
+                        if (raw[i] && (raw[i].includes("NNF") || raw[i].includes("Nº Transporte"))) { hIdx = i; break; }
                     }
                     if (hIdx === -1) { alert("Cabeçalho padrão do EDI não encontrado."); hideLoader(); return; }
 
                     const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
                     const getCol = (nomes, fallback) => {
-                        for(let n of nomes) { let idx = h.findIndex(c => c === n || c.includes(n)); if(idx !== -1) return idx; }
+                        for (let n of nomes) { let idx = h.findIndex(c => c === n || c.includes(n)); if (idx !== -1) return idx; }
                         return fallback;
                     };
 
                     const cols = {
-                        nf: getCol(["NNF"], 22), 
-                        viagem: getCol(["Nº TRANSPORTE"], 4), 
-                        peso: getCol(["PESOB"], 25), 
-                        qtd: getCol(["QVOL"], 28), 
-                        cliente: getCol(["XNOME"], 35), 
-                        cidade: getCol(["CMUN2", "CMUN"], 31), 
-                        cidadeFallback: 5, 
-                        bairro: getCol(["XBAIRRO"], 39), 
+                        nf: getCol(["NNF"], 22),
+                        viagem: getCol(["Nº TRANSPORTE"], 4),
+                        peso: getCol(["PESOB"], 25),
+                        qtd: getCol(["QVOL"], 28),
+                        cliente: getCol(["XNOME"], 35),
+                        cidade: getCol(["CMUN2", "CMUN"], 31),
+                        cidadeFallback: 5,
+                        bairro: getCol(["XBAIRRO"], 39),
                         endereco: getCol(["XLGR"], 36),
-                        valor: getCol(["VNF", "VALOR", "VLR"], 24) 
+                        valor: getCol(["VNF", "VALOR", "VLR"], 24)
                     };
 
                     let notasImportadas = 0;
                     let notasAtualizadas = 0;
+
+                    // 🟢 ÍNDICE EM MEMÓRIA (Evita varrer o DOM inteiro a cada linha do Excel)
+                    const mapaLinhasExistentes = new Map();
+                    document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
+                        const elNf = tr.querySelector('[data-col="nf"]');
+                        if (elNf) mapaLinhasExistentes.set(cleanNF(elNf.textContent), tr);
+                    });
 
                     const ibgeCodes = new Set();
                     for (let i = hIdx + 1; i < raw.length; i++) {
@@ -13545,16 +13637,16 @@
                     await Promise.all(Array.from(ibgeCodes).map(async (code) => {
                         try {
                             const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${code}`);
-                            if (res.ok) { 
-                                const data = await res.json(); 
-                                if (data.nome) cityCache[code] = data.nome.toUpperCase(); 
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.nome) cityCache[code] = data.nome.toUpperCase();
                             }
-                        } catch(e) {}
+                        } catch (e) {}
                     }));
 
                     for (let i = hIdx + 1; i < raw.length; i++) {
                         const row = raw[i]; if (!row || !row[cols.nf]) continue;
-                        
+
                         const viagensExcel = String(row[cols.viagem] || "").match(/\d+/g) || [];
                         let filtroViagem = null;
 
@@ -13565,7 +13657,6 @@
                             }
                         }
 
-                        // 🟢 TRAVA DE PROTEÇÃO EDI: Cancela a linha inteira se o ST. PAINEL não for SAIDA DIA
                         if (!filtroViagem || !filtroViagem.permitido) continue;
 
                         const nfTratada = cleanNF(row[cols.nf]);
@@ -13574,12 +13665,12 @@
                         let pesoNum = parseFloat(String(row[cols.peso] || "0").replace(',', '.'));
                         let pesoCalc = isNaN(pesoNum) ? "" : (pesoNum / 1000).toFixed(2);
 
-                        let valorCru = String(row[cols.valor] || "0").replace(/[^0-9.-]+/g, ""); 
+                        let valorCru = String(row[cols.valor] || "0").replace(/[^0-9.-]+/g, "");
                         let valorNum = parseFloat(valorCru);
                         let valorCalc = isNaN(valorNum) ? "" : (valorNum / 100).toFixed(2);
 
                         let cidCode = row[cols.cidade] ? String(row[cols.cidade]).trim() : String(row[cols.cidadeFallback] || "").trim();
-                        let nomeCidade = cityCache[cidCode.substring(0,7)] || cidCode; 
+                        let nomeCidade = cityCache[cidCode.substring(0, 7)] || cidCode;
 
                         let objEdi = {
                             nf: nfTratada,
@@ -13591,15 +13682,10 @@
                             bairro: row[cols.bairro] || "",
                             endereco: row[cols.endereco] || "",
                             placa: filtroViagem.placaFinal,
-                            valor: valorCalc 
+                            valor: valorCalc
                         };
 
-                        let trExistente = null;
-                        document.querySelectorAll('#tabela-editor-notas tbody tr').forEach(tr => {
-                            if (cleanNF(tr.querySelector('[data-col="nf"]').textContent) === nfTratada) {
-                                trExistente = tr;
-                            }
-                        });
+                        const trExistente = mapaLinhasExistentes.get(nfTratada) || null;
 
                         if (trExistente) {
                             let alterou = false;
@@ -13610,7 +13696,7 @@
                                     alterou = true;
                                 }
                             };
-                            
+
                             updateIfEmpty('viagem', objEdi.viagem);
                             updateIfEmpty('placa', objEdi.placa);
                             updateIfEmpty('peso', objEdi.peso);
@@ -13632,8 +13718,9 @@
                                 }
                             }
                         } else {
-                            objEdi.origem = 'EDI'; 
+                            objEdi.origem = 'EDI';
                             window.adicionarLinhaNotas(objEdi);
+                            mapaLinhasExistentes.set(nfTratada, tbodyEditorNotas.lastElementChild);
                             notasImportadas++;
                         }
                     }
@@ -13655,39 +13742,65 @@
         // Helper para evitar quebra de HTML em inserções
         const safeStr = (val) => String(val || "").replace(/"/g, '&quot;');
 
-        window.abrirSuperEditorPainel = (modo) => {
-            tbodyPainel.innerHTML = ""; 
-            const btnBuscar = document.getElementById('btn-buscar-editor-painel'); 
-            const boxImport = document.getElementById('controles-importacao-painel');
-            
-            if (modo === 'manual') { 
-                btnBuscar.style.display = "none"; 
-                boxImport.style.display = "none"; 
-                window.adicionarLinhaPainel(); 
-            } else if (modo === 'importar') { 
-                btnBuscar.style.display = "none"; 
-                boxImport.style.display = "block"; 
-            } else { 
-                btnBuscar.style.display = "block"; 
-                boxImport.style.display = "none"; 
-                tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 20px;">Busque a data para editar.</td></tr>`; 
+        async function carregarPainelParaEdicao(d, exibirAvisoVazio = true) {
+            if (!d) return;
+            showLoader();
+            tbodyPainel.innerHTML = "";
+
+            try {
+                const s = await getDoc(doc(db, "painel_diario", d));
+                if (s.exists() && s.data().rotas && s.data().rotas.length > 0) {
+                    const fragment = document.createDocumentFragment();
+                    s.data().rotas.forEach(r => window.adicionarLinhaPainel(r, fragment));
+                    tbodyPainel.appendChild(fragment);
+                } else if (exibirAvisoVazio) {
+                    tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 30px; font-weight: bold; color: var(--warning);">Nenhum painel salvo nesta data. Inicie a importação ou adicione manualmente.</td></tr>`;
+                }
+            } catch (e) {
+                console.error("Erro editor painel:", e);
+                alert("Erro ao buscar dados do painel: " + e.message);
+            } finally {
+                hideLoader();
             }
+        }
+
+        window.abrirSuperEditorPainel = async (modo) => {
+            tbodyPainel.innerHTML = "";
+            const btnBuscar = document.getElementById('btn-buscar-editor-painel');
+            const boxImport = document.getElementById('controles-importacao-painel');
             document.getElementById('modal-editor-painel').classList.add('active');
+
+            const d = document.getElementById('editor-painel-data').value;
+
+            if (modo === 'manual') {
+                btnBuscar.style.display = "none";
+                boxImport.style.display = "none";
+                if (d) await carregarPainelParaEdicao(d, false);
+                window.adicionarLinhaPainel();
+            } else if (modo === 'importar') {
+                btnBuscar.style.display = "none";
+                boxImport.style.display = "block";
+            } else {
+                btnBuscar.style.display = "block";
+                boxImport.style.display = "none";
+                if (d) await carregarPainelParaEdicao(d, true);
+                else tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 20px;">Selecione a data no topo para editar.</td></tr>`;
+            }
         };
 
         window.adicionarLinhaPainel = (dados = {}, targetContainer = tbodyPainel) => {
-            const placa = dados.placa ? dados.placa.replace(/[^A-Z0-9]/g, '') : ""; 
-            const info = window.placasCache[placa] || { perfil: "", tipo: "" }; 
-            const tr = document.createElement('tr'); 
+            const placa = dados.placa ? dados.placa.replace(/[^A-Z0-9]/g, '') : "";
+            const info = window.placasCache[placa] || { perfil: "", tipo: "" };
+            const tr = document.createElement('tr');
             tr.draggable = true;
-            
+
             // GUARDA OS DADOS ORIGINAIS DO FIREBASE NA LINHA
             tr._dadosOriginais = { ...dados };
 
-            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"]; 
+            const statuses = ["Saida Dia", "Pernoite", "Apoio", "Seg. Viagem", "Parada", "Sinistrado", "Pernoite/Viagem"];
             const statusAtual = dados.status || "Saida Dia";
             const optionsHTML = statuses.map(s => `<option value="${s}" ${s === statusAtual ? 'selected' : ''}>${s}</option>`).join('');
-            
+
             tr.innerHTML = `
                 <td class="drag-handle">☰</td>
                 <td data-col="placa" contenteditable="true" style="font-weight:700;">${placa}</td>
@@ -13708,55 +13821,35 @@
                 <td data-col="qtde" contenteditable="true">${safeStr(dados.qtde || "0")}</td>
                 <td align="center"><button class="btn-sm btn-danger" onclick="this.closest('tr').remove()">X</button></td>
             `;
-            
+
             const selectStatus = tr.querySelector('.select-status');
-            selectStatus.addEventListener('change', function() {
+            selectStatus.addEventListener('change', function () {
                 if (typeof getStRotaStyle === 'function') {
                     this.style.cssText = getStRotaStyle(this.value);
                 }
             });
 
-            tr.querySelector('[data-col="placa"]').addEventListener('blur', function () { 
-                const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''); 
-                this.innerText = val; 
-                const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" }; 
-                tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil; 
-                tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo; 
+            tr.querySelector('[data-col="placa"]').addEventListener('blur', function () {
+                const val = this.innerText.toUpperCase().trim().replace(/[^A-Z0-9]/g, '');
+                this.innerText = val;
+                const infoL = window.placasCache[val] || { perfil: "-", tipo: "-" };
+                tr.querySelector('[data-col="perfil"]').innerText = infoL.perfil;
+                tr.querySelector('[data-col="tipo"]').innerText = infoL.tipo;
             });
-            
+
             configurarDragAndDrop(tr);
-            targetContainer.appendChild(tr); 
+            targetContainer.appendChild(tr);
         };
 
-        document.getElementById('btn-buscar-editor-painel').addEventListener('click', async () => {
-            const d = document.getElementById('editor-painel-data').value; 
-            if (!d) return; 
-            
-            showLoader(); 
-            tbodyPainel.innerHTML = "";
-            
-            try {
-                const s = await getDoc(doc(db, "painel_diario", d));
-                
-                if (s.exists() && s.data().rotas && s.data().rotas.length > 0) {
-                    const fragment = document.createDocumentFragment();
-                    s.data().rotas.forEach(r => window.adicionarLinhaPainel(r, fragment));
-                    tbodyPainel.appendChild(fragment);
-                } else {
-                    tbodyPainel.innerHTML = `<tr><td colspan="16" align="center" style="padding: 30px; font-weight: bold; color: var(--warning);">Nenhum painel salvo nesta data. Inicie a importação ou adicione manualmente.</td></tr>`;
-                }
-            } catch (e) { 
-                console.error("Erro editor painel:", e); 
-                alert("Erro ao buscar dados do painel: " + e.message);
-            } finally {
-                hideLoader();
-            }
+        document.getElementById('btn-buscar-editor-painel').addEventListener('click', () => {
+            const d = document.getElementById('editor-painel-data').value;
+            carregarPainelParaEdicao(d, true);
         });
 
         document.getElementById('editor-painel-data').addEventListener('change', () => {
-            const d = document.getElementById('editor-painel-data').value; 
+            const d = document.getElementById('editor-painel-data').value;
             if (d) {
-                document.getElementById('btn-buscar-editor-painel').click();
+                carregarPainelParaEdicao(d, true);
             }
         });
 
@@ -13764,58 +13857,86 @@
         document.getElementById('filtro-editor-painel').addEventListener('input', (e) => {
             const termo = e.target.value.toLowerCase().trim();
             const linhas = tbodyPainel.querySelectorAll('tr');
-            
+
             linhas.forEach(tr => {
                 const textoLinha = tr.innerText.toLowerCase();
                 tr.style.display = textoLinha.includes(termo) ? '' : 'none';
             });
         });
 
+        // ================= SALVAR PAINEL BLINDADO (ANTI-ZERAMENTO + MERGE DE PRESTAÇÃO) =================
         document.getElementById('btn-salvar-editor-painel').addEventListener('click', async () => {
-            const d = document.getElementById('editor-painel-data').value; 
-            if (!d) {
-                alert("Selecione uma data válida antes de salvar.");
-                return;
-            } 
-            
-            showLoader(); 
-            const rotas = [];
-            
-            document.querySelectorAll('#tabela-editor-painel tbody tr').forEach(tr => {
-                const elPlaca = tr.querySelector('[data-col="placa"]');
-                if (!elPlaca) return;
-                
-                // RECUPERA OS CAMPOS ANTERIORES DO FIREBASE (EX: conferente, prestacao_impressa, transporte_prestado)
-                const dadosOriginais = tr._dadosOriginais || {};
+            const d = document.getElementById('editor-painel-data').value;
+            if (!d) return alert("Selecione uma data válida antes de salvar.");
 
-                rotas.push({ 
-                    ...dadosOriginais, // Preserva chaves de prestação de contas
-                    placa: elPlaca.innerText.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''), 
-                    troca: tr.querySelector('[data-col="troca"]').innerText.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''), 
-                    perfil: tr.querySelector('[data-col="perfil"]').innerText.trim(), 
-                    tipo: tr.querySelector('[data-col="tipo"]').innerText.trim(), 
-                    oc: tr.querySelector('[data-col="oc"]').innerText.trim(), 
-                    transporte: tr.querySelector('[data-col="transporte"]').innerText.trim(), 
-                    motorista: tr.querySelector('[data-col="motorista"]').innerText.trim(), 
-                    contato: tr.querySelector('[data-col="contato"]').innerText.trim(), 
-                    status: tr.querySelector('.select-status').value, 
-                    km: tr.querySelector('[data-col="km"]').innerText.trim(), 
-                    regiao: tr.querySelector('[data-col="regiao"]').innerText.trim(), 
-                    ajudante: tr.querySelector('[data-col="ajudante"]').innerText.trim(), 
-                    vale_palete: tr.querySelector('[data-col="valepalete"]').innerText.trim(), 
-                    qtde: tr.querySelector('[data-col="qtde"]').innerText.trim() 
-                });
-            });
+            const linhasValidas = Array.from(document.querySelectorAll('#tabela-editor-painel tbody tr'))
+                .filter(tr => tr.querySelector('[data-col="placa"]') && tr.querySelector('[data-col="placa"]').innerText.trim() !== "");
 
+            // 🛑 TRAVA 1: Impede zerar o painel por acidente
+            if (linhasValidas.length === 0) {
+                return alert("BLOQUEADO: Não há nenhuma placa válida na tabela.\nSe deseja apagar este dia, use o botão 'Excluir Período'.");
+            }
+
+            showLoader();
             try {
-                await setDoc(doc(db, "painel_diario", d), { rotas }); 
-                if (document.getElementById('mon-data-select') && document.getElementById('mon-data-select').value === d) { 
-                    document.getElementById('btn-carregar-painel').click(); 
-                } 
-                alert("Painel Salvo com sucesso!"); 
+                const snapAtual = await getDoc(doc(db, "painel_diario", d));
+                const rotasBanco = snapAtual.exists() ? (snapAtual.data().rotas || []) : [];
+
+                // 🛑 TRAVA 2: Alerta de segurança se o usuário estiver reduzindo as rotas do dia
+                if (rotasBanco.length > 0 && linhasValidas.length < rotasBanco.length) {
+                    hideLoader();
+                    const dBR = d.split('-').reverse().join('/');
+                    const confirmou = confirm(
+                        `⚠️ ATENÇÃO — PROTEÇÃO CONTRA PERDA DE DADOS!\n\n` +
+                        `O painel do dia ${dBR} já possui ${rotasBanco.length} veículo(s) salvo(s).\n` +
+                        `Você está salvando apenas ${linhasValidas.length} veículo(s) (${rotasBanco.length - linhasValidas.length} serão removidos).\n\n` +
+                        `Tem certeza absoluta que deseja sobrescrever?`
+                    );
+                    if (!confirmou) return;
+                    showLoader();
+                }
+
+                // Mapa de backup do banco para preservar conferente/prestacao_impressa mesmo após reimportar Excel
+                const mapBanco = {};
+                rotasBanco.forEach(r => {
+                    const p = String(r.placa || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const t = String(r.transporte || "").trim();
+                    if (p) mapBanco[`${p}|${t}`] = r;
+                    if (p && !mapBanco[p]) mapBanco[p] = r;
+                });
+
+                const rotas = linhasValidas.map(tr => {
+                    const placa = tr.querySelector('[data-col="placa"]').innerText.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const transporte = tr.querySelector('[data-col="transporte"]').innerText.trim();
+                    const dadosOriginais = tr._dadosOriginais || mapBanco[`${placa}|${transporte}`] || mapBanco[placa] || {};
+
+                    return {
+                        ...dadosOriginais,
+                        placa,
+                        troca: tr.querySelector('[data-col="troca"]').innerText.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''),
+                        perfil: tr.querySelector('[data-col="perfil"]').innerText.trim(),
+                        tipo: tr.querySelector('[data-col="tipo"]').innerText.trim(),
+                        oc: tr.querySelector('[data-col="oc"]').innerText.trim(),
+                        transporte,
+                        motorista: tr.querySelector('[data-col="motorista"]').innerText.trim(),
+                        contato: tr.querySelector('[data-col="contato"]').innerText.trim(),
+                        status: tr.querySelector('.select-status').value,
+                        km: tr.querySelector('[data-col="km"]').innerText.trim(),
+                        regiao: tr.querySelector('[data-col="regiao"]').innerText.trim(),
+                        ajudante: tr.querySelector('[data-col="ajudante"]').innerText.trim(),
+                        vale_palete: tr.querySelector('[data-col="valepalete"]').innerText.trim(),
+                        qtde: tr.querySelector('[data-col="qtde"]').innerText.trim()
+                    };
+                });
+
+                await setDoc(doc(db, "painel_diario", d), { rotas });
+                if (document.getElementById('mon-data-select')?.value === d) {
+                    document.getElementById('btn-carregar-painel').click();
+                }
+                alert(`✅ Painel salvo com sucesso (${rotas.length} veículos)!`);
                 document.getElementById('modal-editor-painel').classList.remove('active');
             } catch (error) {
-                console.error("Erro ao salvar painel no Firestore:", error);
+                console.error("Erro ao salvar painel:", error);
                 alert("Erro ao salvar painel: " + error.message);
             } finally {
                 hideLoader();
@@ -13828,11 +13949,11 @@
             const dSel = document.getElementById('editor-painel-data').value;
             if (!dSel) { alert("Selecione a data no topo antes de importar a planilha!"); e.target.value = ''; return; }
 
-            showLoader(); 
+            showLoader();
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
-                    const data = new Uint8Array(e.target.result); 
+                    const data = new Uint8Array(e.target.result);
                     const wb = XLSX.read(data, { type: 'array' });
                     const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
 
@@ -13867,66 +13988,64 @@
                         if (!confirm(`Não foi possível identificar a data na planilha (células I5/J5).\nVocê selecionou ${dSelFormatada}.\nDeseja prosseguir assim mesmo?`)) { hideLoader(); document.getElementById('file-import-painel').value = ''; return; }
                     }
 
-                    let hIdx = -1; 
-                    for (let i = 0; i < raw.length; i++) { 
+                    let hIdx = -1;
+                    for (let i = 0; i < raw.length; i++) {
                         const linhaTexto = raw[i].join(' ').toUpperCase();
-                        if (linhaTexto.includes("EMPLACAMENTO")) { 
-                            hIdx = i; 
-                            break; 
-                        } 
-                    }
-                    
-                    if (hIdx === -1) { 
-                        alert("Erro: Cabeçalho 'EMPLACAMENTO' não encontrado."); 
-                        hideLoader(); 
-                        document.getElementById('file-import-painel').value = ''; 
-                        return; 
+                        if (linhaTexto.includes("EMPLACAMENTO")) {
+                            hIdx = i;
+                            break;
+                        }
                     }
 
-                    tbodyPainel.innerHTML = ''; 
-                    
+                    if (hIdx === -1) {
+                        alert("Erro: Cabeçalho 'EMPLACAMENTO' não encontrado.");
+                        hideLoader();
+                        document.getElementById('file-import-painel').value = '';
+                        return;
+                    }
+
+                    tbodyPainel.innerHTML = '';
+
                     const h = raw[hIdx].map(x => String(x).toUpperCase().trim());
-                    const cols = { 
-                        placa: h.indexOf("EMPLACAMENTO"), 
-                        troca: h.indexOf("TROCA"), 
-                        regiao: h.indexOf("CIDADES"), 
-                        oc: h.indexOf("NUMEROS O.C"), 
-                        km: h.indexOf("KM ROTA"), 
-                        ajudante: h.indexOf("AJUDANTE") 
+                    const cols = {
+                        placa: h.indexOf("EMPLACAMENTO"),
+                        troca: h.indexOf("TROCA"),
+                        regiao: h.indexOf("CIDADES"),
+                        oc: h.indexOf("NUMEROS O.C"),
+                        km: h.indexOf("KM ROTA"),
+                        ajudante: h.indexOf("AJUDANTE")
                     };
 
                     let linhasCriadas = 0;
                     const fragment = document.createDocumentFragment();
 
                     for (let i = hIdx + 1; i < raw.length; i++) {
-                        const r = raw[i]; 
-                        
+                        const r = raw[i];
                         if (!r || !r[cols.placa] || String(r[cols.placa]).trim() === "") continue;
-                        
-                        const pOriginal = String(r[cols.placa]).trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); 
-                        
+
+                        const pOriginal = String(r[cols.placa]).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
                         if (pOriginal === "" || pOriginal.includes("1899") || pOriginal === "EMPLACAMENTO") continue;
-                        
+
                         let pTroca = cols.troca !== -1 && r[cols.troca] ? String(r[cols.troca]).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : "";
-                        
-                        window.adicionarLinhaPainel({ 
-                            placa: pOriginal, 
-                            troca: pTroca !== "18991231" ? pTroca : "", 
-                            oc: cols.oc !== -1 ? String(r[cols.oc]).trim() : "", 
-                            km: cols.km !== -1 ? String(r[cols.km]).trim() : "0", 
-                            regiao: cols.regiao !== -1 ? String(r[cols.regiao]).trim() : "", 
-                            ajudante: cols.ajudante !== -1 ? String(r[cols.ajudante]).trim() : "" 
+
+                        window.adicionarLinhaPainel({
+                            placa: pOriginal,
+                            troca: pTroca !== "18991231" ? pTroca : "",
+                            oc: cols.oc !== -1 ? String(r[cols.oc]).trim() : "",
+                            km: cols.km !== -1 ? String(r[cols.km]).trim() : "0",
+                            regiao: cols.regiao !== -1 ? String(r[cols.regiao]).trim() : "",
+                            ajudante: cols.ajudante !== -1 ? String(r[cols.ajudante]).trim() : ""
                         }, fragment);
-                        
+
                         linhasCriadas++;
-                    } 
-                    
+                    }
+
                     tbodyPainel.appendChild(fragment);
 
                     if (linhasCriadas === 0) {
                         alert("A planilha foi lida, mas nenhuma linha com placa válida foi encontrada. Verifique se as linhas abaixo do cabeçalho possuem dados na coluna 'EMPLACAMENTO'.");
                     }
-                    
+
                 } catch (error) {
                     console.error(error);
                     alert("Erro catastrófico ao ler a planilha: " + error.message);
@@ -13934,7 +14053,7 @@
                     hideLoader();
                     document.getElementById('file-import-painel').value = '';
                 }
-            }; 
+            };
             reader.readAsArrayBuffer(file);
         });
 
@@ -13944,7 +14063,7 @@
                 tr.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
             });
-            
+
             tr.addEventListener('dragend', () => {
                 tr.classList.remove('dragging');
             });
@@ -13952,23 +14071,23 @@
 
         function inicializarContainerDragAndDrop(containerId) {
             const container = document.querySelector(`${containerId} tbody`);
-            if (!container || container.dataset.dragAtivo === "true") return; 
+            if (!container || container.dataset.dragAtivo === "true") return;
 
             container.dataset.dragAtivo = "true";
 
             container.addEventListener('dragover', (e) => {
-                e.preventDefault(); 
-                const drag = container.querySelector('.dragging'); 
-                if (!drag) return; 
+                e.preventDefault();
+                const drag = container.querySelector('.dragging');
+                if (!drag) return;
 
-                const siblings = [...container.querySelectorAll('tr:not(.dragging)')]; 
-                
+                const siblings = [...container.querySelectorAll('tr:not(.dragging)')];
+
                 let nextSibling = siblings.find(sibling => {
                     const rect = sibling.getBoundingClientRect();
                     return e.clientY <= rect.top + (rect.height / 2);
                 });
-                
-                container.insertBefore(drag, nextSibling); 
+
+                container.insertBefore(drag, nextSibling);
             });
         }
 
@@ -13976,8 +14095,6 @@
             inicializarContainerDragAndDrop('#tabela-editor-notas');
             inicializarContainerDragAndDrop('#tabela-editor-painel');
         });
-
-        
 
         // ================= EDITOR DE LAYOUT AVANÇADO (SEM SENHA E FLUTUANTE) =================
         let layoutDesbloqueado = false;
@@ -17299,10 +17416,84 @@ document.querySelectorAll('tbody').forEach(tbody => {
             }
         });
 
-        // ================= CONTROLE DE ABAS E RENDERIZAÇÃO DA PRESTAÇÃO DE CONTAS =================
+        // ================= CONTROLE DE ABAS E RENDERIZAÇÃO DA PRESTAÇÃO DE CONTAS (CORRIGIDO) =================
         window.abaPrestacaoAtual = 'pendentes';
         window._dadosPrestacaoCache = null;
         window._diasPendentesAnterioresCache = [];
+
+        // Função única de regra de negócio (garante 100% de igualdade entre a tela e o alerta de quinzenas)
+        function avaliarRotaParaPrestacao(rota, notasDoDia, dataIso) {
+            const tipoStatus = trimUpper(rota.status || "");
+            const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
+            if (!statusValido) return null;
+
+            const placaOriginal = trimUpper(rota.placa || "");
+            const placaTroca = trimUpper(rota.troca || "");
+            const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
+            if (!placaRef) return null;
+
+            const placaRefLimpa = placaRef.replace(/[^A-Z0-9]/g, '');
+            const transporteStr = String(rota.transporte || "").trim();
+            const transpNumArray = transporteStr.match(/\d+/g) || [];
+
+            // Filtra estritamente pela placa efetiva (evita misturar notas da placa antiga em trocas)
+            const notasPlaca = notasDoDia.filter(n => {
+                const statusNF = trimUpper(n.status);
+                if (statusNF === 'NÃO EMBARCADA' || statusNF === 'PERNOITE') return false;
+
+                const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                if (pNota !== placaRefLimpa) return false;
+
+                const viagemNota = String(n.viagem || "").trim();
+                if (transpNumArray.length > 0 && viagemNota !== "") {
+                    return transpNumArray.some(t => viagemNota.includes(t));
+                }
+                return true;
+            });
+
+            if (notasPlaca.length === 0) return null;
+
+            const qtd_nf = notasPlaca.length;
+            const devolucao = notasPlaca.filter(n => ['DEVOLUÇÃO', 'DEVOLUCAO'].includes(trimUpper(n.status))).length;
+            const reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+            const sinistrada = notasPlaca.filter(n => trimUpper(n.status) === 'SINISTRADA').length;
+            const realizada = notasPlaca.filter(n => ['ENTREGUE', 'REALIZADA'].includes(trimUpper(n.status))).length;
+
+            // Considera finalizada se todas as NFs já têm desfecho (Entregue, Realizada, Devolução, Reentrega ou Sinistrada)
+            if ((realizada + devolucao + reentrega + sinistrada) !== qtd_nf) return null;
+
+            const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+            const notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+            const percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+
+            const notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+            const cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
+
+            const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
+
+            const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+            const foiPrestado = rota.prestacao_impressa === true && (
+                transpPrestadoStr === "" ||
+                transporteStr === "" ||
+                transpPrestadoStr === transporteStr ||
+                transpPrestadoStr.includes(transporteStr)
+            );
+
+            return {
+                foiPrestado,
+                infoCarro: {
+                    data: dataIso,
+                    placa: placaExibicao,
+                    motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                    qtd: qtd_nf,
+                    regiao: rota.regiao || "Sem rota def.",
+                    transporte: transporteStr, // Mantém vazio se não houver (não suja com "-")
+                    percentApp,
+                    cemPorcentoAss,
+                    conferente: rota.conferente || "Sistema"
+                }
+            };
+        }
 
         window.mudarAbaPrestacao = (tipo) => {
             window.abaPrestacaoAtual = tipo;
@@ -17339,7 +17530,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
             const dataset = window.abaPrestacaoAtual === 'pendentes' ? dados.pendentes : dados.concluidos;
             let htmlFinal = "";
-            const datasOrdenadas = Object.keys(dataset).sort((a, b) => new Date(b) - new Date(a));
+            const datasOrdenadas = Object.keys(dataset).sort((a, b) => b.localeCompare(a));
 
             if (datasOrdenadas.length === 0) {
                 const msg = window.abaPrestacaoAtual === 'pendentes'
@@ -17349,11 +17540,9 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 return;
             }
 
-            let usuarioLogado = "DESCONHECIDO";
+            let usuarioLogado = "MATHEUS LEITE";
             if (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName) {
                 usuarioLogado = String(auth.currentUser.displayName).trim().toUpperCase();
-            } else {
-                usuarioLogado = "MATHEUS LEITE"; 
             }
             const primeiroNomeLogado = usuarioLogado.split(' ')[0];
 
@@ -17363,26 +17552,28 @@ document.querySelectorAll('tbody').forEach(tbody => {
                     let acaoBotao = '';
                     let badgeConferente = '';
                     let gridConfig = '';
+                    const transpSeguro = String(c.transporte || "").replace(/'/g, "\\'");
+                    const transpExibicao = c.transporte || "-";
 
                     if (window.abaPrestacaoAtual === 'concluidos') {
                         const nomeQuebrado = c.conferente ? c.conferente.split(' ') : ['Sistema'];
                         const nomeExibicao = nomeQuebrado.length > 1 ? `${nomeQuebrado[0]} ${nomeQuebrado[1]}` : nomeQuebrado[0];
-                        
+
                         const conferenteRegistro = String(c.conferente || "Sistema").trim().toUpperCase();
                         const primeiroNomeRegistro = conferenteRegistro.split(' ')[0];
 
-                        const temPermissao = conferenteRegistro === usuarioLogado || 
-                                             usuarioLogado.includes(conferenteRegistro) || 
-                                             conferenteRegistro.includes(usuarioLogado) || 
-                                             primeiroNomeRegistro === primeiroNomeLogado || 
+                        const temPermissao = conferenteRegistro === usuarioLogado ||
+                                             usuarioLogado.includes(conferenteRegistro) ||
+                                             conferenteRegistro.includes(usuarioLogado) ||
+                                             primeiroNomeRegistro === primeiroNomeLogado ||
                                              conferenteRegistro === "SISTEMA";
 
                         if (temPermissao) {
-                            acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
+                            acaoBotao = `<button class="btn btn-sm" onclick="window.desmarcarPrestacaoImpressa('${c.data}', '${c.placa}', '${transpSeguro}')" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Desfazer baixa"><i class="ph ph-arrow-counter-clockwise"></i> Desfazer</button>`;
                         } else {
                             acaoBotao = `<span style="color: var(--text-muted); font-size: 16px; margin: 0 auto;" title="Baixado por outro conferente"><i class="ph ph-lock-key"></i></span>`;
                         }
-                        
+
                         badgeConferente = `
                         <span onclick="window.abrirPerfilConferente('${c.conferente}')" 
                             onmouseover="this.style.background='#cbd5e1'; this.style.color='#1e40af'" 
@@ -17392,12 +17583,11 @@ document.querySelectorAll('tbody').forEach(tbody => {
                             <i class="ph-bold ph-user-circle" style="font-size: 14px; flex-shrink: 0;"></i> 
                             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeExibicao}</span>
                         </span>`;
-                        
+
                         gridConfig = 'minmax(70px, 1fr) minmax(90px, 1.5fr) minmax(60px, 1fr) 1fr minmax(90px, 1.5fr) minmax(70px, 1fr) 30px minmax(130px, auto) minmax(85px, auto)';
-                    } 
-                    else {
+                    } else {
                         if (c.cemPorcentoAss === '✅') {
-                            acaoBotao = `<button class="btn btn-sm" onclick="window.marcarPrestacaoComoImpressa('${c.data}', '${c.placa}', '${c.transporte}')" style="background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Concluir Baixa Manual"><i class="ph-bold ph-check"></i> Baixar</button>`;
+                            acaoBotao = `<button class="btn btn-sm" onclick="window.marcarPrestacaoComoImpressa('${c.data}', '${c.placa}', '${transpSeguro}')" style="background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;" title="Concluir Baixa Manual"><i class="ph-bold ph-check"></i> Baixar</button>`;
                         } else {
                             acaoBotao = `<span></span>`;
                         }
@@ -17409,8 +17599,8 @@ document.querySelectorAll('tbody').forEach(tbody => {
                             <span style="font-weight: 800; color: var(--accent);">${c.placa}</span>
                             <span style="font-weight: 600; color: var(--text-main); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.motorista}</span>
                             <span style="font-weight: 700; color: var(--success);">${c.qtd} NFs</span>
-                            <span style="color:var(--text-muted); font-weight:700; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${c.transporte}">
-                                <i class="ph-fill ph-truck" style="margin-right:3px;"></i>${c.transporte}
+                            <span style="color:var(--text-muted); font-weight:700; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${transpExibicao}">
+                                <i class="ph-fill ph-truck" style="margin-right:3px;"></i>${transpExibicao}
                             </span>
                             <span style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.regiao}">${c.regiao}</span>
                             <span style="font-weight:700; color:var(--text-main); font-size:11.5px; text-align: center; background: var(--drag-bg); padding: 2px 6px; border-radius: 4px;">
@@ -17452,7 +17642,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
             const hoje = new Date();
             const inputMes = document.getElementById('filtro-mes-prestacao');
             const inputQuinzena = document.getElementById('filtro-quinzena-prestacao');
-            
+
             if (inputMes && !inputMes.value) {
                 const anoAtual = hoje.getFullYear();
                 const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -17465,18 +17655,14 @@ document.querySelectorAll('tbody').forEach(tbody => {
             container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--text-muted); font-weight:600;"><i class="ph ph-spinner ph-spin"></i> Processando dados em alta velocidade...</div>`;
 
             const [anoSel, mesSel] = inputMes.value.split('-');
-            const anoNum = parseInt(anoSel);
-            const mesNum = parseInt(mesSel) - 1; 
+            const anoNum = parseInt(anoSel, 10);
+            const mesNum = parseInt(mesSel, 10) - 1;
             const quinzenaSel = inputQuinzena.value;
 
             let inicioDia = 1;
             let fimDia = new Date(anoNum, mesNum + 1, 0).getDate();
-
-            if (quinzenaSel === "1") {
-                fimDia = 15;
-            } else if (quinzenaSel === "2") {
-                inicioDia = 16;
-            }
+            if (quinzenaSel === "1") fimDia = 15;
+            else if (quinzenaSel === "2") inicioDia = 16;
 
             const datasParaBuscar = [];
             const agoraLimit = new Date();
@@ -17492,7 +17678,6 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 }
             }
 
-            // 🚀 DISPARA VERIFICAÇÃO DE QUINZENAS ANTERIORES
             const dataInicioFiltro = new Date(anoNum, mesNum, inicioDia);
             window.verificarQuinzenasAnteriores(dataInicioFiltro);
 
@@ -17500,11 +17685,10 @@ document.querySelectorAll('tbody').forEach(tbody => {
             const concluidosPorData = {};
 
             try {
-                const promessasPainel = datasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)));
-                const promessasNotas = datasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d)));
-
-                const snapsPainel = await Promise.all(promessasPainel);
-                const snapsNotas = await Promise.all(promessasNotas);
+                const [snapsPainel, snapsNotas] = await Promise.all([
+                    Promise.all(datasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)))),
+                    Promise.all(datasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d))))
+                ]);
 
                 for (let i = 0; i < datasParaBuscar.length; i++) {
                     const dataIso = datasParaBuscar[i];
@@ -17517,95 +17701,21 @@ document.querySelectorAll('tbody').forEach(tbody => {
                     const notas = snapNotas.data().notas || [];
 
                     rotas.forEach(rota => {
-                        const tipoStatus = trimUpper(rota.status || ""); 
-                        const nomeRota = trimUpper(rota.rota || "");
-                        
-                        // CORREÇÃO APLICADA: 'PERNOITE' removido da checagem de status e condicionado à coluna st.rota
-                        const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
-                        const rotaPernoite = nomeRota.includes('PERNOITE');
-                        
-                        if (!statusValido && !rotaPernoite) return;
+                        const res = avaliarRotaParaPrestacao(rota, notas, dataIso);
+                        if (!res) return;
 
-                        const placaOriginal = trimUpper(rota.placa || "");
-                        const placaTroca = trimUpper(rota.troca || "");
-                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
-                        
-                        if (!placaRef) return;
+                        const { foiPrestado, infoCarro } = res;
+                        const destino = foiPrestado ? concluidosPorData : pendenciasPorData;
 
-                        const transporteStr = String(rota.transporte || "").trim();
-                        const transpNumArray = transporteStr.match(/\d+/g) || [];
-
-                        const notasPlaca = notas.filter(n => {
-                            const statusNF = trimUpper(n.status);
-                            // REMOVIDAS NOTAS "PERNOITE" DA MATEMÁTICA, IGUAL ÀS NÃO EMBARCADAS
-                            if (statusNF === 'NÃO EMBARCADA' || statusNF === 'PERNOITE') return false; 
-                            
-                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
-                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
-                            if (!matchPlaca) return false;
-
-                            const viagemNota = String(n.viagem || "").trim();
-                            if (transpNumArray.length > 0 && viagemNota !== "") {
-                                return transpNumArray.some(t => viagemNota.includes(t));
-                            }
-                            return true;
-                        });
-
-                        if (notasPlaca.length === 0) return;
-
-                        let qtd_nf = notasPlaca.length;
-                        let devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
-                        let reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                        let realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-
-                        let finalizou = false;
-                        if (realizada === qtd_nf && devolucao === 0 && reentrega === 0) finalizou = true;
-                        else if ((realizada + devolucao + reentrega) === qtd_nf) finalizou = true;
-
-                        if (!finalizou) return;
-
-                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
-
-                        let notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                        let percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-
-                        let notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                        let cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "✅" : "❌";
-
-                        const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
-
-                        const infoCarro = {
-                            data: dataIso,
-                            placa: placaExibicao,
-                            motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
-                            qtd: qtd_nf,
-                            regiao: rota.regiao || "Sem rota def.",
-                            transporte: transporteStr || "-",
-                            percentApp: percentApp,
-                            cemPorcentoAss: cemPorcentoAss,
-                            conferente: rota.conferente || "Sistema"
-                        };
-
-                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
-                        const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
-
-                        if (foiPrestado) {
-                            if (!concluidosPorData[dataIso]) concluidosPorData[dataIso] = [];
-                            if (!concluidosPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
-                                concluidosPorData[dataIso].push(infoCarro);
-                            }
-                        } else {
-                            if (!pendenciasPorData[dataIso]) pendenciasPorData[dataIso] = [];
-                            if (!pendenciasPorData[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
-                                pendenciasPorData[dataIso].push(infoCarro);
-                            }
+                        if (!destino[dataIso]) destino[dataIso] = [];
+                        if (!destino[dataIso].some(c => c.placa === infoCarro.placa && c.transporte === infoCarro.transporte)) {
+                            destino[dataIso].push(infoCarro);
                         }
                     });
                 }
 
                 window._dadosPrestacaoCache = { pendentes: pendenciasPorData, concluidos: concluidosPorData };
                 window.renderizarAccordionPrestacao(window._dadosPrestacaoCache);
-
             } catch (e) {
                 console.error("Erro ao buscar dados de prestação:", e);
                 container.innerHTML = `<div style="padding: 15px; text-align: center; color: var(--danger);">Erro ao carregar registros.</div>`;
@@ -17613,15 +17723,13 @@ document.querySelectorAll('tbody').forEach(tbody => {
         };
 
         // ================= VERIFICAÇÃO GLOBAL DE TODAS AS QUINZENAS PENDENTES (ÚLTIMOS 180 DIAS) =================
-        window.verificarQuinzenasAnteriores = async (dataInicioFiltro) => {
+        window.verificarQuinzenasAnteriores = async () => {
             const alertBanner = document.getElementById('alert-quinzenas-anteriores');
             if (!alertBanner) return;
 
             const inputMesAtual = document.getElementById('filtro-mes-prestacao')?.value || "";
             const inputQuinzenaAtual = document.getElementById('filtro-quinzena-prestacao')?.value || "";
-            const chaveQuinzenaAtual = `${inputMesAtual}|${inputQuinzenaAtual}`;
 
-            // Varre 180 dias para trás a partir de HOJE (mostra todas as quinzenas pendentes de uma vez)
             const datasParaVarrer = [];
             const dCursor = new Date();
             dCursor.setHours(12, 0, 0, 0);
@@ -17651,65 +17759,37 @@ document.querySelectorAll('tbody').forEach(tbody => {
                     if (!snapPainel.exists() || !snapNotas.exists()) continue;
 
                     const [ano, mes, dia] = dataIso.split('-');
+                    const anoMes = `${ano}-${mes}`;
                     const quinzena = parseInt(dia, 10) <= 15 ? "1" : "2";
-                    const chaveQ = `${ano}-${mes}|${quinzena}`;
+                    const chaveQ = `${anoMes}|${quinzena}`;
 
-                    // Ignora apenas a quinzena que já está aberta na tela agora
-                    if (chaveQ === chaveQuinzenaAtual) continue;
+                    // Ignora o período que já está aberto na tela (tanto 1ª/2ª quinzena quanto Mês Completo)
+                    if (anoMes === inputMesAtual && (inputQuinzenaAtual === 'all' || inputQuinzenaAtual === quinzena)) {
+                        continue;
+                    }
 
                     const rotas = snapPainel.data().rotas || [];
                     const notas = snapNotas.data().notas || [];
+                    const vistosNoDia = new Set();
                     let pendentesNoDia = 0;
 
                     rotas.forEach(rota => {
-                        const tipoStatus = trimUpper(rota.status || "");
-                        const nomeRota = trimUpper(rota.rota || "");
-                        const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
-                        if (!statusValido && !nomeRota.includes('PERNOITE')) return;
+                        const res = avaliarRotaParaPrestacao(rota, notas, dataIso);
+                        if (!res || res.foiPrestado) return;
 
-                        const placaOriginal = trimUpper(rota.placa || "");
-                        const placaTroca = trimUpper(rota.troca || "");
-                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
-                        if (!placaRef) return;
-
-                        const transporteStr = String(rota.transporte || "").trim();
-                        const transpNumArray = transporteStr.match(/\d+/g) || [];
-
-                        const notasPlaca = notas.filter(n => {
-                            const stNF = trimUpper(n.status);
-                            if (stNF === 'NÃO EMBARCADA' || stNF === 'PERNOITE') return false;
-                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
-                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
-                            if (!matchPlaca) return false;
-
-                            const viagemNota = String(n.viagem || "").trim();
-                            if (transpNumArray.length > 0 && viagemNota !== "") {
-                                return transpNumArray.some(t => viagemNota.includes(t));
-                            }
-                            return true;
-                        });
-
-                        if (notasPlaca.length === 0) return;
-
-                        const qtd_nf = notasPlaca.length;
-                        const devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
-                        const reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                        const realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-
-                        if ((realizada + devolucao + reentrega) !== qtd_nf) return;
-
-                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
-                        const foiPrestado = rota.prestacao_impressa === true && (!rota.transporte_prestado || transpPrestadoStr === transporteStr || transpPrestadoStr.includes(transporteStr));
-
-                        if (!foiPrestado) pendentesNoDia++;
+                        const chaveUnica = `${res.infoCarro.placa}|${res.infoCarro.transporte}`;
+                        if (!vistosNoDia.has(chaveUnica)) {
+                            vistosNoDia.add(chaveUnica);
+                            pendentesNoDia++;
+                        }
                     });
 
                     if (pendentesNoDia > 0) {
                         if (!mapaQuinzenas[chaveQ]) {
                             const mesNome = nomesMeses[parseInt(mes, 10) - 1];
                             mapaQuinzenas[chaveQ] = {
-                                anoMes: `${ano}-${mes}`,
-                                quinzena: quinzena,
+                                anoMes,
+                                quinzena,
                                 titulo: `${quinzena}ª Quinzena de ${mesNome}/${ano}`,
                                 periodo: quinzena === "1" ? `01/${mes} a 15/${mes}` : `16/${mes} a Fim do Mês`,
                                 qtdDias: 0,
@@ -17743,7 +17823,6 @@ document.querySelectorAll('tbody').forEach(tbody => {
             }
         };
 
-        // ================= MODAL DE QUINZENAS PENDENTES =================
         window.abrirModalPendenciasAnteriores = () => {
             const modal = document.getElementById('modal-pendencias-anteriores');
             const container = document.getElementById('conteudo-modal-pendencias-anteriores');
@@ -17805,6 +17884,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
         window.desmarcarPrestacaoImpressa = async (dataSel, placaSelecionada, transporteSelecionado) => {
             try {
                 const placaAlvoLimpa = String(placaSelecionada).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const transpAlvo = (transporteSelecionado === '-' ? '' : String(transporteSelecionado || '')).trim();
                 const docRef = doc(db, "painel_diario", dataSel);
                 const docSnap = await getDoc(docRef);
 
@@ -17819,19 +17899,18 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
                         const batePlaca = (placaRotaLimpa === placaAlvoLimpa || trocaRotaLimpa === placaAlvoLimpa);
 
-                        if (batePlaca) {
-                            if (!transporteSelecionado || transporteSelecionado === "" || transpRota === transporteSelecionado) {
-                                delete r.prestacao_impressa; 
-                                delete r.transporte_prestado;
-                                modificou = true;
-                            }
+                        if (batePlaca && (transpAlvo === "" || transpRota === transpAlvo)) {
+                            delete r.prestacao_impressa;
+                            delete r.transporte_prestado;
+                            delete r.conferente;
+                            modificou = true;
                         }
                         return r;
                     });
 
                     if (modificou) {
                         await setDoc(docRef, { rotas }, { merge: true });
-                        window._dadosPrestacaoCache = null; 
+                        window._dadosPrestacaoCache = null;
                         window.carregarPendenciasContas();
                     }
                 }
@@ -23311,6 +23390,7 @@ document.querySelectorAll('tbody').forEach(tbody => {
             const overlay = document.createElement('div');
             overlay.id = 'overlay-transicao-data';
             overlay.innerHTML = `
+                <div class="overlay-data-dica" id="overlay-data-badge" style="display:none;"></div>
                 <div class="overlay-data-texto" id="overlay-data-display"></div>
             `;
             document.body.appendChild(overlay);
@@ -23318,8 +23398,16 @@ document.querySelectorAll('tbody').forEach(tbody => {
             let overlayTimeout;
             let firebaseDebounceTimer = null;
 
+            function obterHojeLocalISO() {
+                const now = new Date();
+                const a = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                return `${a}-${m}-${d}`;
+            }
+
             // 3. Animação Central
-            function exibirAnimacaoData(dataString) {
+            function exibirAnimacaoData(dataString, badgeTexto = "") {
                 const [ano, mes, dia] = dataString.split('-');
                 const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), 12, 0, 0);
 
@@ -23332,9 +23420,19 @@ document.querySelectorAll('tbody').forEach(tbody => {
 
                 const textoFinal = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
                 document.getElementById('overlay-data-display').textContent = textoFinal;
-                
+
+                const badgeEl = document.getElementById('overlay-data-badge');
+                if (badgeEl) {
+                    if (badgeTexto) {
+                        badgeEl.textContent = badgeTexto;
+                        badgeEl.style.display = 'flex';
+                    } else {
+                        badgeEl.style.display = 'none';
+                    }
+                }
+
                 overlay.classList.add('show');
-                
+
                 clearTimeout(overlayTimeout);
                 overlayTimeout = setTimeout(() => {
                     overlay.classList.remove('show');
@@ -23345,31 +23443,32 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
             }
 
-            // 4. Manipulação de Data com Trava Debounce
-            function alterarDataInput(inputId, buttonId, diasParaAdicionar) {
+            // 4. Manipulação de Data com Trava Debounce (Avançar/Voltar ou Ir para Hoje)
+            function alterarDataInput(inputId, buttonId, diasParaAdicionar, irParaHoje = false) {
                 const inputDate = document.getElementById(inputId);
                 const btnLoad = document.getElementById(buttonId);
 
                 if (!inputDate || !btnLoad) return false;
                 if (!estaVisivel(inputDate)) return false;
 
-                let dataAtual = inputDate.value;
-                if (!dataAtual) {
-                    dataAtual = new Date().toISOString().split('T')[0];
+                let novaDataStr = "";
+
+                if (irParaHoje) {
+                    novaDataStr = obterHojeLocalISO();
+                } else {
+                    let dataAtual = inputDate.value || obterHojeLocalISO();
+                    const [ano, mes, dia] = dataAtual.split('-');
+                    const dateObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), 12, 0, 0);
+                    dateObj.setDate(dateObj.getDate() + diasParaAdicionar);
+
+                    const a = dateObj.getFullYear();
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const d = String(dateObj.getDate()).padStart(2, '0');
+                    novaDataStr = `${a}-${m}-${d}`;
                 }
 
-                const [ano, mes, dia] = dataAtual.split('-');
-                const dateObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
-                dateObj.setDate(dateObj.getDate() + diasParaAdicionar);
-
-                const a = dateObj.getFullYear();
-                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const d = String(dateObj.getDate()).padStart(2, '0');
-                
-                const novaDataStr = `${a}-${m}-${d}`;
                 inputDate.value = novaDataStr;
-
-                exibirAnimacaoData(novaDataStr);
+                exibirAnimacaoData(novaDataStr, irParaHoje ? "📅 HOJE" : "");
 
                 clearTimeout(firebaseDebounceTimer);
                 firebaseDebounceTimer = setTimeout(() => {
@@ -23379,15 +23478,24 @@ document.querySelectorAll('tbody').forEach(tbody => {
                 return true;
             }
 
-            // 5. Atalho do Teclado
+            // 5. Atalhos do Teclado (Ctrl + ⬅️ / ➡️ / ⬇️)
             document.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                if (!(e.ctrlKey || e.metaKey)) return;
+
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                     e.preventDefault();
                     const direcao = e.key === 'ArrowRight' ? 1 : -1;
 
-                    const alterouNotas = alterarDataInput('notas-data-select', 'btn-carregar-notas', direcao);
+                    const alterouNotas = alterarDataInput('notas-data-select', 'btn-carregar-notas', direcao, false);
                     if (!alterouNotas) {
-                        alterarDataInput('mon-data-select', 'btn-carregar-painel', direcao);
+                        alterarDataInput('mon-data-select', 'btn-carregar-painel', direcao, false);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+
+                    const alterouNotas = alterarDataInput('notas-data-select', 'btn-carregar-notas', 0, true);
+                    if (!alterouNotas) {
+                        alterarDataInput('mon-data-select', 'btn-carregar-painel', 0, true);
                     }
                 }
             });
@@ -23406,223 +23514,6 @@ document.querySelectorAll('tbody').forEach(tbody => {
             // Capitaliza a primeira letra (ex: "segunda-feira" -> "Segunda-feira")
             return diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
         }
-
-        window.gerarImpressaoPeriodo = async () => {
-            const dInicio = document.getElementById('imp-data-inicio').value;
-            const dFim = document.getElementById('imp-data-fim').value;
-
-            if (!dInicio || !dFim) return alert("Selecione a data inicial e a data final.");
-            if (dInicio > dFim) return alert("A data inicial não pode ser maior que a data final.");
-
-            showLoader();
-            document.getElementById('modal-imprimir-periodo').classList.remove('active');
-
-            try {
-                let dataAtualObj = new Date(dInicio + 'T12:00:00');
-                const dataFimObj = new Date(dFim + 'T12:00:00');
-                const diasParaBuscar = [];
-
-                while (dataAtualObj <= dataFimObj) {
-                    diasParaBuscar.push(dataAtualObj.toISOString().split('T')[0]);
-                    dataAtualObj.setDate(dataAtualObj.getDate() + 1);
-                }
-
-                const [snapsPainel, snapsNotas] = await Promise.all([
-                    Promise.all(diasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)))),
-                    Promise.all(diasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d))))
-                ]);
-
-                const registros = [];
-
-                for (let i = 0; i < diasParaBuscar.length; i++) {
-                    const dataIso = diasParaBuscar[i];
-                    const dataFmt = dataIso.split('-').reverse().join('/');
-                    const snapPainel = snapsPainel[i];
-                    const snapNotas = snapsNotas[i];
-
-                    if (!snapPainel.exists()) continue;
-
-                    const rotas = snapPainel.data().rotas || [];
-                    const notas = snapNotas.exists() ? (snapNotas.data().notas || []) : [];
-
-                    rotas.forEach(rota => {
-                        const tipoStatus = trimUpper(rota.status || "");
-                        const nomeRota = trimUpper(rota.rota || "");
-                        const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
-                        if (!statusValido && !nomeRota.includes('PERNOITE')) return;
-
-                        const placaOriginal = trimUpper(rota.placa || "");
-                        const placaTroca = trimUpper(rota.troca || "");
-                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
-                        if (!placaRef) return;
-
-                        const transporteStr = String(rota.transporte || "").trim();
-                        const transpNumArray = transporteStr.match(/\d+/g) || [];
-
-                        const notasPlaca = notas.filter(n => {
-                            const stNF = trimUpper(n.status);
-                            if (stNF === 'NÃO EMBARCADA' || stNF === 'PERNOITE') return false;
-
-                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
-                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
-                            if (!matchPlaca) return false;
-
-                            const viagemNota = String(n.viagem || "").trim();
-                            if (transpNumArray.length > 0 && viagemNota !== "") {
-                                return transpNumArray.some(t => viagemNota.includes(t));
-                            }
-                            return true;
-                        });
-
-                        if (notasPlaca.length === 0) return;
-
-                        const qtd_nf = notasPlaca.length;
-                        const devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
-                        const reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
-                        const realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
-
-                        if ((realizada + devolucao + reentrega) !== qtd_nf) return;
-
-                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
-                        const notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
-                        const percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
-                        const notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
-                        const cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "SIM" : "NÃO";
-
-                        const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
-                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
-                        const foiPrestado = rota.prestacao_impressa === true && (
-                            !rota.transporte_prestado ||
-                            transpPrestadoStr === transporteStr ||
-                            transpPrestadoStr.includes(transporteStr) ||
-                            transpPrestadoStr === ""
-                        );
-
-                        registros.push({
-                            data: dataFmt,
-                            status: foiPrestado ? "PRESTADO" : "PENDENTE",
-                            placa: placaExibicao || "",
-                            transporte: transporteStr || "-",
-                            oc: rota.oc || "",
-                            motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
-                            qtd_nf: qtd_nf,
-                            km: rota.km || "",
-                            regiao: rota.regiao || "Sem rota def.",
-                            percentApp: `${percentApp}%`,
-                            cemPorcentoAss: cemPorcentoAss,
-                            conferente: foiPrestado ? (rota.conferente || "Sistema") : "-"
-                        });
-                    });
-                }
-
-                if (registros.length === 0) {
-                    alert("Nenhuma rota finalizada encontrada no período selecionado.");
-                    return;
-                }
-
-                const dIniBR = dInicio.split('-').reverse().join('/');
-                const dFimBR = dFim.split('-').reverse().join('/');
-                const totalPrestados = registros.filter(r => r.status === "PRESTADO").length;
-                const totalPendentes = registros.filter(r => r.status === "PENDENTE").length;
-
-                let htmlStr = `
-                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-                <head><meta charset="utf-8">
-                <style>
-                    body { font-family: Calibri, Arial, sans-serif; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th {
-                        background-color: #1e293b;
-                        color: #ffffff;
-                        font-weight: bold;
-                        font-size: 10pt;
-                        border: 1px solid #334155;
-                        padding: 8px 10px;
-                        text-align: center;
-                        height: 28px;
-                    }
-                    td {
-                        border: 1px solid #cbd5e1;
-                        padding: 6px 8px;
-                        font-size: 10pt;
-                        vertical-align: middle;
-                        white-space: nowrap;
-                        mso-number-format: "\\@";
-                    }
-                </style>
-                </head>
-                <body>
-                    <table>
-                        <tr>
-                            <td colspan="12" style="background-color: #0f172a; color: #ffffff; font-size: 13pt; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #0f172a;">
-                                RELATÓRIO DE PRESTAÇÃO DE CONTAS — ${dIniBR} ATÉ ${dFimBR}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="12" style="background-color: #f1f5f9; color: #334155; font-size: 10pt; font-weight: bold; text-align: center; padding: 6px;">
-                                TOTAL: ${registros.length} VIAGENS &nbsp;|&nbsp; PRESTADOS: ${totalPrestados} &nbsp;|&nbsp; PENDENTES: ${totalPendentes}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th style="width: 90px;">DATA</th>
-                            <th style="width: 110px;">STATUS</th>
-                            <th style="width: 90px;">PLACA</th>
-                            <th style="width: 130px;">TRANSPORTE</th>
-                            <th style="width: 120px;">O.C.</th>
-                            <th style="width: 190px;">MOTORISTA</th>
-                            <th style="width: 75px;">QTD NFs</th>
-                            <th style="width: 70px;">KM</th>
-                            <th style="width: 220px;">REGIÃO</th>
-                            <th style="width: 75px;">% APP</th>
-                            <th style="width: 115px;">100% ASSIN.</th>
-                            <th style="width: 150px;">CONFERENTE</th>
-                        </tr>`;
-
-                registros.forEach((r, idx) => {
-                    const bgLinha = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
-                    const estiloStatus = r.status === 'PRESTADO'
-                        ? 'background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;'
-                        : 'background-color: #fef3c7; color: #b45309; font-weight: bold; text-align: center;';
-                    const estiloAss = r.cemPorcentoAss === 'SIM'
-                        ? 'background-color: #dbeafe; color: #1d4ed8; font-weight: bold; text-align: center;'
-                        : 'background-color: #fee2e2; color: #b91c1c; font-weight: bold; text-align: center;';
-
-                    htmlStr += `
-                        <tr>
-                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold;">${r.data}</td>
-                            <td style="${estiloStatus}">${r.status}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold; color: #1e40af;">${r.placa}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center;">${r.transporte}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center;">${r.oc}</td>
-                            <td style="background-color: ${bgLinha}; text-align: left; font-weight: bold;">${r.motorista}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center; mso-number-format: '0';">${r.qtd_nf}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center;">${r.km}</td>
-                            <td style="background-color: ${bgLinha}; text-align: left;">${r.regiao}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold;">${r.percentApp}</td>
-                            <td style="${estiloAss}">${r.cemPorcentoAss}</td>
-                            <td style="background-color: ${bgLinha}; text-align: center;">${r.conferente}</td>
-                        </tr>`;
-                });
-
-                htmlStr += `</table></body></html>`;
-
-                const blob = new Blob([htmlStr], { type: 'application/vnd.ms-excel;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Prestacoes_${dInicio}_ate_${dFim}.xls`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-            } catch (e) {
-                console.error("Erro ao exportar planilha de prestações:", e);
-                alert("Erro ao exportar planilha: " + e.message);
-            } finally {
-                hideLoader();
-            }
-        };
 
         window.abrirModalExtrato = function() {
             const hoje = new Date().toISOString().split('T')[0];
@@ -25628,68 +25519,305 @@ document.querySelectorAll('tbody').forEach(tbody => {
             hideLoader();
         });
 
-        // ================= EXPORTAÇÃO EXCEL (.XLSX) DO PERÍODO DE PRESTAÇÃO DE CONTAS =================
+        // ================= ABERTURA DO POP-UP DE EXPORTAÇÃO (PRÉ-PREENCHIDO) =================
         window.exportarPlanilhaPrestacaoPeriodo = () => {
-            if (!window._dadosPrestacaoCache) {
-                return alert("Carregue um período primeiro antes de exportar.");
-            }
-            if (typeof XLSX === 'undefined') {
-                return alert("Biblioteca SheetJS (XLSX) não encontrada.");
+            const modal = document.getElementById('modal-imprimir-periodo');
+            if (!modal) return;
+
+            // Sincroniza o select com a aba que você está visualizando no momento
+            const selectTipo = document.getElementById('imp-tipo-exportacao');
+            if (selectTipo) {
+                selectTipo.value = window.abaPrestacaoAtual === 'concluidos' ? 'concluidos' : 'pendentes';
             }
 
-            const inputMes = document.getElementById('filtro-mes-prestacao')?.value || "PERIODO";
-            const inputQ = document.getElementById('filtro-quinzena-prestacao')?.value || "GERAL";
-            const labelQ = inputQ === "1" ? "1a_Quinzena" : (inputQ === "2" ? "2a_Quinzena" : "Mes_Completo");
+            // Pré-preenche Data Inicial e Data Final com base no mês/quinzena selecionados na tela
+            const inputMes = document.getElementById('filtro-mes-prestacao')?.value;
+            const inputQ = document.getElementById('filtro-quinzena-prestacao')?.value || 'all';
+            const elIni = document.getElementById('imp-data-inicio');
+            const elFim = document.getElementById('imp-data-fim');
 
-            const montarLinhas = (datasetObj, statusLabel) => {
-                const linhas = [];
-                const datas = Object.keys(datasetObj).sort((a, b) => new Date(a) - new Date(b));
-                datas.forEach(dataIso => {
-                    (datasetObj[dataIso] || []).forEach(c => {
-                        linhas.push({
-                            "DATA": formatarDataBR(dataIso),
-                            "PLACA": c.placa || "",
-                            "MOTORISTA": c.motorista || "",
-                            "TRANSPORTE": c.transporte || "",
-                            "REGIÃO": c.regiao || "",
-                            "QTD NFs": c.qtd || 0,
-                            "% APP": `${c.percentApp || 0}%`,
-                            "100% ASSINATURA": c.cemPorcentoAss === '✅' ? 'SIM' : 'NÃO',
-                            "STATUS PRESTAÇÃO": statusLabel,
-                            "CONFERENTE": statusLabel === 'CONCLUÍDO' ? (c.conferente || 'Sistema') : '-'
+            if (inputMes && elIni && elFim) {
+                const [ano, mes] = inputMes.split('-').map(Number);
+                const ultimoDiaMes = new Date(ano, mes, 0).getDate();
+                const mesStr = String(mes).padStart(2, '0');
+
+                if (inputQ === '1') {
+                    elIni.value = `${ano}-${mesStr}-01`;
+                    elFim.value = `${ano}-${mesStr}-15`;
+                } else if (inputQ === '2') {
+                    elIni.value = `${ano}-${mesStr}-16`;
+                    elFim.value = `${ano}-${mesStr}-${String(ultimoDiaMes).padStart(2, '0')}`;
+                } else {
+                    elIni.value = `${ano}-${mesStr}-01`;
+                    elFim.value = `${ano}-${mesStr}-${String(ultimoDiaMes).padStart(2, '0')}`;
+                }
+            }
+
+            modal.classList.add('active');
+        };
+
+        // ================= EXPORTAÇÃO EXCEL ESTILIZADA POR ABA E PERÍODO =================
+        window.gerarImpressaoPeriodo = async () => {
+            const dInicio = document.getElementById('imp-data-inicio')?.value;
+            const dFim = document.getElementById('imp-data-fim')?.value;
+            const tipoExport = document.getElementById('imp-tipo-exportacao')?.value || window.abaPrestacaoAtual || 'todos';
+
+            if (!dInicio || !dFim) return alert("Selecione a data inicial e a data final.");
+            if (dInicio > dFim) return alert("A data inicial não pode ser maior que a data final.");
+
+            showLoader();
+            document.getElementById('modal-imprimir-periodo')?.classList.remove('active');
+
+            try {
+                let dataAtualObj = new Date(dInicio + 'T12:00:00');
+                const dataFimObj = new Date(dFim + 'T12:00:00');
+                const diasParaBuscar = [];
+
+                while (dataAtualObj <= dataFimObj) {
+                    diasParaBuscar.push(dataAtualObj.toISOString().split('T')[0]);
+                    dataAtualObj.setDate(dataAtualObj.getDate() + 1);
+                }
+
+                const [snapsPainel, snapsNotas] = await Promise.all([
+                    Promise.all(diasParaBuscar.map(d => getDoc(doc(db, "painel_diario", d)))),
+                    Promise.all(diasParaBuscar.map(d => getDoc(doc(db, "notas_fiscais_diario", d))))
+                ]);
+
+                const registros = [];
+
+                for (let i = 0; i < diasParaBuscar.length; i++) {
+                    const dataIso = diasParaBuscar[i];
+                    const dataFmt = dataIso.split('-').reverse().join('/');
+                    const snapPainel = snapsPainel[i];
+                    const snapNotas = snapsNotas[i];
+
+                    if (!snapPainel.exists()) continue;
+
+                    const rotas = snapPainel.data().rotas || [];
+                    const notas = snapNotas.exists() ? (snapNotas.data().notas || []) : [];
+
+                    rotas.forEach(rota => {
+                        const tipoStatus = trimUpper(rota.status || "");
+                        const nomeRota = trimUpper(rota.rota || "");
+                        const statusValido = tipoStatus.includes('SAIDA') || tipoStatus.includes('SAÍDA') || tipoStatus.includes('APOIO') || tipoStatus.includes('SEG');
+                        if (!statusValido && !nomeRota.includes('PERNOITE')) return;
+
+                        const placaOriginal = trimUpper(rota.placa || "");
+                        const placaTroca = trimUpper(rota.troca || "");
+                        const placaRef = placaTroca !== "" ? placaTroca : placaOriginal;
+                        if (!placaRef) return;
+
+                        const transporteStr = String(rota.transporte || "").trim();
+                        const transpNumArray = transporteStr.match(/\d+/g) || [];
+
+                        const notasPlaca = notas.filter(n => {
+                            const stNF = trimUpper(n.status);
+                            if (stNF === 'NÃO EMBARCADA' || stNF === 'PERNOITE') return false;
+
+                            const pNota = trimUpper(n.placa || "").replace(/[^A-Z0-9]/g, '');
+                            const matchPlaca = pNota === placaRef.replace(/[^A-Z0-9]/g, '') || pNota === placaOriginal.replace(/[^A-Z0-9]/g, '');
+                            if (!matchPlaca) return false;
+
+                            const viagemNota = String(n.viagem || "").trim();
+                            if (transpNumArray.length > 0 && viagemNota !== "") {
+                                return transpNumArray.some(t => viagemNota.includes(t));
+                            }
+                            return true;
+                        });
+
+                        if (notasPlaca.length === 0) return;
+
+                        const qtd_nf = notasPlaca.length;
+                        const devolucao = notasPlaca.filter(n => trimUpper(n.status) === 'DEVOLUÇÃO' || trimUpper(n.status) === 'DEVOLUCAO').length;
+                        const reentrega = notasPlaca.filter(n => trimUpper(n.status) === 'REENTREGA').length;
+                        const realizada = notasPlaca.filter(n => trimUpper(n.status) === 'ENTREGUE').length;
+
+                        if ((realizada + devolucao + reentrega) !== qtd_nf) return;
+
+                        const excecoesApp = ['REENTREGA', 'DEVOLUÇÃO', 'DEVOLUCAO', 'SINISTRADA', 'PERNOITE'];
+                        const notasComApp = notasPlaca.filter(n => (n.app && n.app.trim() !== "") || excecoesApp.includes(trimUpper(n.status))).length;
+                        const percentApp = qtd_nf > 0 ? Math.round((notasComApp / qtd_nf) * 100) : 0;
+                        const notasComAss = notasPlaca.filter(n => trimUpper(n.app) === 'ASSINATURA' || excecoesApp.includes(trimUpper(n.status))).length;
+                        const cemPorcentoAss = (qtd_nf > 0 && notasComAss === qtd_nf) ? "SIM" : "NÃO";
+
+                        const placaExibicao = placaTroca !== "" ? rota.troca : rota.placa;
+                        const transpPrestadoStr = String(rota.transporte_prestado || "").trim();
+                        const foiPrestado = rota.prestacao_impressa === true && (
+                            !rota.transporte_prestado ||
+                            transpPrestadoStr === transporteStr ||
+                            transpPrestadoStr.includes(transporteStr) ||
+                            transpPrestadoStr === ""
+                        );
+
+                        // Filtra de acordo com a aba/opção selecionada no pop-up
+                        if (tipoExport === 'pendentes' && foiPrestado) return;
+                        if (tipoExport === 'concluidos' && !foiPrestado) return;
+
+                        registros.push({
+                            data: dataFmt,
+                            status: foiPrestado ? "PRESTADO" : "PENDENTE",
+                            placa: placaExibicao || "",
+                            transporte: transporteStr || "-",
+                            oc: rota.oc || "",
+                            motorista: rota.motorista || notasPlaca[0].motorista || "NÃO INFORMADO",
+                            qtd_nf: qtd_nf,
+                            km: rota.km || "",
+                            regiao: rota.regiao || "Sem rota def.",
+                            percentApp: `${percentApp}%`,
+                            cemPorcentoAss: cemPorcentoAss,
+                            conferente: foiPrestado ? (rota.conferente || "Sistema") : "-"
                         });
                     });
+                }
+
+                if (registros.length === 0) {
+                    const nomeFiltro = tipoExport === 'pendentes' ? 'pendente' : (tipoExport === 'concluidos' ? 'concluída' : 'finalizada');
+                    alert(`Nenhuma prestação ${nomeFiltro} encontrada no período selecionado.`);
+                    return;
+                }
+
+                // Paleta de cores dinâmica conforme a aba selecionada
+                const temas = {
+                    pendentes: {
+                        titulo: "PRESTAÇÕES DE CONTAS PENDENTES",
+                        bannerBg: "#92400e",
+                        subBg: "#fef3c7",
+                        subTxt: "#78350f",
+                        thBg: "#d97706",
+                        thBorder: "#b45309",
+                        zebraAlt: "#fffbeb",
+                        prefixoArquivo: "Prestacoes_Pendentes"
+                    },
+                    concluidos: {
+                        titulo: "PRESTAÇÕES DE CONTAS CONCLUÍDAS",
+                        bannerBg: "#065f46",
+                        subBg: "#d1fae5",
+                        subTxt: "#064e3b",
+                        thBg: "#059669",
+                        thBorder: "#047857",
+                        zebraAlt: "#f0fdf4",
+                        prefixoArquivo: "Prestacoes_Concluidas"
+                    },
+                    todos: {
+                        titulo: "RELATÓRIO CONSOLIDADO DE PRESTAÇÕES DE CONTAS",
+                        bannerBg: "#0f172a",
+                        subBg: "#e2e8f0",
+                        subTxt: "#1e293b",
+                        thBg: "#1e293b",
+                        thBorder: "#334155",
+                        zebraAlt: "#f8fafc",
+                        prefixoArquivo: "Prestacoes_Consolidado"
+                    }
+                };
+
+                const tema = temas[tipoExport] || temas.todos;
+                const dIniBR = dInicio.split('-').reverse().join('/');
+                const dFimBR = dFim.split('-').reverse().join('/');
+                const totalNFs = registros.reduce((acc, r) => acc + r.qtd_nf, 0);
+                const totalPrestados = registros.filter(r => r.status === "PRESTADO").length;
+                const totalPendentes = registros.filter(r => r.status === "PENDENTE").length;
+
+                const textoResumo = tipoExport === 'todos'
+                    ? `TOTAL: ${registros.length} VIAGENS  |  PRESTADOS: ${totalPrestados}  |  PENDENTES: ${totalPendentes}  |  TOTAL NFs: ${totalNFs}`
+                    : `TOTAL: ${registros.length} VIAGENS  |  TOTAL NFs: ${totalNFs}  |  PERÍODO: ${dIniBR} ATÉ ${dFimBR}`;
+
+                let htmlStr = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head><meta charset="utf-8">
+                <style>
+                    body { font-family: Calibri, Arial, sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th {
+                        background-color: ${tema.thBg};
+                        color: #ffffff;
+                        font-weight: bold;
+                        font-size: 10pt;
+                        border: 1px solid ${tema.thBorder};
+                        padding: 8px 10px;
+                        text-align: center;
+                        height: 30px;
+                    }
+                    td {
+                        border: 1px solid #cbd5e1;
+                        padding: 6px 8px;
+                        font-size: 10pt;
+                        vertical-align: middle;
+                        white-space: nowrap;
+                        mso-number-format: "\\@";
+                    }
+                </style>
+                </head>
+                <body>
+                    <table>
+                        <tr>
+                            <td colspan="12" style="background-color: ${tema.bannerBg}; color: #ffffff; font-size: 13pt; font-weight: bold; text-align: center; padding: 12px; border: 1px solid ${tema.bannerBg}; height: 34px;">
+                                ${tema.titulo} — ${dIniBR} ATÉ ${dFimBR}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="12" style="background-color: ${tema.subBg}; color: ${tema.subTxt}; font-size: 10pt; font-weight: bold; text-align: center; padding: 6px; height: 24px;">
+                                ${textoResumo}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="width: 90px;">DATA</th>
+                            <th style="width: 105px;">STATUS</th>
+                            <th style="width: 90px;">PLACA</th>
+                            <th style="width: 125px;">TRANSPORTE</th>
+                            <th style="width: 115px;">O.C.</th>
+                            <th style="width: 200px;">MOTORISTA</th>
+                            <th style="width: 75px;">QTD NFs</th>
+                            <th style="width: 70px;">KM</th>
+                            <th style="width: 230px;">REGIÃO</th>
+                            <th style="width: 75px;">% APP</th>
+                            <th style="width: 110px;">100% ASSIN.</th>
+                            <th style="width: 150px;">CONFERENTE</th>
+                        </tr>`;
+
+                registros.forEach((r, idx) => {
+                    const bgLinha = idx % 2 === 0 ? '#ffffff' : tema.zebraAlt;
+                    const estiloStatus = r.status === 'PRESTADO'
+                        ? 'background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;'
+                        : 'background-color: #fef3c7; color: #b45309; font-weight: bold; text-align: center;';
+                    const estiloAss = r.cemPorcentoAss === 'SIM'
+                        ? 'background-color: #dbeafe; color: #1d4ed8; font-weight: bold; text-align: center;'
+                        : 'background-color: #fee2e2; color: #b91c1c; font-weight: bold; text-align: center;';
+
+                    htmlStr += `
+                        <tr>
+                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold;">${r.data}</td>
+                            <td style="${estiloStatus}">${r.status}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold; color: #1e40af;">${r.placa}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center;">${r.transporte}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center;">${r.oc}</td>
+                            <td style="background-color: ${bgLinha}; text-align: left; font-weight: bold;">${r.motorista}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center; mso-number-format: '0'; font-weight: bold;">${r.qtd_nf}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center;">${r.km}</td>
+                            <td style="background-color: ${bgLinha}; text-align: left;">${r.regiao}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center; font-weight: bold;">${r.percentApp}</td>
+                            <td style="${estiloAss}">${r.cemPorcentoAss}</td>
+                            <td style="background-color: ${bgLinha}; text-align: center;">${r.conferente}</td>
+                        </tr>`;
                 });
-                return linhas;
-            };
 
-            const dadosPendentes = montarLinhas(window._dadosPrestacaoCache.pendentes || {}, "PENDENTE");
-            const dadosConcluidos = montarLinhas(window._dadosPrestacaoCache.concluidos || {}, "CONCLUÍDO");
+                htmlStr += `</table></body></html>`;
 
-            if (dadosPendentes.length === 0 && dadosConcluidos.length === 0) {
-                return alert("Não há registros neste período para exportar.");
+                const blob = new Blob([htmlStr], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${tema.prefixoArquivo}_${dInicio}_ate_${dFim}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+            } catch (e) {
+                console.error("Erro ao exportar planilha de prestações:", e);
+                alert("Erro ao exportar planilha: " + e.message);
+            } finally {
+                hideLoader();
             }
-
-            const wb = XLSX.utils.book_new();
-            const larguras = [
-                { wch: 12 }, { wch: 11 }, { wch: 24 }, { wch: 18 },
-                { wch: 28 }, { wch: 9 },  { wch: 9 },  { wch: 16 },
-                { wch: 18 }, { wch: 20 }
-            ];
-
-            if (dadosPendentes.length > 0) {
-                const wsPend = XLSX.utils.json_to_sheet(dadosPendentes);
-                wsPend['!cols'] = larguras;
-                XLSX.utils.book_append_sheet(wb, wsPend, "Pendentes");
-            }
-
-            if (dadosConcluidos.length > 0) {
-                const wsConc = XLSX.utils.json_to_sheet(dadosConcluidos);
-                wsConc['!cols'] = larguras;
-                XLSX.utils.book_append_sheet(wb, wsConc, "Concluidos");
-            }
-
-            XLSX.writeFile(wb, `Prestacao_Contas_${inputMes}_${labelQ}.xlsx`);
         };
 
         // ================= 3. TERMO DE RESPONSABILIDADE - CANHOTO FALTANDO (SELEÇÃO POR VIAGEM) =================
