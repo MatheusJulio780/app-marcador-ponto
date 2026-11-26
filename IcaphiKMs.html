@@ -760,7 +760,7 @@
                             class="text-teal-500">DRIVE</span></h1>
                     <span
                         class="text-[10px] font-bold text-teal-500/70 dark:text-teal-400 uppercase tracking-widest mt-0.5 block">By:
-                        Matheus Julio V11.2</span>
+                        Matheus Julio V11.3</span>
                 </div>
             </div>
 
@@ -2002,7 +2002,7 @@
         let tabelaPrecos = JSON.parse(localStorage.getItem('tabelaPrecos')) || { "FIORINO": { km: 1.12, frete: 268 }, "VAN": { km: 1.28, frete: 407 }, "VUC": { km: 1.35, frete: 440 }, "LEVE 3/4": { km: 1.54, frete: 528 }, "LEVE 3/4 ESPECIAL": { km: 1.60, frete: 545 }, "TOCO": { km: 1.67, frete: 880 }, "TRUCK": { km: 1.87, frete: 1012 }, "PADRÃO": { km: 1.00, frete: 0 } };
         let previsoesImportadas = JSON.parse(localStorage.getItem('previsoes_temp')) || {};
 
-        let viagemAtualId = localStorage.getItem('v_id');
+        let viagemAtualId = localStorage.getItem('icaphi_vid');
         let filtroAdminAtual = 'todos';
         let modoEditGlobal = false;
         let fotoInicioBase64 = null; let fotoFimBase64 = null;
@@ -2013,35 +2013,6 @@
         let dadosExtrato = []; let obsViagem = []; let gpsWatchId = null; let ignorarSnapshot = false; let mapaFocado = false;
         let unsubViagemAtual = null;
         let paginaAtualAdmin = 1; let itensPorPaginaAdmin = 20;
-
-        // === LISTENER DE TEMPO REAL PARA O RASTREAMENTO ===
-        db.collection('viagens')
-        .where('status', '==', 'em_curso')
-        .onSnapshot((snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                const viagemAtualizada = { id: change.doc.id, ...change.doc.data() };
-                
-                // 1. Atualiza ou insere a viagem no array global
-                const index = todasViagens.findIndex(v => v.id === viagemAtualizada.id);
-                if (index !== -1) {
-                    todasViagens[index] = viagemAtualizada;
-                } else {
-                    todasViagens.push(viagemAtualizada);
-                }
-
-                // 2. Se o modal individual da rota estiver aberto, força o redesenho
-                if (currentRastreioId === viagemAtualizada.id) {
-                    window.abrirRastreioAdmin(currentRastreioId, true);
-                }
-            });
-
-            // 3. Redesenha os pontos no mapa geral de frotas
-            if (typeof window.carregarMapa === 'function') {
-                window.carregarMapa();
-            }
-        }, (error) => {
-            console.warn("Erro no listener de rastreamento:", error);
-        });
 
         function el(id) { return document.getElementById(id); }
 
@@ -2117,7 +2088,7 @@
                     const idPendente = window.AndroidInterface.verificarViagemAtiva();
                     if (idPendente && idPendente.trim() !== "") {
                         viagemAtualId = idPendente;
-                        localStorage.setItem('v_id', viagemAtualId);
+                        localStorage.setItem('icaphi_vid', viagemAtualId);
                     }
                 } catch (err) { console.error("Erro AndroidInterface:", err); }
             }
@@ -2145,8 +2116,6 @@
                 monitorarViagemUnicaDb(viagemAtualId);
                 iniciarRastreamentoWeb();
             }
-
-            carregarViagensDb();
             carregarNotificacoesDb();
 
             setTimeout(() => {
@@ -2158,8 +2127,8 @@
 
         // Loop de Segurança de Memória (Evita que a viagem suma se o navegador der clear cache leve)
         setInterval(() => {
-            if (viagemAtualId && localStorage.getItem('v_id') !== viagemAtualId) {
-                localStorage.setItem('v_id', viagemAtualId);
+            if (viagemAtualId && localStorage.getItem('icaphi_vid') !== viagemAtualId) {
+                localStorage.setItem('icaphi_vid', viagemAtualId);
             }
         }, 1000);
 
@@ -2320,7 +2289,7 @@
             if (unsubViagemAtual) unsubViagemAtual();
             unsubViagemAtual = db.collection('viagens').doc(id).onSnapshot(doc => {
                 if (ignorarSnapshot) return;
-                if (!doc.exists) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); return; }
+                if (!doc.exists) { localStorage.removeItem('icaphi_vid'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); return; }
                 const v = doc.data();
                 if (v.status === 'em_curso') {
                     const dStart = safeDate(v.dataInicio);
@@ -2344,7 +2313,7 @@
 
                     if (!el('tela-inicio').classList.contains('hidden')) mudarTelaMotorista('em-curso');
                 } else {
-                    if (el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('v_id'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); }
+                    if (el('tela-sucesso').classList.contains('hidden')) { localStorage.removeItem('icaphi_vid'); viagemAtualId = null; mudarTelaMotorista('inicio'); pararRastreamentoWeb(); }
                 }
             });
         }
@@ -3757,7 +3726,7 @@
 
         // Função nova chamada pelo Extrato do Motorista
         window.recuperarViagemCard = function (id) {
-            localStorage.setItem('v_id', id);
+            localStorage.setItem('icaphi_vid', id);
             viagemAtualId = id;
             location.reload();
         }
@@ -4049,7 +4018,7 @@
         // 1. VERIFICADOR DE SESSÃO E RECUPERADOR DE DADOS (Roda no início do app)
         // 1. VERIFICADOR DE SESSÃO (Roda no início do app)
         window.verificarSessaoMotorista = async function () {
-            const idViagemAtiva = localStorage.getItem('v_id') || localStorage.getItem('viagemId');
+            const idViagemAtiva = localStorage.getItem('icaphi_vid') || localStorage.getItem('viagemId');
 
             if (idViagemAtiva) {
                 // Viagem Offline
@@ -4076,7 +4045,7 @@
                         window.reconstruirTelaEmCurso(dadosFirebase, idViagemAtiva);
                     } else {
                         // Faxina total
-                        localStorage.removeItem('v_id');
+                        localStorage.removeItem('icaphi_vid');
                         localStorage.removeItem('dados_viagem_ativa');
                         localStorage.removeItem('hora_inicio_viagem');
                         if (window.mudarTelaMotorista) window.mudarTelaMotorista('inicio');
@@ -4239,8 +4208,8 @@
                     if (window.verificarPendenciasOffline) window.verificarPendenciasOffline();
                 }
 
-                localStorage.setItem('v_id', idViagemGerado);
-                window.viagemAtualId = idViagemGerado;
+                localStorage.setItem('icaphi_vid', idViagemGerado);
+                window.icaphiIdAtivo = idViagemGerado;
                 localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
                 localStorage.setItem('hora_inicio_viagem', Date.now());
 
@@ -4385,7 +4354,7 @@
         };
 
         window.abrirObsMotorista = async function () {
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid');
             if (!idViagem) {
                 alert("Erro: O sistema perdeu a conexão com a viagem atual.");
                 return;
@@ -4445,7 +4414,7 @@
         };
 
         window.salvarObsMotorista = async function (event) {
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid');
             const tituloInput = document.getElementById('obs-titulo');
             const textoInput = document.getElementById('obs-texto');
 
@@ -4494,7 +4463,7 @@
         window.excluirObsMotorista = async function (idObsRemover) {
             if (!confirm("Tem certeza que deseja apagar este registro?")) return;
 
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid');
 
             try {
                 // Puxa o banco, filtra removendo a OBS escolhida e envia de volta
@@ -4516,7 +4485,7 @@
         };
 
         window.encerrarViagem = async function () {
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid') || localStorage.getItem('viagemId');
 
             if (!idViagem) {
                 alert("Erro: O sistema perdeu a conexão com a viagem atual. Feche e abra o aplicativo.");
@@ -4675,11 +4644,11 @@
                 if (window.pararRastreioContinuo) window.pararRastreioContinuo();
                 if (window.cronometroInterval) clearInterval(window.cronometroInterval);
 
-                localStorage.removeItem('v_id');
+                localStorage.removeItem('icaphi_vid');
                 localStorage.removeItem('dados_viagem_ativa');
                 localStorage.removeItem('hora_inicio_viagem');
                 localStorage.removeItem('temp_foto_fim_b64');
-                window.viagemAtualId = null;
+                window.icaphiIdAtivo = null;
                 window.fotoFimBase64 = null;
 
                 if (loader) {
@@ -4701,7 +4670,7 @@
         // ==========================================
         window.cancelarViagemMotorista = function () {
             // 1. Puxa o ID da viagem de forma segura (Memória ou Cache)
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid');
 
             if (!idViagem) {
                 alert("Erro: Não foi possível identificar a viagem atual para cancelar.");
@@ -4730,8 +4699,8 @@
                         }
 
                         // 5. Limpa a memória do celular e volta pra tela inicial
-                        localStorage.removeItem('v_id');
-                        window.viagemAtualId = null;
+                        localStorage.removeItem('icaphi_vid');
+                        window.icaphiIdAtivo = null;
 
                         alert("Viagem cancelada com sucesso!");
                         location.reload();
@@ -5189,7 +5158,7 @@
         // 2. ENVIAR ZAP (AGORA LÊ DADOS OFFLINE TAMBÉM)
         window.enviarZapMotoristaAtual = async function (btn) {
             // Agora ele procura o ID principal, e se não achar, puxa o Backup do Zap
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('ultimo_id_zap');
+            const idViagem = window.icaphiIdAtivo || localStorage.getItem('icaphi_vid') || localStorage.getItem('ultimo_id_zap');
 
             if (!idViagem) {
                 alert("Erro ao resgatar os dados da viagem.");
@@ -6619,17 +6588,87 @@
         };
 
         // =========================================================================
-        // BLOCO CONSOLIDADO FINAL (OFFLINE + ANDROID SERVICE + MAPAS GOOGLE + ESCALA)
+        // BLOCO ÚNICO DEFINITIVO (SEM GPS CONTÍNUO + COTA BLINDADA + EXTRATO + UTC)
         // =========================================================================
 
-        // 0. MATA QUALQUER SERVICE WORKER ANTIGO (IMPEDE CACHE CONGELADO)
+        // 0. REMOVE SERVICE WORKER ANTIGO (IMPEDE CACHE VELHO NO CELULAR)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(regs => {
                 for (let reg of regs) reg.unregister();
             });
         }
 
-        // 1. PADRONIZAÇÃO DO AUTOSAVE E LIMPEZA DE FORMULÁRIO
+        // 1. MIGRAÇÃO AUTOMÁTICA DE QUEM JÁ ESTÁ EM ROTA + DESLIGAMENTO REMOTO DO APK
+        (function desativarRastreioContinuoRemotamente() {
+            const chaveAntiga = 'v_' + 'id';
+            let idMigrado = localStorage.getItem('icaphi_vid') || localStorage.getItem(chaveAntiga) || '';
+
+            // Resgata viagem ativa do Android antes de desligar o serviço em 2º plano
+            if (!idMigrado && window.AndroidInterface && typeof window.AndroidInterface.verificarViagemAtiva === 'function') {
+                try {
+                    const idAndroid = window.AndroidInterface.verificarViagemAtiva();
+                    if (idAndroid && idAndroid.trim() !== '') idMigrado = idAndroid.trim();
+                } catch (e) {}
+            }
+
+            if (idMigrado) {
+                localStorage.setItem('icaphi_vid', idMigrado);
+                viagemAtualId = idMigrado;
+                window.icaphiIdAtivo = idMigrado;
+            }
+
+            // Apaga a chave antiga para que a MainActivity.java não religue o TrackingService
+            localStorage.removeItem(chaveAntiga);
+            try { delete window['viagem' + 'AtualId']; } catch (e) { window['viagem' + 'AtualId'] = ''; }
+
+            // Desliga o serviço em segundo plano e a notificação fixa no APK
+            if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
+                try { window.AndroidInterface.stopTracking(); } catch (e) {}
+            }
+        })();
+
+        // 2. BLOQUEIA GRAVAÇÕES CONTÍNUAS DE GPS (MANTÉM APENAS GPS PONTUAL DE INÍCIO E FIM)
+        window.iniciarRastreioContinuo = function () {
+            window.pararRastreioContinuo();
+        };
+
+        window.iniciarRastreamentoWeb = function () {
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+            }
+        };
+
+        window.pararRastreioContinuo = function () {
+            if (typeof watchIdRastreio !== 'undefined' && watchIdRastreio !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(watchIdRastreio);
+                watchIdRastreio = null;
+            }
+            if (typeof heartbeatInterval !== 'undefined' && heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            if (gpsWatchId && navigator.geolocation) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+            }
+            if (window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
+                try { window.AndroidInterface.stopTracking(); } catch (e) {}
+            }
+        };
+
+        window.atualizarPosicaoReal = function () {};
+        window.atualizarLocalizacao = window.atualizarPosicaoReal;
+        window.atualizarCoordenadas = window.atualizarPosicaoReal;
+        window.setLocalizacao = window.atualizarPosicaoReal;
+        window.updateLocation = window.atualizarPosicaoReal;
+        window.enviarLocalizacao = window.atualizarPosicaoReal;
+
+        window.addEventListener('load', () => {
+            window.pararRastreioContinuo();
+        });
+
+        // 3. AUTOSAVE E LIMPEZA DE FORMULÁRIO
         window.autoSave = function () {
             localStorage.setItem('temp_servico', el('tipo-servico').value);
             localStorage.setItem('temp_motorista', el('motorista').value);
@@ -6660,87 +6699,7 @@
              'temp_foto_ini_b64', 'temp_foto_fim_b64'].forEach(k => localStorage.removeItem(k));
         };
 
-        // 2. RASTREIO CONTÍNUO EM TEMPO REAL (8s + HEARTBEAT 10s + PONTE ANDROID NATIVA)
-        window.iniciarRastreioContinuo = function (idViagem) {
-            const idAtivo = idViagem || window.viagemAtualId || localStorage.getItem('v_id');
-            if (!idAtivo) return;
-
-            window.pararRastreioContinuo(false);
-
-            // Aciona o Foreground Service Nativo do APK Android (Sobe a notificação fixa!)
-            if (window.AndroidInterface && typeof window.AndroidInterface.startTracking === 'function') {
-                try {
-                    window.AndroidInterface.startTracking(idAtivo);
-                } catch (e) {
-                    console.error("Erro ao iniciar TrackingService Android:", e);
-                }
-            }
-
-            if (!navigator.geolocation) return;
-
-            const enviarPontoTempoReal = (lat, lng) => {
-                const agora = Date.now();
-                if (window.ultimoTempoEnviado && (agora - window.ultimoTempoEnviado < 7500)) return;
-
-                const loc = `${lat},${lng}`;
-                const locComTempo = `${lat},${lng},${agora}`;
-
-                window.ultimaLocEnviada = loc;
-                window.ultimoTempoEnviado = agora;
-                localStorage.setItem('icaphi_last_loc', loc);
-
-                db.collection('viagens').doc(idAtivo).set({
-                    locAtual: loc,
-                    latitude: lat,
-                    longitude: lng,
-                    ultimaAtualizacaoMs: agora,
-                    ultimaAtualizacaoLoc: firebase.firestore.FieldValue.serverTimestamp(),
-                    rotaReal: firebase.firestore.FieldValue.arrayUnion(locComTempo)
-                }, { merge: true }).catch(() => {});
-            };
-
-            watchIdRastreio = navigator.geolocation.watchPosition(
-                (pos) => enviarPontoTempoReal(pos.coords.latitude, pos.coords.longitude),
-                (err) => console.warn("Aviso GPS:", err.message),
-                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-            );
-
-            heartbeatInterval = setInterval(() => {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => enviarPontoTempoReal(pos.coords.latitude, pos.coords.longitude),
-                    () => {},
-                    { enableHighAccuracy: true, maximumAge: 3000, timeout: 8000 }
-                );
-            }, 10000);
-        };
-
-        window.pararRastreioContinuo = function (pararAndroid = true) {
-            if (watchIdRastreio !== null && navigator.geolocation) {
-                navigator.geolocation.clearWatch(watchIdRastreio);
-                watchIdRastreio = null;
-            }
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = null;
-            }
-            if (pararAndroid && window.AndroidInterface && typeof window.AndroidInterface.stopTracking === 'function') {
-                try { window.AndroidInterface.stopTracking(); } catch (e) {}
-            }
-            window.ultimaLocEnviada = null;
-            window.ultimoTempoEnviado = null;
-        };
-
-        window.atualizarPosicaoReal = function (lat, lng) {
-            const idAtivo = window.viagemAtualId || localStorage.getItem('v_id');
-            if (!idAtivo || !lat || !lng) return;
-            const agora = Date.now();
-            const loc = `${lat},${lng}`;
-            window.ultimaLocEnviada = loc;
-            window.ultimoTempoEnviado = agora;
-            localStorage.setItem('icaphi_last_loc', loc);
-        };
-
-        // 3. MONITORAMENTO DE SESSÃO E TELA EM CURSO (BLINDADO CONTRA QUEDA DE REDE)
+        // 4. SESSÃO E MONITORAMENTO DO MOTORISTA (BLINDADO CONTRA QUEDA DE REDE)
         window.monitorarViagemUnicaDb = function (id) {
             if (!id) return;
             if (unsubViagemAtual) unsubViagemAtual();
@@ -6758,11 +6717,12 @@
                     window.reconstruirTelaEmCurso(v, id);
                 } else {
                     if (el('tela-sucesso').classList.contains('hidden')) {
-                        window.pararRastreioContinuo(true);
-                        localStorage.removeItem('v_id');
+                        window.pararRastreioContinuo();
+                        localStorage.removeItem('icaphi_vid');
                         localStorage.removeItem('dados_viagem_ativa');
                         localStorage.removeItem('hora_inicio_viagem');
                         viagemAtualId = null;
+                        window.icaphiIdAtivo = null;
                         mudarTelaMotorista('inicio');
                     }
                 }
@@ -6770,17 +6730,7 @@
         };
 
         window.verificarSessaoMotorista = async function () {
-            let idViagemAtiva = localStorage.getItem('v_id') || localStorage.getItem('viagemId');
-
-            if (!idViagemAtiva && window.AndroidInterface && window.AndroidInterface.verificarViagemAtiva) {
-                try {
-                    const idAndroid = window.AndroidInterface.verificarViagemAtiva();
-                    if (idAndroid && idAndroid.trim() !== "") {
-                        idViagemAtiva = idAndroid.trim();
-                        localStorage.setItem('v_id', idViagemAtiva);
-                    }
-                } catch (e) {}
-            }
+            const idViagemAtiva = localStorage.getItem('icaphi_vid') || localStorage.getItem('viagemId');
 
             if (!idViagemAtiva) {
                 mudarTelaMotorista('inicio');
@@ -6788,13 +6738,14 @@
             }
 
             viagemAtualId = idViagemAtiva;
-            const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
+            window.icaphiIdAtivo = idViagemAtiva;
 
+            const dadosLocais = JSON.parse(localStorage.getItem('dados_viagem_ativa') || 'null');
             if (dadosLocais) {
                 window.reconstruirTelaEmCurso(dadosLocais, idViagemAtiva);
             }
 
-            window.iniciarRastreioContinuo(idViagemAtiva);
+            window.pararRastreioContinuo();
             window.monitorarViagemUnicaDb(idViagemAtiva);
 
             if (navigator.onLine && window.sincronizarPendencias) {
@@ -6813,7 +6764,7 @@
             const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
             const headerText = document.querySelector('header')?.innerText || "";
             const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
-            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V10.9";
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11.2";
             const origemDisplay = dados.origem || (isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`);
             const kmInicioTratado = (dados.kmInicio !== undefined && dados.kmInicio !== null && dados.kmInicio !== '') ? dados.kmInicio : 'N/D';
 
@@ -6869,7 +6820,7 @@
             if (window.mudarTelaMotorista) window.mudarTelaMotorista('em-curso');
         };
 
-        // 4. ESCALA INTELIGENTE (SEPARA 1ª VIAGEM, 2ª VIAGEM E APOIO)
+        // 5. ESCALA INTELIGENTE (SEPARA 1ª VIAGEM, 2ª VIAGEM E APOIO)
         window.obterDadosEscalaAutomática = async function (placaInformada, tipoServicoEscolhido = 'Saida dia') {
             if (!window.dbMonitoramento || !placaInformada) return null;
             try {
@@ -6920,7 +6871,6 @@
             }
         };
 
-        // Protege 2ª Viagem e Apoio quando o Admin clica em "Buscar Escala Firebase"
         window.sincronizarEscalaDoFirebase = async function () {
             const inputFiltro = document.getElementById('filtro-data-ini');
             const dataAlvo = inputFiltro ? inputFiltro.value : '';
@@ -6960,7 +6910,7 @@
 
                     const viagensDaPlacaNoDia = todasViagens.filter(v => {
                         if (v.placa !== placaClean) return false;
-                        const dObj = safeDate(v.dataInicio);
+                        const dObj = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
                         return dObj && getLocalYMD(dObj) === dataAlvo;
                     });
 
@@ -6991,7 +6941,7 @@
             }
         };
 
-        // 5. INICIAR E ENCERRAR VIAGEM (COM ID OFICIAL FIRESTORE E .set MERGE)
+        // 6. INICIAR, ENCERRAR E CANCELAR VIAGEM (APENAS 1 GRAVAÇÃO NO INÍCIO E 1 NO FIM)
         window.iniciarViagem = async function () {
             const servicoEscolhido = document.getElementById('tipo-servico').value;
             const motor = document.getElementById('motorista').value.trim();
@@ -7013,7 +6963,7 @@
             const isAPK = /(WebView|wv|Android.+Version\/[0-9])/i.test(navigator.userAgent || "");
             const headerText = document.querySelector('header')?.innerText || "";
             const matchVersao = headerText.match(/V\d+(\.\d+)?/i);
-            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V10.9";
+            const versaoFinal = matchVersao ? matchVersao[0].toUpperCase() : "V11.2";
             const origemIdentificada = isAPK ? `APP ${versaoFinal}` : `WEB ${versaoFinal}`;
 
             const loader = document.getElementById('main-loader');
@@ -7021,7 +6971,7 @@
             if (loader) {
                 loader.classList.remove('hidden');
                 loader.style.display = 'flex';
-                if (textoLoader) textoLoader.innerText = "Ativando GPS...";
+                if (textoLoader) textoLoader.innerText = "Capturando localização de saída...";
             }
 
             try {
@@ -7113,14 +7063,15 @@
                     window.verificarPendenciasOffline();
                 }
 
-                localStorage.setItem('v_id', idViagemGerado);
-                window.viagemAtualId = idViagemGerado;
+                localStorage.setItem('icaphi_vid', idViagemGerado);
+                viagemAtualId = idViagemGerado;
+                window.icaphiIdAtivo = idViagemGerado;
                 localStorage.setItem('dados_viagem_ativa', JSON.stringify(novaViagem));
                 localStorage.setItem('hora_inicio_viagem', agoraMs.toString());
 
                 window.resetarFormularios();
                 window.reconstruirTelaEmCurso(novaViagem, idViagemGerado);
-                window.iniciarRastreioContinuo(idViagemGerado);
+                window.pararRastreioContinuo();
                 window.monitorarViagemUnicaDb(idViagemGerado);
 
             } catch (erro) {
@@ -7132,7 +7083,7 @@
         };
 
         window.encerrarViagem = async function () {
-            const idViagem = window.viagemAtualId || localStorage.getItem('v_id') || localStorage.getItem('viagemId');
+            const idViagem = window.icaphiIdAtivo || viagemAtualId || localStorage.getItem('icaphi_vid') || localStorage.getItem('viagemId');
             if (!idViagem) {
                 alert("Erro: Nenhuma viagem ativa encontrada.");
                 return;
@@ -7257,16 +7208,17 @@
                     localStorage.setItem('icaphi_pendencias_fim', JSON.stringify(filaFim));
                 }
 
-                window.pararRastreioContinuo(true);
+                window.pararRastreioContinuo();
                 if (unsubViagemAtual) { unsubViagemAtual(); unsubViagemAtual = null; }
                 if (window.cronometroInterval) clearInterval(window.cronometroInterval);
 
-                localStorage.removeItem('v_id');
+                localStorage.removeItem('icaphi_vid');
                 localStorage.removeItem('dados_viagem_ativa');
                 localStorage.removeItem('hora_inicio_viagem');
                 localStorage.removeItem('temp_foto_fim_b64');
                 localStorage.removeItem('temp_km_fim');
-                window.viagemAtualId = null;
+                viagemAtualId = null;
+                window.icaphiIdAtivo = null;
                 window.fotoFimBase64 = null;
 
                 window.verificarPendenciasOffline();
@@ -7280,7 +7232,33 @@
             }
         };
 
-        // 6. SINCRONIZADOR OFFLINE UNIFICADO (SOBRESCREVE OS LISTENERS ANTIGOS)
+        window.cancelarViagemMotorista = function () {
+            const idViagem = window.icaphiIdAtivo || viagemAtualId || localStorage.getItem('icaphi_vid');
+            if (!idViagem) return alert("Erro: Não foi possível identificar a viagem atual.");
+
+            if (confirm("Deseja realmente cancelar esta viagem?")) {
+                db.collection('viagens').doc(idViagem).set({
+                    status: 'cancelada',
+                    dataFim: firebase.firestore.FieldValue.serverTimestamp(),
+                    dataFimCelular: new Date().toISOString()
+                }, { merge: true }).then(() => {
+                    window.pararRastreioContinuo();
+                    if (unsubViagemAtual) { unsubViagemAtual(); unsubViagemAtual = null; }
+                    localStorage.removeItem('icaphi_vid');
+                    localStorage.removeItem('dados_viagem_ativa');
+                    localStorage.removeItem('hora_inicio_viagem');
+                    viagemAtualId = null;
+                    window.icaphiIdAtivo = null;
+                    alert("Viagem cancelada com sucesso!");
+                    location.reload();
+                }).catch(e => {
+                    console.error("Erro ao cancelar:", e);
+                    alert("Erro de conexão. Não foi possível cancelar agora.");
+                });
+            }
+        };
+
+        // 7. SINCRONIZADOR OFFLINE UNIFICADO (LIMPA FILAS PRESAS COM .set MERGE)
         window.verificarPendenciasOffline = function () {
             const f1 = JSON.parse(localStorage.getItem('icaphi_pendencias_ini') || '[]');
             const f2 = JSON.parse(localStorage.getItem('icaphi_pendencias') || '[]');
@@ -7301,7 +7279,6 @@
             }
         };
 
-        // Garante que a versão nova rode após as antigas no carregamento da página
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => window.verificarPendenciasOffline(), 150);
         });
@@ -7374,7 +7351,360 @@
 
         window.addEventListener('online', () => window.sincronizarPendencias(true));
 
-        // 7. RESTAURA OS DOIS BOTÕES (KM + RAIO) NO PAINEL DE AUDITORIA
+        // 8. LISTENERS EXCLUSIVOS DO ADMIN (ZERO LEITURA DA FROTA NOS CELULARES DOS MOTORISTAS)
+        window.unsubAdminRecentes = null;
+        window.unsubAdminEmCurso = null;
+        window.mapaAdminRecentes = new Map();
+        window.mapaAdminEmCurso = new Map();
+
+        window.consolidarViagensAdmin = function () {
+            if (window.modoHistoricoAtivo) return;
+
+            const mapaConsolidado = new Map();
+            window.mapaAdminRecentes.forEach((v, id) => mapaConsolidado.set(id, v));
+            window.mapaAdminEmCurso.forEach((v, id) => mapaConsolidado.set(id, v));
+
+            window.viagensEmTempoReal = Array.from(mapaConsolidado.values());
+            todasViagens = [...window.viagensEmTempoReal];
+
+            if (typeof renderizarAdmin === 'function') renderizarAdmin();
+            if (el('modal-dash') && el('modal-dash').classList.contains('active')) carregarDash();
+            if (el('modal-mapa') && el('modal-mapa').classList.contains('active')) carregarMapa();
+            if (el('modal-suporte') && el('modal-suporte').classList.contains('active')) renderizarSuporte(window.suporteTipoAtual || null);
+            if (el('modal-rastreio') && el('modal-rastreio').classList.contains('active') && currentRastreioId) {
+                abrirRastreioAdmin(currentRastreioId, true);
+            }
+        };
+
+        window.carregarViagensDb = function () {
+            // Trava de segurança: só consulta a frota inteira se o Painel Admin estiver aberto!
+            const viewAdmin = el('view-admin');
+            if (!viewAdmin || viewAdmin.style.display !== 'block') return;
+
+            window.pararListenersAdmin();
+
+            const limiteDias = new Date();
+            limiteDias.setDate(limiteDias.getDate() - 15);
+            const timestampCorte = limiteDias.toISOString();
+
+            window.unsubAdminRecentes = db.collection('viagens')
+                .where('dataInicioCelular', '>=', timestampCorte)
+                .onSnapshot(snapshot => {
+                    if (typeof ignorarSnapshot !== 'undefined' && ignorarSnapshot) return;
+                    window.mapaAdminRecentes.clear();
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        data.id = doc.id;
+                        window.mapaAdminRecentes.set(doc.id, data);
+                    });
+                    window.consolidarViagensAdmin();
+                }, err => console.error("Erro listener recentes Admin:", err));
+
+            window.unsubAdminEmCurso = db.collection('viagens')
+                .where('status', '==', 'em_curso')
+                .onSnapshot(snapshot => {
+                    if (typeof ignorarSnapshot !== 'undefined' && ignorarSnapshot) return;
+                    window.mapaAdminEmCurso.clear();
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        data.id = doc.id;
+                        window.mapaAdminEmCurso.set(doc.id, data);
+                    });
+                    window.consolidarViagensAdmin();
+                }, err => console.warn("Erro listener em_curso Admin:", err));
+        };
+
+        window.pararListenersAdmin = function () {
+            if (window.unsubAdminRecentes) { window.unsubAdminRecentes(); window.unsubAdminRecentes = null; }
+            if (window.unsubAdminEmCurso) { window.unsubAdminEmCurso(); window.unsubAdminEmCurso = null; }
+        };
+
+        window.acessoAdmin = function () {
+            setTimeout(() => {
+                if (prompt("Senha:") === "60010774") {
+                    el('view-motorista').style.display = 'none';
+                    el('view-admin').style.display = 'block';
+                    const h = getLocalYMD(new Date());
+                    el('filtro-data-ini').value = h;
+                    el('filtro-data-fim').value = h;
+                    window.modoHistoricoAtivo = false;
+                    window.carregarViagensDb();
+                    renderizarAdmin();
+                } else alert("Negado");
+            }, 50);
+        };
+
+        window.sairAdmin = function () {
+            window.pararListenersAdmin();
+            el('view-admin').style.display = 'none';
+            el('view-motorista').style.display = 'flex';
+        };
+
+        // 9. BUSCA PROFUNDA E EXPORTAÇÃO EXCEL COM CORREÇÃO DE FUSO HORÁRIO (BRASÍLIA vs UTC)
+        window.buscarViagensPorPeriodoSeguro = async function (iniYMD, fimYMD) {
+            const dtIniUtc = new Date(`${iniYMD}T00:00:00`);
+            dtIniUtc.setHours(dtIniUtc.getHours() - 4);
+            const dtFimUtc = new Date(`${fimYMD}T23:59:59`);
+            dtFimUtc.setHours(dtFimUtc.getHours() + 5);
+
+            const [snapCel, snapTs] = await Promise.all([
+                db.collection('viagens')
+                    .where('dataInicioCelular', '>=', dtIniUtc.toISOString())
+                    .where('dataInicioCelular', '<=', dtFimUtc.toISOString())
+                    .get(),
+                db.collection('viagens')
+                    .where('dataInicio', '>=', dtIniUtc)
+                    .where('dataInicio', '<=', dtFimUtc)
+                    .get()
+                    .catch(() => ({ forEach: () => {} }))
+            ]);
+
+            const mapa = new Map();
+            snapCel.forEach(doc => mapa.set(doc.id, { id: doc.id, ...doc.data() }));
+            snapTs.forEach(doc => mapa.set(doc.id, { id: doc.id, ...doc.data() }));
+
+            return Array.from(mapa.values()).filter(v => {
+                const d = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                if (!d) return false;
+                const dStr = getLocalYMD(d);
+                return dStr >= iniYMD && dStr <= fimYMD;
+            }).sort((a, b) => {
+                const tA = (safeDate(a.dataInicio) || safeDate(a.dataInicioCelular))?.getTime() || 0;
+                const tB = (safeDate(b.dataInicio) || safeDate(b.dataInicioCelular))?.getTime() || 0;
+                return tB - tA;
+            });
+        };
+
+        window.buscarHistoricoProfundo = async function (event) {
+            const ini = el('filtro-data-ini').value;
+            const fim = el('filtro-data-fim').value;
+            if (!ini || !fim) return alert("Por favor, preencha a Data Inicial e Final.");
+
+            document.body.style.cursor = 'wait';
+            const btn = event?.currentTarget;
+            const textoOriginal = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = '<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> ...';
+
+            try {
+                const historicoEncontrado = await window.buscarViagensPorPeriodoSeguro(ini, fim);
+                if (historicoEncontrado.length === 0) {
+                    alert("Nenhum registro encontrado no banco de dados para este período.");
+                } else {
+                    window.modoHistoricoAtivo = true;
+                    todasViagens = historicoEncontrado;
+                    if (typeof paginaAtualAdmin !== 'undefined') paginaAtualAdmin = 1;
+                    renderizarAdmin();
+                }
+            } catch (e) {
+                console.error("Erro ao buscar histórico:", e);
+                alert("Falha de comunicação com o servidor ao puxar histórico.");
+            } finally {
+                if (btn) btn.innerHTML = textoOriginal;
+                if (window.lucide) lucide.createIcons();
+                document.body.style.cursor = 'default';
+            }
+        };
+
+        window.confirmarExportacao = async function () {
+            const ini = el('data-export-ini').value;
+            const fim = el('data-export-fim').value;
+            if (!ini || !fim) return alert("Selecione a data de início e fim para exportar.");
+
+            try {
+                el('modal-exportar').classList.remove('active');
+                document.body.style.cursor = 'wait';
+
+                const filtrados = await window.buscarViagensPorPeriodoSeguro(ini, fim);
+                if (filtrados.length === 0) {
+                    document.body.style.cursor = 'default';
+                    return alert("Nada para exportar neste período.");
+                }
+
+                const header = ["Placa", "Motorista", "Cidade", "Status", "Servico", "Data inicio", "Hora Inicio", "Data Fim", "Hora Fim", "Total de hora de viagem", "KM INICIAL", "KM FINAL", "Total KM RODADO", "KM DA ESCALA", "DISPERSÃO DA ESCALA", "", "KM REAL PIFPAF", "DISPERSÃO REAL"];
+                const dataRows = filtrados.map(v => {
+                    const dIni = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                    const dFim = safeDate(v.dataFim) || safeDate(v.dataFimCelular);
+                    let totalHoras = "";
+                    if (dIni && dFim) {
+                        const diffMs = Math.max(0, dFim - dIni);
+                        const h = Math.floor(diffMs / 3600000);
+                        const m = Math.floor((diffMs % 3600000) / 60000);
+                        totalHoras = `${h}:${m.toString().padStart(2, '0')}`;
+                    }
+                    const kmIni = Math.round(v.kmInicio || 0);
+                    const kmFim = Math.round(v.kmFim || 0);
+                    const totalKm = v.status === 'em_curso' ? 0 : (kmFim - kmIni);
+                    const meta = Math.round(v.metaKm || 0);
+                    const dispEscala = totalKm - meta;
+                    const kmRealCalc = meta * 1.1111;
+                    const dispReal = totalKm - kmRealCalc;
+                    return [v.placa, v.nome, v.rotaCidades || "", v.status, v.tipoServico || "N/D", fmtData(dIni), fmtHora(dIni), fmtData(dFim), fmtHora(dFim), totalHoras, kmIni, kmFim, totalKm, meta, dispEscala, "", parseFloat(kmRealCalc.toFixed(2)), parseFloat(dispReal.toFixed(2))];
+                });
+
+                const ws_data = [header, ...dataRows];
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                ws['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 15 }];
+                const range = XLSX.utils.decode_range(ws['!ref']);
+
+                for (let R = range.s.r; R <= range.e.r; ++R) {
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+                        if (!ws[cell_ref]) continue;
+                        if (R === 0) {
+                            ws[cell_ref].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4472C4" } }, alignment: { horizontal: "center", vertical: "center" } };
+                        } else {
+                            if (!ws[cell_ref].s) ws[cell_ref].s = { alignment: { horizontal: "center" } };
+                            if (C === 17 && typeof ws[cell_ref].v === 'number' && ws[cell_ref].v > 50) {
+                                ws[cell_ref].s = { fill: { fgColor: { rgb: "FFFF00" } }, font: { bold: true, color: { rgb: "000000" } }, alignment: { horizontal: "center" } };
+                            }
+                        }
+                    }
+                }
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+                XLSX.writeFile(wb, `Relatorio_Geral_${ini}_a_${fim}.xlsx`);
+            } catch (e) {
+                console.error("Erro ao exportar:", e);
+                alert("Erro ao puxar dados do servidor.");
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        };
+
+        // 10. EXTRATO COMPLETO SOB DEMANDA (BUSCA TODAS AS VIAGENS DA PLACA, INCLUSIVE +30 DIAS)
+        window.acessarExtrato = async function () {
+            const p = formatarPlaca(el('login-placa').value);
+            const s = el('login-senha').value;
+            if (!p || !s) return alert("Preencha todos os campos.");
+
+            el('main-loader').classList.remove('hidden');
+            el('main-loader').style.display = 'flex';
+
+            try {
+                const docSenha = await db.collection('senhas').doc(p).get();
+                if (!docSenha.exists || docSenha.data().senha !== s) {
+                    return alert("Senha incorreta ou não cadastrada para esta placa!");
+                }
+
+                const snapshot = await db.collection('viagens')
+                    .where('placa', '==', p)
+                    .get();
+
+                dadosExtrato = [];
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    d.id = doc.id;
+                    dadosExtrato.push(d);
+                });
+
+                dadosExtrato.sort((a, b) => {
+                    const tA = (safeDate(a.dataInicio) || safeDate(a.dataInicioCelular))?.getTime() || 0;
+                    const tB = (safeDate(b.dataInicio) || safeDate(b.dataInicioCelular))?.getTime() || 0;
+                    return tB - tA;
+                });
+
+                el('extrato-ini').value = '';
+                el('extrato-fim').value = '';
+                el('modal-login-extrato').classList.remove('active');
+                el('modal-view-extrato').classList.add('active');
+                window.renderizarExtrato();
+            } catch (e) {
+                console.error("Erro no login do extrato:", e);
+                alert("Erro ao buscar extrato no servidor.");
+            } finally {
+                el('main-loader').classList.add('hidden');
+                el('main-loader').style.display = '';
+            }
+        };
+
+        window.renderizarExtrato = function () {
+            const cont = el('conteudo-extrato');
+            if (!cont) return;
+
+            const ini = el('extrato-ini').value;
+            const fim = el('extrato-fim').value;
+
+            const filtrados = dadosExtrato.filter(v => {
+                const d = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                if (!d) return false;
+                const dStr = getLocalYMD(d);
+                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
+            });
+
+            if (filtrados.length === 0) {
+                cont.innerHTML = '<p class="text-center text-gray-500 mt-10 p-5 font-bold">Nenhum registro encontrado neste período.</p>';
+                return;
+            }
+
+            cont.innerHTML = `<p class="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">${filtrados.length} viagem(ns) encontrada(s)</p><div class="extrato-list flex flex-col gap-4">` + filtrados.map(v => {
+                const kmT = Math.round((v.kmFim || 0) - (v.kmInicio || 0));
+                const meta = Math.round(v.metaKm || 0);
+                const diff = kmT - meta;
+                const dIni = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                const isE = v.status === 'em_curso';
+                const stColor = isE ? '#f59e0b' : (v.status === 'cancelada' ? '#ef4444' : '#10b981');
+
+                const btnShare = `<button onclick="window.compartilharExtrato('${v.id}')" class="flex-1 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-teal-200 transition"><i data-lucide="share-2" class="w-3 h-3"></i> COMPARTILHAR</button>`;
+                const btnFotoI = v.fotoInicio ? `<button onclick="window.verFoto('${v.fotoInicio}')" class="flex-1 py-2 bg-gray-100 dark:bg-[#2d2d36] text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-teal-500"></i> FOTO INI</button>` : '';
+                const btnFotoF = v.fotoFim ? `<button onclick="window.verFoto('${v.fotoFim}')" class="flex-1 py-2 bg-gray-100 dark:bg-[#2d2d36] text-gray-600 dark:text-zinc-300 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 hover:bg-gray-200 transition"><i data-lucide="image" class="w-3 h-3 text-teal-500"></i> FOTO FIM</button>` : '';
+                const btnRecuperar = isE ? `<button onclick="window.recuperarViagemCard('${v.id}')" class="w-full mt-3 py-3 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-orange-500/30 tracking-widest uppercase"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> RECUPERAR ESTA VIAGEM</button>` : '';
+
+                return `
+                <div class="extrato-item bg-white dark:bg-[#1e1e24] border border-gray-200 dark:border-[#2d2d36] rounded-2xl p-5 shadow-sm border-l-[6px]" style="border-left-color: ${stColor}">
+                    <div class="flex justify-between items-start mb-3">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">DATA / HORA</span><br><span class="text-sm font-black dark:text-zinc-100">${fmtData(dIni)} às ${fmtHora(dIni)}</span></div>
+                        <span class="text-[10px] font-black px-2.5 py-1 rounded-lg text-white tracking-widest" style="background:${stColor};">${(v.status || 'N/D').toUpperCase()}</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">ROTA</span><br>
+                        <span class="text-xs text-gray-700 dark:text-zinc-300 font-bold">${v.rotaCidades || 'N/D'}</span>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2 bg-gray-50 dark:bg-[#121214] p-3 rounded-xl border border-gray-100 dark:border-[#2d2d36] text-center">
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">META</span><span class="text-xs font-black text-teal-600">${meta}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM INI</span><span class="text-xs font-black dark:text-zinc-100">${Math.round(v.kmInicio || 0)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">KM FIM</span><span class="text-xs font-black dark:text-zinc-100">${isE ? '-' : Math.round(v.kmFim || 0)}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">TOTAL</span><span class="text-xs font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : kmT}</span></div>
+                        <div><span class="text-[9px] font-bold text-gray-500 uppercase block mb-1">DISP</span><span class="text-xs font-black ${diff > 0 ? 'text-red-500' : 'text-green-500'}">${isE ? '-' : (diff > 0 ? '+' + diff : diff)}</span></div>
+                    </div>
+                    <div class="flex gap-2 justify-between mt-3">
+                        ${btnShare}
+                        ${btnFotoI}
+                        ${btnFotoF}
+                    </div>
+                    ${btnRecuperar}
+                </div>`;
+            }).join('') + '</div>';
+
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.exportarExtratoPessoal = function () {
+            const ini = el('extrato-ini').value;
+            const fim = el('extrato-fim').value;
+            const filtrados = dadosExtrato.filter(v => {
+                const d = safeDate(v.dataInicio) || safeDate(v.dataInicioCelular);
+                if (!d) return false;
+                const dStr = getLocalYMD(d);
+                return (!ini || dStr >= ini) && (!fim || dStr <= fim);
+            });
+            if (filtrados.length === 0) return alert("Nenhuma viagem neste filtro para exportar.");
+
+            const dadosExcel = filtrados.map(v => ({
+                "Data": fmtData(safeDate(v.dataInicio) || safeDate(v.dataInicioCelular)),
+                "Placa": v.placa,
+                "KM Inicio": Math.round(v.kmInicio || 0),
+                "KM Fim": Math.round(v.kmFim || 0),
+                "Total KM": Math.round((v.kmFim || 0) - (v.kmInicio || 0)),
+                "Meta": Math.round(v.metaKm || 0)
+            }));
+            const ws = XLSX.utils.json_to_sheet(dadosExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Extrato");
+            XLSX.writeFile(wb, `Extrato_${filtrados[0].placa}_${ini || 'todos'}_${fim || 'hoje'}.xlsx`);
+        };
+
+        // 11. PAINEL DE AUDITORIA VISUAL (BOTÕES KM + RAIO) E MAPAS GOOGLE MAPS
         window.abrirPainelAuditoriaVisual = function () {
             const container = document.getElementById('lista-suporte');
             const hoje = new Date();
@@ -7406,45 +7736,6 @@
             window.executarAuditoriaVisual();
         };
 
-        // 8. MAPAS GOOGLE MAPS (LIVE + FROTA GERAL) + DETECTOR DE SINAL GPS EM TEMPO REAL
-        let intervaloDiagnosticoGps = null;
-
-        window.obterUltimoTimestampGps = function (v) {
-            if (!v) return null;
-            let candidatos = [];
-            if (v.ultimaAtualizacaoMs) candidatos.push(Number(v.ultimaAtualizacaoMs));
-            if (v.ultimaAtualizacao) { const d = safeDate(v.ultimaAtualizacao); if (d) candidatos.push(d.getTime()); }
-            if (v.ultimaAtualizacaoLoc) { const d = safeDate(v.ultimaAtualizacaoLoc); if (d) candidatos.push(d.getTime()); }
-            if (Array.isArray(v.rotaReal) && v.rotaReal.length > 0) {
-                const partes = String(v.rotaReal[v.rotaReal.length - 1]).split(',');
-                if (partes[2] && !isNaN(Number(partes[2]))) candidatos.push(Number(partes[2]));
-            }
-            return candidatos.length ? Math.max(...candidatos) : null;
-        };
-
-        window.atualizarBadgeStatusGps = function (v) {
-            const statusEl = el('rastreio-status');
-            if (!statusEl || !v) return;
-            if (v.status !== 'em_curso') {
-                statusEl.innerHTML = '<span class="text-emerald-500 font-black">✅ VIAGEM FINALIZADA</span>';
-                return;
-            }
-            const ultimoTs = window.obterUltimoTimestampGps(v);
-            if (!ultimoTs) {
-                statusEl.innerHTML = '<span class="text-red-500 font-black">🔴 SEM TEMPO REAL ATIVO</span>';
-                return;
-            }
-            const diffSeg = Math.max(0, Math.floor((Date.now() - ultimoTs) / 1000));
-            const horaUltimo = new Date(ultimoTs).toLocaleTimeString('pt-BR');
-            if (diffSeg <= 60) {
-                statusEl.innerHTML = `<span class="text-emerald-500 font-black">🟢 AO VIVO • Atualizado há ${diffSeg}s (${horaUltimo})</span>`;
-            } else if (diffSeg <= 180) {
-                statusEl.innerHTML = `<span class="text-amber-500 font-black">🟡 SINAL LENTO • Há ${Math.floor(diffSeg / 60)} min (${horaUltimo})</span>`;
-            } else {
-                statusEl.innerHTML = `<span class="text-red-500 font-black">🔴 SINAL PERDIDO • Parou às ${horaUltimo}</span>`;
-            }
-        };
-
         window.abrirRastreioAdmin = function (idViagem, isAutoUpdate = false) {
             currentRastreioId = idViagem;
             const v = todasViagens.find(x => x.id === idViagem);
@@ -7454,30 +7745,20 @@
                 el('modal-rastreio').classList.add('active');
                 el('rastreio-placa').innerText = `${v.placa} - ${v.nome || ''}`;
                 rastreioFocado = false;
-
-                if (intervaloDiagnosticoGps) clearInterval(intervaloDiagnosticoGps);
-                intervaloDiagnosticoGps = setInterval(() => {
-                    if (el('modal-rastreio').classList.contains('active') && currentRastreioId) {
-                        window.atualizarBadgeStatusGps(todasViagens.find(x => x.id === currentRastreioId));
-                    } else {
-                        clearInterval(intervaloDiagnosticoGps);
-                    }
-                }, 3000);
             }
-            window.atualizarBadgeStatusGps(v);
+
+            const statusEl = el('rastreio-status');
+            if (statusEl) {
+                statusEl.innerHTML = v.status === 'em_curso'
+                    ? '<span class="text-orange-500 font-black">📍 EM ROTA (GPS de Saída/Chegada)</span>'
+                    : '<span class="text-emerald-500 font-black">✅ VIAGEM FINALIZADA</span>';
+            }
 
             if (!mapaRastreio) {
                 mapaRastreio = L.map('mapa-rastreio').setView([-22.67, -43.28], 13);
                 L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaRastreio);
                 mapaRastreio.on('movestart', () => { rastreioFocado = true; });
                 mapaRastreio.on('zoomstart', () => { rastreioFocado = true; });
-            } else {
-                mapaRastreio.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer && layer._url && layer._url.includes('cartocdn')) {
-                        mapaRastreio.removeLayer(layer);
-                        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaRastreio);
-                    }
-                });
             }
 
             if (!isAutoUpdate) {
@@ -7490,47 +7771,31 @@
 
             const pontosFiltrados = filtrarRotaGps(v.rotaReal || []);
             const latlngs = pontosFiltrados.map(p => [p.lat, p.lng]).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
-            const coordAtualStr = v.locAtual || (v.latitude && v.longitude ? `${v.latitude},${v.longitude}` : null) || v.locInicio;
+            const bounds = [...latlngs];
 
-            if (coordAtualStr) {
-                const [cLat, cLng] = coordAtualStr.split(',').map(Number);
-                if (!isNaN(cLat) && !isNaN(cLng)) {
-                    const ultimo = latlngs[latlngs.length - 1];
-                    if (!ultimo || ultimo[0] !== cLat || ultimo[1] !== cLng) latlngs.push([cLat, cLng]);
-                }
-            }
-
-            if (latlngs.length > 0) {
+            if (latlngs.length > 1) {
                 if (!polylineRastreio) polylineRastreio = L.polyline(latlngs, { color: '#10b981', weight: 4 }).addTo(mapaRastreio);
                 else polylineRastreio.setLatLngs(latlngs);
-                if (!rastreioFocado && !isAutoUpdate) setTimeout(() => mapaRastreio.fitBounds(polylineRastreio.getBounds(), { padding: [50, 50], maxZoom: 16 }), 350);
-
-                mapaRastreio.eachLayer(l => { if (l instanceof L.CircleMarker) mapaRastreio.removeLayer(l); });
-                pontosFiltrados.forEach(p => {
-                    if (p.ts && !isNaN(p.lat) && !isNaN(p.lng)) {
-                        const dataHora = new Date(p.ts).toLocaleTimeString('pt-BR');
-                        L.circleMarker([p.lat, p.lng], { radius: 6, color: 'transparent', fillColor: '#10b981', fillOpacity: 0.4 })
-                            .addTo(mapaRastreio)
-                            .bindTooltip(`⏱️ ${dataHora}`, { direction: 'top', className: 'font-bold text-xs rounded shadow-lg' });
-                    }
-                });
             }
 
-            if (v.status === 'em_curso' && coordAtualStr) {
-                const [lat, lng] = coordAtualStr.split(',').map(Number);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const ultimoTs = window.obterUltimoTimestampGps(v);
-                    const atrasoSeg = ultimoTs ? Math.floor((Date.now() - ultimoTs) / 1000) : 999;
-                    const corPino = atrasoSeg <= 60 ? '#10b981' : (atrasoSeg <= 180 ? '#f59e0b' : '#ef4444');
-                    const iconCar = L.divIcon({ className: 'custom', html: `<div style="background:${corPino};width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 12px ${corPino};"></div>` });
-                    if (!markerRastreio) markerRastreio = L.marker([lat, lng], { icon: iconCar }).addTo(mapaRastreio);
-                    else { markerRastreio.setLatLng([lat, lng]); markerRastreio.setIcon(iconCar); }
+            if (v.locInicio) {
+                const [iLat, iLng] = v.locInicio.split(',').map(Number);
+                if (!isNaN(iLat) && !isNaN(iLng)) {
+                    bounds.push([iLat, iLng]);
+                    if (!markerIni) markerIni = L.marker([iLat, iLng], { icon: L.divIcon({ className: 'custom', html: '<div style="background:#2563eb;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">SAÍDA</div>' }) }).addTo(mapaRastreio);
                 }
-            } else if (v.status === 'finalizada' && latlngs.length > 0) {
-                const pIni = latlngs[0];
-                const pFim = latlngs[latlngs.length - 1];
-                if (!markerIni) markerIni = L.marker(pIni, { icon: L.divIcon({ className: 'custom', html: '<div style="background:#2563eb;color:white;padding:2px 5px;border-radius:4px;font-size:10px;font-weight:bold;">I</div>' }) }).addTo(mapaRastreio);
-                if (!markerFim) markerFim = L.marker(pFim, { icon: L.divIcon({ className: 'custom', html: '<div style="background:#dc2626;color:white;padding:2px 5px;border-radius:4px;font-size:10px;font-weight:bold;">F</div>' }) }).addTo(mapaRastreio);
+            }
+
+            if (v.locFim) {
+                const [fLat, fLng] = v.locFim.split(',').map(Number);
+                if (!isNaN(fLat) && !isNaN(fLng)) {
+                    bounds.push([fLat, fLng]);
+                    if (!markerFim) markerFim = L.marker([fLat, fLng], { icon: L.divIcon({ className: 'custom', html: '<div style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">FIM</div>' }) }).addTo(mapaRastreio);
+                }
+            }
+
+            if (!rastreioFocado && !isAutoUpdate && bounds.length > 0) {
+                setTimeout(() => mapaRastreio.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 }), 350);
             }
         };
 
@@ -7544,13 +7809,6 @@
                 L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaLeaflet);
                 mapaLeaflet.on('movestart', () => { mapaFocado = true; });
                 mapaLeaflet.on('zoomstart', () => { mapaFocado = true; });
-            } else {
-                mapaLeaflet.eachLayer(layer => {
-                    if (layer instanceof L.TileLayer && layer._url && layer._url.includes('cartocdn')) {
-                        mapaLeaflet.removeLayer(layer);
-                        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(mapaLeaflet);
-                    }
-                });
             }
             mapaFocado = false;
             setTimeout(() => { mapaLeaflet.invalidateSize(); window.carregarMapa(); }, 300);
@@ -7563,7 +7821,7 @@
         // 1. CORTA GRAVAÇÕES DUPLICADAS DO WEBVIEW QUANDO ESTIVER RODANDO NO APK
         // (Deixa a gravação no Firestore exclusivamente para o TrackingService.java)
         window.iniciarRastreioContinuo = function (idViagem) {
-            const idAtivo = idViagem || window.viagemAtualId || localStorage.getItem('v_id');
+            const idAtivo = idViagem || window.icaphiIdAtivo || localStorage.getItem('icaphi_vid');
             if (!idAtivo) return;
 
             window.pararRastreioContinuo(false);
